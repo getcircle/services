@@ -35,6 +35,7 @@ INSTALLED_APPS = (
     'django_extensions',
 
     'users',
+    'credentials',
 )
 
 MIDDLEWARE_CLASSES = (
