@@ -1,10 +1,16 @@
+Django==1.8.dev20141119225604
+bcrypt==1.1.0
+cffi==0.8.6
+-e git+git@github.com:mhahn/django-common.git@0250cfdf1d6aa8007c7d6db2a36c0c353c928e3b#egg=django_common-master
 django-extensions==1.4.8
+django-phonenumber-field==0.6
+djangorestframework==3.0.0
 factory-boy==2.4.1
+gnureadline==6.3.3
+ipdb==0.8
+ipython==2.3.1
 phonenumbers==7.0.1
 psycopg2==2.5.4
+pycparser==2.10
 six==1.8.0
 wsgiref==0.1.2
-bcrypt==1.1.0
-
-git+ssh://git@github.com/mhahn/django-common.git@0.0.4
-git+ssh://git@github.com/django/django.git@e7b9a58b081299b30f807d5c66f7a5d1940efe4c
