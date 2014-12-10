@@ -1,4 +1,4 @@
-from phonenumer_field.modelfields import PhoneNumberField
+from phonenumber_field.modelfields import PhoneNumberField
 
 from common.db import models
 
