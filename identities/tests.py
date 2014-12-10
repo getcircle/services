@@ -2,6 +2,7 @@ from django.test import TestCase
 
 from users import actions as user_actions
 
+import identities as identity_constants
 from . import actions
 
 
@@ -17,7 +18,7 @@ class TestIdentityActions(TestCase):
         phone_number = '+19492933322'
         identity = actions.create_identity(
             user_id=self.user.id.hex,
-            identity_type='internal',
+            identity_type=identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
             data={
                 'first_name': first_name,
                 'last_name': last_name,
