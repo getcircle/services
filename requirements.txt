@@ -4,3 +4,5 @@ factory-boy==2.4.1
 psycopg2==2.5.4
 six==1.8.0
 wsgiref==0.1.2
+
+git+ssh://git@github.com/mhahn/django-common.git@0.0.2

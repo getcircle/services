@@ -1,5 +1,5 @@
-from django.db import models
+from common.db import models
 
 
-class User(models.Model):
+class User(models.TimestampableModel):
     pass
