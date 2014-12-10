@@ -3,7 +3,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 from common.db import models
 
 
-class Identity(models.TimestampableModel):
+class Identity(models.UUIDModel, models.TimestampableModel):
 
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)

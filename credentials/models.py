@@ -5,7 +5,7 @@ from common.db import models
 from . import HASH_ALGORITHM
 
 
-class Credential(models.TimestampableModel):
+class Credential(models.UUIDModel, models.TimestampableModel):
 
     user = models.ForeignKey('users.User')
     password = models.CharField(

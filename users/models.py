@@ -1,5 +1,5 @@
 from common.db import models
 
 
-class User(models.TimestampableModel):
+class User(models.UUIDModel, models.TimestampableModel):
     pass
