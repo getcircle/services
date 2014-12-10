@@ -32,6 +32,8 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.messages',
+
+    'users',
 )
 
 MIDDLEWARE_CLASSES = (
