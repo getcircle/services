@@ -1,14 +1,25 @@
-import common.utils
+import service
+
 from . import models
 
 
-def create_user():
-    return models.User.objects.create()
+class CreateUser(service.Action):
+
+    def run(self, *args, **kwargs):
+        return models.User.objects.create()
 
 
-def get_user(user_id):
-    uuid = common.utils.uuid_from_hex(user_id)
-    if uuid is None:
-        return None
+class ValidUser(service.Action):
 
-    return models.User.objects.get_or_none(pk=uuid)
+    user_id = service.UUIDType(required=True)
+
+    def run(self, *args, **kwargs):
+        return models.User.objects.filter(pk=self.user_id).exists()
+
+
+class GetUser(service.Action):
+
+    user_id = service.UUIDType(required=True)
+
+    def run(self, *args, **kwargs):
+        return models.User.objects.get_or_none(pk=self.user_id)

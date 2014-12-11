@@ -10,7 +10,7 @@ from . import actions
 class TestIdentityActions(TestCase):
 
     def setUp(self):
-        self.user = user_actions.create_user()
+        self.user = user_actions.CreateUser().execute()
         self.first_name = 'Michael'
         self.last_name = 'Hahn'
         self.email = 'mwhahn@gmail.com'
