@@ -44,3 +44,19 @@ class TestIdentityActions(TestCase):
         self.assertTrue(identity1)
         identity2 = actions.CreateIdentity(self.data).execute()
         self.assertIsNone(identity2)
+
+    def test_get_identity_internal(self):
+        actions.CreateIdentity(self.data).execute()
+        identity = actions.GetIdentity({
+            'type': identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
+            'key': self.email,
+        }).execute()
+        self.assertTrue(identity)
+        self.assertTrue(identity.user_id)
+
+    def test_get_identity_internal_invalid(self):
+        identity = actions.GetIdentity({
+            'type': identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
+            'key': self.email,
+        }).execute()
+        self.assertIsNone(identity)

@@ -7,6 +7,10 @@ from . import models
 
 class IdentityType(service.StringType):
 
+    def __init__(self, *args, **kwargs):
+        super(IdentityType, self).__init__(*args, **kwargs)
+        self.choices = identity_constants.IDENTITY_TYPE_TO_NAME_MAP.keys()
+
     def to_native(self, value, context=None):
         if isinstance(value, basestring):
             value = identity_constants.IDENTITY_NAME_TO_TYPE_MAP[value]
@@ -22,10 +26,7 @@ class CreateIdentity(service.Action):
     user_id = service.StringType(required=True)
     first_name = service.StringType(required=True)
     last_name = service.StringType(required=True)
-    type = IdentityType(
-        required=True,
-        choices=identity_constants.IDENTITY_TYPE_TO_NAME_MAP.keys(),
-    )
+    type = IdentityType(required=True)
     email = service.EmailType(required=True)
     phone_number = service.PhoneNumberType()
 
@@ -46,3 +47,20 @@ class CreateIdentity(service.Action):
 
     def run(self, *args, **kwargs):
         return self._create_identity()
+
+
+class GetIdentity(service.Action):
+
+    type = IdentityType(required=True)
+    key = service.StringType(required=True)
+
+    def validate_key(self, value, context=None):
+        if self.type == identity_constants.IDENTITY_TYPE_INTERNAL:
+            email_type = service.EmailType()
+            email_type.validate(value)
+
+    def run(self, *args, **kwargs):
+        parameters = {'type': self.type}
+        if self.type == identity_constants.IDENTITY_TYPE_INTERNAL:
+            parameters['email'] = self.key
+        return models.Identity.objects.get_or_none(**parameters)
