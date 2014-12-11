@@ -7,7 +7,7 @@ from . import HASH_ALGORITHM
 
 class Credential(models.UUIDModel, models.TimestampableModel):
 
-    user = models.ForeignKey('users.User')
+    user = models.ForeignKey('users.User', unique=True)
     password = models.CharField(
         null=True,
         max_length=255,
