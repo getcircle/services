@@ -1,4 +1,5 @@
 from django.test import TestCase
+from service import exceptions
 
 from users import actions as user_actions
 
@@ -15,6 +16,8 @@ class TestIdentityActions(TestCase):
         self.email = 'mwhahn@gmail.com'
         self.phone_number = '+19492933322'
         self.data = {
+            'user_id': self.user.id.hex,
+            'type': identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'email': self.email,
@@ -22,35 +25,22 @@ class TestIdentityActions(TestCase):
         }
 
     def test_create_internal_identity(self):
-        identity = actions.create_identity(
-            user_id=self.user.id.hex,
-            identity_type=identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
-            data=self.data
-        )
+        identity = actions.CreateIdentity(self.data).execute()
         self.assertEqual(identity.first_name, self.first_name)
         self.assertEqual(identity.last_name, self.last_name)
         self.assertEqual(identity.email, self.email)
         self.assertEqual(str(identity.phone_number), self.phone_number)
 
     def test_create_internal_identity_invalid_data(self):
-        identity = actions.create_identity(
-            user_id=self.user.id.hex,
-            identity_type=None,
-            data={
+        with self.assertRaises(exceptions.ValidationError):
+            actions.CreateIdentity({
+                'user_id': self.user.id.hex,
+                'type': None,
                 'first_name': 'Michael',
-            },
-        )
-        self.assertIsNone(identity)
+            }).execute()
 
     def test_unique_identities_based_on_type(self):
-        actions.create_identity(
-            user_id=self.user.id.hex,
-            identity_type=identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
-            data=self.data,
-        )
-        identity = actions.create_identity(
-            user_id=self.user.id.hex,
-            identity_type=identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
-            data=self.data,
-        )
-        self.assertIsNone(identity)
+        identity1 = actions.CreateIdentity(self.data).execute()
+        self.assertTrue(identity1)
+        identity2 = actions.CreateIdentity(self.data).execute()
+        self.assertIsNone(identity2)
