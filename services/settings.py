@@ -1,5 +1,5 @@
 """
-Django settings for user_service project.
+Django settings for services project.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/1.7/topics/settings/
@@ -44,9 +44,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'user_service.urls'
+ROOT_URLCONF = 'services.urls'
 
-WSGI_APPLICATION = 'user_service.wsgi.application'
+WSGI_APPLICATION = 'services.wsgi.application'
 
 
 # Database
