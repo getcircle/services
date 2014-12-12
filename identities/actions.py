@@ -2,7 +2,10 @@ import django.db
 import service
 
 import identities as identity_constants
-from . import models
+from . import (
+    containers,
+    models,
+)
 
 
 class IdentityType(service.StringType):
@@ -30,6 +33,8 @@ class CreateIdentity(service.Action):
     email = service.EmailType(required=True)
     phone_number = service.PhoneNumberType()
 
+    identity = service.ContainerType(containers.IdentityContainer)
+
     def _create_identity(self):
         identity = None
         try:
@@ -46,7 +51,12 @@ class CreateIdentity(service.Action):
         return identity
 
     def run(self, *args, **kwargs):
-        return self._create_identity()
+        model = self._create_identity()
+        if model:
+            self.identity = containers.IdentityContainer.from_model(model)
+
+    class Options:
+        roles = {service.public: service.whitelist('identity')}
 
 
 class GetIdentity(service.Action):
@@ -54,13 +64,23 @@ class GetIdentity(service.Action):
     type = IdentityType(required=True)
     key = service.StringType(required=True)
 
+    identity = service.ContainerType(containers.IdentityContainer)
+
     def validate_key(self, value, context=None):
         if self.type == identity_constants.IDENTITY_TYPE_INTERNAL:
             email_type = service.EmailType()
             email_type.validate(value)
 
-    def run(self, *args, **kwargs):
+    def _get_identity(self):
         parameters = {'type': self.type}
         if self.type == identity_constants.IDENTITY_TYPE_INTERNAL:
             parameters['email'] = self.key
         return models.Identity.objects.get_or_none(**parameters)
+
+    def run(self, *args, **kwargs):
+        model = self._get_identity()
+        if model:
+            self.identity = containers.IdentityContainer.from_model(model)
+
+    class Options:
+        roles = {service.public: service.whitelist('identity')}

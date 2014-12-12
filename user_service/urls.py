@@ -1,10 +1,12 @@
-from django.conf.urls import patterns, include, url
-from django.contrib import admin
+from django.conf.urls import (
+    patterns,
+    url,
+)
+from django.views.decorators.csrf import csrf_exempt
 
-urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'user_service.views.home', name='home'),
-    # url(r'^blog/', include('blog.urls')),
+from .views import UserService
 
-    url(r'^admin/', include(admin.site.urls)),
+urlpatterns = patterns(
+    '',
+    url(r'^$', csrf_exempt(UserService.as_view())),
 )

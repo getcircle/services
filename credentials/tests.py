@@ -36,22 +36,24 @@ class TestCredentialActions(TestCase):
         self.user = UserFactory.create()
 
     def test_create_credentials(self):
-        created = actions.CreateCredentials({
+        action = actions.CreateCredentials({
             'user_id': self.user.id.hex,
             'password': TEST_PASSWORD,
-        }).execute()
-        self.assertTrue(created)
+        })
+        action.execute()
+        self.assertTrue(action.success)
 
     def test_verify_credentials(self):
         actions.CreateCredentials({
             'user_id': self.user.id.hex,
             'password': TEST_PASSWORD,
         }).execute()
-        valid = actions.VerifyCredentials({
+        action = actions.VerifyCredentials({
             'user_id': self.user.id.hex,
             'password': TEST_PASSWORD,
-        }).execute()
-        self.assertTrue(valid)
+        })
+        action.execute()
+        self.assertTrue(action.valid)
 
     def test_update_credentials(self):
         actions.CreateCredentials({
@@ -60,29 +62,33 @@ class TestCredentialActions(TestCase):
         }).execute()
 
         # try updating with invalid password
-        success = actions.UpdateCredentials({
+        action = actions.UpdateCredentials({
             'user_id': self.user.id.hex,
             'current_password': 'invalid',
             'new_password': 'newpassword',
-        }).execute()
-        self.assertFalse(success)
+        })
+        action.execute()
+        self.assertFalse(action.success)
         # verify the password wasn't updated
-        success = actions.VerifyCredentials({
+        action = actions.VerifyCredentials({
             'user_id': self.user.id.hex,
             'password': TEST_PASSWORD,
-        }).execute()
-        self.assertTrue(success)
+        })
+        action.execute()
+        self.assertTrue(action.valid)
 
         # update the password with valid password
-        success = actions.UpdateCredentials({
+        action = actions.UpdateCredentials({
             'user_id': self.user.id.hex,
             'current_password': TEST_PASSWORD,
             'new_password': 'newpassword',
-        }).execute()
-        self.assertTrue(success)
+        })
+        action.execute()
+        self.assertTrue(action.success)
         # verify the password was updated
-        success = actions.VerifyCredentials({
+        action = actions.VerifyCredentials({
             'user_id': self.user.id.hex,
             'password': 'newpassword',
         })
-        self.assertTrue(success)
+        action.execute()
+        self.assertTrue(action.valid)

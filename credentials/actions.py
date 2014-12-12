@@ -10,16 +10,6 @@ def _get_credentials(user_id):
     )
 
 
-def _verify_credentials(credent, password):
-    valid = False
-    credential = models.Credential.objects.get_or_none(
-        user_id=user_id,
-    )
-    if credential:
-        valid = credential.check_password(password)
-    return valid
-
-
 class NewPasswordType(service.StringType):
 
     def __init__(self, *args, **kwargs):
@@ -32,6 +22,8 @@ class CreateCredentials(service.Action):
 
     user_id = service.UUIDType(required=True)
     password = NewPasswordType(required=True)
+
+    success = service.BooleanType(default=False)
 
     def _create_credentials(self):
         success = True
@@ -46,13 +38,18 @@ class CreateCredentials(service.Action):
         return success
 
     def run(self, *args, **kwargs):
-        return self._create_credentials()
+        self.success = self._create_credentials()
+
+    class Options:
+        roles = {service.public: service.blacklist('password')}
 
 
 class VerifyCredentials(service.Action):
 
     user_id = service.UUIDType(required=True)
     password = service.StringType(required=True)
+
+    valid = service.BooleanType(default=False)
 
     def _verify_credentials(self):
         valid = False
@@ -62,7 +59,10 @@ class VerifyCredentials(service.Action):
         return valid
 
     def run(self, *args, **kwargs):
-        return self._verify_credentials()
+        self.valid = self._verify_credentials()
+
+    class Options:
+        roles = {service.public: service.blacklist('password')}
 
 
 class UpdateCredentials(service.Action):
@@ -70,6 +70,8 @@ class UpdateCredentials(service.Action):
     user_id = service.UUIDType(required=True)
     current_password = service.StringType(required=True)
     new_password = NewPasswordType(required=True)
+
+    success = service.BooleanType(default=False)
 
     def _update_credentials(self):
         success = False
@@ -82,4 +84,7 @@ class UpdateCredentials(service.Action):
         return success
 
     def run(self, *args, **kwargs):
-        return self._update_credentials()
+        self.success = self._update_credentials()
+
+    class Options:
+        roles = {service.public: service.whitelist('user_id', 'success')}

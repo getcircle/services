@@ -1,7 +1,7 @@
 from django.test import TestCase
 from service import exceptions
 
-from users import actions as user_actions
+from users import factories as user_factories
 
 import identities as identity_constants
 from . import actions
@@ -10,7 +10,7 @@ from . import actions
 class TestIdentityActions(TestCase):
 
     def setUp(self):
-        self.user = user_actions.CreateUser().execute()
+        self.user = user_factories.UserFactory.create()
         self.first_name = 'Michael'
         self.last_name = 'Hahn'
         self.email = 'mwhahn@gmail.com'
@@ -25,11 +25,14 @@ class TestIdentityActions(TestCase):
         }
 
     def test_create_internal_identity(self):
-        identity = actions.CreateIdentity(self.data).execute()
-        self.assertEqual(identity.first_name, self.first_name)
-        self.assertEqual(identity.last_name, self.last_name)
-        self.assertEqual(identity.email, self.email)
-        self.assertEqual(str(identity.phone_number), self.phone_number)
+        action = actions.CreateIdentity(self.data)
+        response = action.execute()
+        identity = response['identity']
+        self.assertEqual(identity['email'], self.email)
+        self.assertEqual(identity['first_name'], self.first_name)
+        self.assertEqual(identity['last_name'], self.last_name)
+        self.assertEqual(identity['phone_number'], self.phone_number)
+        self.assertEqual(identity['user_id'], str(self.user.id))
 
     def test_create_internal_identity_invalid_data(self):
         with self.assertRaises(exceptions.ValidationError):
@@ -40,23 +43,27 @@ class TestIdentityActions(TestCase):
             }).execute()
 
     def test_unique_identities_based_on_type(self):
-        identity1 = actions.CreateIdentity(self.data).execute()
-        self.assertTrue(identity1)
-        identity2 = actions.CreateIdentity(self.data).execute()
-        self.assertIsNone(identity2)
+        action = actions.CreateIdentity(self.data)
+        response = action.execute()
+        self.assertTrue(isinstance(response['identity'], dict))
+
+        action = actions.CreateIdentity(self.data)
+        response = action.execute()
+        self.assertIsNone(response['identity'])
 
     def test_get_identity_internal(self):
         actions.CreateIdentity(self.data).execute()
-        identity = actions.GetIdentity({
+        action = actions.GetIdentity({
             'type': identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
             'key': self.email,
-        }).execute()
-        self.assertTrue(identity)
-        self.assertTrue(identity.user_id)
+        })
+        response = action.execute()
+        self.assertTrue(isinstance(response['identity'], dict))
 
     def test_get_identity_internal_invalid(self):
-        identity = actions.GetIdentity({
+        action = actions.GetIdentity({
             'type': identity_constants.IDENTITY_TYPE_INTERNAL_NAME,
             'key': self.email,
-        }).execute()
-        self.assertIsNone(identity)
+        })
+        response = action.execute()
+        self.assertIsNone(response['identity'])
