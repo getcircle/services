@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('changed', models.DateTimeField(auto_now=True)),
                 ('password', models.CharField(max_length=255, null=True)),
-                ('user', models.ForeignKey(to='users.User')),
+                ('user', models.ForeignKey(to='users.User', unique=True)),
             ],
             options={
                 'abstract': False,
