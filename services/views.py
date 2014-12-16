@@ -1,25 +1,22 @@
-from service.handlers.django_handler import Handler
+from django.http import HttpResponse
+from django.utils.module_loading import import_string
+from django.views.generic import View
 
-from credentials import actions as credential_actions
-from identities import actions as identity_actions
-from users import actions as user_actions
+from service import settings as service_settings
+from service.protobufs.common import soa_pb2
 
 
-class UserService(Handler):
+class ServicesView(View):
 
-    actions = {
+    def __init__(self, *args, **kwargs):
+        super(ServicesView, self).__init__(*args, **kwargs)
+        print 'instantiating ServiceView'
+        self.transport = import_string(service_settings.DEFAULT_TRANSPORT)
 
-        # credential actions
-        'create_credentials': credential_actions.CreateCredentials,
-        'verify_credentials': credential_actions.VerifyCredentials,
-        'update_credentials': credential_actions.UpdateCredentials,
-
-        # identity actions
-        'create_identity': identity_actions.CreateIdentity,
-        'get_identity': identity_actions.GetIdentity,
-
-        # user actions
-        'create_user': user_actions.CreateUser,
-        'valid_user': user_actions.ValidUser,
-
-    }
+    def post(self, request, *args, **kwargs):
+        service_request = soa_pb2.ServiceRequest.FromString(request.body)
+        response_data = self.transport.handle_request(service_request)
+        return HttpResponse(
+            response_data,
+            content_type='application/x-protobuf',
+        )

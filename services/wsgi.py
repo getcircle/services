@@ -11,4 +11,8 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "services.settings")
 
 from django.core.wsgi import get_wsgi_application
+from .bootstrap import Bootstrap
+
+Bootstrap.bootstrap()
+
 application = get_wsgi_application()

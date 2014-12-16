@@ -1,22 +1,25 @@
-import service
+from service import (
+    actions,
+    validators,
+)
 
 from . import models
 
 
-class CreateUser(service.Action):
-
-    user_id = service.UUIDType()
+class CreateUser(actions.Action):
 
     def run(self, *args, **kwargs):
         user = models.User.objects.create()
-        self.user_id = user.id.hex
+        self.response.user_id = user.id.hex
 
 
-class ValidUser(service.Action):
+class ValidUser(actions.Action):
 
-    user_id = service.UUIDType(required=True)
-
-    exists = service.BooleanType(default=False)
+    type_validators = {
+        'user_id': [validators.is_uuid4],
+    }
 
     def run(self, *args, **kwargs):
-        self.exists = models.User.objects.filter(pk=self.user_id).exists()
+        self.response.exists = models.User.objects.filter(
+            pk=self.request.user_id,
+        ).exists()

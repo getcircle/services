@@ -4,9 +4,9 @@ from django.conf.urls import (
 )
 from django.views.decorators.csrf import csrf_exempt
 
-from .views import UserService
+from .views import ServicesView
 
 urlpatterns = patterns(
     '',
-    url(r'^$', csrf_exempt(UserService.as_view())),
+    url(r'^$', csrf_exempt(ServicesView.as_view())),
 )

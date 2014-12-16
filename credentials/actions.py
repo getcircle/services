@@ -1,5 +1,8 @@
 from django.db import IntegrityError
-import service
+from service import (
+    actions,
+    validators,
+)
 
 from . import models
 
@@ -10,27 +13,35 @@ def _get_credentials(user_id):
     )
 
 
-class NewPasswordType(service.StringType):
-
-    def __init__(self, *args, **kwargs):
-        super(NewPasswordType, self).__init__(*args, **kwargs)
-        self.min_length = 6
-        self.max_length = 24
+def validate_new_password_min_length(value):
+    return False if len(value) < 6 else True
 
 
-class CreateCredentials(service.Action):
+def validate_new_password_max_length(value):
+    return False if len(value) > 24 else True
 
-    user_id = service.UUIDType(required=True)
-    password = NewPasswordType(required=True)
 
-    success = service.BooleanType(default=False)
+class CreateCredentials(actions.Action):
+
+    type_validators = {
+        'user_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'password': {
+            validate_new_password_min_length: 'INVALID_MIN_LENGTH',
+            validate_new_password_max_length: 'INVALID_MAX_LENGTH',
+        }
+    }
+
+    # TODO add some concept of required fields on the action
 
     def _create_credentials(self):
         success = True
         credential = models.Credential(
-            user_id=self.user_id,
+            user_id=self.request.user_id,
         )
-        credential.set_password(self.password)
+        credential.set_password(self.request.password)
         try:
             credential.save()
         except IntegrityError:
@@ -38,53 +49,57 @@ class CreateCredentials(service.Action):
         return success
 
     def run(self, *args, **kwargs):
-        self.success = self._create_credentials()
+        import ipdb; ipdb.set_trace()
+        if not self._create_credentials():
+            self.note_error(
+                'DUPLICATE',
+                ('DUPLICATE', 'credentials already exist for user'),
+            )
 
-    class Options:
-        roles = {service.public: service.blacklist('password')}
 
+class VerifyCredentials(actions.Action):
 
-class VerifyCredentials(service.Action):
-
-    user_id = service.UUIDType(required=True)
-    password = service.StringType(required=True)
-
-    valid = service.BooleanType(default=False)
+    type_validators = {
+        'user_id': [validators.is_uuid4],
+    }
 
     def _verify_credentials(self):
         valid = False
-        credential = _get_credentials(self.user_id)
+        credential = _get_credentials(self.request.user_id)
         if credential:
-            valid = credential.check_password(self.password)
+            valid = credential.check_password(self.request.password)
         return valid
 
     def run(self, *args, **kwargs):
-        self.valid = self._verify_credentials()
-
-    class Options:
-        roles = {service.public: service.blacklist('password')}
+        self.response.valid = self._verify_credentials()
 
 
-class UpdateCredentials(service.Action):
+class UpdateCredentials(actions.Action):
 
-    user_id = service.UUIDType(required=True)
-    current_password = service.StringType(required=True)
-    new_password = NewPasswordType(required=True)
+    type_validators = {
+        'user_id': [validators.is_uuid4],
+    }
 
-    success = service.BooleanType(default=False)
+    field_validators = {
+        'new_password': {
+            validate_new_password_min_length: 'INVALID_MIN_LENGTH',
+            validate_new_password_max_length: 'INVALID_MAX_LENGTH',
+        }
+    }
 
     def _update_credentials(self):
         success = False
-        credential = _get_credentials(self.user_id)
+        credential = _get_credentials(self.request.user_id)
         if credential:
-            allowed = credential.check_password(self.current_password)
+            allowed = credential.check_password(self.request.current_password)
             if allowed:
-                credential.set_password(self.new_password)
+                credential.set_password(self.request.new_password)
                 success = True
         return success
 
     def run(self, *args, **kwargs):
-        self.success = self._update_credentials()
-
-    class Options:
-        roles = {service.public: service.whitelist('user_id', 'success')}
+        if not self._update_credentials():
+            self.note_error(
+                'FAILED',
+                ('FAILED', 'current password is invalid'),
+            )
