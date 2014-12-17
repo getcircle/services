@@ -30,9 +30,12 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
+    'grappelli',
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
+    'django.contrib.staticfiles',
     'django_extensions',
 
     'identities',
@@ -88,9 +91,18 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATIC_ROOT = 'static'
+
 LOCALIZED_SERVICES = [
     'users.server.Server',
     'identities.server.Server',
 ]
 
 AUTH_USER_MODEL = 'users.User'
+
+SESSION_SERIALIZER = 'services.serializers.JSONSerializer'
+
+TEMPLATE_CONTEXT_PROCESSORS = [
+    'django.contrib.auth.context_processors.auth',
+    'django.core.context_processors.request',
+]
