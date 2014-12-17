@@ -7,8 +7,8 @@ import identities as identity_constants
 
 class Identity(models.UUIDModel, models.TimestampableModel):
 
-    first_name = models.CharField(max_length=64)
-    last_name = models.CharField(max_length=64)
+    first_name = models.CharField(max_length=64, null=True)
+    last_name = models.CharField(max_length=64, null=True)
     type = models.PositiveSmallIntegerField(
         choices=identity_constants.IDENTITY_TYPES,
         default=identity_constants.IDENTITY_TYPE_INTERNAL,

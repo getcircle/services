@@ -9,4 +9,5 @@ class Server(service.control.Server):
     actions = {
         'create_user': actions.CreateUser,
         'valid_user': actions.ValidUser,
+        'authenticate_user': actions.AuthenticateUser,
     }

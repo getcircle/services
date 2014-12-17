@@ -1,6 +1,6 @@
 
 
-def copy_model_to_identity(model, identity):
+def copy_model_to_container(model, identity):
     identity.id = model.pk.hex
     user_id = model.user_id
     if hasattr(user_id, 'hex'):

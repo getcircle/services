@@ -21,12 +21,12 @@ class CreateIdentity(actions.Action):
         identity = None
         try:
             identity = models.Identity.objects.create(
-                user_id=self.request.user_id,
-                type=self.request.type,
-                first_name=self.request.first_name,
-                last_name=self.request.last_name,
-                email=self.request.email,
-                phone_number=self.request.phone_number,
+                user_id=self.request.identity.user_id,
+                type=self.request.identity.type,
+                first_name=self.request.identity.first_name,
+                last_name=self.request.identity.last_name,
+                email=self.request.identity.email,
+                phone_number=self.request.identity.phone_number,
             )
         except django.db.IntegrityError:
             pass
@@ -35,7 +35,7 @@ class CreateIdentity(actions.Action):
     def run(self, *args, **kwargs):
         model = self._create_identity()
         if model:
-            containers.copy_model_to_identity(model, self.response.identity)
+            containers.copy_model_to_container(model, self.response.identity)
 
 
 class GetIdentity(actions.Action):
@@ -49,4 +49,19 @@ class GetIdentity(actions.Action):
     def run(self, *args, **kwargs):
         model = self._get_identity()
         if model:
-            containers.copy_model_to_identity(model, self.response.identity)
+            containers.copy_model_to_container(model, self.response.identity)
+
+
+class GetIdentities(actions.Action):
+
+    type_validators = {
+        'user_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        identities = models.Identity.objects.filter(
+            user_id=self.request.user_id,
+        )
+        for model in identities:
+            container = self.response.identities.add()
+            containers.copy_model_to_container(model, container)

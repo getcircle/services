@@ -30,18 +30,24 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
+    'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.sessions',
     'django_extensions',
 
-    'credentials',
     'identities',
     'users',
 )
 
 MIDDLEWARE_CLASSES = (
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
 )
 
 ROOT_URLCONF = 'services.urls'
@@ -85,5 +91,6 @@ STATIC_URL = '/static/'
 LOCALIZED_SERVICES = [
     'users.server.Server',
     'identities.server.Server',
-    'credentials.server.Server',
 ]
+
+AUTH_USER_MODEL = 'users.User'

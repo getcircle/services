@@ -10,4 +10,5 @@ class Server(service.control.Server):
     actions = {
         'create_identity': actions.CreateIdentity,
         'get_identity': actions.GetIdentity,
+        'get_identities': actions.GetIdentities,
     }
