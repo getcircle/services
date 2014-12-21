@@ -3,7 +3,7 @@ from django.utils.module_loading import import_string
 from django.views.generic import View
 
 from service import settings as service_settings
-from service.protobufs.common import soa_pb2
+from service_protobufs import soa_pb2
 
 
 class ServicesView(View):
