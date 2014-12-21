@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
 from service import (
     actions,
     validators,
@@ -61,7 +62,7 @@ class ValidUser(actions.Action):
 class AuthenticateUser(actions.Action):
 
     def _attach_identities(self):
-        client = service.control.Client('identity')
+        client = service.control.Client('identity', token=self.response.token)
         _, response = client.call_action(
             'get_identities',
             user_id=self.response.user.id,
@@ -92,5 +93,7 @@ class AuthenticateUser(actions.Action):
         user = self._handle_authentication()
         if not self.is_error():
             self.response.authenticated = True
+            token, _ = Token.objects.get_or_create(user=user)
+            self.response.token = token.key
             containers.copy_model_to_container(user, self.response.user)
             self._attach_identities()
