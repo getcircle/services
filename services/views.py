@@ -11,6 +11,14 @@ class ServicesView(APIView):
         super(ServicesView, self).__init__(*args, **kwargs)
         self.transport = import_string(service_settings.DEFAULT_TRANSPORT)
 
+    def perform_authentication(self, request):
+        # TODO do something better here
+        pass
+
+    def permission_denied(self, request):
+        # TODO do something better here
+        pass
+
     def post(self, request, *args, **kwargs):
         service_request = soa_pb2.ServiceRequest.FromString(request.body)
         # TODO: come up with a better way to do this
