@@ -36,7 +36,10 @@ class CreateUser(actions.Action):
         )
 
         self.request.identity.user_id = user.id.hex
-        client = service.control.Client('identity')
+        client = service.control.Client(
+            'identity',
+            token=self.token,
+        )
         action_response, response = client.call_action(
             'create_identity',
             identity=self.request.identity,
