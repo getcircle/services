@@ -43,6 +43,7 @@ INSTALLED_APPS = (
 
     'identities',
     'notes',
+    'organizations',
     'users',
 )
 
@@ -98,8 +99,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
-    'users.server.Server',
     'identities.server.Server',
+    'organizations.server.Server',
+    'users.server.Server',
 ]
 
 AUTH_USER_MODEL = 'users.User'

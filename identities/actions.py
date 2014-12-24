@@ -31,7 +31,7 @@ class CreateIdentity(actions.Action):
         except django.db.IntegrityError:
             self.note_error(
                 'DUPLICATE',
-                ('DUPLICATE', 'identity already exists'),
+                ('identity', 'ALREADY_EXISTS'),
             )
         return identity
 
@@ -56,7 +56,7 @@ class GetIdentity(actions.Action):
         else:
             self.note_error(
                 'DOES_NOT_EXIST',
-                ('DOES_NOT_EXIST', 'identity doesn\'t exist'),
+                ('identity', 'identity doesn\'t exist'),
             )
 
 
