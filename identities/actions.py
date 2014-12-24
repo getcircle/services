@@ -14,7 +14,7 @@ from . import (
 class CreateIdentity(actions.Action):
 
     type_validators = {
-        'user_id': [validators.is_uuid4],
+        'identity.user_id': [validators.is_uuid4],
     }
 
     def _create_identity(self):
@@ -29,7 +29,10 @@ class CreateIdentity(actions.Action):
                 phone_number=self.request.identity.phone_number,
             )
         except django.db.IntegrityError:
-            pass
+            self.note_error(
+                'DUPLICATE',
+                ('DUPLICATE', 'identity already exists'),
+            )
         return identity
 
     def run(self, *args, **kwargs):
@@ -50,6 +53,11 @@ class GetIdentity(actions.Action):
         model = self._get_identity()
         if model:
             containers.copy_model_to_container(model, self.response.identity)
+        else:
+            self.note_error(
+                'DOES_NOT_EXIST',
+                ('DOES_NOT_EXIST', 'identity doesn\'t exist'),
+            )
 
 
 class GetIdentities(actions.Action):
