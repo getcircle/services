@@ -27,28 +27,31 @@ class TestIdentityActions(TestCase):
 
     def test_create_identity_invalid_user_id(self):
         self.data['user_id'] = 'invalid'
-        action_response, response = self.client.call_action(
+        response = self.client.call_action(
             'create_identity',
             identity=self.data,
         )
-        self.assertFalse(action_response.result.success)
-        self.assertIn('FIELD_ERROR', action_response.result.errors)
+        self.assertFalse(response.success)
+        self.assertIn('FIELD_ERROR', response.errors)
 
-        error = action_response.result.error_details[0]
+        error = response.error_details[0]
         self.assertEqual('identity.user_id', error.key)
         self.assertEqual('INVALID', error.detail)
 
     def test_create_identity_internal(self):
-        action_response, response = self.client.call_action(
+        response = self.client.call_action(
             'create_identity',
             identity=self.data,
         )
-        self.assertTrue(action_response.result.success)
-        self.assertEqual(response.identity.email, self.email)
-        self.assertEqual(response.identity.first_name, self.first_name)
-        self.assertEqual(response.identity.last_name, self.last_name)
-        self.assertEqual(response.identity.phone_number, self.phone_number)
-        self.assertEqual(response.identity.user_id, self.user_id)
+        self.assertTrue(response.success)
+        self.assertEqual(response.result.identity.email, self.email)
+        self.assertEqual(response.result.identity.first_name, self.first_name)
+        self.assertEqual(response.result.identity.last_name, self.last_name)
+        self.assertEqual(
+            response.result.identity.phone_number,
+            self.phone_number,
+        )
+        self.assertEqual(response.result.identity.user_id, self.user_id)
 
     # XXX
     @unittest.skip(
@@ -56,46 +59,46 @@ class TestIdentityActions(TestCase):
     )
     def test_create_internal_identity_invalid_data(self):
         self.data['type'] = 'invalid'
-        action_response, _ = self.client.call_action(
+        response = self.client.call_action(
             'create_identity',
             identity=self.data,
         )
-        self.assertFalse(action_response.result.success)
+        self.assertFalse(response.success)
 
     def test_unique_identities_based_on_type(self):
-        action_response, _ = self.client.call_action(
+        response = self.client.call_action(
             'create_identity',
             identity=self.data,
         )
-        self.assertTrue(action_response.result.success)
+        self.assertTrue(response.success)
 
-        action_response, _ = self.client.call_action(
+        response = self.client.call_action(
             'create_identity',
             identity=self.data,
         )
-        self.assertFalse(action_response.result.success)
-        self.assertIn('DUPLICATE', action_response.result.errors)
+        self.assertFalse(response.success)
+        self.assertIn('DUPLICATE', response.errors)
 
     def test_get_identity_internal(self):
-        action_response, _ = self.client.call_action(
+        response = self.client.call_action(
             'create_identity',
             identity=self.data,
         )
-        self.assertTrue(action_response.result.success)
+        self.assertTrue(response.success)
 
-        action_response, response = self.client.call_action(
+        response = self.client.call_action(
             'get_identity',
             type=IdentityService.Containers.Identity.INTERNAL,
             key=self.email,
         )
-        self.assertTrue(action_response.result.success)
-        self.assertEqual(response.identity.email, self.email)
+        self.assertTrue(response.success)
+        self.assertEqual(response.result.identity.email, self.email)
 
     def test_get_identity_internal_non_existant(self):
-        action_response, _ = self.client.call_action(
+        response = self.client.call_action(
             'get_identity',
             type=IdentityService.Containers.Identity.INTERNAL,
             key=self.email,
         )
-        self.assertFalse(action_response.result.success)
-        self.assertIn('DOES_NOT_EXIST', action_response.result.errors)
+        self.assertFalse(response.success)
+        self.assertIn('DOES_NOT_EXIST', response.errors)

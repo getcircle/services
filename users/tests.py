@@ -18,46 +18,46 @@ class TestUserActions(TestCase):
         }
 
     def test_create_user_minimum_password_length(self):
-        action_response, _ = self.client.call_action(
+        response = self.client.call_action(
             'create_user',
             password='s',
             identity=self.identity_data,
         )
-        self.assertFalse(action_response.result.success)
-        self.assertIn('FIELD_ERROR', action_response.result.errors)
-        error = action_response.result.error_details[0]
+        self.assertFalse(response.success)
+        self.assertIn('FIELD_ERROR', response.errors)
+        error = response.error_details[0]
         self.assertEqual(error.detail, 'INVALID_MIN_LENGTH')
 
     def test_create_user_maximum_password_length(self):
-        action_response, _ = self.client.call_action(
+        response = self.client.call_action(
             'create_user',
             password='s' * 100,
             identity=self.identity_data,
         )
-        self.assertFalse(action_response.result.success)
-        self.assertIn('FIELD_ERROR', action_response.result.errors)
-        error = action_response.result.error_details[0]
+        self.assertFalse(response.success)
+        self.assertIn('FIELD_ERROR', response.errors)
+        error = response.error_details[0]
         self.assertEqual(error.detail, 'INVALID_MAX_LENGTH')
 
     def test_create_user(self):
         # XXX we should be stubbing out the call to the identity_service within
         # this action
-        action_response, response = self.client.call_action(
+        response = self.client.call_action(
             'create_user',
             password='a_valid_password',
             identity=self.identity_data,
         )
-        self.assertTrue(action_response.result.success)
+        self.assertTrue(response.success)
 
-        self.assertTrue(uuid.UUID(response.user.id, version=4))
+        self.assertTrue(uuid.UUID(response.result.user.id, version=4))
         self.assertEqual(
-            response.user.primary_email,
+            response.result.user.primary_email,
             self.identity_data['email'],
         )
-        self.assertTrue(response.user.is_active)
-        self.assertFalse(response.user.is_admin)
+        self.assertTrue(response.result.user.is_active)
+        self.assertFalse(response.result.user.is_admin)
 
-        identity = response.identities[0]
+        identity = response.result.identities[0]
         self.assertEqual(identity.first_name, self.identity_data['first_name'])
         self.assertEqual(identity.last_name, self.identity_data['last_name'])
         self.assertEqual(identity.email, self.identity_data['email'])

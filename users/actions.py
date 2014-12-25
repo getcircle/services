@@ -40,14 +40,14 @@ class CreateUser(actions.Action):
             'identity',
             token=self.token,
         )
-        action_response, response = client.call_action(
+        response = client.call_action(
             'create_identity',
             identity=self.request.identity,
         )
 
         containers.copy_model_to_container(user, self.response.user)
         identity = self.response.identities.add()
-        identity.CopyFrom(response.identity)
+        identity.CopyFrom(response.result.identity)
 
 
 class ValidUser(actions.Action):

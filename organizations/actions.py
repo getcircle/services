@@ -74,14 +74,6 @@ class CreateTeam(actions.Action):
         }
     }
 
-    def _organization_exists(self):
-        client = service.control.Client('organization', token=self.token)
-        action_response, _ = client.call_action(
-            'valid_organization',
-            organization_id=self.request.organization_id,
-        )
-        return action_response.result.success
-
     def _get_parent_team(self):
         if not self.request.child_of:
             return None
