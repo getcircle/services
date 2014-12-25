@@ -15,7 +15,7 @@ class Identity(models.UUIDModel, models.TimestampableModel):
     )
     email = models.EmailField()
     phone_number = PhoneNumberField(null=True)
-    user = models.ForeignKey('users.User')
+    user_id = models.UUIDField()
 
     class Meta:
         unique_together = ('type', 'email')
