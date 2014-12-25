@@ -9,15 +9,15 @@ class LTreeField(models.Field):
 
 class Organization(models.UUIDModel, models.TimestampableModel):
 
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=64)
     domain = models.CharField(max_length=64, unique=True)
 
 
 class Team(models.UUIDModel, models.TimestampableModel):
 
-    name = models.CharField(max_length=256)
-    owner_id = models.UUIDField()
-    organization = models.ForeignKey(Organization)
+    name = models.CharField(max_length=64)
+    owner_id = models.UUIDField(db_index=True)
+    organization = models.ForeignKey(Organization, db_index=True)
     path = LTreeField(null=True)
 
     def get_path(self):
@@ -30,10 +30,13 @@ class Team(models.UUIDModel, models.TimestampableModel):
         return [name_dict[p] for p in path_parts]
 
 
-class TeamMembership(models.UUIDModel, models.TimestampableModel):
+class Address(models.UUIDModel, models.TimestampableModel):
 
-    team = models.ForeignKey(Team)
-    user_id = models.UUIDField()
-
-    class Meta:
-        unique_together = ('team', 'user_id')
+    organization_id = models.ForeignKey(Organization, db_index=True)
+    name = models.CharField(max_length=64)
+    address_1 = models.CharField(max_length=128)
+    address_2 = models.CharField(max_length=128, blank=True)
+    city = models.CharField(max_length=64)
+    region = models.CharField(max_length=64)
+    postal_code = models.CharField(max_length=5)
+    country_code = models.CharField(max_length=2)
