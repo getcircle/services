@@ -19,19 +19,8 @@ def valid_team(team_id):
     return models.Team.objects.filter(pk=team_id).exists()
 
 
-def add_team_members(team_id, user_ids):
-    team_members = [models.TeamMembership(
-        team_id=team_id,
-        user_id=user_id,
-    ) for user_id in user_ids]
-    models.TeamMembership.objects.bulk_create(team_members)
-
-
-def remove_team_members(team_id, user_ids):
-    models.TeamMembership.objects.filter(
-        team_id=team_id,
-        user_id__in=user_ids,
-    ).delete()
+def valid_address(address_id):
+    return models.Address.objects.filter(pk=address_id).exists()
 
 
 class CreateOrganization(actions.Action):
@@ -117,3 +106,41 @@ class CreateTeam(actions.Action):
     def run(self, *args, **kwargs):
         team = self._create_team()
         containers.copy_team_to_container(team, self.response.team)
+
+
+class CreateAddress(actions.Action):
+
+    type_validators = {
+        'address.organization_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        address = models.Address.objects.create(
+            organization_id=self.request.address.organization_id,
+            name=self.request.address.name,
+            address_1=self.request.address.address_1,
+            address_2=self.request.address.address_2,
+            city=self.request.address.city,
+            region=self.request.address.region,
+            postal_code=self.request.address.postal_code,
+            country_code=self.request.address.country_code,
+        )
+        containers.copy_address_to_container(address, self.response.address)
+
+
+class DeleteAddress(actions.Action):
+
+    type_validators = {
+        'address_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'address_id': {
+            valid_address: 'DOES_NOT_EXIST',
+        }
+    }
+
+    def run(self, *args, **kwargs):
+        # XXX should we prevent this since people may have profiles associated
+        # with it?
+        models.Address.objects.filter(pk=self.request.address_id).delete()

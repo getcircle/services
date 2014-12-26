@@ -2,6 +2,8 @@ import uuid
 from django.test import TestCase
 import service.control
 
+from . import models
+
 
 class TestOrganizations(TestCase):
 
@@ -12,6 +14,14 @@ class TestOrganizations(TestCase):
         )
         self.organization_name = 'RH Labs Inc.'
         self.organization_domain = 'rhlabs.com'
+        self.address_data = {
+            'name': 'Burlingame Office',
+            'address_1': '319 Primrose',
+            'city': 'Burlingame',
+            'region': 'California',
+            'postal_code': '94010',
+            'country_code': 'US',
+        }
 
     def _verify_error(self, response, code, key, detail):
         self.assertFalse(response.success)
@@ -69,6 +79,17 @@ class TestOrganizations(TestCase):
             )
             teams.append(last_team)
         return teams
+
+    def _create_address(self, organization_id=None):
+        if organization_id is None:
+            organization_id = self._create_organization().id
+        self.address_data['organization_id'] = organization_id
+        response = self.client.call_action(
+            'create_address',
+            address=self.address_data,
+        )
+        self.assertTrue(response.success)
+        return response.result.address
 
     def test_create_organization(self):
         response = self.client.call_action(
@@ -234,3 +255,45 @@ class TestOrganizations(TestCase):
         #)
         #self.assertFalse(action_response.result.success)
         #self.assertIn('ROOT_ALREADY_EXISTS', action_response.result.errors)
+
+    def test_create_address_invalid_organization_id(self):
+        self.address_data['organization_id'] = 'invalid'
+        response = self.client.call_action(
+            'create_address',
+            address=self.address_data,
+        )
+        self._verify_field_error(response, 'address.organization_id')
+
+    def test_create_address(self):
+        organization = self._create_organization()
+        self.address_data['organization_id'] = organization.id
+        response = self.client.call_action(
+            'create_address',
+            address=self.address_data,
+        )
+        self.assertTrue(response.success)
+        for key, value in self.address_data.iteritems():
+            self.assertEqual(getattr(response.result.address, key), value)
+
+    def test_delete_address_invalid_address_id(self):
+        response = self.client.call_action(
+            'delete_address',
+            address_id='invalid',
+        )
+        self._verify_field_error(response, 'address_id')
+
+    def test_delete_address_does_not_exist(self):
+        response = self.client.call_action(
+            'delete_address',
+            address_id=uuid.uuid4().hex,
+        )
+        self._verify_field_error(response, 'address_id', 'DOES_NOT_EXIST')
+
+    def test_delete_address(self):
+        address = self._create_address()
+        response = self.client.call_action(
+            'delete_address',
+            address_id=address.id,
+        )
+        self.assertTrue(response.success)
+        self.assertFalse(models.Address.objects.filter(pk=address.id).exists())

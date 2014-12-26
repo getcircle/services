@@ -9,4 +9,6 @@ class Server(service.control.Server):
     actions = {
         'create_organization': actions.CreateOrganization,
         'create_team': actions.CreateTeam,
+        'create_address': actions.CreateAddress,
+        'delete_address': actions.DeleteAddress,
     }

@@ -32,7 +32,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
 class Address(models.UUIDModel, models.TimestampableModel):
 
-    organization_id = models.ForeignKey(Organization, db_index=True)
+    organization = models.ForeignKey(Organization, db_index=True)
     name = models.CharField(max_length=64)
     address_1 = models.CharField(max_length=128)
     address_2 = models.CharField(max_length=128, blank=True)
