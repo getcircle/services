@@ -119,4 +119,4 @@ REST_FRAMEWORK = {
     )
 }
 
-TEST_RUNNER = 'services.tests.runner.ServicesTestSuiteRunner'
+TEST_RUNNER = 'services.test.runner.ServicesTestSuiteRunner'
