@@ -1,6 +1,5 @@
 import uuid
 import django.db
-import service.control
 from service import (
     actions,
     validators,
@@ -118,87 +117,3 @@ class CreateTeam(actions.Action):
     def run(self, *args, **kwargs):
         team = self._create_team()
         containers.copy_team_to_container(team, self.response.team)
-
-
-class AddTeamMember(actions.Action):
-
-    type_validators = {
-        'team_id': [validators.is_uuid4],
-        'user_id': [validators.is_uuid4],
-    }
-
-    def run(self, *args, **kwargs):
-        # XXX should we be doing checks to ensure these users exist?
-        add_team_members(self.request.team_id, [self.request.user_id])
-
-
-class GetTeamMembers(actions.Action):
-
-    type_validators = {
-        'team_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'team_id': {
-            valid_team: 'DOES_NOT_EXIST',
-        }
-    }
-
-    def run(self, *args, **kwargs):
-        # TODO paginate
-        members = models.TeamMembership.objects.filter(
-            team_id=self.request.team_id,
-        ).values_list('user_id', flat=True)
-        self.response.members.extend(map(lambda x: x.hex, members))
-
-
-class RemoveTeamMember(actions.Action):
-
-    type_validators = {
-        'team_id': [validators.is_uuid4],
-        'user_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'team_id': {
-            valid_team: 'DOES_NOT_EXIST',
-        },
-    }
-
-    def run(self, *args, **kwargs):
-        # XXX access control is going to be important here
-        remove_team_members(self.request.team_id, [self.request.user_id])
-
-
-class AddTeamMembers(actions.Action):
-
-    type_validators = {
-        'team_id': [validators.is_uuid4],
-        'user_ids': [validators.is_uuid4_list],
-    }
-
-    field_validators = {
-        'team_id': {
-            valid_team: 'DOES_NOT_EXIST',
-        }
-    }
-
-    def run(self, *args, **kwargs):
-        add_team_members(self.request.team_id, self.request.user_ids)
-
-
-class RemoveTeamMembers(actions.Action):
-
-    type_validators = {
-        'team_id': [validators.is_uuid4],
-        'user_ids': [validators.is_uuid4_list],
-    }
-
-    field_validators = {
-        'team_id': {
-            valid_team: 'DOES_NOT_EXIST',
-        }
-    }
-
-    def run(self, *args, **kwargs):
-        remove_team_members(self.request.team_id, self.request.user_ids)
