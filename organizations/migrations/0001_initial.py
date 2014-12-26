@@ -66,7 +66,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='address',
-            name='organization_id',
+            name='organization',
             field=models.ForeignKey(to='organizations.Organization'),
             preserve_default=True,
         ),
