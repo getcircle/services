@@ -4,7 +4,8 @@ from service import (
     validators,
 )
 
-import identities as identity_constants
+from protobufs.identity_service_pb2 import IdentityService
+
 from . import (
     containers,
     models,
@@ -45,7 +46,7 @@ class GetIdentity(actions.Action):
 
     def _get_identity(self):
         parameters = {'type': self.request.type}
-        if self.request.type == identity_constants.IDENTITY_TYPE_INTERNAL:
+        if self.request.type == IdentityService.Containers.Identity.INTERNAL:
             parameters['email'] = self.request.key
         return models.Identity.objects.get_or_none(**parameters)
 

@@ -10,7 +10,7 @@ class Identity(models.UUIDModel, models.TimestampableModel):
     last_name = models.CharField(max_length=64, null=True)
     type = models.PositiveSmallIntegerField(
         choices=(
-            ('INTERNAL', IdentityService.Containers.Identity.INTERNAL),
+            (IdentityService.Containers.Identity.INTERNAL, 'INTERNAL'),
         ),
         default=IdentityService.Containers.Identity.INTERNAL,
     )
