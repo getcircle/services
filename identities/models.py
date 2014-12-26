@@ -1,8 +1,7 @@
 from phonenumber_field.modelfields import PhoneNumberField
 
 from common.db import models
-
-import identities as identity_constants
+from protobufs.identity_service_pb2 import IdentityService
 
 
 class Identity(models.UUIDModel, models.TimestampableModel):
@@ -10,8 +9,10 @@ class Identity(models.UUIDModel, models.TimestampableModel):
     first_name = models.CharField(max_length=64, null=True)
     last_name = models.CharField(max_length=64, null=True)
     type = models.PositiveSmallIntegerField(
-        choices=identity_constants.IDENTITY_TYPES,
-        default=identity_constants.IDENTITY_TYPE_INTERNAL,
+        choices=(
+            ('INTERNAL', IdentityService.Containers.Identity.INTERNAL),
+        ),
+        default=IdentityService.Containers.Identity.INTERNAL,
     )
     email = models.EmailField()
     phone_number = PhoneNumberField(null=True)
