@@ -4,12 +4,8 @@ from service import (
     actions,
     validators,
 )
-import service.control
 
-from . import (
-    containers,
-    models,
-)
+from . import models
 
 
 def validate_new_password_min_length(value):
@@ -31,23 +27,10 @@ class CreateUser(actions.Action):
 
     def run(self, *args, **kwargs):
         user = models.User.objects.create_user(
-            primary_email=self.request.identity.email,
+            primary_email=self.request.email,
             password=self.request.password,
         )
-
-        self.request.identity.user_id = user.id.hex
-        client = service.control.Client(
-            'identity',
-            token=self.token,
-        )
-        response = client.call_action(
-            'create_identity',
-            identity=self.request.identity,
-        )
-
-        containers.copy_model_to_container(user, self.response.user)
-        identity = self.response.identities.add()
-        identity.CopyFrom(response.result.identity)
+        user.to_protobuf(self.response.user)
 
 
 class ValidUser(actions.Action):
@@ -63,14 +46,6 @@ class ValidUser(actions.Action):
 
 
 class AuthenticateUser(actions.Action):
-
-    def _attach_identities(self):
-        client = service.control.Client('identity', token=self.response.token)
-        _, response = client.call_action(
-            'get_identities',
-            user_id=self.response.user.id,
-        )
-        self.response.user.identities.MergeFrom(response.identities)
 
     def _handle_authentication(self):
         auth_params = {}
@@ -98,5 +73,4 @@ class AuthenticateUser(actions.Action):
             self.response.authenticated = True
             token, _ = Token.objects.get_or_create(user=user)
             self.response.token = token.key
-            containers.copy_model_to_container(user, self.response.user)
-            self._attach_identities()
+            user.to_protobuf(self.response.user)
