@@ -11,4 +11,5 @@ class Server(service.control.Server):
         'create_team': actions.CreateTeam,
         'create_address': actions.CreateAddress,
         'delete_address': actions.DeleteAddress,
+        'get_address': actions.GetAddress,
     }

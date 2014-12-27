@@ -1,6 +1,7 @@
 import uuid
 import service.control
 
+from services import fuzzy
 from services.test import TestCase
 from . import models
 
@@ -26,8 +27,10 @@ class TestOrganizations(TestCase):
     def _create_organization(self, name=None, domain=None):
         response = self.client.call_action(
             'create_organization',
-            name=name or self.organization_name,
-            domain=domain or self.organization_domain,
+            organization={
+                'name': name or self.organization_name,
+                'domain': domain or self.organization_domain,
+            }
         )
         self.assertTrue(response.success)
         return response.result.organization
@@ -44,9 +47,11 @@ class TestOrganizations(TestCase):
 
         response = self.client.call_action(
             'create_team',
-            organization_id=organization_id,
-            owner_id=owner_id or uuid.uuid4().hex,
-            name=name,
+            team={
+                'organization_id': organization_id,
+                'owner_id': owner_id or fuzzy.FuzzyUUID().fuzz(),
+                'name': name,
+            },
             child_of=child_of,
         )
         self.assertTrue(response.success)
@@ -84,8 +89,10 @@ class TestOrganizations(TestCase):
     def test_create_organization(self):
         response = self.client.call_action(
             'create_organization',
-            name=self.organization_name,
-            domain=self.organization_domain,
+            organization={
+                'name': self.organization_name,
+                'domain': self.organization_domain,
+            }
         )
         self.assertTrue(response.success)
 
@@ -95,89 +102,109 @@ class TestOrganizations(TestCase):
         self.assertEqual(organization.domain, self.organization_domain)
 
     def test_create_organization_duplicate_domain(self):
+        organization_data = {
+            'name': self.organization_name,
+            'domain': self.organization_domain,
+        }
         response = self.client.call_action(
             'create_organization',
-            name=self.organization_name,
-            domain=self.organization_domain,
+            organization=organization_data,
         )
         self.assertTrue(response.success)
 
         response = self.client.call_action(
             'create_organization',
-            name=self.organization_name,
-            domain=self.organization_domain,
+            organization=organization_data,
         )
-        self._verify_field_error(response, 'domain', 'DUPLICATE')
+        self._verify_field_error(response, 'organization.domain', 'DUPLICATE')
 
     def test_create_team_invalid_owner_id(self):
         organization = self._create_organization()
+        team_data = {
+            'organization_id': organization.id,
+            'owner_id': 'invalid',
+            'name': fuzzy.FuzzyText().fuzz(),
+        }
         response = self.client.call_action(
             'create_team',
-            organization_id=organization.id,
-            owner_id='invalid',
-            name='E-Staff',
+            team=team_data,
         )
-        self._verify_field_error(response, 'owner_id')
+        self._verify_field_error(response, 'team.owner_id')
 
     def test_create_team_invalid_organization_id(self):
+        team_data = {
+            'organization_id': 'invalid',
+            'owner_id': fuzzy.FuzzyUUID().fuzz(),
+            'name': fuzzy.FuzzyText().fuzz(),
+        }
         response = self.client.call_action(
             'create_team',
-            organization_id='invalid',
-            owner_id=uuid.uuid4().hex,
-            name='E-Staff',
+            team=team_data,
         )
-        self._verify_field_error(response, 'organization_id')
+        self._verify_field_error(response, 'team.organization_id')
 
     def test_create_team_non_existant_organization(self):
+        team_data = {
+            'organization_id': fuzzy.FuzzyUUID().fuzz(),
+            'owner_id': fuzzy.FuzzyUUID().fuzz(),
+            'name': fuzzy.FuzzyText().fuzz(),
+        }
         response = self.client.call_action(
             'create_team',
-            organization_id=uuid.uuid4().hex,
-            owner_id=uuid.uuid4().hex,
-            name='E-Staff',
+            team=team_data,
         )
         self._verify_field_error(
             response,
-            'organization_id',
+            'team.organization_id',
             'DOES_NOT_EXIST',
         )
 
     def test_create_team_null_child_of_means_root(self):
-        owner_id = uuid.uuid4().hex
+        owner_id = fuzzy.FuzzyUUID().fuzz()
         organization = self._create_organization()
+        team_data = {
+            'organization_id': organization.id,
+            'owner_id': owner_id,
+            'name': fuzzy.FuzzyText().fuzz(),
+        }
         response = self.client.call_action(
             'create_team',
-            organization_id=organization.id,
-            owner_id=owner_id,
-            name='E-Staff'
+            team=team_data,
         )
         self.assertTrue(response.success)
 
         team = response.result.team
         self.assertTrue(uuid.UUID(team.id, version=4))
         self.assertEqual(team.organization_id, organization.id)
-        self.assertEqual(team.name, 'E-Staff')
+        self.assertEqual(team.name, team_data['name'])
         self.assertEqual(team.owner_id, owner_id)
-        self.assertEqual(team.path, ['E-Staff'])
+        self.assertEqual(team.path, [team_data['name']])
 
     def test_create_team_invalid_child_of(self):
         organization = self._create_organization()
+        team_data = {
+            'organization_id': organization.id,
+            'owner_id': fuzzy.FuzzyUUID().fuzz(),
+            'name': fuzzy.FuzzyText().fuzz(),
+        }
         response = self.client.call_action(
             'create_team',
-            organization_id=organization.id,
-            owner_id=uuid.uuid4().hex,
-            name='Engineering',
+            team=team_data,
             child_of='invalid',
         )
         self._verify_field_error(response, 'child_of')
 
     def test_create_team_non_existant_child_of(self):
         organization = self._create_organization()
+        team_data = {
+            'organization_id': organization.id,
+            'owner_id': fuzzy.FuzzyUUID().fuzz(),
+            'name': fuzzy.FuzzyText().fuzz(),
+        }
         response = self.client.call_action(
             'create_team',
-            organization_id=organization.id,
-            owner_id=uuid.uuid4().hex,
-            name='Engineering',
-            child_of=uuid.uuid4().hex,
+            team=team_data,
+            child_of=fuzzy.FuzzyUUID().fuzz(),
         )
         self._verify_field_error(response, 'child_of', 'DOES_NOT_EXIST')
 
@@ -189,11 +216,14 @@ class TestOrganizations(TestCase):
             name='E-Staff',
         )
 
+        team_data = {
+            'organization_id': organization_2.id,
+            'owner_id': fuzzy.FuzzyUUID().fuzz(),
+            'name': fuzzy.FuzzyText().fuzz(),
+        }
         response = self.client.call_action(
             'create_team',
-            organization_id=organization_2.id,
-            owner_id=uuid.uuid4().hex,
-            name='Engineering',
+            team=team_data,
             child_of=root_team.id,
         )
         self._verify_field_error(response, 'child_of', 'DOES_NOT_EXIST')
@@ -207,9 +237,11 @@ class TestOrganizations(TestCase):
 
         response = self.client.call_action(
             'create_team',
-            organization_id=organization.id,
-            owner_id=uuid.uuid4().hex,
-            name='Engineering',
+            team={
+                'organization_id': organization.id,
+                'owner_id': fuzzy.FuzzyUUID().fuzz(),
+                'name': 'Engineering',
+            },
             child_of=root_team.id,
         )
         self.assertTrue(response.success)
@@ -275,7 +307,7 @@ class TestOrganizations(TestCase):
     def test_delete_address_does_not_exist(self):
         response = self.client.call_action(
             'delete_address',
-            address_id=uuid.uuid4().hex,
+            address_id=fuzzy.FuzzyUUID().fuzz(),
         )
         self._verify_field_error(response, 'address_id', 'DOES_NOT_EXIST')
 
@@ -287,3 +319,26 @@ class TestOrganizations(TestCase):
         )
         self.assertTrue(response.success)
         self.assertFalse(models.Address.objects.filter(pk=address.id).exists())
+
+    def test_get_address_invalid_address_id(self):
+        response = self.client.call_action(
+            'get_address',
+            address_id='invalid',
+        )
+        self._verify_field_error(response, 'address_id')
+
+    def test_get_address_does_not_exist(self):
+        response = self.client.call_action(
+            'get_address',
+            address_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        self._verify_field_error(response, 'address_id', 'DOES_NOT_EXIST')
+
+    def test_get_address(self):
+        expected = self._create_address()
+        response = self.client.call_action(
+            'get_address',
+            address_id=expected.id,
+        )
+        self.assertTrue(response.success)
+        self._verify_containers(expected, response.result.address)

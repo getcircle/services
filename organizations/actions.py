@@ -5,10 +5,7 @@ from service import (
     validators,
 )
 
-from . import (
-    containers,
-    models,
-)
+from . import models
 
 
 def valid_organization(organization_id):
@@ -28,36 +25,32 @@ class CreateOrganization(actions.Action):
     def _create_organization(self):
         organization = None
         try:
-            organization = models.Organization.objects.create(
-                name=self.request.name,
-                domain=self.request.domain,
+            organization = models.Organization.objects.from_protobuf(
+                self.request.organization,
             )
         except django.db.IntegrityError:
             self.note_error(
                 'FIELD_ERROR',
-                ('domain', 'DUPLICATE'),
+                ('organization.domain', 'DUPLICATE'),
             )
         return organization
 
     def run(self, *args, **kwargs):
         model = self._create_organization()
         if model:
-            containers.copy_organization_to_container(
-                model,
-                self.response.organization,
-            )
+            model.to_protobuf(self.response.organization)
 
 
 class CreateTeam(actions.Action):
 
     type_validators = {
-        'owner_id': [validators.is_uuid4],
-        'organization_id': [validators.is_uuid4],
+        'team.owner_id': [validators.is_uuid4],
+        'team.organization_id': [validators.is_uuid4],
         'child_of': [validators.is_uuid4],
     }
 
     field_validators = {
-        'organization_id': {
+        'team.organization_id': {
             valid_organization: 'DOES_NOT_EXIST',
         }
     }
@@ -79,7 +72,7 @@ class CreateTeam(actions.Action):
                 parent_team = self._get_parent_team()
                 if (
                     parent_team is None or
-                    parent_team.organization_id.hex != self.request.organization_id
+                    str(parent_team.organization_id) != self.request.team.organization_id
                 ):
                     self.note_field_error('child_of', 'DOES_NOT_EXIST')
 
@@ -90,22 +83,18 @@ class CreateTeam(actions.Action):
         parent_team = self._get_parent_team()
         return parent_team.path + '.' + team_id
 
-    # XXX this should be transaction.commit_on_success or whatever the django
-    # 1.7 equivalent is
     def _create_team(self):
         team_id = uuid.uuid4()
         path = self._resolve_path(team_id.hex)
-        return models.Team.objects.create(
+        return models.Team.objects.from_protobuf(
+            self.request.team,
             id=team_id,
-            name=self.request.name,
-            owner_id=self.request.owner_id,
-            organization_id=self.request.organization_id,
             path=path,
         )
 
     def run(self, *args, **kwargs):
         team = self._create_team()
-        containers.copy_team_to_container(team, self.response.team)
+        team.to_protobuf(self.response.team, path=team.get_path())
 
 
 class CreateAddress(actions.Action):
@@ -115,17 +104,10 @@ class CreateAddress(actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        address = models.Address.objects.create(
-            organization_id=self.request.address.organization_id,
-            name=self.request.address.name,
-            address_1=self.request.address.address_1,
-            address_2=self.request.address.address_2,
-            city=self.request.address.city,
-            region=self.request.address.region,
-            postal_code=self.request.address.postal_code,
-            country_code=self.request.address.country_code,
+        address = models.Address.objects.from_protobuf(
+            self.request.address,
         )
-        containers.copy_address_to_container(address, self.response.address)
+        address.to_protobuf(self.response.address)
 
 
 class DeleteAddress(actions.Action):
@@ -144,3 +126,20 @@ class DeleteAddress(actions.Action):
         # XXX should we prevent this since people may have profiles associated
         # with it?
         models.Address.objects.filter(pk=self.request.address_id).delete()
+
+
+class GetAddress(actions.Action):
+
+    type_validators = {
+        'address_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'address_id': {
+            valid_address: 'DOES_NOT_EXIST',
+        }
+    }
+
+    def run(self, *args, **kwargs):
+        address = models.Address.objects.get(pk=self.request.address_id)
+        address.to_protobuf(self.response.address)

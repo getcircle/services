@@ -12,3 +12,7 @@ class TestCase(DjangoTestCase):
 
     def _verify_field_error(self, response, key, detail='INVALID'):
         self._verify_error(response, 'FIELD_ERROR', key, detail)
+
+    def _verify_containers(self, expected, to_verify):
+        for field, value in expected.ListFields():
+            self.assertEqual(getattr(to_verify, field.name, None), value)
