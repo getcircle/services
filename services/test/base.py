@@ -1,7 +1,7 @@
-from django.test import TestCase
+from django.test import TestCase as DjangoTestCase
 
 
-class BaseTestCase(TestCase):
+class TestCase(DjangoTestCase):
 
     def _verify_error(self, response, code, key, detail):
         self.assertFalse(response.success)

@@ -1,11 +1,11 @@
 import uuid
 import service.control
 
-from services.test.base import BaseTestCase
+from services.test import TestCase
 from . import models
 
 
-class TestOrganizations(BaseTestCase):
+class TestOrganizations(TestCase):
 
     def setUp(self):
         self.client = service.control.Client(
