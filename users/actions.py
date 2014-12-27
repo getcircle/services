@@ -18,12 +18,14 @@ def validate_new_password_max_length(value):
 
 class CreateUser(actions.Action):
 
-    field_validators = {
-        'password': {
-            validate_new_password_min_length: 'INVALID_MIN_LENGTH',
-            validate_new_password_max_length: 'INVALID_MAX_LENGTH',
-        }
-    }
+    def validate(self, *args, **kwargs):
+        super(CreateUser, self).validate(*args, **kwargs)
+        # XXX if we had some concept of required this wouldn't be necessary
+        if not self.is_error() and self.request.password:
+            if not validate_new_password_min_length(self.request.password):
+                self.note_field_error('password', 'INVALID_MIN_LENGTH')
+            elif not validate_new_password_max_length(self.request.password):
+                self.note_field_error('password', 'INVALID_MAX_LENGTH')
 
     def run(self, *args, **kwargs):
         user = models.User.objects.create_user(
