@@ -367,3 +367,44 @@ class TestOrganizations(TestCase):
             team_id=expected.id,
         )
         self._verify_containers(expected, response.result.team)
+
+    def test_get_organization_invalid_organization_id(self):
+        response = self.client.call_action(
+            'get_organization',
+            organization_id='invalid',
+        )
+        self._verify_field_error(response, 'organization_id')
+
+    def test_get_organization_does_not_exist(self):
+        response = self.client.call_action(
+            'get_organization',
+            organization_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        self._verify_field_error(response, 'organization_id', 'DOES_NOT_EXIST')
+
+    def test_get_organization(self):
+        expected = self._create_organization()
+        response = self.client.call_action(
+            'get_organization',
+            organization_id=expected.id,
+        )
+        self._verify_containers(expected, response.result.organization)
+
+    def test_get_organization_with_domain_does_not_exist(self):
+        response = self.client.call_action(
+            'get_organization',
+            organization_domain='doesnotexist.com',
+        )
+        self._verify_field_error(
+            response,
+            'organization_domain',
+            'DOES_NOT_EXIST',
+        )
+
+    def test_get_organization_with_domain(self):
+        expected = self._create_organization()
+        response = self.client.call_action(
+            'get_organization',
+            organization_domain=expected.domain,
+        )
+        self._verify_containers(expected, response.result.organization)

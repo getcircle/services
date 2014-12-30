@@ -12,6 +12,10 @@ def valid_organization(organization_id):
     return models.Organization.objects.filter(pk=organization_id).exists()
 
 
+def valid_organization_with_domain(domain):
+    return models.Organization.objects.filter(domain=domain).exists()
+
+
 def valid_team(team_id):
     return models.Team.objects.filter(pk=team_id).exists()
 
@@ -39,6 +43,34 @@ class CreateOrganization(actions.Action):
         model = self._create_organization()
         if model:
             model.to_protobuf(self.response.organization)
+
+
+class GetOrganization(actions.Action):
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'organization_id': {
+            valid_organization: 'DOES_NOT_EXIST',
+        },
+        'organization_domain': {
+            valid_organization_with_domain: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def _get_organization(self):
+        parameters = {}
+        if self.request.HasField('organization_id'):
+            parameters['pk'] = self.request.organization_id
+        else:
+            parameters['domain'] = self.request.organization_domain
+        return models.Organization.objects.get(**parameters)
+
+    def run(self, *args, **kwargs):
+        model = self._get_organization()
+        model.to_protobuf(self.response.organization)
 
 
 class CreateTeam(actions.Action):
