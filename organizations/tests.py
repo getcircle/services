@@ -37,11 +37,14 @@ class TestOrganizations(TestCase):
 
     def _create_team(
             self,
-            name,
+            name=None,
             organization_id=None,
             owner_id=None,
             child_of=None,
         ):
+        if name is None:
+            name = fuzzy.FuzzyText().fuzz()
+
         if organization_id is None:
             organization_id = self._create_organization().id
 
@@ -342,3 +345,25 @@ class TestOrganizations(TestCase):
         )
         self.assertTrue(response.success)
         self._verify_containers(expected, response.result.address)
+
+    def test_get_team_invalid_team_id(self):
+        response = self.client.call_action(
+            'get_team',
+            team_id='invalid',
+        )
+        self._verify_field_error(response, 'team_id')
+
+    def test_get_team_does_not_exist(self):
+        response = self.client.call_action(
+            'get_team',
+            team_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        self._verify_field_error(response, 'team_id', 'DOES_NOT_EXIST')
+
+    def test_get_team(self):
+        expected = self._create_team()
+        response = self.client.call_action(
+            'get_team',
+            team_id=expected.id,
+        )
+        self._verify_containers(expected, response.result.team)

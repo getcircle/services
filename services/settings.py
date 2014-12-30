@@ -43,6 +43,7 @@ INSTALLED_APPS = (
 
     'notes',
     'organizations',
+    'profiles',
     'users',
 )
 
@@ -99,6 +100,7 @@ STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
     'organizations.server.Server',
+    'profiles.server.Server',
     'users.server.Server',
 ]
 
