@@ -9,12 +9,16 @@ from . import parsers
 class TestParser(TestCase):
 
     def setUp(self):
-        self.client = service.control.Client(
+        self.organization_client = service.control.Client(
             'organization',
             token='test-token',
         )
+        self.profile_client = service.control.Client(
+            'profile',
+            token='test-token',
+        )
 
-        response = self.client.call_action(
+        response = self.organization_client.call_action(
             'create_organization',
             organization={
                 'name': 'RH Labs Inc.',
@@ -31,10 +35,30 @@ class TestParser(TestCase):
             fixture_name,
         )
 
-    def test_parser(self):
+    def test_parser_no_commit(self):
+        parser = parsers.Parser(
+            organization_domain=self.organization.domain,
+            filename=self._fixture_path('sample_organization.csv'),
+            token='test-token',
+        )
+        parser.parse(commit=False)
+        response = self.organization_client.call_action(
+            'get_teams',
+            organization_id=self.organization.id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.teams), 0)
+
+    def test_parser_commit(self):
         parser = parsers.Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path('sample_organization.csv'),
             token='test-token',
         )
         parser.parse(commit=True)
+        response = self.organization_client.call_action(
+            'get_teams',
+            organization_id=self.organization.id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.teams), 12)
