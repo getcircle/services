@@ -59,30 +59,11 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
     is_active = models.BooleanField(default=True)
     primary_email = models.EmailField(unique=True)
 
-    def get_identities(self):
-        if not hasattr(self, '_identities'):
-            client = service.control.Client('identity')
-            _, response = client.call_action(
-                'get_identities',
-                user_id=self.id.hex,
-            )
-            self._identities = response.identities
-        return self._identities
-
-    def get_an_identity(self):
-        identities = self.get_identities()
-        if identities:
-            return identities[0]
-
     def get_full_name(self):
-        full_name = 'unnamed'
-        identity = self.get_an_identity()
-        if identity:
-            full_name = identity.email
-        return full_name
+        return self.primary_email
 
     def get_short_name(self):
-        return self.get_full_name()
+        return self.primary_email
 
     @property
     def is_staff(self):
