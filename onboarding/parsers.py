@@ -12,7 +12,6 @@ class TeamStore(object):
     def __init__(self):
         self.owner_email_to_team = {}
         self.team_to_owner_email = {}
-        self.parent_owner_email_to_team = {}
         self.team_to_parent_owner_email = {}
 
     def store(self, team, owner_email, parent_owner_email):
@@ -85,23 +84,25 @@ class Row(object):
 
 class Parser(object):
 
-    def __init__(self, organization_domain, filename, token):
-        self.token = token
-        self.organization_domain = organization_domain
+    def __init__(self, organization_domain, filename, token, verbose=False):
         self.filename = filename
+        self.token = token
+        self.verbose = verbose
 
+        self.organization_domain = organization_domain
         self.organization = self._fetch_organization()
+
         self.rows = []
         self.addresses = {}
         self.teams = set()
-
         self.team_store = TeamStore()
         self.saved_addresses = {}
         self.saved_teams = {}
         self.saved_users = {}
 
-    def log(self, message):
-        print message
+    def debug_log(self, message):
+        if self.verbose:
+            print message
 
     @property
     def organization_client(self):
@@ -124,7 +125,7 @@ class Parser(object):
             'organization_id': self.organization.id,
         }
         address.update(data)
-        self.log('saving address: %s' % (address,))
+        self.debug_log('saving address: %s' % (address,))
         response = self.organization_client.call_action(
             'create_address',
             address=address,
@@ -132,7 +133,7 @@ class Parser(object):
         return response.result.address.id
 
     def _save_user(self, row):
-        self.log('saving user: %s' % (row.email,))
+        self.debug_log('saving user: %s' % (row.email,))
         client = service.control.Client('user', token=self.token)
         response = client.call_action(
             'create_user',
@@ -158,7 +159,7 @@ class Parser(object):
             },
             'child_of': child_of,
         }
-        self.log('creating team: %s' % (parameters,))
+        self.debug_log('creating team: %s' % (parameters,))
         response = self.organization_client.call_action(
             'create_team',
             **parameters
@@ -177,7 +178,7 @@ class Parser(object):
             'user_id': self.saved_users[row.email],
         }
         profile_data.update(row.profile)
-        self.log('creating profile: %s' % (profile_data,))
+        self.debug_log('creating profile: %s' % (profile_data,))
         client = service.control.Client('profile', token=self.token)
         response = client.call_action('create_profile', profile=profile_data)
         return response.result.profile
