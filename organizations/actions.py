@@ -146,6 +146,27 @@ class GetTeam(actions.Action):
         team.to_protobuf(self.response.team, path=team.get_path())
 
 
+class GetTeams(actions.Action):
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'organization_id': {
+            valid_organization: 'DOES_NOT_EXIST',
+        }
+    }
+
+    def run(self, *args, **kwargs):
+        teams = models.Team.objects.filter(
+            organization_id=self.request.organization_id,
+        )
+        for team in teams:
+            result = self.response.teams.add()
+            team.to_protobuf(result, path=team.get_path())
+
+
 class CreateAddress(actions.Action):
 
     type_validators = {
