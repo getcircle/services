@@ -4,6 +4,15 @@ from phonenumber_field.modelfields import PhoneNumberField
 from common.db import models
 
 
+class Tag(models.UUIDModel, models.TimestampableModel):
+
+    organization_id = models.UUIDField(db_index=True)
+    name = models.CharField(max_length=64)
+
+    class Meta:
+        unique_together = ('organization_id', 'name')
+
+
 class Profile(models.UUIDModel, models.TimestampableModel):
 
     organization_id = models.UUIDField()
@@ -18,6 +27,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     image_url = models.CharField(max_length=256, null=True)
     location = HStoreField(null=True)
     email = models.EmailField()
+    tags = models.ManyToManyField(Tag)
 
     class Meta:
         unique_together = ('organization_id', 'user_id')
