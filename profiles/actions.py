@@ -108,6 +108,9 @@ class GetExtendedProfile(GetProfile):
     def _get_manager(self, manager_id):
         return models.Profile.objects.get(user_id=manager_id)
 
+    def _get_tags(self):
+        return models.Tag.objects.filter(profile=self.request.profile_id)
+
     def run(self, *args, **kwargs):
         profile = self._get_profile()
         profile = models.Profile.objects.get(pk=self.request.profile_id)
@@ -121,6 +124,11 @@ class GetExtendedProfile(GetProfile):
 
         manager = self._get_manager(team.owner_id)
         manager.to_protobuf(self.response.manager)
+
+        tags = self._get_tags()
+        for tag in tags:
+            container = self.response.tags.add()
+            tag.to_protobuf(container)
 
 
 class CreateTags(actions.Action):

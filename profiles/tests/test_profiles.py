@@ -192,6 +192,20 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         profile = response.result.profile
 
+        # create tags
+        response = self.client.call_action(
+            'create_tags',
+            organization_id=organization.id,
+            tags=[{'name': 'python'}, {'name': 'mysql'}],
+        )
+        self.assertTrue(response.success)
+        tags = response.result.tags
+
+        # add tags to profile
+        tag_ids = [tag.id for tag in tags]
+        response = self.client.call_action('add_tags', profile_id=profile.id, tag_ids=tag_ids)
+        self.assertTrue(response.success)
+
         # fetch the manager's profile
         response = self.org_client.call_action(
             'get_team',
@@ -218,3 +232,4 @@ class TestProfiles(TestCase):
         self._verify_containers(address, response.result.address)
         self._verify_containers(manager, response.result.manager)
         self._verify_containers(team, response.result.team)
+        self.assertEqual(len(tags), len(response.result.tags))
