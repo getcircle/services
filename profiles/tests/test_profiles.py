@@ -1,5 +1,8 @@
 from copy import copy
+
+from protobufs.profile_service_pb2 import ProfileService
 import service.control
+
 from services import fuzzy
 from services.test import TestCase
 
@@ -20,8 +23,7 @@ class TestProfiles(TestCase):
             'title': fuzzy.FuzzyText().fuzz(),
             'first_name': fuzzy.FuzzyText().fuzz(),
             'last_name': fuzzy.FuzzyText().fuzz(),
-            'cell_phone': fuzzy.FuzzyText().fuzz(),
-            'work_phone': '+19492933322',
+            'cell_phone': '+19492933322',
             'image_url': fuzzy.FuzzyText().fuzz(),
             'email': fuzzy.FuzzyText(suffix='@example.com').fuzz(),
             'team_id': fuzzy.FuzzyUUID().fuzz(),
@@ -62,10 +64,6 @@ class TestProfiles(TestCase):
         self._create_profile(profile_data)
         return team
 
-    def _verify_profile_matches_data(self, profile, data):
-        for key, value in data.iteritems():
-            self.assertEqual(getattr(profile, key), value)
-
     def test_create_profile_invalid_organization_id(self):
         self.profile_data['organization_id'] = 'invalid'
         response = self.client.call_action(
@@ -100,7 +98,7 @@ class TestProfiles(TestCase):
 
     def test_create_profile(self):
         profile = self._create_profile(self.profile_data)
-        self._verify_profile_matches_data(profile, self.profile_data)
+        self._verify_container_matches_data(profile, self.profile_data)
 
     def test_get_profile(self):
         expected = self._create_profile(self.profile_data)
@@ -233,3 +231,27 @@ class TestProfiles(TestCase):
         self._verify_containers(manager, response.result.manager)
         self._verify_containers(team, response.result.team)
         self.assertEqual(len(tags), len(response.result.tags))
+
+    def test_update_profile_invalid_profile_id(self):
+        self.profile_data['id'] = 'invalid'
+        response = self.client.call_action('update_profile', profile=self.profile_data)
+        self._verify_field_error(response, 'profile.id')
+
+    def test_update_profile_does_not_exist(self):
+        self.profile_data['id'] = fuzzy.FuzzyUUID().fuzz()
+        response = self.client.call_action('update_profile', profile=self.profile_data)
+        self._verify_field_error(response, 'profile.id', 'DOES_NOT_EXIST')
+
+    def test_update_profile(self):
+        original = self._create_profile(self.profile_data)
+        profile = ProfileService.Containers.Profile()
+        profile.CopyFrom(original)
+
+        profile.first_name = 'Michael'
+        profile.last_name = 'Hahn'
+        profile.email = 'mwhahn@gmail.com'
+        profile.cell_phone = '+19492931122'
+        profile.title = 'Engineer'
+
+        response = self.client.call_action('update_profile', profile=profile)
+        self._verify_containers(profile, response.result.profile)

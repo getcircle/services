@@ -8,6 +8,7 @@ class Server(service.control.Server):
 
     actions = {
         'create_profile': actions.CreateProfile,
+        'update_profile': actions.UpdateProfile,
         'get_profile': actions.GetProfile,
         'get_extended_profile': actions.GetExtendedProfile,
         'create_tags': actions.CreateTags,

@@ -38,6 +38,29 @@ class CreateProfile(actions.Action):
         profile.to_protobuf(self.response.profile)
 
 
+class UpdateProfile(actions.Action):
+
+    type_validators = {
+        'profile.id': [validators.is_uuid4],
+        'profile.address_id': [validators.is_uuid4],
+        'profile.organization_id': [validators.is_uuid4],
+        'profile.team_id': [validators.is_uuid4],
+        'profile.user_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'profile.id': {
+            valid_profile: 'DOES_NOT_EXIST',
+        }
+    }
+
+    def run(self, *args, **kwargs):
+        profile = models.Profile.objects.get(pk=self.request.profile.id)
+        profile.update_from_protobuf(self.request.profile)
+        profile.save()
+        profile.to_protobuf(self.response.profile)
+
+
 class GetProfile(actions.Action):
     # XXX add some concept of "oneof"
 
