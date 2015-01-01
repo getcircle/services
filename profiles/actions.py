@@ -101,6 +101,19 @@ class GetProfile(actions.Action):
         profile.to_protobuf(self.response.profile)
 
 
+class GetProfiles(actions.Action):
+
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        profiles = models.Profile.objects.filter(team_id=self.request.team_id)
+        for profile in profiles:
+            container = self.response.profiles.add()
+            profile.to_protobuf(container)
+
+
 class GetExtendedProfile(GetProfile):
 
     @property

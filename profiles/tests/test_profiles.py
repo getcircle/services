@@ -100,6 +100,23 @@ class TestProfiles(TestCase):
         profile = self._create_profile(self.profile_data)
         self._verify_container_matches_data(profile, self.profile_data)
 
+    def test_get_profiles_invalid_team_id(self):
+        response = self.client.call_action(
+            'get_profiles',
+            team_id='invalid',
+        )
+        self._verify_field_error(response, 'team_id')
+
+    def test_get_profiles(self):
+        profile = self._create_profile(self.profile_data)
+        response = self.client.call_action(
+            'get_profiles',
+            team_id=profile.team_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
+        self._verify_containers(profile, response.result.profiles[0])
+
     def test_get_profile(self):
         expected = self._create_profile(self.profile_data)
         response = self.client.call_action(
