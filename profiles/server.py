@@ -10,4 +10,7 @@ class Server(service.control.Server):
         'create_profile': actions.CreateProfile,
         'get_profile': actions.GetProfile,
         'get_extended_profile': actions.GetExtendedProfile,
+        'create_tags': actions.CreateTags,
+        'add_tags': actions.AddTags,
+        'get_tags': actions.GetTags,
     }

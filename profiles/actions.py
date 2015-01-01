@@ -17,6 +17,11 @@ def valid_profile_with_user_id(user_id):
     return models.Profile.objects.filter(user_id=user_id).exists()
 
 
+def valid_tag_ids(tag_ids):
+    db_ids = models.Tag.objects.filter(pk__in=tag_ids).values_list('pk', flat=True)
+    return len(tag_ids) == len(db_ids)
+
+
 class CreateProfile(actions.Action):
 
     type_validators = {
@@ -116,3 +121,69 @@ class GetExtendedProfile(GetProfile):
 
         manager = self._get_manager(team.owner_id)
         manager.to_protobuf(self.response.manager)
+
+
+class CreateTags(actions.Action):
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        objects = [models.Tag.objects.from_protobuf(
+            p,
+            commit=False,
+            organization_id=self.request.organization_id,
+        ) for p in self.request.tags]
+
+        tags = models.Tag.objects.bulk_create(objects)
+        for tag in tags:
+            container = self.response.tags.add()
+            tag.to_protobuf(container)
+
+
+class AddTags(actions.Action):
+
+    type_validators = {
+        'profile_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'profile_id': {
+            valid_profile: 'DOES_NOT_EXIST',
+        },
+        'tag_ids': {
+            # XXX we may want a more specific error for which tags don't exist
+            valid_tag_ids: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        through_model = models.Profile.tags.through
+        objects = [through_model(
+            profile_id=self.request.profile_id,
+            tag_id=tag_id,
+        ) for tag_id in self.request.tag_ids]
+        through_model.objects.bulk_create(objects)
+
+
+class GetTags(actions.Action):
+
+    # XXX should we have field_validators for whether or not organization and profile exist?
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+        'profile_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        parameters = {}
+        if self.request.HasField('organization_id'):
+            parameters['organization_id'] = self.request.organization_id
+        else:
+            parameters['profile'] = self.request.profile_id
+
+        tags = models.Tag.objects.filter(**parameters)
+        for tag in tags:
+            container = self.response.tags.add()
+            tag.to_protobuf(container)
