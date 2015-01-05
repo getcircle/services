@@ -1,6 +1,7 @@
 import os
 
-from .settings import *
+# import default settings
+from . import *
 
 DATABASES = {
     'default': {
