@@ -21,4 +21,5 @@ ADD . /src
 
 EXPOSE 5000
 
+WORKDIR /src
 CMD ["python", "manage.py", "runserver", "0.0.0.0:5000"]
