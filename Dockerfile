@@ -4,7 +4,7 @@ FROM ubuntu:14.04
 RUN apt-get update -y
 
 # Install dependencies
-RUN apt-get install -y python-setuptools git python-dev libpq-dev
+RUN apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev
 
 # Install pip
 RUN easy_install pip
