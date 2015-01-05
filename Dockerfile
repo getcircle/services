@@ -6,6 +6,9 @@ RUN apt-get update -y
 # Install dependencies
 RUN apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev
 
+# Install postgres client for debugging postgres
+RUN apt-get install -y postgresql-client
+
 # Install pip
 RUN easy_install pip
 
