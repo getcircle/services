@@ -13,6 +13,8 @@ RUN easy_install pip
 ADD deploy/.ssh /root/.ssh
 RUN chmod 400 /root/.ssh/id_rsa
 
+RUN apt-get install -y libreadline6 libreadline6-dev
+
 # Add and install Python modules
 ADD requirements.txt /src/requirements.txt
 RUN cd /src; pip install --no-deps -r requirements.txt
