@@ -3,8 +3,8 @@ FROM ubuntu:14.04
 # Update packages
 RUN apt-get update -y
 
-# Install Python Setuptools and Git
-RUN apt-get install -y python-setuptools git
+# Install dependencies
+RUN apt-get install -y python-setuptools git python-dev libpq-dev
 
 # Install pip
 RUN easy_install pip
