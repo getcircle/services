@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./src/manage.py syncdb --noinput &> /var/log/syncdb.log
-./src/manage.py migrate &> /var/log/migrate.log
+python /src/manage.py syncdb --noinput &> /var/log/syncdb.log
+python /src/manage.py migrate &> /var/log/migrate.log
