@@ -17,6 +17,7 @@ RUN pip install --no-deps -r /src/requirements/core.txt
 EXPOSE 5000
 
 ADD . /src
-RUN ./src/deploy/scripts/setup_db.sh
+WORKDIR /src
+RUN ./deploy/scripts/setup_db.sh
 
-CMD ["python", "/src/manage.py", "runserver", "0.0.0.0:5000"]
+CMD ["python", "./manage.py", "runserver", "0.0.0.0:5000"]
