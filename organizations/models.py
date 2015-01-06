@@ -15,11 +15,14 @@ class Organization(models.UUIDModel, models.TimestampableModel):
 
 class Team(models.UUIDModel, models.TimestampableModel):
 
+    protobuf_include_fields = ('department',)
+
     name = models.CharField(max_length=64)
     owner_id = models.UUIDField(db_index=True)
     organization = models.ForeignKey(Organization, db_index=True)
     path = LTreeField(null=True)
 
+    # TODO cache the result
     def get_path(self):
         path_parts = self.path.split('.')
         names = Team.objects.filter(pk__in=path_parts).values_list(
@@ -28,6 +31,16 @@ class Team(models.UUIDModel, models.TimestampableModel):
         )
         name_dict = dict((k.hex, v) for k, v in names)
         return [name_dict[p] for p in path_parts]
+
+    @property
+    def department(self):
+        department_title = None
+        path = self.get_path()
+        try:
+            department_title = path[1]
+        except IndexError:
+            pass
+        return department_title
 
 
 class Address(models.UUIDModel, models.TimestampableModel):

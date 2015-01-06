@@ -15,6 +15,8 @@ class Tag(models.UUIDModel, models.TimestampableModel):
 
 class Profile(models.UUIDModel, models.TimestampableModel):
 
+    protobuf_include_fields = ('full_name',)
+
     organization_id = models.UUIDField()
     user_id = models.UUIDField()
     address_id = models.UUIDField()
@@ -28,6 +30,10 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     location = HStoreField(null=True)
     email = models.EmailField()
     tags = models.ManyToManyField(Tag)
+
+    @property
+    def full_name(self):
+        return ' '.join([self.first_name, self.last_name])
 
     class Meta:
         unique_together = ('organization_id', 'user_id')

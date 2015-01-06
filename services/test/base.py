@@ -32,3 +32,12 @@ class TestCase(DjangoTestCase):
         for field, expected_value in expected.ListFields():
             value = getattr(to_verify, field.name, None)
             self._verify_values(expected_value, value)
+
+    def assertEqualUUID4(self, first, second):
+        if not isinstance(first, uuid.UUID):
+            first = uuid.UUID(first, version=4)
+
+        if not isinstance(second, uuid.UUID):
+            second = uuid.UUID(second, version=4)
+
+        self.assertEqual(first, second)

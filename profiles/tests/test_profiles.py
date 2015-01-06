@@ -125,6 +125,10 @@ class TestProfiles(TestCase):
         )
         self._verify_containers(expected, response.result.profile)
 
+    def test_get_profile_full_name(self):
+        profile = self._create_profile(self.profile_data)
+        self.assertTrue(profile.full_name)
+
     def test_get_profile_invalid_profile_id(self):
         response = self.client.call_action(
             'get_profile',
@@ -269,6 +273,9 @@ class TestProfiles(TestCase):
         profile.email = 'mwhahn@gmail.com'
         profile.cell_phone = '+19492931122'
         profile.title = 'Engineer'
+
+        # this has no effect, this just makes validating the container easier
+        profile.full_name = 'Michael Hahn'
 
         response = self.client.call_action('update_profile', profile=profile)
         self._verify_containers(profile, response.result.profile)

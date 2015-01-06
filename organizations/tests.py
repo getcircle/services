@@ -178,9 +178,9 @@ class TestOrganizations(TestCase):
 
         team = response.result.team
         self.assertTrue(uuid.UUID(team.id, version=4))
-        self.assertEqual(team.organization_id, organization.id)
+        self.assertEqualUUID4(team.organization_id, organization.id)
         self.assertEqual(team.name, team_data['name'])
-        self.assertEqual(team.owner_id, owner_id)
+        self.assertEqualUUID4(team.owner_id, owner_id)
         self.assertEqual(team.path, [team_data['name']])
 
     def test_create_team_invalid_child_of(self):
@@ -260,6 +260,16 @@ class TestOrganizations(TestCase):
             levels=4,
         )
         self.assertEqual(len(teams[-1].path), 5)
+
+    def test_team_protobuf_department(self):
+        organization = self._create_organization()
+        teams = self._create_team_tree(
+            organization_id=organization.id,
+            levels=4,
+        )
+        department_team = teams[1]
+        team = teams[-1]
+        self.assertEqual(department_team.name, team.department)
 
     # XXX we may actually want to support this
     #def test_create_team_root_already_exists(self):
