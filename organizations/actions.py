@@ -213,3 +213,16 @@ class GetAddress(actions.Action):
     def run(self, *args, **kwargs):
         address = models.Address.objects.get(pk=self.request.address_id)
         address.to_protobuf(self.response.address)
+
+
+class GetAddresses(actions.Action):
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        addresses = models.Address.objects.filter(organization_id=self.request.organization_id)
+        for address in addresses:
+            container = self.response.addresses.add()
+            address.to_protobuf(container)

@@ -356,6 +356,25 @@ class TestOrganizations(TestCase):
         self.assertTrue(response.success)
         self._verify_containers(expected, response.result.address)
 
+    def test_get_addresses_invalid_organization_id(self):
+        response = self.client.call_action(
+            'get_addresses',
+            organization_id='invalid',
+        )
+        self._verify_field_error(response, 'organization_id')
+
+    def test_get_addresses(self):
+        organization = self._create_organization()
+        for _ in range(1):
+            self._create_address(organization_id=organization.id)
+
+        response = self.client.call_action(
+            'get_addresses',
+            organization_id=organization.id,
+        )
+        self.assertTrue(response.success)
+        self.assertTrue(len(response.result.addresses), 2)
+
     def test_get_team_invalid_team_id(self):
         response = self.client.call_action(
             'get_team',
