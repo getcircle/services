@@ -49,3 +49,10 @@ class TestUserActions(TestCase):
         self.assertTrue(response.success)
 
         self.assertEqual(response.result.user.primary_email, self.email)
+
+    def test_create_user_duplicate(self):
+        response = self.client.call_action('create_user', email=self.email)
+        self.assertTrue(response.success)
+        response = self.client.call_action('create_user', email=self.email)
+        self.assertFalse(response.success)
+        self.assertEqual(response.error_details[0].detail, 'ALREADY_EXISTS')

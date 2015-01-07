@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+import django.db
 from rest_framework.authtoken.models import Token
 from service import (
     actions,
@@ -28,11 +29,14 @@ class CreateUser(actions.Action):
                 self.note_field_error('password', 'INVALID_MAX_LENGTH')
 
     def run(self, *args, **kwargs):
-        user = models.User.objects.create_user(
-            primary_email=self.request.email,
-            password=self.request.password,
-        )
-        user.to_protobuf(self.response.user)
+        try:
+            user = models.User.objects.create_user(
+                primary_email=self.request.email,
+                password=self.request.password,
+            )
+            user.to_protobuf(self.response.user)
+        except django.db.IntegrityError:
+            self.note_field_error('email', 'ALREADY_EXISTS')
 
 
 class ValidUser(actions.Action):
