@@ -6,7 +6,7 @@ from django.contrib.auth.models import (
 import service.control
 
 
-class UserManager(BaseUserManager):
+class UserManager(BaseUserManager, models.CommonManager):
 
     def _create_user(
         self,

@@ -39,6 +39,16 @@ class CreateUser(actions.Action):
             self.note_field_error('email', 'ALREADY_EXISTS')
 
 
+class GetUser(actions.Action):
+
+    def run(self, *args, **kwargs):
+        user = models.User.objects.get_or_none(primary_email=self.request.email)
+        if user is None:
+            self.note_field_error('email', 'DOES_NOT_EXIST')
+        else:
+            user.to_protobuf(self.response.user)
+
+
 class ValidUser(actions.Action):
 
     type_validators = {
