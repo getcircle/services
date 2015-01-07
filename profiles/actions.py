@@ -105,10 +105,17 @@ class GetProfiles(actions.Action):
 
     type_validators = {
         'team_id': [validators.is_uuid4],
+        'organization_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
-        profiles = models.Profile.objects.filter(team_id=self.request.team_id)
+        parameters = {}
+        if self.request.team_id:
+            parameters['team_id'] = self.request.team_id
+        else:
+            parameters['organization_id'] = self.request.organization_id
+
+        profiles = models.Profile.objects.filter(**parameters)
         for profile in profiles:
             container = self.response.profiles.add()
             profile.to_protobuf(container)
