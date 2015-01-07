@@ -135,11 +135,13 @@ class Parser(object):
     def _save_user(self, row):
         self.debug_log('saving user: %s' % (row.email,))
         client = service.control.Client('user', token=self.token)
-        response = client.call_action(
-            'create_user',
-            email=row.email,
-        )
-        return response.result.user.id
+        response = client.call_action('create_user', email=row.email)
+        if response.success:
+            user = response.result.user
+        else:
+            response = client.call_action('get_user', email=row.email)
+            user = response.result.user
+        return user.id
 
     def _save_team(self, team):
         if team in self.saved_teams:
