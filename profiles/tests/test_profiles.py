@@ -42,12 +42,42 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         return response.result.user
 
-    def _create_team_and_owner(self, organization, address, child_of=None):
+    def _create_organization(self):
+        response = self.org_client.call_action(
+            'create_organization',
+            organization={
+                'name': fuzzy.FuzzyText().fuzz(),
+                'domain': fuzzy.FuzzyText(suffix='.com').fuzz(),
+            },
+        )
+        self.assertTrue(response.success)
+        return response.result.organization
+
+    def _create_address(self, organization=None):
+        if not organization:
+            organization = self._create_organization()
+
+        address_data = {
+            'organization_id': organization.id,
+            'address_1': '319 Primrose',
+            'city': 'Burlingame',
+            'region': 'California',
+            'postal_code': '94010',
+            'country_code': 'US',
+        }
+        response = self.org_client.call_action(
+            'create_address',
+            address=address_data,
+        )
+        self.assertTrue(response.success)
+        return response.result.address
+
+    def _create_team_and_owner(self, organization_id, address_id, child_of=None):
         user = self._create_user()
         response = self.org_client.call_action(
             'create_team',
             team={
-                'organization_id': organization.id,
+                'organization_id': organization_id,
                 'name': fuzzy.FuzzyText().fuzz(),
                 'owner_id': user.id,
             },
@@ -58,11 +88,11 @@ class TestProfiles(TestCase):
 
         profile_data = copy(self.profile_data)
         profile_data['user_id'] = user.id
-        profile_data['organization_id'] = organization.id
-        profile_data['address_id'] = address.id
+        profile_data['organization_id'] = organization_id
+        profile_data['address_id'] = address_id
         profile_data['team_id'] = team.id
-        self._create_profile(profile_data)
-        return team
+        profile = self._create_profile(profile_data)
+        return team, profile
 
     def test_create_profile_invalid_organization_id(self):
         self.profile_data['organization_id'] = 'invalid'
@@ -176,38 +206,17 @@ class TestProfiles(TestCase):
 
     def test_get_extended_profile(self):
         # create an organization
-        response = self.org_client.call_action(
-            'create_organization',
-            organization={
-                'name': 'RHLabs',
-                'domain': 'rhlabs.com',
-            },
-        )
-        self.assertTrue(response.success)
-        organization = response.result.organization
+        organization = self._create_organization()
 
         # create an address
-        address_data = {
-            'organization_id': organization.id,
-            'address_1': '319 Primrose',
-            'city': 'Burlingame',
-            'region': 'California',
-            'postal_code': '94010',
-            'country_code': 'US',
-        }
-        response = self.org_client.call_action(
-            'create_address',
-            address=address_data,
-        )
-        self.assertTrue(response.success)
-        address = response.result.address
+        address = self._create_address(organization=organization)
 
         # create a team structure
-        last_team = self._create_team_and_owner(organization, address)
+        last_team, _ = self._create_team_and_owner(organization.id, address.id)
         for _ in range(5):
-            last_team = self._create_team_and_owner(
-                organization,
-                address,
+            last_team, _ = self._create_team_and_owner(
+                organization.id,
+                address.id,
                 child_of=last_team.id,
             )
         team = last_team
@@ -296,3 +305,117 @@ class TestProfiles(TestCase):
 
         response = self.client.call_action('update_profile', profile=profile)
         self._verify_containers(profile, response.result.profile)
+
+    def test_get_direct_reports_invalid_profile_id(self):
+        response = self.client.call_action('get_direct_reports', profile_id='invalid')
+        self._verify_field_error(response, 'profile_id')
+
+    def test_get_direct_reports_profile_does_not_exist(self):
+        response = self.client.call_action(
+            'get_direct_reports',
+            profile_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
+
+    def test_get_peers_invalid_profile_id(self):
+        response = self.client.call_action('get_peers', profile_id='invalid')
+        self._verify_field_error(response, 'profile_id')
+
+    def test_get_peers_profile_does_not_exist(self):
+        response = self.client.call_action('get_peers', profile_id=fuzzy.FuzzyUUID().fuzz())
+        self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
+
+    def test_get_direct_reports_invalid_user_id(self):
+        response = self.client.call_action('get_direct_reports', user_id='invalid')
+        self._verify_field_error(response, 'user_id')
+
+    def _setup_direct_reports_test(self):
+        address = self._create_address()
+
+        # create a parent team and owner
+        parent_team, owner = self._create_team_and_owner(address.organization_id, address.id)
+
+        # create teams that children to the parent_team
+        for _ in range(3):
+            self._create_team_and_owner(
+                address.organization_id,
+                address.id,
+                child_of=parent_team.id,
+            )
+
+        # add team members to the owners direct team
+        for _ in range(3):
+            data = copy(self.profile_data)
+            data['address_id'] = address.id
+            data['organization_id'] = address.organization_id
+            data['team_id'] = parent_team.id
+            data['user_id'] = self._create_user().id
+            self._create_profile(data)
+        return owner
+
+    def test_get_direct_reports(self):
+        owner = self._setup_direct_reports_test()
+        # direct reports for owner should be equal to the number of teams 1
+        # level below as well as anyone directly on his team
+        response = self.client.call_action('get_direct_reports', profile_id=owner.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 6)
+
+    def test_get_direct_reports_user_id(self):
+        owner = self._setup_direct_reports_test()
+        response = self.client.call_action('get_direct_reports', user_id=owner.user_id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 6)
+
+    def test_get_direct_reports_no_direct_reports(self):
+        address = self._create_address()
+        parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
+        self.profile_data['organization_id'] = address.organization_id
+        self.profile_data['address_id'] = address.id
+        self.profile_data['team_id'] = parent_team.id
+        profile = self._create_profile(self.profile_data)
+
+        response = self.client.call_action('get_direct_reports', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 0)
+
+    def test_get_peers_non_owner(self):
+        address = self._create_address()
+        parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
+
+        for _ in range(3):
+            data = copy(self.profile_data)
+            data['address_id'] = address.id
+            data['organization_id'] = address.organization_id
+            data['team_id'] = parent_team.id
+            data['user_id'] = self._create_user().id
+            peer = self._create_profile(data)
+
+        response = self.client.call_action('get_peers', profile_id=peer.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 3)
+
+    def test_get_peers(self):
+        address = self._create_address()
+
+        # create a parent team
+        parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
+
+        # create a sub-team we'll use as our test case
+        team, _ = self._create_team_and_owner(
+            address.organization_id,
+            address.id,
+            child_of=parent_team.id,
+        )
+
+        # create teams that are children of the one above
+        for _ in range(3):
+            _, peer = self._create_team_and_owner(
+                address.organization_id,
+                address.id,
+                child_of=team.id,
+            )
+
+        response = self.client.call_action('get_peers', profile_id=peer.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 3)

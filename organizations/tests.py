@@ -181,7 +181,7 @@ class TestOrganizations(TestCase):
         self.assertEqualUUID4(team.organization_id, organization.id)
         self.assertEqual(team.name, team_data['name'])
         self.assertEqualUUID4(team.owner_id, owner_id)
-        self.assertEqual(team.path, [team_data['name']])
+        self.assertEqual([path.name for path in team.path], [team_data['name']])
 
     def test_create_team_invalid_child_of(self):
         organization = self._create_organization()
@@ -251,7 +251,7 @@ class TestOrganizations(TestCase):
         team = response.result.team
         self.assertEqual(team.organization_id, organization.id)
         self.assertEqual(team.name, 'Engineering')
-        self.assertEqual(team.path, ['E-Staff', 'Engineering'])
+        self.assertEqual([path.name for path in team.path], ['E-Staff', 'Engineering'])
 
     def test_create_team_child_of_multiple_levels(self):
         organization = self._create_organization()

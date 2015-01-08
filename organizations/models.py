@@ -25,19 +25,23 @@ class Team(models.UUIDModel, models.TimestampableModel):
     # TODO cache the result
     def get_path(self):
         path_parts = self.path.split('.')
-        names = Team.objects.filter(pk__in=path_parts).values_list(
+        path = Team.objects.filter(pk__in=path_parts).values(
             'id',
             'name',
+            'owner_id',
         )
-        name_dict = dict((k.hex, v) for k, v in names)
-        return [name_dict[p] for p in path_parts]
+        # XXX see if we can have the client handle this for us
+        for item in path:
+            item['id'] = str(item['id'])
+            item['owner_id'] = str(item['owner_id'])
+        return path
 
     @property
     def department(self):
         department_title = None
         path = self.get_path()
         try:
-            department_title = path[1]
+            department_title = path[1]['name']
         except IndexError:
             pass
         return department_title

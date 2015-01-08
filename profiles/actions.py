@@ -1,3 +1,4 @@
+from django.db.models import Q
 import service.control
 from service import (
     actions,
@@ -238,3 +239,95 @@ class GetTags(actions.Action):
         for tag in tags:
             container = self.response.tags.add()
             tag.to_protobuf(container)
+
+
+class GetDirectReports(actions.Action):
+
+    type_validators = {
+        'profile_id': [validators.is_uuid4],
+        'user_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'profile_id': {
+            valid_profile: 'DOES_NOT_EXIST',
+        },
+    }
+
+    @property
+    def _client(self):
+        if not hasattr(self, '__client'):
+            self.__client = service.control.Client('organization', token=self.token)
+        return self.__client
+
+    def _get_child_team_owner_ids(self, team):
+        response = self._client.call_action('get_team_children', team_id=team.id)
+        if not response.success:
+            raise Exception('failed to fetch team children')
+
+        return [item.owner_id for item in response.result.teams]
+
+    def run(self, *args, **kwargs):
+        parameters = {}
+        if self.request.profile_id:
+            parameters['pk'] = self.request.profile_id
+        else:
+            parameters['user_id'] = self.request.user_id
+
+        # TODO handle DoesNotExist error with user_id
+        profile = models.Profile.objects.get(**parameters)
+        response = self._client.call_action('get_team', team_id=str(profile.team_id))
+        if not response.success:
+            # TODO we should be mapping these exceptions
+            raise Exception('failed to fetch team')
+
+        team = response.result.team
+        user_ids = []
+        if team.owner_id == str(profile.user_id):
+            user_ids.extend(self._get_child_team_owner_ids(team))
+            profiles = models.Profile.objects.filter(
+                Q(user_id__in=user_ids) | Q(team_id=team.id),
+                organization_id=profile.organization_id,
+            ).exclude(pk=profile.id)
+            for profile in profiles:
+                container = self.response.profiles.add()
+                profile.to_protobuf(container)
+
+
+class GetPeers(actions.Action):
+
+    type_validators = {
+        'profile_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'profile_id': {
+            valid_profile: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        profile = models.Profile.objects.get(pk=self.request.profile_id)
+        client = service.control.Client('organization', token=self.token)
+        response = client.call_action('get_team', team_id=str(profile.team_id))
+        if not response.success:
+            # XXX we should be mapping these
+            raise Exception('failed to fetch team')
+
+        team = response.result.team
+        if team.owner_id == str(profile.user_id):
+            client = service.control.Client('profile', token=self.token)
+            response = client.call_action('get_direct_reports', user_id=team.path[-2].owner_id)
+            if not response.success:
+                raise Exception('failed to fetch direct reports')
+
+            for profile in response.result.profiles:
+                container = self.response.profiles.add()
+                container.CopyFrom(profile)
+        else:
+            profiles = models.Profile.objects.filter(team_id=profile.team_id).exclude(
+                user_id=team.owner_id,
+            )
+            for profile in profiles:
+                container = self.response.profiles.add()
+                profile.to_protobuf(container)

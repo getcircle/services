@@ -15,4 +15,6 @@ class Server(service.control.Server):
         'create_tags': actions.CreateTags,
         'add_tags': actions.AddTags,
         'get_tags': actions.GetTags,
+        'get_direct_reports': actions.GetDirectReports,
+        'get_peers': actions.GetPeers,
     }

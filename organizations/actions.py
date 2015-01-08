@@ -164,7 +164,7 @@ class GetTeamChildren(actions.Action):
     def _build_lquery(self, team_id):
         # get the hex value for the lquery
         hex_value = uuid.UUID(team_id, version=4).hex
-        return '%s.*{1}' % (hex_value,)
+        return '*.%s.*{1}' % (hex_value,)
 
     def run(self, *args, **kwargs):
         teams = models.Team.objects.raw(
