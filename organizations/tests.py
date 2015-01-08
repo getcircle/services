@@ -464,3 +464,32 @@ class TestOrganizations(TestCase):
         )
         self.assertTrue(response.success)
         self.assertTrue(len(response.result.teams), 5)
+
+    def test_get_team_children_invalid_team_id(self):
+        response = self.client.call_action('get_team_children', team_id='invalid')
+        self._verify_field_error(response, 'team_id')
+
+    def test_get_team_children_does_not_exist(self):
+        response = self.client.call_action('get_team_children', team_id=fuzzy.FuzzyUUID().fuzz())
+        self._verify_field_error(response, 'team_id', 'DOES_NOT_EXIST')
+
+    def test_get_team_children(self):
+        parent_team = self._create_team()
+
+        # create child teams
+        for _ in range(2):
+            child_team = self._create_team(
+                organization_id=parent_team.organization_id,
+                child_of=parent_team.id,
+            )
+
+        # create grandchild team
+        self._create_team(
+            organization_id=child_team.organization_id,
+            child_of=child_team.id,
+        )
+
+        # verify only child teams are returned
+        response = self.client.call_action('get_team_children', team_id=parent_team.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.teams), 2)

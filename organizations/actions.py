@@ -146,6 +146,36 @@ class GetTeam(actions.Action):
         team.to_protobuf(self.response.team, path=team.get_path())
 
 
+class GetTeamChildren(actions.Action):
+
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'team_id': {
+            valid_team: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def _direct_report_team_query(self):
+        return 'SELECT * FROM %s WHERE path ~ %%s' % (models.Team._meta.db_table,)
+
+    def _build_lquery(self, team_id):
+        # get the hex value for the lquery
+        hex_value = uuid.UUID(team_id, version=4).hex
+        return '%s.*{1}' % (hex_value,)
+
+    def run(self, *args, **kwargs):
+        teams = models.Team.objects.raw(
+            self._direct_report_team_query(),
+            [self._build_lquery(self.request.team_id)],
+        )
+        for team in teams:
+            container = self.response.teams.add()
+            team.to_protobuf(container, path=team.get_path())
+
+
 class GetTeams(actions.Action):
 
     type_validators = {
