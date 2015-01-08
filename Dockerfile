@@ -18,6 +18,4 @@ EXPOSE 5000
 
 ADD . /src
 WORKDIR /src
-RUN python manage.py syncdb --noinput &> /var/log/syncdb.log && python manage.py migrate &> /var/log/migrate.log
-
 CMD ["python", "manage.py", "runserver", "0.0.0.0:5000"]
