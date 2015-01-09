@@ -31,6 +31,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     email = models.EmailField()
     tags = models.ManyToManyField(Tag)
     birth_date = models.DateField()
+    hire_date = models.DateField()
 
     @property
     def full_name(self):

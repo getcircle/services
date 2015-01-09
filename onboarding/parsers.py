@@ -40,6 +40,7 @@ class Row(object):
         'title',
         'cell_phone',
         'birth_date',
+        'hire_date',
     )
 
     address_fields = (
