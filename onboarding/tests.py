@@ -1,4 +1,6 @@
 import os
+import unittest
+
 import service.control
 
 from services.test import TestCase
@@ -35,6 +37,14 @@ class TestParser(TestCase):
             fixture_name,
         )
 
+    def _commit_fixture(self, fixture_name):
+        parser = parsers.Parser(
+            organization_domain=self.organization.domain,
+            filename=self._fixture_path(fixture_name),
+            token='test-token',
+        )
+        parser.parse(commit=True)
+
     def test_parser_no_commit(self):
         parser = parsers.Parser(
             organization_domain=self.organization.domain,
@@ -56,6 +66,27 @@ class TestParser(TestCase):
             token='test-token',
         )
         parser.parse(commit=True)
+        response = self.organization_client.call_action(
+            'get_teams',
+            organization_id=self.organization.id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.teams), 12)
+
+    @unittest.skip('some transaction block issue')
+    def test_parser_idempotent(self):
+        self._commit_fixture('sample_organization.csv')
+        response = self.organization_client.call_action(
+            'get_teams',
+            organization_id=self.organization.id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.teams), 12)
+
+        # commit the fixture again
+        self._commit_fixture('sample_organization.csv')
+
+        # verify we have the same data
         response = self.organization_client.call_action(
             'get_teams',
             organization_id=self.organization.id,

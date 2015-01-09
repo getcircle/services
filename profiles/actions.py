@@ -91,6 +91,7 @@ class GetProfile(actions.Action):
         'profile_id': {
             valid_profile: 'DOES_NOT_EXIST',
         },
+        # TODO we should require organization_id here
         'user_id': {
             valid_profile_with_user_id: 'DOES_NOT_EXIST',
         },

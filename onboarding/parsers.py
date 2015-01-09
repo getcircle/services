@@ -166,11 +166,18 @@ class Parser(object):
             'create_team',
             **parameters
         )
-        if not response.success:
-            raise Exception('shit')
+        if response.success:
+            team = response.result.team
+        else:
+            response = self.organization_client.call_action(
+                'get_team',
+                name=team,
+                organization_id=self.organization.id,
+            )
+            team = response.result.team
 
-        self.saved_teams[team] = response.result.team.id
-        return self.saved_teams[team]
+        self.saved_teams[team.name] = team.id
+        return self.saved_teams[team.name]
 
     def _save_profile(self, row):
         profile_data = {
@@ -183,7 +190,19 @@ class Parser(object):
         self.debug_log('creating profile: %s' % (profile_data,))
         client = service.control.Client('profile', token=self.token)
         response = client.call_action('create_profile', profile=profile_data)
-        return response.result.profile
+        profile = response.result.profile
+        if not response.success:
+            self.debug_log('error creating profile: %s' % (response.errors,))
+            # fetch the profile
+            response = client.call_action('get_profile', user_id=self.saved_users[row.email])
+            profile = response.result.profile
+
+            # update the profile
+            for key, value in profile_data.iteritems():
+                setattr(profile, key, value)
+            response = client.call_action('update_profile', profile=profile)
+            profile = response.result.profile
+        return profile
 
     def _parse_address(self, row):
         if row.address_composite_key not in self.addresses:
