@@ -1,4 +1,5 @@
 import uuid
+import django.db
 from django.db.models import (
     Count,
     Q,
@@ -36,11 +37,23 @@ class CreateProfile(actions.Action):
         'profile.user_id': [validators.is_uuid4],
     }
 
+    def _create_profile(self):
+        profile = None
+        try:
+            profile = models.Profile.objects.from_protobuf(
+                self.request.profile,
+            )
+        except django.db.IntegrityError:
+            self.note_error(
+                'DUPLICATE',
+                ('DUPLICATE', 'profile for user_id and organization_id already exists'),
+            )
+        return profile
+
     def run(self, *args, **kwargs):
-        profile = models.Profile.objects.from_protobuf(
-            self.request.profile,
-        )
-        profile.to_protobuf(self.response.profile)
+        profile = self._create_profile()
+        if profile:
+            profile.to_protobuf(self.response.profile)
 
 
 class UpdateProfile(actions.Action):

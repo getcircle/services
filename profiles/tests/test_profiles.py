@@ -472,3 +472,9 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         stats = response.result.stats[0]
         self.assertEqual(stats.count, '5')
+
+    def test_create_profile_duplicate(self):
+        profile = factories.ProfileFactory.create_protobuf()
+        response = self.client.call_action('create_profile', profile=profile)
+        self.assertFalse(response.success)
+        self.assertIn('DUPLICATE', response.errors)
