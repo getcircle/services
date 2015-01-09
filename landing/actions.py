@@ -14,6 +14,7 @@ class GetCategories(actions.Action):
     def __init__(self, *args, **kwargs):
         super(GetCategories, self).__init__(*args, **kwargs)
         self.profile_client = service.control.Client('profile', token=self.token)
+        self.organization_client = service.control.Client('organization', token=self.token)
 
     def _get_peers_category(self):
         response = self.profile_client.call_action('get_peers', profile_id=self.request.profile_id)
@@ -50,6 +51,33 @@ class GetCategories(actions.Action):
             container = reports.content.add()
             container.CopyFrom(profile)
 
+    def _get_locations_category(self, profile):
+        response = self.organization_client.call_action(
+            'get_addresses',
+            organization_id=profile.organization_id,
+        )
+        if not response.success:
+            raise Exception('failed to fetch addresses')
+
+        if not len(response.result.addresses):
+            return
+
+        locations = self.response.address_categories.add()
+        locations.title = 'Locations'
+        locations.content_key = 'address_1'
+        for address in response.result.addresses:
+            container = locations.content.add()
+            container.CopyFrom(address)
+
     def run(self, *args, **kwargs):
+        response = self.profile_client.call_action(
+            'get_profile',
+            profile_id=self.request.profile_id,
+        )
+        if not response.success:
+            raise Exception('failed to fetch profile')
+
+        profile = response.result.profile
         self._get_peers_category()
         self._get_direct_reports_category()
+        self._get_locations_category(profile)
