@@ -136,6 +136,7 @@ class GetTeam(actions.Action):
 
     type_validators = {
         'team_id': [validators.is_uuid4],
+        'organization_id': [validators.is_uuid4],
     }
 
     field_validators = {
@@ -144,8 +145,23 @@ class GetTeam(actions.Action):
         },
     }
 
+    def validate(self, *args, **kwargs):
+        super(GetTeam, self).validate(*args, **kwargs)
+        if self.request.name and not self.request.organization_id:
+            self.note_field_error('organization_id', 'MISSING')
+        if self.request.organization_id and not self.request.name:
+            self.note_field_error('name', 'MISSING')
+
     def run(self, *args, **kwargs):
-        team = models.Team.objects.get(pk=self.request.team_id)
+        parameters = {}
+        if self.request.team_id:
+            parameters['pk'] = self.request.team_id
+        else:
+            parameters['name'] = self.request.name
+            parameters['organization_id'] = self.request.organization_id
+
+        # TODO map this error
+        team = models.Team.objects.get(**parameters)
         team.to_protobuf(self.response.team, path=team.get_path())
 
 

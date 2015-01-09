@@ -506,5 +506,22 @@ class TestOrganizations(TestCase):
         for key in clear_keys:
             team_dict.pop(key)
         response = self.client.call_action('create_team', team=team_dict)
-        self.assertFalse(response.success)
         self._verify_field_error(response, 'team.name', 'DUPLICATE')
+
+    def test_get_team_with_name_and_organization_id_organization_id_invalid(self):
+        response = self.client.call_action('get_team', name='test', organization_id='invalid')
+        self._verify_field_error(response, 'organization_id')
+
+    def test_get_team_with_name_and_organization_id_only_name_provided(self):
+        response = self.client.call_action('get_team', name='test')
+        self._verify_field_error(response, 'organization_id', 'MISSING')
+
+    def test_get_team_with_name_and_organization_id(self):
+        team = factories.TeamFactory.create()
+        response = self.client.call_action(
+            'get_team',
+            name=team.name,
+            organization_id=str(team.organization_id),
+        )
+        self.assertTrue(response.success)
+        self.assertTrue(str(team.id), response.result.team.id)
