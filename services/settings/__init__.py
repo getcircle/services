@@ -125,6 +125,7 @@ REST_FRAMEWORK = {
 
 TEST_RUNNER = 'services.test.runner.ServicesTestSuiteRunner'
 
+# TODO setup proper logging
 LOGGING = {
     'version': 1,
     'handlers': {

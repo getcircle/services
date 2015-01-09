@@ -1,5 +1,6 @@
-from copy import copy
+import datetime
 
+from freezegun import freeze_time
 from protobufs.profile_service_pb2 import ProfileService
 import service.control
 
@@ -465,3 +466,71 @@ class TestProfiles(TestCase):
         response = self.client.call_action('create_profile', profile=profile)
         self.assertFalse(response.success)
         self.assertIn('DUPLICATE', response.errors)
+
+    def test_get_upcoming_anniversaries_invalid_organization_id(self):
+        response = self.client.call_action('get_upcoming_anniversaries', organization_id='invalid')
+        self._verify_field_error(response, 'organization_id')
+
+    @freeze_time("2015-01-09")
+    def test_get_upcoming_anniversaries(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        # create a profile whose anniversary is in the past
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2014, 1, 8),
+            organization_id=organization_id,
+        )
+
+        # create a profile with an upcoming anniversary
+        profile = factories.ProfileFactory.create(
+            hire_date=datetime.date(2013, 1, 10),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action(
+            'get_upcoming_anniversaries',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
+        self.assertEqual(str(profile.id), response.result.profiles[0].id)
+
+    @freeze_time("2015-01-09")
+    def test_get_upcoming_anniversaries_all_in_future(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2015, 1, 9),
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2015, 1, 10),
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2015, 1, 11),
+            organization_id=organization_id,
+        )
+
+        response = self.client.call_action(
+            'get_upcoming_anniversaries',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 0)
+
+    @freeze_time("2015-01-09")
+    def test_get_upcoming_anniversaries_in_past_this_year(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2015, 1, 8),
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2014, 12, 10),
+            organization_id=organization_id,
+        )
+
+        response = self.client.call_action(
+            'get_upcoming_anniversaries',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 0)

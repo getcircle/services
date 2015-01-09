@@ -1,4 +1,6 @@
 import uuid
+
+import arrow
 import django.db
 from django.db.models import (
     Count,
@@ -379,3 +381,37 @@ class GetProfileStats(actions.Action):
             container = self.response.stats.add()
             container.id = str(address_id)
             container.count = str(stats_dict.get(address_id, 0))
+
+
+class GetUpcomingAnniversaries(actions.Action):
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
+    def _get_parameters_list(self):
+        now = arrow.utcnow()
+        return [
+            tuple(range(now.day, now.day + 7)),
+            now.month,
+            now.date(),
+            self.request.organization_id,
+        ]
+
+    def _build_profiles_query(self):
+        return (
+            'SELECT * FROM %s WHERE'
+            ' EXTRACT(day from hire_date) in %%s'
+            ' AND EXTRACT(month from hire_date) = %%s'
+            ' AND hire_date < %%s'
+            ' AND organization_id = %%s'
+        ) % (models.Profile._meta.db_table,)
+
+    def run(self, *args, **kwargs):
+        profiles = models.Profile.objects.raw(
+            self._build_profiles_query(),
+            self._get_parameters_list(),
+        )
+        for profile in profiles:
+            container = self.response.profiles.add()
+            profile.to_protobuf(container)

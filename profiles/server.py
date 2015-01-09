@@ -18,4 +18,5 @@ class Server(service.control.Server):
         'get_direct_reports': actions.GetDirectReports,
         'get_peers': actions.GetPeers,
         'get_profile_stats': actions.GetProfileStats,
+        'get_upcoming_anniversaries': actions.GetUpcomingAnniversaries,
     }
