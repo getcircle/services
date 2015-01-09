@@ -62,12 +62,20 @@ class GetCategories(actions.Action):
         if not len(response.result.addresses):
             return
 
+        addresses = response.result.addresses
+        address_ids = [address.id for address in addresses]
+        response = self.profile_client.call_action('get_profile_stats', address_ids=address_ids)
+        if not response.success:
+            raise Exception('failed to fetch profile stats')
+
+        stats = dict((stat.id, stat.count) for stat in response.result.stats)
         locations = self.response.address_categories.add()
         locations.title = 'Locations'
         locations.content_key = 'address_1'
-        for address in response.result.addresses:
+        for address in addresses:
             container = locations.content.add()
             container.CopyFrom(address)
+            container.profile_count = stats.get(address.id, 0)
 
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
