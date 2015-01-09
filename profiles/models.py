@@ -1,4 +1,3 @@
-from django.contrib.postgres.fields import HStoreField
 from phonenumber_field.modelfields import PhoneNumberField
 
 from common.db import models
@@ -27,7 +26,6 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     cell_phone = PhoneNumberField(null=True)
     work_phone = PhoneNumberField(null=True)
     image_url = models.CharField(max_length=256, null=True)
-    location = HStoreField(null=True)
     email = models.EmailField()
     tags = models.ManyToManyField(Tag)
     birth_date = models.DateField()
