@@ -49,6 +49,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
     class Meta:
         unique_together = ('name', 'organization')
 
+
 class Address(models.UUIDModel, models.TimestampableModel):
 
     organization = models.ForeignKey(Organization, db_index=True)
