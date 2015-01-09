@@ -75,7 +75,7 @@ class GetCategories(actions.Action):
         for address in addresses:
             container = locations.content.add()
             container.CopyFrom(address)
-            container.profile_count = stats.get(address.id, 0)
+            container.profile_count = str(stats.get(address.id, 0))
 
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(

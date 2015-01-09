@@ -364,4 +364,4 @@ class GetProfileStats(actions.Action):
             address_id = uuid.UUID(address_id, version=4)
             container = self.response.stats.add()
             container.id = str(address_id)
-            container.count = stats_dict.get(address_id, 0)
+            container.count = str(stats_dict.get(address_id, 0))

@@ -95,7 +95,7 @@ class TestLandingService(TestCase):
         for address_id in address_ids:
             container = mock_response.stats.add()
             container.id = address_id
-            container.count = count
+            container.count = str(count)
 
         mock.instance.register_mock_response(
             service,
@@ -156,4 +156,4 @@ class TestLandingService(TestCase):
         self.assertEqual(len(category.content), 3)
         self.assertEqual(category.content_key, 'address_1')
         for address in category.content:
-            self.assertEqual(address.profile_count, 3)
+            self.assertEqual(address.profile_count, '3')
