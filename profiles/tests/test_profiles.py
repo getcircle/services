@@ -20,29 +20,13 @@ class TestProfiles(TestCase):
             'organization',
             token='test-token',
         )
-        self.profile_data = {
-            'organization_id': fuzzy.FuzzyUUID().fuzz(),
-            'user_id': fuzzy.FuzzyUUID().fuzz(),
-            'address_id': fuzzy.FuzzyUUID().fuzz(),
-            'title': fuzzy.FuzzyText().fuzz(),
-            'first_name': fuzzy.FuzzyText().fuzz(),
-            'last_name': fuzzy.FuzzyText().fuzz(),
-            'cell_phone': '+19492933322',
-            'image_url': fuzzy.FuzzyText().fuzz(),
-            'email': fuzzy.FuzzyText(suffix='@example.com').fuzz(),
-            'team_id': fuzzy.FuzzyUUID().fuzz(),
-        }
-
-    def _create_profile(self, data):
-        response = self.client.call_action('create_profile', profile=data)
-        self.assertTrue(response.success)
-        return response.result.profile
+        self.profile_data = factories.ProfileFactory.get_protobuf_data()
 
     def _create_and_add_profile_to_team(self, team):
-        data = copy(self.profile_data)
-        data['organization_id'] = team.organization_id
-        data['team_id'] = team.id
-        self.client.call_action('create_profile', profile=data)
+        self.client.call_action(
+            'create_profile',
+            profile=factories.ProfileFactory.get_protobuf_data(),
+        )
 
     def _create_user(self):
         response = self.user_client.call_action(
@@ -96,12 +80,12 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         team = response.result.team
 
-        profile_data = copy(self.profile_data)
-        profile_data['user_id'] = user.id
-        profile_data['organization_id'] = organization_id
-        profile_data['address_id'] = address_id
-        profile_data['team_id'] = team.id
-        profile = self._create_profile(profile_data)
+        profile = factories.ProfileFactory.create_protobuf(
+            user_id=user.id,
+            organization_id=organization_id,
+            address_id=address_id,
+            team_id=team.id,
+        )
         return team, profile
 
     def test_create_profile_invalid_organization_id(self):
@@ -137,8 +121,10 @@ class TestProfiles(TestCase):
         self._verify_field_error(response, 'profile.team_id')
 
     def test_create_profile(self):
-        profile = self._create_profile(self.profile_data)
-        self._verify_container_matches_data(profile, self.profile_data)
+        profile_data = factories.ProfileFactory.get_protobuf_data()
+        response = self.client.call_action('create_profile', profile=profile_data)
+        self.assertTrue(response.success)
+        self._verify_container_matches_data(response.result.profile, profile_data)
 
     def test_get_profiles_invalid_organization_id(self):
         response = self.client.call_action(
@@ -148,7 +134,7 @@ class TestProfiles(TestCase):
         self._verify_field_error(response, 'organization_id')
 
     def test_get_profiles_with_organization_id(self):
-        profile = self._create_profile(self.profile_data)
+        profile = factories.ProfileFactory.create_protobuf()
         response = self.client.call_action(
             'get_profiles',
             organization_id=profile.organization_id,
@@ -165,7 +151,7 @@ class TestProfiles(TestCase):
         self._verify_field_error(response, 'team_id')
 
     def test_get_profiles(self):
-        profile = self._create_profile(self.profile_data)
+        profile = factories.ProfileFactory.create_protobuf()
         response = self.client.call_action(
             'get_profiles',
             team_id=profile.team_id,
@@ -175,7 +161,7 @@ class TestProfiles(TestCase):
         self._verify_containers(profile, response.result.profiles[0])
 
     def test_get_profile(self):
-        expected = self._create_profile(self.profile_data)
+        expected = factories.ProfileFactory.create_protobuf()
         response = self.client.call_action(
             'get_profile',
             profile_id=expected.id,
@@ -183,7 +169,7 @@ class TestProfiles(TestCase):
         self._verify_containers(expected, response.result.profile)
 
     def test_get_profile_full_name(self):
-        profile = self._create_profile(self.profile_data)
+        profile = factories.ProfileFactory.create_protobuf()
         self.assertTrue(profile.full_name)
 
     def test_get_profile_invalid_profile_id(self):
@@ -300,7 +286,7 @@ class TestProfiles(TestCase):
         self._verify_field_error(response, 'profile.id', 'DOES_NOT_EXIST')
 
     def test_update_profile(self):
-        original = self._create_profile(self.profile_data)
+        original = factories.ProfileFactory.create_protobuf()
         profile = ProfileService.Containers.Profile()
         profile.CopyFrom(original)
 
@@ -355,12 +341,12 @@ class TestProfiles(TestCase):
 
         # add team members to the owners direct team
         for _ in range(3):
-            data = copy(self.profile_data)
-            data['address_id'] = address.id
-            data['organization_id'] = address.organization_id
-            data['team_id'] = parent_team.id
-            data['user_id'] = self._create_user().id
-            self._create_profile(data)
+            factories.ProfileFactory.create(
+                address_id=address.id,
+                organization_id=address.organization_id,
+                team_id=parent_team.id,
+                user_id=self._create_user().id,
+            )
         return owner
 
     def test_get_direct_reports(self):
@@ -383,7 +369,7 @@ class TestProfiles(TestCase):
         self.profile_data['organization_id'] = address.organization_id
         self.profile_data['address_id'] = address.id
         self.profile_data['team_id'] = parent_team.id
-        profile = self._create_profile(self.profile_data)
+        profile = factories.ProfileFactory.create_protobuf(**self.profile_data)
 
         response = self.client.call_action('get_direct_reports', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -399,7 +385,12 @@ class TestProfiles(TestCase):
             data['organization_id'] = address.organization_id
             data['team_id'] = parent_team.id
             data['user_id'] = self._create_user().id
-            peer = self._create_profile(data)
+            peer = factories.ProfileFactory.create_protobuf(
+                address_id=address.id,
+                organization_id=address.organization_id,
+                team_id=parent_team.id,
+                user_id=self._create_user().id,
+            )
 
         response = self.client.call_action('get_peers', profile_id=peer.id)
         self.assertTrue(response.success)

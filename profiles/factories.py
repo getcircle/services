@@ -1,29 +1,31 @@
-import factory
+import datetime
 from protobufs.profile_service_pb2 import ProfileService
 
-from services.test import fuzzy
+from services.test import factory
 
 from . import models
 
-class ProfileFactory(factory.DjangoModelFactory):
+
+class ProfileFactory(factory.Factory):
     class Meta:
         model = models.Profile
+        protobuf = ProfileService.Containers.Profile
 
-    organization_id = fuzzy.FuzzyUUID()
-    user_id = fuzzy.FuzzyUUID()
-    address_id = fuzzy.FuzzyUUID()
-    team_id = fuzzy.FuzzyUUID()
-    title = fuzzy.FuzzyText()
-    first_name = fuzzy.FuzzyText()
-    last_name = fuzzy.FuzzyText()
-    # TODO add a custom fuzzy FuzzyPhoneNumber
+    organization_id = factory.FuzzyUUID()
+    user_id = factory.FuzzyUUID()
+    address_id = factory.FuzzyUUID()
+    team_id = factory.FuzzyUUID()
+    title = factory.FuzzyText()
+    first_name = factory.FuzzyText()
+    last_name = factory.FuzzyText()
+    # TODO add a custom factory FuzzyPhoneNumber
     cell_phone = '+19492933322'
-    image_url = fuzzy.FuzzyText(prefix='http://www.media.com/')
-    email = fuzzy.FuzzyText(suffix='@example.com')
+    image_url = factory.FuzzyText(prefix='http://www.media.com/')
+    email = factory.FuzzyText(suffix='@example.com')
+    hire_date = factory.FuzzyDate(datetime.date(2000, 1, 1))
+    birth_date = factory.FuzzyDate(datetime.date(1950, 1, 1))
 
     @classmethod
-    def create_protobuf(cls, *args, **kwargs):
-        container = ProfileService.Containers.Profile()
-        model = cls.create(*args, **kwargs)
-        model.to_protobuf(container)
-        return container
+    def get_protobuf_data(cls, **data):
+        model = cls.build(**data)
+        return model.as_dict(exclude=('created', 'changed'))

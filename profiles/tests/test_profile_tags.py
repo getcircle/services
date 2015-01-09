@@ -5,28 +5,14 @@ from services.test import (
     TestCase,
 )
 
+from .. import factories
+
 
 class TestProfileTags(TestCase):
 
     def setUp(self):
         self.client = service.control.Client('profile', token='test-token')
-        self.profile_data = {
-            'organization_id': fuzzy.FuzzyUUID().fuzz(),
-            'user_id': fuzzy.FuzzyUUID().fuzz(),
-            'address_id': fuzzy.FuzzyUUID().fuzz(),
-            'title': fuzzy.FuzzyText().fuzz(),
-            'first_name': fuzzy.FuzzyText().fuzz(),
-            'last_name': fuzzy.FuzzyText().fuzz(),
-            'cell_phone': fuzzy.FuzzyText().fuzz(),
-            'work_phone': '+19492933322',
-            'image_url': fuzzy.FuzzyText().fuzz(),
-            'email': fuzzy.FuzzyText(suffix='@example.com').fuzz(),
-            'team_id': fuzzy.FuzzyUUID().fuzz(),
-        }
-        response = self.client.call_action('create_profile', profile=self.profile_data)
-        self.assertTrue(response.success)
-        self.profile = response.result.profile
-
+        self.profile = factories.ProfileFactory.create_protobuf()
         organization_client = service.control.Client('organization', token='test-token')
         response = organization_client.call_action(
             'create_organization',
