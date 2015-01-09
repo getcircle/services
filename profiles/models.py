@@ -30,6 +30,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     location = HStoreField(null=True)
     email = models.EmailField()
     tags = models.ManyToManyField(Tag)
+    birth_date = models.DateField()
 
     @property
     def full_name(self):

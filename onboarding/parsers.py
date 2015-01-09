@@ -39,6 +39,7 @@ class Row(object):
         'image_url',
         'title',
         'cell_phone',
+        'birth_date',
     )
 
     address_fields = (
