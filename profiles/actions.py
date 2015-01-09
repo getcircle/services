@@ -315,7 +315,7 @@ class GetPeers(actions.Action):
             raise Exception('failed to fetch team')
 
         team = response.result.team
-        if team.owner_id == str(profile.user_id):
+        if team.owner_id == str(profile.user_id) and len(team.path) > 1:
             client = service.control.Client('profile', token=self.token)
             response = client.call_action('get_direct_reports', user_id=team.path[-2].owner_id)
             if not response.success:

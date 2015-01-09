@@ -421,3 +421,12 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_peers', profile_id=peer.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 3)
+
+    def test_get_peers_ceo(self):
+        address = self._create_address()
+
+        # create a root team
+        _, owner = self._create_team_and_owner(address.organization_id, address.id)
+        response = self.client.call_action('get_peers', profile_id=owner.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 0)
