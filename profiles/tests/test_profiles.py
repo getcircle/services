@@ -3,8 +3,10 @@ from copy import copy
 from protobufs.profile_service_pb2 import ProfileService
 import service.control
 
-from services import fuzzy
-from services.test import TestCase
+from services.test import (
+    fuzzy,
+    TestCase,
+)
 
 
 class TestProfiles(TestCase):

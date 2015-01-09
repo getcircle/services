@@ -1,8 +1,10 @@
 import uuid
 import service.control
 
-from services import fuzzy
-from services.test import TestCase
+from services.test import (
+    fuzzy,
+    TestCase,
+)
 from . import models
 
 
