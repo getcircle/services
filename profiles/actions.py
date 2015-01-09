@@ -340,3 +340,15 @@ class GetPeers(actions.Action):
 
                 container = self.response.profiles.add()
                 item.to_protobuf(container)
+
+
+class GetProfileStats(actions.Action):
+
+    type_validators = {
+        'address_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        self.response.count = models.Profile.objects.filter(
+            address_id=self.request.address_id,
+        ).count()

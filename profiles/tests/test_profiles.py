@@ -8,6 +8,8 @@ from services.test import (
     TestCase,
 )
 
+from .. import factories
+
 
 class TestProfiles(TestCase):
 
@@ -40,7 +42,7 @@ class TestProfiles(TestCase):
         data = copy(self.profile_data)
         data['organization_id'] = team.organization_id
         data['team_id'] = team.id
-        response = self.client.call_action('create_profile', profile=data)
+        self.client.call_action('create_profile', profile=data)
 
     def _create_user(self):
         response = self.user_client.call_action(
@@ -449,3 +451,22 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_peers', profile_id=owner.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
+
+    def test_get_profile_stats_address_id_invalid(self):
+        response = self.client.call_action('get_profile_stats', address_id='invalid')
+        self._verify_field_error(response, 'address_id')
+
+    def test_get_profile_stats_address_id_no_profiles(self):
+        response = self.client.call_action(
+            'get_profile_stats',
+            address_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(response.result.count, 0)
+
+    def test_get_profile_stats_address_id(self):
+        address_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create_batch(5, address_id=address_id)
+        response = self.client.call_action('get_profile_stats', address_id=address_id)
+        self.assertTrue(response.success)
+        self.assertEqual(response.result.count, 5)
