@@ -324,13 +324,19 @@ class GetPeers(actions.Action):
             if not response.success:
                 raise Exception('failed to fetch direct reports')
 
-            for profile in response.result.profiles:
+            for item in response.result.profiles:
+                if str(item.id) == str(profile.pk):
+                    continue
+
                 container = self.response.profiles.add()
-                container.CopyFrom(profile)
+                container.CopyFrom(item)
         else:
             profiles = models.Profile.objects.filter(team_id=profile.team_id).exclude(
                 user_id=team.owner_id,
             )
-            for profile in profiles:
+            for item in profiles:
+                if item.pk == profile.pk:
+                    continue
+
                 container = self.response.profiles.add()
-                profile.to_protobuf(container)
+                item.to_protobuf(container)
