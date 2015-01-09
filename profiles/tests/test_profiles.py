@@ -452,21 +452,23 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
 
-    def test_get_profile_stats_address_id_invalid(self):
-        response = self.client.call_action('get_profile_stats', address_id='invalid')
-        self._verify_field_error(response, 'address_id')
+    def test_get_profile_stats_address_invalid(self):
+        response = self.client.call_action('get_profile_stats', address_ids=['invalid'])
+        self._verify_field_error(response, 'address_ids')
 
-    def test_get_profile_stats_address_id_no_profiles(self):
+    def test_get_profile_stats_address_no_profiles(self):
         response = self.client.call_action(
             'get_profile_stats',
-            address_id=fuzzy.FuzzyUUID().fuzz(),
+            address_ids=[fuzzy.FuzzyUUID().fuzz()],
         )
         self.assertTrue(response.success)
-        self.assertEqual(response.result.count, 0)
+        stats = response.result.stats[0]
+        self.assertEqual(stats.count, 0)
 
-    def test_get_profile_stats_address_id(self):
+    def test_get_profile_stats_address(self):
         address_id = fuzzy.FuzzyUUID().fuzz()
         factories.ProfileFactory.create_batch(5, address_id=address_id)
-        response = self.client.call_action('get_profile_stats', address_id=address_id)
+        response = self.client.call_action('get_profile_stats', address_ids=[address_id])
         self.assertTrue(response.success)
-        self.assertEqual(response.result.count, 5)
+        stats = response.result.stats[0]
+        self.assertEqual(stats.count, 5)

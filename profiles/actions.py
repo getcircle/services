@@ -1,4 +1,8 @@
-from django.db.models import Q
+import uuid
+from django.db.models import (
+    Count,
+    Q,
+)
 import service.control
 from service import (
     actions,
@@ -345,10 +349,19 @@ class GetPeers(actions.Action):
 class GetProfileStats(actions.Action):
 
     type_validators = {
-        'address_id': [validators.is_uuid4],
+        'address_ids': [validators.is_uuid4_list],
     }
 
     def run(self, *args, **kwargs):
-        self.response.count = models.Profile.objects.filter(
-            address_id=self.request.address_id,
-        ).count()
+        stats = models.Profile.objects.filter(address_id__in=self.request.address_ids).values(
+            'address_id',
+        ).annotate(profiles=Count('id'))
+        stats_dict = dict((stat['address_id'], stat['profiles']) for stat in stats)
+        for address_id in self.request.address_ids:
+            # TODO type validators should check type and then transform to that
+            # type so we're working with consistent values. ie. if we validate
+            # uuid, we should have "uuid" type, not string
+            address_id = uuid.UUID(address_id, version=4)
+            container = self.response.stats.add()
+            container.id = str(address_id)
+            container.count = stats_dict.get(address_id, 0)
