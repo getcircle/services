@@ -313,9 +313,13 @@ class GetPeers(actions.Action):
         if not response.success:
             # XXX we should be mapping these
             raise Exception('failed to fetch team')
-
         team = response.result.team
-        if team.owner_id == str(profile.user_id) and len(team.path) > 1:
+
+        # handle the CEO
+        if len(team.path) > 1:
+            return
+
+        if team.owner_id == str(profile.user_id):
             client = service.control.Client('profile', token=self.token)
             response = client.call_action('get_direct_reports', user_id=team.path[-2].owner_id)
             if not response.success:
