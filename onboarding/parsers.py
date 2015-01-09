@@ -135,7 +135,7 @@ class Parser(object):
     def _save_user(self, row):
         self.debug_log('saving user: %s' % (row.email,))
         client = service.control.Client('user', token=self.token)
-        response = client.call_action('create_user', email=row.email)
+        response = client.call_action('create_user', email=row.email, password='rhlabs123')
         if response.success:
             user = response.result.user
         else:
