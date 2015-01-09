@@ -46,6 +46,8 @@ class Team(models.UUIDModel, models.TimestampableModel):
             pass
         return department_title
 
+    class Meta:
+        unique_together = ('name', 'organization')
 
 class Address(models.UUIDModel, models.TimestampableModel):
 
