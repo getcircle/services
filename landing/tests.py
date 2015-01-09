@@ -45,3 +45,8 @@ class TestLandingService(TestCase):
         response = self.client.call_action('get_categories', profile_id=profile_id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profile_categories), 1)
+
+        category = response.result.profile_categories[0]
+        self.assertEqual(category.title, 'Peers')
+        self.assertEqual(len(category.content), 3)
+        self.assertEqual(category.content_key, 'title')

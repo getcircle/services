@@ -22,6 +22,8 @@ class GetCategories(actions.Action):
             raise Exception('failed to fetch peers')
 
         peers = self.response.profile_categories.add()
+        peers.title = 'Peers'
+        peers.content_key = 'title'
         for profile in response.result.profiles:
             container = peers.content.add()
             container.CopyFrom(profile)
