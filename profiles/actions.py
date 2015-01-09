@@ -315,8 +315,7 @@ class GetPeers(actions.Action):
             raise Exception('failed to fetch team')
         team = response.result.team
 
-        # handle the CEO, he has no peers
-        if len(team.path) < 2:
+        if team.owner_id == str(profile.user_id) and len(team.path) < 2:
             return
 
         if team.owner_id == str(profile.user_id):

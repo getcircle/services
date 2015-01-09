@@ -36,6 +36,12 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         return response.result.profile
 
+    def _create_and_add_profile_to_team(self, team):
+        data = copy(self.profile_data)
+        data['organization_id'] = team.organization_id
+        data['team_id'] = team.id
+        response = self.client.call_action('create_profile', profile=data)
+
     def _create_user(self):
         response = self.user_client.call_action(
             'create_user',
@@ -427,6 +433,19 @@ class TestProfiles(TestCase):
 
         # create a root team
         _, owner = self._create_team_and_owner(address.organization_id, address.id)
+        response = self.client.call_action('get_peers', profile_id=owner.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 0)
+
+    def test_get_peers_ceo_members_on_direct_team(self):
+        address = self._create_address()
+
+        # create a root team
+        team, owner = self._create_team_and_owner(address.organization_id, address.id)
+
+        # add someone on his direct team (C level exec)
+        self._create_and_add_profile_to_team(team)
+
         response = self.client.call_action('get_peers', profile_id=owner.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
