@@ -366,10 +366,11 @@ class TestProfiles(TestCase):
     def test_get_direct_reports_no_direct_reports(self):
         address = self._create_address()
         parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
-        self.profile_data['organization_id'] = address.organization_id
-        self.profile_data['address_id'] = address.id
-        self.profile_data['team_id'] = parent_team.id
-        profile = factories.ProfileFactory.create_protobuf(**self.profile_data)
+        profile = factories.ProfileFactory.create_protobuf(
+            organization_id=address.organization_id,
+            address_id=address.id,
+            team_id=parent_team.id,
+        )
 
         response = self.client.call_action('get_direct_reports', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -380,11 +381,6 @@ class TestProfiles(TestCase):
         parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
 
         for _ in range(3):
-            data = copy(self.profile_data)
-            data['address_id'] = address.id
-            data['organization_id'] = address.organization_id
-            data['team_id'] = parent_team.id
-            data['user_id'] = self._create_user().id
             peer = factories.ProfileFactory.create_protobuf(
                 address_id=address.id,
                 organization_id=address.organization_id,
