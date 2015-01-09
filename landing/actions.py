@@ -77,6 +77,24 @@ class GetCategories(actions.Action):
             container.CopyFrom(address)
             container.profile_count = str(stats.get(address.id, 0))
 
+    def _get_upcoming_anniversaries_category(self, profile):
+        response = self.profile_client.call_action(
+            'get_upcoming_anniversaries',
+            organization_id=profile.organization_id,
+        )
+        if not response.success:
+            raise Exception('failed to fetch anniversaries')
+
+        if not len(response.result.profiles):
+            return
+
+        anniversaries = self.response.profile_categories.add()
+        anniversaries.title = 'Work Anniversaries'
+        anniversaries.content_key = 'hire_date'
+        for profile in response.result.profiles:
+            container = anniversaries.content.add()
+            container.CopyFrom(profile)
+
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
             'get_profile',
@@ -89,3 +107,4 @@ class GetCategories(actions.Action):
         self._get_peers_category()
         self._get_direct_reports_category()
         self._get_locations_category(profile)
+        self._get_upcoming_anniversaries_category(profile)

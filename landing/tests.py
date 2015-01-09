@@ -104,6 +104,21 @@ class TestLandingService(TestCase):
             address_ids=address_ids,
         )
 
+    def _mock_get_upcoming_anniversaries(self, organization_id, profiles=3):
+        service = 'profile'
+        action = 'get_upcoming_anniversaries'
+        mock_response = mock.get_mockable_response(service, action)
+        for _ in range(profiles):
+            profile = mock_response.profiles.add()
+            self._mock_profile(profile)
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            organization_id=organization_id,
+        )
+
     def test_profile_category_invalid_profile_id(self):
         response = self.client.call_action('get_categories', profile_id='invalid')
         self._verify_field_error(response, 'profile_id')
@@ -112,8 +127,9 @@ class TestLandingService(TestCase):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id)
         self._mock_get_direct_reports(profile.id, direct_reports=0)
-        addresses = self._mock_get_addresses(profile.organization_id, addresses=0)
-        self._mock_get_profile_stats([a.id for a in addresses])
+        self._mock_get_addresses(profile.organization_id, addresses=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -128,8 +144,9 @@ class TestLandingService(TestCase):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id, peers=0)
         self._mock_get_direct_reports(profile.id)
-        addresses = self._mock_get_addresses(profile.organization_id, addresses=0)
-        self._mock_get_profile_stats([a.id for a in addresses])
+        self._mock_get_addresses(profile.organization_id, addresses=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -146,6 +163,7 @@ class TestLandingService(TestCase):
         self._mock_get_direct_reports(profile.id, direct_reports=0)
         addresses = self._mock_get_addresses(profile.organization_id)
         self._mock_get_profile_stats([a.id for a in addresses])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -157,3 +175,20 @@ class TestLandingService(TestCase):
         self.assertEqual(category.content_key, 'address_1')
         for address in category.content:
             self.assertEqual(address.profile_count, '3')
+
+    def test_anniversaries_profile_category(self):
+        profile = self._mock_get_profile()
+        self._mock_get_peers(profile.id, peers=0)
+        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_addresses(profile.organization_id, addresses=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id)
+
+        response = self.client.call_action('get_categories', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profile_categories), 1)
+
+        category = response.result.profile_categories[0]
+        self.assertEqual(category.title, 'Work Anniversaries')
+        self.assertEqual(len(category.content), 3)
+        self.assertEqual(category.content_key, 'hire_date')
