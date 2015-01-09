@@ -33,10 +33,7 @@ class CreateOrganization(actions.Action):
                 self.request.organization,
             )
         except django.db.IntegrityError:
-            self.note_error(
-                'FIELD_ERROR',
-                ('organization.domain', 'DUPLICATE'),
-            )
+            self.note_field_error('organization.domain', 'DUPLICATE')
         return organization
 
     def run(self, *args, **kwargs):
@@ -116,17 +113,23 @@ class CreateTeam(actions.Action):
         return parent_team.path + '.' + team_id
 
     def _create_team(self):
+        team = None
         team_id = uuid.uuid4()
         path = self._resolve_path(team_id.hex)
-        return models.Team.objects.from_protobuf(
-            self.request.team,
-            id=team_id,
-            path=path,
-        )
+        try:
+            team = models.Team.objects.from_protobuf(
+                self.request.team,
+                id=team_id,
+                path=path,
+            )
+        except django.db.IntegrityError:
+            self.note_field_error('team.name', 'DUPLICATE')
+        return team
 
     def run(self, *args, **kwargs):
         team = self._create_team()
-        team.to_protobuf(self.response.team, path=team.get_path())
+        if team:
+            team.to_protobuf(self.response.team, path=team.get_path())
 
 
 class GetTeam(actions.Action):

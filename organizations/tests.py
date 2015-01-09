@@ -5,7 +5,10 @@ from services.test import (
     fuzzy,
     TestCase,
 )
-from . import models
+from . import (
+    factories,
+    models,
+)
 
 
 class TestOrganizations(TestCase):
@@ -495,3 +498,13 @@ class TestOrganizations(TestCase):
         response = self.client.call_action('get_team_children', team_id=parent_team.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.teams), 2)
+
+    def test_create_team_duplicate_name(self):
+        team = factories.TeamFactory.create()
+        team_dict = team.as_dict()
+        clear_keys = ['id', 'created', 'changed', 'path']
+        for key in clear_keys:
+            team_dict.pop(key)
+        response = self.client.call_action('create_team', team=team_dict)
+        self.assertFalse(response.success)
+        self._verify_field_error(response, 'team.name', 'DUPLICATE')
