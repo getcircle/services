@@ -533,3 +533,21 @@ class TestOrganizations(TestCase):
             address=address.as_dict(exclude=('id', 'created', 'changed')),
         )
         self._verify_field_error(response, 'address.name', 'DUPLICATE')
+
+    def test_get_address_name_and_organization_organization_id_invalid(self):
+        response = self.client.call_action('get_address', name='test', organization_id='invalid')
+        self._verify_field_error(response, 'organization_id')
+
+    def test_get_address_name_and_organization_organization_required_if_name(self):
+        response = self.client.call_action('get_address', name='test')
+        self._verify_field_error(response, 'organization_id', 'MISSING')
+
+    def test_get_address_name_and_organization_id(self):
+        address = factories.AddressFactory.create_protobuf()
+        response = self.client.call_action(
+            'get_address',
+            name=address.name,
+            organization_id=address.organization_id,
+        )
+        self.assertTrue(response.success)
+        self._verify_containers(address, response.result.address)

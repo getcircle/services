@@ -260,6 +260,7 @@ class GetAddress(actions.Action):
 
     type_validators = {
         'address_id': [validators.is_uuid4],
+        'organization_id': [validators.is_uuid4],
     }
 
     field_validators = {
@@ -268,8 +269,22 @@ class GetAddress(actions.Action):
         }
     }
 
+    def validate(self, *args, **kwargs):
+        super(GetAddress, self).validate(*args, **kwargs)
+        if self.request.name and not self.request.organization_id:
+            self.note_field_error('organization_id', 'MISSING')
+        elif self.request.organization_id and not self.request.name:
+            self.note_field_error('name', 'MISSING')
+
     def run(self, *args, **kwargs):
-        address = models.Address.objects.get(pk=self.request.address_id)
+        parameters = {}
+        if self.request.address_id:
+            parameters['pk'] = self.request.address_id
+        else:
+            parameters['name'] = self.request.name
+            parameters['organization_id'] = self.request.organization_id
+
+        address = models.Address.objects.get(**parameters)
         address.to_protobuf(self.response.address)
 
 

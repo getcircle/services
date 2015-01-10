@@ -1,37 +1,39 @@
-import factory
-from services.test import fuzzy
+from protobufs.organization_service_pb2 import OrganizationService
+
+from services.test import factory
 
 from . import models
 
 
-class OrganizationFactory(factory.DjangoModelFactory):
+class OrganizationFactory(factory.Factory):
     class Meta:
         model = models.Organization
 
-    name = fuzzy.FuzzyText()
-    domain = fuzzy.FuzzyText(suffix='.com')
+    name = factory.FuzzyText()
+    domain = factory.FuzzyText(suffix='.com')
 
 
-class TeamFactory(factory.DjangoModelFactory):
+class TeamFactory(factory.Factory):
     class Meta:
         model = models.Team
 
-    name = fuzzy.FuzzyText()
-    owner_id = fuzzy.FuzzyUUID()
-    path = fuzzy.FuzzyUUID()
+    name = factory.FuzzyText()
+    owner_id = factory.FuzzyUUID()
+    path = factory.FuzzyUUID()
     organization = factory.SubFactory(OrganizationFactory)
 
 
-class AddressFactory(factory.DjangoModelFactory):
+class AddressFactory(factory.Factory):
     class Meta:
         model = models.Address
+        protobuf = OrganizationService.Containers.Address
 
     organization = factory.SubFactory(OrganizationFactory)
-    name = fuzzy.FuzzyText()
-    address_1 = fuzzy.FuzzyText(suffix=' Street')
-    address_2 = fuzzy.FuzzyText(suffix=' Suite 700')
-    city = fuzzy.FuzzyText()
-    region = fuzzy.FuzzyText(length=2)
+    name = factory.FuzzyText()
+    address_1 = factory.FuzzyText(suffix=' Street')
+    address_2 = factory.FuzzyText(suffix=' Suite 700')
+    city = factory.FuzzyText()
+    region = factory.FuzzyText(length=2)
     postal_code = '94010'
     country_code = 'US'
 
