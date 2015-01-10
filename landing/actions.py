@@ -30,7 +30,7 @@ class GetCategories(actions.Action):
         peers = self.response.categories.add()
         peers.title = 'Peers'
         peers.content_key = 'title'
-        peers.category_type = LandingService.PEERS
+        peers.type = LandingService.PEERS
         peers.total_count = str(len(response.result.profiles))
         for profile in response.result.profiles:
             container = peers.profiles.add()
@@ -51,7 +51,7 @@ class GetCategories(actions.Action):
         reports = self.response.categories.add()
         reports.title = 'Direct Reports'
         reports.content_key = 'title'
-        reports.category_type = LandingService.DIRECT_REPORTS
+        reports.type = LandingService.DIRECT_REPORTS
         reports.total_count = str(len(response.result.profiles))
         for profile in response.result.profiles:
             container = reports.profiles.add()
@@ -78,7 +78,7 @@ class GetCategories(actions.Action):
         locations = self.response.categories.add()
         locations.title = 'Locations'
         locations.content_key = 'address_1'
-        locations.category_type = LandingService.LOCATIONS
+        locations.type = LandingService.LOCATIONS
         locations.total_count = str(len(addresses))
         for address in addresses:
             container = locations.addresses.add()
@@ -99,7 +99,7 @@ class GetCategories(actions.Action):
         anniversaries = self.response.categories.add()
         anniversaries.title = 'Work Anniversaries'
         anniversaries.content_key = 'hire_date'
-        anniversaries.category_type = LandingService.ANNIVERSARIES
+        anniversaries.type = LandingService.ANNIVERSARIES
         anniversaries.total_count = str(len(response.result.profiles))
         for profile in response.result.profiles[:3]:
             container = anniversaries.profiles.add()
@@ -119,7 +119,7 @@ class GetCategories(actions.Action):
         birthdays = self.response.categories.add()
         birthdays.title = 'Birthdays'
         birthdays.content_key = 'birth_date'
-        birthdays.category_type = LandingService.BIRTHDAYS
+        birthdays.type = LandingService.BIRTHDAYS
         birthdays.total_count = str(len(response.result.profiles))
         for profile in response.result.profiles[:3]:
             container = birthdays.profiles.add()
@@ -139,7 +139,7 @@ class GetCategories(actions.Action):
         hires = self.response.categories.add()
         hires.title = 'New Hires'
         hires.content_key = 'hire_date'
-        hires.category_type = LandingService.NEW_HIRES
+        hires.type = LandingService.NEW_HIRES
         hires.total_count = str(len(response.result.profiles))
         for profile in response.result.profiles[:3]:
             container = hires.profiles.add()
