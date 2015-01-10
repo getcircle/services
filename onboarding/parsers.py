@@ -44,6 +44,7 @@ class Row(object):
     )
 
     address_fields = (
+        'office_name',
         'office_address_1',
         'office_city',
         'office_region',
@@ -132,7 +133,16 @@ class Parser(object):
             'create_address',
             address=address,
         )
-        return response.result.address.id
+        if response.success:
+            address = response.result.address
+        else:
+            response = self.organization_client.call_action(
+                'get_address',
+                name=address['name'],
+                organization_id=address['organization_id'],
+            )
+            address = response.result.address
+        return address.id
 
     def _save_user(self, row):
         self.debug_log('saving user: %s' % (row.email,))
