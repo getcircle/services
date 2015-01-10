@@ -621,3 +621,48 @@ class TestProfiles(TestCase):
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
+
+    def test_get_recent_hires_invalid_organization_id(self):
+        response = self.client.call_action('get_recent_hires', organization_id='invalid')
+        self._verify_field_error(response, 'organization_id')
+
+    @freeze_time('2015-01-10')
+    def test_get_recent_hires(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2015, 1, 8),
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2014, 12, 31),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action('get_recent_hires', organization_id=organization_id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
+
+    @freeze_time('2015-01-01')
+    def test_get_recent_hires_beginning_of_year(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2014, 12, 31),
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2014, 12, 30),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action('get_recent_hires', organization_id=organization_id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 2)
+
+    @freeze_time('2014-12-01')
+    def test_get_recent_hires_beginning_of_month(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2014, 11, 30),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action('get_recent_hires', organization_id=organization_id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
