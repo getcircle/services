@@ -34,3 +34,8 @@ class AddressFactory(factory.DjangoModelFactory):
     region = fuzzy.FuzzyText(length=2)
     postal_code = '94010'
     country_code = 'US'
+
+    @classmethod
+    def get_protobuf_data(cls, **data):
+        model = cls.build(**data)
+        return model.as_dict(exclude=('created', 'changed'))

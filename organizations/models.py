@@ -60,3 +60,6 @@ class Address(models.UUIDModel, models.TimestampableModel):
     region = models.CharField(max_length=64)
     postal_code = models.CharField(max_length=5)
     country_code = models.CharField(max_length=2)
+
+    class Meta:
+        unique_together = ('name', 'organization')

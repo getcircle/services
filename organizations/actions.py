@@ -222,11 +222,20 @@ class CreateAddress(actions.Action):
         'address.organization_id': [validators.is_uuid4],
     }
 
+    def _create_address(self):
+        address = None
+        try:
+            address = models.Address.objects.from_protobuf(
+                self.request.address,
+            )
+        except django.db.IntegrityError:
+            self.note_field_error('address.name', 'DUPLICATE')
+        return address
+
     def run(self, *args, **kwargs):
-        address = models.Address.objects.from_protobuf(
-            self.request.address,
-        )
-        address.to_protobuf(self.response.address)
+        address = self._create_address()
+        if address:
+            address.to_protobuf(self.response.address)
 
 
 class DeleteAddress(actions.Action):

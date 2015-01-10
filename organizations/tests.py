@@ -525,3 +525,11 @@ class TestOrganizations(TestCase):
         )
         self.assertTrue(response.success)
         self.assertTrue(str(team.id), response.result.team.id)
+
+    def test_create_address_duplicate(self):
+        address = factories.AddressFactory.create()
+        response = self.client.call_action(
+            'create_address',
+            address=address.as_dict(exclude=('id', 'created', 'changed')),
+        )
+        self._verify_field_error(response, 'address.name', 'DUPLICATE')
