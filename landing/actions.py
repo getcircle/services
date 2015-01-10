@@ -27,11 +27,13 @@ class GetCategories(actions.Action):
         if not len(response.result.profiles):
             return
 
-        peers = self.response.profile_categories.add()
+        peers = self.response.categories.add()
         peers.title = 'Peers'
         peers.content_key = 'title'
+        peers.category_type = LandingService.PEERS
+        peers.total_count = str(len(response.result.profiles))
         for profile in response.result.profiles:
-            container = peers.content.add()
+            container = peers.profiles.add()
             container.CopyFrom(profile)
 
     def _get_direct_reports_category(self):
@@ -46,11 +48,13 @@ class GetCategories(actions.Action):
         if not len(response.result.profiles):
             return
 
-        reports = self.response.profile_categories.add()
+        reports = self.response.categories.add()
         reports.title = 'Direct Reports'
         reports.content_key = 'title'
+        reports.category_type = LandingService.DIRECT_REPORTS
+        reports.total_count = str(len(response.result.profiles))
         for profile in response.result.profiles:
-            container = reports.content.add()
+            container = reports.profiles.add()
             container.CopyFrom(profile)
 
     def _get_locations_category(self, profile):
@@ -71,11 +75,13 @@ class GetCategories(actions.Action):
             raise Exception('failed to fetch profile stats')
 
         stats = dict((stat.id, stat.count) for stat in response.result.stats)
-        locations = self.response.address_categories.add()
+        locations = self.response.categories.add()
         locations.title = 'Locations'
         locations.content_key = 'address_1'
+        locations.category_type = LandingService.LOCATIONS
+        locations.total_count = str(len(addresses))
         for address in addresses:
-            container = locations.content.add()
+            container = locations.addresses.add()
             container.CopyFrom(address)
             container.profile_count = str(stats.get(address.id, 0))
 
@@ -90,12 +96,13 @@ class GetCategories(actions.Action):
         if not len(response.result.profiles):
             return
 
-        anniversaries = self.response.profile_categories.add()
+        anniversaries = self.response.categories.add()
         anniversaries.title = 'Work Anniversaries'
         anniversaries.content_key = 'hire_date'
-        anniversaries.display_type = LandingService.Containers.DETAIL
-        for profile in response.result.profiles:
-            container = anniversaries.content.add()
+        anniversaries.category_type = LandingService.ANNIVERSARIES
+        anniversaries.total_count = str(len(response.result.profiles))
+        for profile in response.result.profiles[:3]:
+            container = anniversaries.profiles.add()
             container.CopyFrom(profile)
 
     def _get_upcoming_birthdays_category(self, profile):
@@ -109,12 +116,13 @@ class GetCategories(actions.Action):
         if not len(response.result.profiles):
             return
 
-        birthdays = self.response.profile_categories.add()
+        birthdays = self.response.categories.add()
         birthdays.title = 'Birthdays'
         birthdays.content_key = 'birth_date'
-        birthdays.display_type = LandingService.Containers.DETAIL
-        for profile in response.result.profiles:
-            container = birthdays.content.add()
+        birthdays.category_type = LandingService.BIRTHDAYS
+        birthdays.total_count = str(len(response.result.profiles))
+        for profile in response.result.profiles[:3]:
+            container = birthdays.profiles.add()
             container.CopyFrom(profile)
 
     def _get_recent_hires_category(self, profile):
@@ -128,12 +136,13 @@ class GetCategories(actions.Action):
         if not len(response.result.profiles):
             return
 
-        hires = self.response.profile_categories.add()
+        hires = self.response.categories.add()
         hires.title = 'New Hires'
         hires.content_key = 'hire_date'
-        hires.display_type = LandingService.Containers.DETAIL
-        for profile in response.result.profiles:
-            container = hires.content.add()
+        hires.category_type = LandingService.NEW_HIRES
+        hires.total_count = str(len(response.result.profiles))
+        for profile in response.result.profiles[:3]:
+            container = hires.profiles.add()
             container.CopyFrom(profile)
 
     def run(self, *args, **kwargs):

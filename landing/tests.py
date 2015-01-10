@@ -155,11 +155,11 @@ class TestLandingService(TestCase):
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profile_categories), 1)
+        self.assertEqual(len(response.result.categories), 1)
 
-        category = response.result.profile_categories[0]
+        category = response.result.categories[0]
         self.assertEqual(category.title, 'Peers')
-        self.assertEqual(len(category.content), 3)
+        self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'title')
 
     def test_direct_reports_profile_category(self):
@@ -174,12 +174,14 @@ class TestLandingService(TestCase):
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profile_categories), 1)
+        self.assertEqual(len(response.result.categories), 1)
 
-        category = response.result.profile_categories[0]
+        category = response.result.categories[0]
         self.assertEqual(category.title, 'Direct Reports')
-        self.assertEqual(len(category.content), 3)
+        self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'title')
+        self.assertEqual(category.category_type, LandingService.DIRECT_REPORTS)
+        self.assertEqual(category.total_count, str(3))
 
     def test_locations_address_category(self):
         profile = self._mock_get_profile()
@@ -193,13 +195,15 @@ class TestLandingService(TestCase):
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.address_categories), 1)
+        self.assertEqual(len(response.result.categories), 1)
 
-        category = response.result.address_categories[0]
+        category = response.result.categories[0]
         self.assertEqual(category.title, 'Locations')
-        self.assertEqual(len(category.content), 3)
+        self.assertEqual(len(category.addresses), 3)
         self.assertEqual(category.content_key, 'address_1')
-        for address in category.content:
+        self.assertEqual(category.category_type, LandingService.LOCATIONS)
+        self.assertEqual(category.total_count, str(3))
+        for address in category.addresses:
             self.assertEqual(address.profile_count, '3')
 
     def test_anniversaries_profile_category(self):
@@ -214,13 +218,14 @@ class TestLandingService(TestCase):
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profile_categories), 1)
+        self.assertEqual(len(response.result.categories), 1)
 
-        category = response.result.profile_categories[0]
+        category = response.result.categories[0]
         self.assertEqual(category.title, 'Work Anniversaries')
-        self.assertEqual(len(category.content), 3)
+        self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
-        self.assertEqual(category.display_type, LandingService.Containers.DETAIL)
+        self.assertEqual(category.category_type, LandingService.ANNIVERSARIES)
+        self.assertEqual(category.total_count, str(3))
 
     def test_birthdays_profile_category(self):
         profile = self._mock_get_profile()
@@ -234,13 +239,14 @@ class TestLandingService(TestCase):
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profile_categories), 1)
+        self.assertEqual(len(response.result.categories), 1)
 
-        category = response.result.profile_categories[0]
+        category = response.result.categories[0]
         self.assertEqual(category.title, 'Birthdays')
-        self.assertEqual(len(category.content), 3)
+        self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'birth_date')
-        self.assertEqual(category.display_type, LandingService.Containers.DETAIL)
+        self.assertEqual(category.category_type, LandingService.BIRTHDAYS)
+        self.assertEqual(category.total_count, str(3))
 
     def test_recent_hires_profile_category(self):
         profile = self._mock_get_profile()
@@ -254,10 +260,11 @@ class TestLandingService(TestCase):
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profile_categories), 1)
+        self.assertEqual(len(response.result.categories), 1)
 
-        category = response.result.profile_categories[0]
+        category = response.result.categories[0]
         self.assertEqual(category.title, 'New Hires')
-        self.assertEqual(len(category.content), 3)
+        self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
-        self.assertEqual(category.display_type, LandingService.Containers.DETAIL)
+        self.assertEqual(category.category_type, LandingService.NEW_HIRES)
+        self.assertEqual(category.total_count, str(3))
