@@ -37,6 +37,14 @@ class TestLandingService(TestCase):
         address.country_code = 'US'
         return address
 
+    def _mock_action_profiles_response(self, service, action, profiles=3, **kwargs):
+        mock_response = mock.get_mockable_response(service, action)
+        for _ in range(profiles):
+            profile = mock_response.profiles.add()
+            self._mock_profile(profile)
+
+        mock.instance.register_mock_response(service, action, mock_response, **kwargs)
+
     def _mock_get_profile(self, profile_id=None):
         service = 'profile'
         action = 'get_profile'
@@ -56,22 +64,17 @@ class TestLandingService(TestCase):
     def _mock_get_peers(self, profile_id, peers=3):
         service = 'profile'
         action = 'get_peers'
-        mock_response = mock.get_mockable_response(service, action)
-        for _ in range(peers):
-            profile = mock_response.profiles.add()
-            self._mock_profile(profile)
-
-        mock.instance.register_mock_response(service, action, mock_response, profile_id=profile_id)
+        self._mock_action_profiles_response(service, action, profiles=peers, profile_id=profile_id)
 
     def _mock_get_direct_reports(self, profile_id, direct_reports=3):
         service = 'profile'
         action = 'get_direct_reports'
-        mock_response = mock.get_mockable_response(service, action)
-        for _ in range(direct_reports):
-            profile = mock_response.profiles.add()
-            self._mock_profile(profile)
-
-        mock.instance.register_mock_response(service, action, mock_response, profile_id=profile_id)
+        self._mock_action_profiles_response(
+            service,
+            action,
+            profiles=direct_reports,
+            profile_id=profile_id,
+        )
 
     def _mock_get_addresses(self, organization_id, addresses=3):
         service = 'organization'
@@ -109,15 +112,20 @@ class TestLandingService(TestCase):
     def _mock_get_upcoming_anniversaries(self, organization_id, profiles=3):
         service = 'profile'
         action = 'get_upcoming_anniversaries'
-        mock_response = mock.get_mockable_response(service, action)
-        for _ in range(profiles):
-            profile = mock_response.profiles.add()
-            self._mock_profile(profile)
-
-        mock.instance.register_mock_response(
+        self._mock_action_profiles_response(
             service,
             action,
-            mock_response,
+            profiles=profiles,
+            organization_id=organization_id,
+        )
+
+    def _mock_get_upcoming_birthdays(self, organization_id, profiles=3):
+        service = 'profile'
+        action = 'get_upcoming_birthdays'
+        self._mock_action_profiles_response(
+            service,
+            action,
+            profiles=profiles,
             organization_id=organization_id,
         )
 
@@ -132,6 +140,7 @@ class TestLandingService(TestCase):
         self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -149,6 +158,7 @@ class TestLandingService(TestCase):
         self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -166,6 +176,7 @@ class TestLandingService(TestCase):
         addresses = self._mock_get_addresses(profile.organization_id)
         self._mock_get_profile_stats([a.id for a in addresses])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -185,6 +196,7 @@ class TestLandingService(TestCase):
         self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -194,4 +206,23 @@ class TestLandingService(TestCase):
         self.assertEqual(category.title, 'Work Anniversaries')
         self.assertEqual(len(category.content), 3)
         self.assertEqual(category.content_key, 'hire_date')
+        self.assertEqual(category.display_type, LandingService.Containers.DETAIL)
+
+    def test_birthdays_profile_category(self):
+        profile = self._mock_get_profile()
+        self._mock_get_peers(profile.id, peers=0)
+        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_addresses(profile.organization_id, addresses=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id)
+
+        response = self.client.call_action('get_categories', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profile_categories), 1)
+
+        category = response.result.profile_categories[0]
+        self.assertEqual(category.title, 'Birthdays')
+        self.assertEqual(len(category.content), 3)
+        self.assertEqual(category.content_key, 'birth_date')
         self.assertEqual(category.display_type, LandingService.Containers.DETAIL)

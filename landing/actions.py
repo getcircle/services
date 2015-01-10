@@ -98,6 +98,25 @@ class GetCategories(actions.Action):
             container = anniversaries.content.add()
             container.CopyFrom(profile)
 
+    def _get_upcoming_birthdays_category(self, profile):
+        response = self.profile_client.call_action(
+            'get_upcoming_birthdays',
+            organization_id=profile.organization_id,
+        )
+        if not response.success:
+            raise Exception('failed to fetch birthdays')
+
+        if not len(response.result.profiles):
+            return
+
+        birthdays = self.response.profile_categories.add()
+        birthdays.title = 'Birthdays'
+        birthdays.content_key = 'birth_date'
+        birthdays.display_type = LandingService.Containers.DETAIL
+        for profile in response.result.profiles:
+            container = birthdays.content.add()
+            container.CopyFrom(profile)
+
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
             'get_profile',
@@ -111,3 +130,4 @@ class GetCategories(actions.Action):
         self._get_direct_reports_category()
         self._get_locations_category(profile)
         self._get_upcoming_anniversaries_category(profile)
+        self._get_upcoming_birthdays_category(profile)
