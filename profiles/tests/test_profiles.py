@@ -1,4 +1,5 @@
 import datetime
+import unittest
 
 from freezegun import freeze_time
 from protobufs.profile_service_pb2 import ProfileService
@@ -471,7 +472,7 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_upcoming_anniversaries', organization_id='invalid')
         self._verify_field_error(response, 'organization_id')
 
-    @freeze_time("2015-01-09")
+    @freeze_time('2015-01-09')
     def test_get_upcoming_anniversaries(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
         # create a profile whose anniversary is in the past
@@ -493,7 +494,7 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 1)
         self.assertEqual(str(profile.id), response.result.profiles[0].id)
 
-    @freeze_time("2015-01-09")
+    @freeze_time('2015-01-09')
     def test_get_upcoming_anniversaries_all_in_future(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
         factories.ProfileFactory.create(
@@ -516,7 +517,7 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
 
-    @freeze_time("2015-01-09")
+    @freeze_time('2015-01-09')
     def test_get_upcoming_anniversaries_in_past_this_year(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
         factories.ProfileFactory.create(
@@ -534,3 +535,53 @@ class TestProfiles(TestCase):
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
+
+    # TODO add one for end of month too
+    @unittest.skip('too tired')
+    @freeze_time('2014-12-31')
+    def test_get_upcoming_anniversaries_end_of_month_end_of_year(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2012, 1, 1),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action(
+            'get_upcoming_anniversaries',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
+
+    def test_get_upcoming_birthdays_invalid_organization_id(self):
+        response = self.client.call_action('get_upcoming_birthdays', organization_id='invalid')
+        self._verify_field_error(response, 'organization_id')
+
+    @freeze_time('2015-01-09')
+    def test_get_upcoming_birthdays(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            birth_date=datetime.date(1980, 1, 10),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action(
+            'get_upcoming_birthdays',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
+
+    # TODO add one for end of month too
+    @unittest.skip('too tired')
+    @freeze_time('2014-12-31')
+    def test_get_upcoming_birthdays_end_of_month_end_of_year(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(
+            birth_date=datetime.date(1980, 1, 1),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action(
+            'get_upcoming_birthdays',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
