@@ -117,6 +117,25 @@ class GetCategories(actions.Action):
             container = birthdays.content.add()
             container.CopyFrom(profile)
 
+    def _get_recent_hires_category(self, profile):
+        response = self.profile_client.call_action(
+            'get_recent_hires',
+            organization_id=profile.organization_id,
+        )
+        if not response.success:
+            raise Exception('failed to fetch new hires')
+
+        if not len(response.result.profiles):
+            return
+
+        hires = self.response.profile_categories.add()
+        hires.title = 'New Hires'
+        hires.content_key = 'hire_date'
+        hires.display_type = LandingService.Containers.DETAIL
+        for profile in response.result.profiles:
+            container = hires.content.add()
+            container.CopyFrom(profile)
+
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
             'get_profile',
@@ -131,3 +150,4 @@ class GetCategories(actions.Action):
         self._get_locations_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_upcoming_birthdays_category(profile)
+        self._get_recent_hires_category(profile)

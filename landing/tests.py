@@ -129,6 +129,16 @@ class TestLandingService(TestCase):
             organization_id=organization_id,
         )
 
+    def _mock_get_recent_hires(self, organization_id, profiles=3):
+        service = 'profile'
+        action = 'get_recent_hires'
+        self._mock_action_profiles_response(
+            service,
+            action,
+            profiles=profiles,
+            organization_id=organization_id,
+        )
+
     def test_profile_category_invalid_profile_id(self):
         response = self.client.call_action('get_categories', profile_id='invalid')
         self._verify_field_error(response, 'profile_id')
@@ -141,6 +151,7 @@ class TestLandingService(TestCase):
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -159,6 +170,7 @@ class TestLandingService(TestCase):
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -177,6 +189,7 @@ class TestLandingService(TestCase):
         self._mock_get_profile_stats([a.id for a in addresses])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -197,6 +210,7 @@ class TestLandingService(TestCase):
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -216,6 +230,7 @@ class TestLandingService(TestCase):
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -225,4 +240,24 @@ class TestLandingService(TestCase):
         self.assertEqual(category.title, 'Birthdays')
         self.assertEqual(len(category.content), 3)
         self.assertEqual(category.content_key, 'birth_date')
+        self.assertEqual(category.display_type, LandingService.Containers.DETAIL)
+
+    def test_recent_hires_profile_category(self):
+        profile = self._mock_get_profile()
+        self._mock_get_peers(profile.id, peers=0)
+        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_addresses(profile.organization_id, addresses=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id)
+
+        response = self.client.call_action('get_categories', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profile_categories), 1)
+
+        category = response.result.profile_categories[0]
+        self.assertEqual(category.title, 'New Hires')
+        self.assertEqual(len(category.content), 3)
+        self.assertEqual(category.content_key, 'hire_date')
         self.assertEqual(category.display_type, LandingService.Containers.DETAIL)
