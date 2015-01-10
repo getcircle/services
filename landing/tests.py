@@ -3,6 +3,8 @@ import service.settings
 from service.transports import local
 from service.transports import mock
 
+from protobufs.landing_service_pb2 import LandingService
+
 from services.test import (
     fuzzy,
     TestCase,
@@ -192,3 +194,4 @@ class TestLandingService(TestCase):
         self.assertEqual(category.title, 'Work Anniversaries')
         self.assertEqual(len(category.content), 3)
         self.assertEqual(category.content_key, 'hire_date')
+        self.assertEqual(category.display_type, LandingService.Containers.DETAIL)

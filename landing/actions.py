@@ -4,6 +4,8 @@ from service import (
 )
 import service.control
 
+from protobufs.landing_service_pb2 import LandingService
+
 
 class GetCategories(actions.Action):
 
@@ -91,6 +93,7 @@ class GetCategories(actions.Action):
         anniversaries = self.response.profile_categories.add()
         anniversaries.title = 'Work Anniversaries'
         anniversaries.content_key = 'hire_date'
+        anniversaries.display_type = LandingService.Containers.DETAIL
         for profile in response.result.profiles:
             container = anniversaries.content.add()
             container.CopyFrom(profile)
