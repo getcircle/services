@@ -30,6 +30,13 @@ def valid_tag_ids(tag_ids):
     return len(tag_ids) == len(db_ids)
 
 
+def get_values_from_date_range(range_key, value_key, start, end):
+    # cast to tuple so we can use it as input params to the db cursor
+    return tuple(
+        set([getattr(date, value_key) for date in arrow.Arrow.range(range_key, start, end)])
+    )
+
+
 class CreateProfile(actions.Action):
 
     type_validators = {
@@ -392,8 +399,8 @@ class GetUpcomingAnniversaries(actions.Action):
     def _get_parameters_list(self):
         now = arrow.utcnow()
         return [
-            tuple(range(now.day, now.day + 7)),
-            now.month,
+            get_values_from_date_range('day', 'day', now, now.replace(days=7)),
+            get_values_from_date_range('day', 'month', now, now.replace(days=7)),
             now.date(),
             self.request.organization_id,
         ]
@@ -402,7 +409,7 @@ class GetUpcomingAnniversaries(actions.Action):
         return (
             'SELECT * FROM %s WHERE'
             ' EXTRACT(day from hire_date) in %%s'
-            ' AND EXTRACT(month from hire_date) = %%s'
+            ' AND EXTRACT(month from hire_date) in %%s'
             ' AND hire_date < %%s'
             ' AND organization_id = %%s'
         ) % (models.Profile._meta.db_table,)
@@ -426,8 +433,8 @@ class GetUpcomingBirthdays(actions.Action):
     def _get_parameters_list(self):
         now = arrow.utcnow()
         return [
-            tuple(range(now.day, now.day + 7)),
-            now.month,
+            get_values_from_date_range('day', 'day', now, now.replace(days=7)),
+            get_values_from_date_range('day', 'month', now, now.replace(days=7)),
             self.request.organization_id,
         ]
 
@@ -435,7 +442,7 @@ class GetUpcomingBirthdays(actions.Action):
         return (
             'SELECT * FROM %s WHERE'
             ' EXTRACT(day from birth_date) in %%s'
-            ' AND EXTRACT(month from birth_date) = %%s'
+            ' AND EXTRACT(month from birth_date) in %%s'
             ' AND organization_id = %%s'
         ) % (models.Profile._meta.db_table,)
 

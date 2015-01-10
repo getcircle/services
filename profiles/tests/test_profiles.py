@@ -536,13 +536,31 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
 
-    # TODO add one for end of month too
-    @unittest.skip('too tired')
     @freeze_time('2014-12-31')
     def test_get_upcoming_anniversaries_end_of_month_end_of_year(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
         factories.ProfileFactory.create(
             hire_date=datetime.date(2012, 1, 1),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action(
+            'get_upcoming_anniversaries',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
+
+    @freeze_time('2014-11-30')
+    def test_get_upcoming_anniversaries_end_of_month(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        # create an upcoming anniversary
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2012, 12, 1),
+            organization_id=organization_id,
+        )
+        # create a past anniversary
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2012, 10, 1),
             organization_id=organization_id,
         )
         response = self.client.call_action(
@@ -570,13 +588,31 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
 
-    # TODO add one for end of month too
-    @unittest.skip('too tired')
     @freeze_time('2014-12-31')
     def test_get_upcoming_birthdays_end_of_month_end_of_year(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
         factories.ProfileFactory.create(
             birth_date=datetime.date(1980, 1, 1),
+            organization_id=organization_id,
+        )
+        response = self.client.call_action(
+            'get_upcoming_birthdays',
+            organization_id=organization_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 1)
+
+    @freeze_time('2014-11-30')
+    def test_get_upcoming_birthdays_end_of_month(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        # create an upcoming anniversary
+        factories.ProfileFactory.create(
+            birth_date=datetime.date(2012, 12, 1),
+            organization_id=organization_id,
+        )
+        # create a past anniversary
+        factories.ProfileFactory.create(
+            birth_date=datetime.date(2012, 10, 1),
             organization_id=organization_id,
         )
         response = self.client.call_action(
