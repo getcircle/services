@@ -359,6 +359,14 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 6)
 
+        # verify profiles are sorted by first_name, last_name
+        sorted_profiles = sorted(
+            response.result.profiles,
+            key=lambda x: (x.first_name, x.last_name),
+        )
+        for index, profile in enumerate(response.result.profiles):
+            self.assertEqual(profile, sorted_profiles[index])
+
     def test_get_direct_reports_user_id(self):
         owner = self._setup_direct_reports_test()
         response = self.client.call_action('get_direct_reports', user_id=owner.user_id)

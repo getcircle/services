@@ -315,7 +315,7 @@ class GetDirectReports(actions.Action):
             profiles = models.Profile.objects.filter(
                 Q(user_id__in=user_ids) | Q(team_id=team.id),
                 organization_id=profile.organization_id,
-            ).exclude(pk=profile.id)
+            ).exclude(pk=profile.id).order_by('first_name', 'last_name')
             for profile in profiles:
                 container = self.response.profiles.add()
                 profile.to_protobuf(container)
