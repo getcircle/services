@@ -360,7 +360,7 @@ class GetPeers(actions.Action):
         else:
             profiles = models.Profile.objects.filter(team_id=profile.team_id).exclude(
                 user_id=team.owner_id,
-            )
+            ).order_by('first_name', 'last_name')
             for item in profiles:
                 if item.pk == profile.pk:
                     continue

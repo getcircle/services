@@ -427,6 +427,14 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 2)
 
+        # verify peers are sorted alphabetically by first_name, last_name
+        sorted_profiles = sorted(
+            response.result.profiles,
+            key=lambda x: (x.first_name, x.last_name),
+        )
+        for index, profile in enumerate(response.result.profiles):
+            self.assertEqual(sorted_profiles[index], profile)
+
     def test_get_peers_ceo(self):
         address = self._create_address()
 
