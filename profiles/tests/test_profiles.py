@@ -497,8 +497,12 @@ class TestProfiles(TestCase):
         )
 
         # create a profile with an upcoming anniversary
-        profile = factories.ProfileFactory.create(
-            hire_date=datetime.date(2013, 1, 10),
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2013, 1, 11),
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create(
+            hire_date=datetime.date(2014, 1, 10),
             organization_id=organization_id,
         )
         response = self.client.call_action(
@@ -506,8 +510,12 @@ class TestProfiles(TestCase):
             organization_id=organization_id,
         )
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profiles), 1)
-        self.assertEqual(str(profile.id), response.result.profiles[0].id)
+        profiles = response.result.profiles
+        self.assertEqual(len(profiles), 2)
+
+        # verify the sort order
+        self.assertEqual(profiles[0].hire_date, '2014-01-10')
+        self.assertEqual(profiles[1].hire_date, '2013-01-11')
 
     @freeze_time('2015-01-09')
     def test_get_upcoming_anniversaries_all_in_future(self):
@@ -593,6 +601,10 @@ class TestProfiles(TestCase):
     def test_get_upcoming_birthdays(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
         factories.ProfileFactory.create(
+            birth_date=datetime.date(1982, 1, 12),
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create(
             birth_date=datetime.date(1980, 1, 10),
             organization_id=organization_id,
         )
@@ -601,7 +613,12 @@ class TestProfiles(TestCase):
             organization_id=organization_id,
         )
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profiles), 1)
+        profiles = response.result.profiles
+        self.assertEqual(len(profiles), 2)
+
+        # verify sort order
+        self.assertEqual(profiles[0].birth_date, '1980-01-10')
+        self.assertEqual(profiles[1].birth_date, '1982-01-12')
 
     @freeze_time('2014-12-31')
     def test_get_upcoming_birthdays_end_of_month_end_of_year(self):

@@ -412,6 +412,7 @@ class GetUpcomingAnniversaries(actions.Action):
             ' AND EXTRACT(month from hire_date) in %%s'
             ' AND hire_date < %%s'
             ' AND organization_id = %%s'
+            ' ORDER BY EXTRACT(month from hire_date), EXTRACT(day from hire_date)'
         ) % (models.Profile._meta.db_table,)
 
     def run(self, *args, **kwargs):
@@ -444,6 +445,7 @@ class GetUpcomingBirthdays(actions.Action):
             ' EXTRACT(day from birth_date) in %%s'
             ' AND EXTRACT(month from birth_date) in %%s'
             ' AND organization_id = %%s'
+            ' ORDER BY birth_date'
         ) % (models.Profile._meta.db_table,)
 
     def run(self, *args, **kwargs):
