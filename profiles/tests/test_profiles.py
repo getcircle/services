@@ -1,5 +1,4 @@
 import datetime
-import unittest
 
 from freezegun import freeze_time
 from protobufs.profile_service_pb2 import ProfileService
