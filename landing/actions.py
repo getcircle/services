@@ -157,6 +157,6 @@ class GetCategories(actions.Action):
         self._get_peers_category()
         self._get_direct_reports_category()
         self._get_locations_category(profile)
-        self._get_upcoming_anniversaries_category(profile)
         self._get_upcoming_birthdays_category(profile)
+        self._get_upcoming_anniversaries_category(profile)
         self._get_recent_hires_category(profile)
