@@ -101,7 +101,9 @@ class GetCategories(actions.Action):
         anniversaries.content_key = 'hire_date'
         anniversaries.type = LandingService.Containers.Category.ANNIVERSARIES
         anniversaries.total_count = str(len(response.result.profiles))
-        for profile in response.result.profiles[:3]:
+        # TODO fix this logic in the client
+        #for profile in response.result.profiles[:3]:
+        for profile in response.result.profiles:
             container = anniversaries.profiles.add()
             container.CopyFrom(profile)
 
@@ -121,7 +123,8 @@ class GetCategories(actions.Action):
         birthdays.content_key = 'birth_date'
         birthdays.type = LandingService.Containers.Category.BIRTHDAYS
         birthdays.total_count = str(len(response.result.profiles))
-        for profile in response.result.profiles[:3]:
+        #for profile in response.result.profiles[:3]:
+        for profile in response.result.profiles:
             container = birthdays.profiles.add()
             container.CopyFrom(profile)
 
@@ -141,7 +144,8 @@ class GetCategories(actions.Action):
         hires.content_key = 'hire_date'
         hires.type = LandingService.Containers.Category.NEW_HIRES
         hires.total_count = str(len(response.result.profiles))
-        for profile in response.result.profiles[:3]:
+        #for profile in response.result.profiles[:3]:
+        for profile in response.result.profiles:
             container = hires.profiles.add()
             container.CopyFrom(profile)
 
