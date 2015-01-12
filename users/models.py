@@ -3,7 +3,8 @@ from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
 )
-import service.control
+from phonenumber_field.modelfields import PhoneNumberField
+import pyotp
 
 
 class UserManager(BaseUserManager, models.CommonManager):
@@ -58,6 +59,7 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     primary_email = models.EmailField(unique=True)
+    phone_number = PhoneNumberField(null=True, unique=True)
 
     def get_full_name(self):
         return self.primary_email
@@ -76,3 +78,10 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
     def has_module_perms(self, app_label):
         "Does the user have permissions to view the app `app_label`?"
         return True
+
+
+class TOTPToken(models.UUIDModel, models.TimestampableModel):
+
+    user = models.ForeignKey(User, unique=True)
+    # XXX not sure if this needs to be encrypted
+    token = models.CharField(max_length=16, default=pyotp.random_base32)

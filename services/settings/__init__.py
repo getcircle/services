@@ -148,3 +148,12 @@ LOGGING = {
     }
 
 }
+
+# Twilio API Settings
+TWILIO_ACCOUNT_SID = "AC952fb40dc6238649d073d9b44d677538"
+TWILIO_AUTH_TOKEN = "247a4bc227697c29cec954885b641d51"
+TWILIO_PHONE_NUMBER = "+1 415-930-9683"
+
+# TODO what is the downside of doing this?
+# Set a TOTP Interval of 2 minutes
+USER_SERVICE_TOTP_INTERVAL = 60 * 2

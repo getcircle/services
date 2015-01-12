@@ -15,4 +15,6 @@ class Server(service.control.Server):
         'get_user': actions.GetUser,
         'valid_user': actions.ValidUser,
         'authenticate_user': actions.AuthenticateUser,
+        'send_verification_code': actions.SendVerificationCode,
+        'verify_verification_code': actions.VerifyVerificationCode,
     }
