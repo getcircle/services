@@ -7,6 +7,8 @@ from services.test import (
     TestCase,
 )
 
+from .. import factories
+
 
 class TestUserActions(TestCase):
 
@@ -64,3 +66,19 @@ class TestUserActions(TestCase):
         self.assertTrue(response.success)
 
         response = self.client.call_action('get_user', email=self.email)
+
+    def test_update_user_invalid_user_id(self):
+        response = self.client.call_action('update_user', user={'id': 'invalid'})
+        self._verify_field_error(response, 'user.id')
+
+    def test_update_user_does_not_exist(self):
+        response = self.client.call_action('update_user', user={'id': fuzzy.FuzzyUUID().fuzz()})
+        self._verify_field_error(response, 'user.id', 'DOES_NOT_EXIST')
+
+    def test_update_user(self):
+        user = factories.UserFactory.create_protobuf()
+        user.phone_number = '+13109991557'
+        response = self.client.call_action('update_user', user=user)
+        self.assertTrue(response.success)
+        self.assertEqual(user.id, response.result.user.id)
+        self.assertEqual(user.phone_number, response.result.user.phone_number)
