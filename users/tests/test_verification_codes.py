@@ -107,6 +107,9 @@ class TestUsersVerificationCodes(TestCase):
         )
         self._verify_field_error(response, 'code')
 
+        user = models.User.objects.get(pk=token.user_id)
+        self.assertFalse(user.phone_number_verified)
+
     def test_verify_verification_code(self):
         token = factories.TOTPTokenFactory.create()
         code = actions.get_totp_code(token.token)
@@ -117,3 +120,6 @@ class TestUsersVerificationCodes(TestCase):
         )
         self.assertTrue(response.success)
         self.assertTrue(response.result.verified)
+
+        user = models.User.objects.get(pk=token.user_id)
+        self.assertTrue(user.phone_number_verified)

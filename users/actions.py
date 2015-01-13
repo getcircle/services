@@ -54,6 +54,7 @@ class CreateUser(actions.Action):
 
 class UpdateUser(actions.Action):
 
+    # XXX this isn't working if a protobuf instance is passed
     type_validators = {
         'user.id': [validators.is_uuid4],
     }
@@ -189,4 +190,7 @@ class VerifyVerificationCode(actions.Action):
         if get_totp_code(token.token) != self.request.code:
             self.note_field_error('code', 'INVALID')
         else:
+            user = models.User.objects.get(pk=self.request.user_id)
+            user.phone_number_verified = True
+            user.save()
             self.response.verified = True

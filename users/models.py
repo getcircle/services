@@ -60,6 +60,7 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
     is_active = models.BooleanField(default=True)
     primary_email = models.EmailField(unique=True)
     phone_number = PhoneNumberField(null=True, unique=True)
+    phone_number_verified = models.BooleanField(default=False)
 
     def get_full_name(self):
         return self.primary_email
