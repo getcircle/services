@@ -43,6 +43,7 @@ INSTALLED_APPS = (
     'rest_framework.authtoken',
 
     'landing',
+    'media',
     'notes',
     'onboarding',
     'organizations',
@@ -103,6 +104,7 @@ STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
     'landing.server.Server',
+    'media.server.Server',
     'organizations.server.Server',
     'profiles.server.Server',
     'users.server.Server',
@@ -157,3 +159,9 @@ TWILIO_PHONE_NUMBER = "+1 415-930-9683"
 # TODO what is the downside of doing this?
 # Set a TOTP Interval of 2 minutes
 USER_SERVICE_TOTP_INTERVAL = 60 * 2
+
+# AWS "services" IAM
+AWS_ACCESS_KEY_ID = "AKIAJXKUJANGM6O3Z6ZQ"
+AWS_SECRET_ACCESS_KEY = "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"
+
+AWS_S3_MEDIA_BUCKET = 'otterbots-media'
