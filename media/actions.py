@@ -56,7 +56,10 @@ class StartImageUpload(actions.Action):
         if not media_key:
             self.note_error('ERROR', ('ERROR', 'unsupported media object'))
 
-        response = bucket.initiate_multipart_upload(media_key)
+        response = bucket.initiate_multipart_upload(
+            media_key,
+            metadata={'content-type': 'image/png'},
+        )
         self.response.upload_instructions.upload_id = response.id
 
         path = '/%s' % (media_key,)

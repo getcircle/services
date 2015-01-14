@@ -128,22 +128,14 @@ class TestMediaService(TestCase):
             return_value='https://otterbots-media.s3.amazonaws.com/media-id'
         )
         mock_multipart().complete_upload.return_value = mock_response
-
         profile_id = fuzzy.FuzzyUUID().fuzz()
         self._mock_get_profile(profile_id)
-
-        response = self.client.call_action(
-            'start_image_upload',
-            media_object=MediaService.PROFILE,
-            key=profile_id,
-        )
-        self.assertTrue(response.success)
 
         response = self.client.call_action(
             'complete_image_upload',
             media_object=MediaService.PROFILE,
             key=profile_id,
-            upload_id=response.result.upload_instructions.upload_id,
+            upload_id=fuzzy.FuzzyUUID().fuzz(),
         )
         self.assertTrue(response.success)
         self.assertTrue(response.result.media_url.startswith('https'))
