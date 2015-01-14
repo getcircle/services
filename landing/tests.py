@@ -1,7 +1,9 @@
 import service.control
 import service.settings
-from service.transports import local
-from service.transports import mock
+from service.transports import (
+    local,
+    mock,
+)
 
 from protobufs.landing_service_pb2 import LandingService
 
