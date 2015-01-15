@@ -1,4 +1,4 @@
-from onboarding.parsers.organizations import Parser
+from onboarding.parsers.tags import Parser
 
 from .base import BaseOrganizationParserCommand
 

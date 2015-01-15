@@ -2,9 +2,7 @@ from csv import DictReader
 
 import service.control
 
-
-class ParseError(Exception):
-    pass
+from .base import OrganizationParser
 
 
 class TeamStore(object):
@@ -85,16 +83,10 @@ class Row(object):
         return self.owns_team == '1'
 
 
-class Parser(object):
+class Parser(OrganizationParser):
 
-    def __init__(self, organization_domain, filename, token, verbose=False):
-        self.filename = filename
-        self.token = token
-        self.verbose = verbose
-
-        self.organization_domain = organization_domain
-        self.organization = self._fetch_organization()
-
+    def __init__(self, *args, **kwargs):
+        super(Parser, self).__init__(*args, **kwargs)
         self.rows = []
         self.addresses = {}
         self.teams = set()
@@ -102,26 +94,6 @@ class Parser(object):
         self.saved_addresses = {}
         self.saved_teams = {}
         self.saved_users = {}
-
-    def debug_log(self, message):
-        if self.verbose:
-            print message
-
-    @property
-    def organization_client(self):
-        if not hasattr(self, '_organization_client'):
-            self._organization_client = service.control.Client(
-                'organization',
-                token=self.token,
-            )
-        return self._organization_client
-
-    def _fetch_organization(self):
-        response = self.organization_client.call_action(
-            'get_organization',
-            organization_domain=self.organization_domain,
-        )
-        return response.result.organization
 
     def _save_address(self, data):
         address = {

@@ -5,7 +5,7 @@ import service.control
 
 from services.test import TestCase
 
-from . import parsers
+from .parsers.organizations import Parser
 
 
 class TestParser(TestCase):
@@ -38,7 +38,7 @@ class TestParser(TestCase):
         )
 
     def _commit_fixture(self, fixture_name):
-        parser = parsers.Parser(
+        parser = Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path(fixture_name),
             token='test-token',
@@ -46,7 +46,7 @@ class TestParser(TestCase):
         parser.parse(commit=True)
 
     def test_parser_no_commit(self):
-        parser = parsers.Parser(
+        parser = Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path('sample_organization.csv'),
             token='test-token',
@@ -60,7 +60,7 @@ class TestParser(TestCase):
         self.assertEqual(len(response.result.teams), 0)
 
     def test_parser_commit(self):
-        parser = parsers.Parser(
+        parser = Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path('sample_organization.csv'),
             token='test-token',
