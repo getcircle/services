@@ -1,5 +1,5 @@
 git+ssh://git@github.com/getcircle/django-common.git@0.2.2
-git+ssh://git@github.com/getcircle/protobuf-registry.git@0.21.0
+git+ssh://git@github.com/getcircle/protobuf-registry.git@0.23.0
 git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
 git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
-git+ssh://git@github.com/getcircle/python-soa.git@0.6.11
+git+ssh://git@github.com/getcircle/python-soa.git@0.6.12

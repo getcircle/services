@@ -1,4 +1,5 @@
 import service.control
+import unittest
 
 from services.test import (
     fuzzy,
@@ -60,6 +61,24 @@ class TestProfileTags(TestCase):
             tags=self.tags,
         )
         self.assertTrue(response.success)
+        self.assertEqual(len(response.result.tags), len(self.tags))
+
+    @unittest.skip(
+        'punting on this for now - pushed start of solution to "create-tags-ignore-duplicates"'
+    )
+    def test_create_tags_ignore_duplicates(self):
+        self.client.call_action(
+            'create_tags',
+            organization_id=self.organization.id,
+            tags=self.tags,
+        )
+        response = self.client.call_action(
+            'create_tags',
+            organization_id=self.organization.id,
+            tags=self.tags,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.tags), len(self.tags))
 
     def test_get_tags_for_organization_invalid_organization_id(self):
         response = self.client.call_action('get_tags', organization_id='invalid')
@@ -79,7 +98,7 @@ class TestProfileTags(TestCase):
         response = self.client.call_action(
             'add_tags',
             profile_id='invalid',
-            tag_ids=[fuzzy.FuzzyUUID().fuzz()],
+            tags=[{'id': fuzzy.FuzzyUUID().fuzz(), 'name': 'mysql'}],
         )
         self._verify_field_error(response, 'profile_id')
 
@@ -87,25 +106,23 @@ class TestProfileTags(TestCase):
         response = self.client.call_action(
             'add_tags',
             profile_id=fuzzy.FuzzyUUID().fuzz(),
-            tag_ids=[fuzzy.FuzzyUUID().fuzz()],
+            tags=[{'id': fuzzy.FuzzyUUID().fuzz(), 'name': 'mysql'}],
         )
         self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
 
     def test_add_tags(self):
         tags = self._create_tags_for_organization(self.organization.id, tags=self.tags)
-        tag_ids = [tag.id for tag in tags]
-        response = self.client.call_action('add_tags', profile_id=self.profile.id, tag_ids=tag_ids)
+        response = self.client.call_action('add_tags', profile_id=self.profile.id, tags=tags[:2])
         self.assertTrue(response.success)
 
         response = self.client.call_action('get_tags', profile_id=self.profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(tag_ids), len(response.result.tags))
+        self.assertEqual(len(response.result.tags), 2)
 
     def test_get_tags_for_profile(self):
         tags = self._create_tags_for_organization(self.organization.id, tags=self.tags)
-        tag_ids = [tag.id for tag in tags]
-        response = self.client.call_action('add_tags', profile_id=self.profile.id, tag_ids=tag_ids)
+        response = self.client.call_action('add_tags', profile_id=self.profile.id, tags=tags)
 
         response = self.client.call_action('get_tags', profile_id=self.profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(tag_ids), len(response.result.tags))
+        self.assertEqual(len(tags), len(response.result.tags))

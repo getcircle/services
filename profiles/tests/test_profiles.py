@@ -244,8 +244,7 @@ class TestProfiles(TestCase):
         tags = response.result.tags
 
         # add tags to profile
-        tag_ids = [tag.id for tag in tags]
-        response = self.client.call_action('add_tags', profile_id=profile.id, tag_ids=tag_ids)
+        response = self.client.call_action('add_tags', profile_id=profile.id, tags=tags)
         self.assertTrue(response.success)
 
         # fetch the manager's profile

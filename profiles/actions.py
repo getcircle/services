@@ -25,11 +25,6 @@ def valid_profile_with_user_id(user_id):
     return models.Profile.objects.filter(user_id=user_id).exists()
 
 
-def valid_tag_ids(tag_ids):
-    db_ids = models.Tag.objects.filter(pk__in=tag_ids).values_list('pk', flat=True)
-    return len(tag_ids) == len(db_ids)
-
-
 def get_values_from_date_range(range_key, value_key, start, end):
     # cast to tuple so we can use it as input params to the db cursor
     return tuple(
@@ -208,20 +203,22 @@ class CreateTags(actions.Action):
         'organization_id': [validators.is_uuid4],
     }
 
-    def run(self, *args, **kwargs):
+    def _create_tags(self, organization_id, tags):
         objects = [models.Tag.objects.from_protobuf(
-            p,
+            tag,
             commit=False,
-            organization_id=self.request.organization_id,
-        ) for p in self.request.tags]
+            organization_id=organization_id,
+        ) for tag in tags]
+        return models.Tag.objects.bulk_create(objects)
 
-        tags = models.Tag.objects.bulk_create(objects)
+    def run(self, *args, **kwargs):
+        tags = self._create_tags(self.request.organization_id, self.request.tags)
         for tag in tags:
             container = self.response.tags.add()
             tag.to_protobuf(container)
 
 
-class AddTags(actions.Action):
+class AddTags(CreateTags):
 
     type_validators = {
         'profile_id': [validators.is_uuid4],
@@ -231,19 +228,27 @@ class AddTags(actions.Action):
         'profile_id': {
             valid_profile: 'DOES_NOT_EXIST',
         },
-        'tag_ids': {
-            # XXX we may want a more specific error for which tags don't exist
-            valid_tag_ids: 'DOES_NOT_EXIST',
-        },
     }
 
-    def run(self, *args, **kwargs):
+    def _add_tags(self, profile_id, tag_ids):
         through_model = models.Profile.tags.through
         objects = [through_model(
-            profile_id=self.request.profile_id,
-            tag_id=tag_id,
-        ) for tag_id in self.request.tag_ids]
-        through_model.objects.bulk_create(objects)
+            profile_id=profile_id,
+            tag_id=tag.id,
+        ) for tag in self.request.tags]
+        return through_model.objects.bulk_create(objects)
+
+    def run(self, *args, **kwargs):
+        tags_to_create = [tag for tag in self.request.tags if not tag.id]
+        tags_to_add = [tag for tag in self.request.tags if tag.id]
+        if tags_to_create:
+            organization_id = models.Profile.objects.get(
+                pk=self.request.profile_id
+            ).values('organization_id')
+            tags_to_add.extend(self._create_tags(organization_id, tags_to_create))
+
+        if tags_to_add:
+            self._add_tags(self.request.profile_id, tags_to_add)
 
 
 class GetTags(actions.Action):
