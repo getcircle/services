@@ -1,13 +1,13 @@
 from __future__ import absolute_import
-from factory import DjangoModelFactory
+
+# import factory helpers so tests can just import this file
+from .fuzzy import *  # NOQA
+from factory import *  # NOQA
+
 from factory.base import (
     OptionDefault,
 )
 from factory.django import DjangoOptions
-
-# import factory helpers so tests can just import this file
-from .fuzzy import *
-from factory.declarations import *
 
 
 class ProtobufDjangoOptions(DjangoOptions):

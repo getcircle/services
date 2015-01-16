@@ -129,14 +129,17 @@ class GetProfiles(actions.Action):
     type_validators = {
         'team_id': [validators.is_uuid4],
         'organization_id': [validators.is_uuid4],
+        'tag_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
         parameters = {}
         if self.request.team_id:
             parameters['team_id'] = self.request.team_id
-        else:
+        elif self.request.organization_id:
             parameters['organization_id'] = self.request.organization_id
+        else:
+            parameters['tags__id'] = self.request.tag_id
 
         profiles = models.Profile.objects.filter(**parameters)
         for profile in profiles:

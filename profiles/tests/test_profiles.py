@@ -144,6 +144,17 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 1)
         self._verify_containers(profile, response.result.profiles[0])
 
+    def test_get_profiles_invalid_tag_id(self):
+        response = self.client.call_action('get_profiles', tag_id='invalid')
+        self._verify_field_error(response, 'tag_id')
+
+    def test_get_profiles_tags(self):
+        tag = factories.TagFactory.create()
+        factories.ProfileFactory.create_batch(size=4, tags=[tag])
+        response = self.client.call_action('get_profiles', tag_id=str(tag.id))
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 4)
+
     def test_get_profiles_invalid_team_id(self):
         response = self.client.call_action(
             'get_profiles',

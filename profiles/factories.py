@@ -29,3 +29,23 @@ class ProfileFactory(factory.Factory):
     def get_protobuf_data(cls, **data):
         model = cls.build(**data)
         return model.as_dict(exclude=('created', 'changed'))
+
+    @factory.post_generation
+    def tags(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            # profiles and tags need to have the same organization_id
+            self.organization_id = extracted[0].organization_id
+            for tag in extracted:
+                self.tags.add(tag)
+
+
+class TagFactory(factory.Factory):
+    class Meta:
+        model = models.Tag
+        protobuf = ProfileService.Containers.Tag
+
+    organization_id = factory.FuzzyUUID()
+    name = factory.FuzzyText()
