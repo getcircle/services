@@ -27,10 +27,11 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     work_phone = PhoneNumberField(null=True)
     image_url = models.CharField(max_length=256, null=True)
     email = models.EmailField()
-    tags = models.ManyToManyField(Tag)
     birth_date = models.DateField()
     hire_date = models.DateField()
     verified = models.BooleanField(default=False)
+
+    tags = models.ManyToManyField(Tag, through='ProfileTags')
 
     @property
     def full_name(self):
@@ -38,3 +39,9 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('organization_id', 'user_id')
+
+
+class ProfileTags(models.TimestampableModel):
+
+    tag = models.ForeignKey(Tag)
+    profile = models.ForeignKey(Profile)

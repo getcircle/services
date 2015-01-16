@@ -21,4 +21,5 @@ class Server(service.control.Server):
         'get_upcoming_anniversaries': actions.GetUpcomingAnniversaries,
         'get_upcoming_birthdays': actions.GetUpcomingBirthdays,
         'get_recent_hires': actions.GetRecentHires,
+        'get_trending_tags': actions.GetTrendingTags,
     }

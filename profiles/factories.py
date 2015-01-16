@@ -39,7 +39,7 @@ class ProfileFactory(factory.Factory):
             # profiles and tags need to have the same organization_id
             self.organization_id = extracted[0].organization_id
             for tag in extracted:
-                self.tags.add(tag)
+                self.tags.through.objects.create(tag=tag, profile=self)
 
 
 class TagFactory(factory.Factory):

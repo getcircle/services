@@ -708,3 +708,17 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_recent_hires', organization_id=organization_id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
+
+    def test_get_trending_tags_invalid_organization_id(self):
+        response = self.client.call_action('get_trending_tags', organization_id='invalid')
+        self._verify_field_error(response, 'organization_id')
+
+    def test_get_trending_tags(self):
+        tags = factories.TagFactory.create_batch(size=3)
+        profile = factories.ProfileFactory.create(tags=[tags[1]])
+        response = self.client.call_action(
+            'get_trending_tags',
+            organization_id=str(profile.organization_id),
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.tags), 1)
