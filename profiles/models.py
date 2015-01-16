@@ -30,6 +30,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     tags = models.ManyToManyField(Tag)
     birth_date = models.DateField()
     hire_date = models.DateField()
+    verified = models.BooleanField(default=False)
 
     @property
     def full_name(self):
