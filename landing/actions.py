@@ -149,6 +149,26 @@ class GetCategories(actions.Action):
             container = hires.profiles.add()
             container.CopyFrom(profile)
 
+    def _get_trending_tags_category(self, profile):
+        response = self.profile_client.call_action(
+            'get_trending_tags',
+            organization_id=profile.organization_id,
+        )
+        if not response.success:
+            raise Exception('failed ot fetch trending tags')
+
+        if not len(response.result.tags):
+            return
+
+        tags = self.response.categories.add()
+        tags.title = 'Tags'
+        tags.content_key = 'name'
+        tags.type = LandingService.Containers.Category.TAGS
+        tags.total_count = str(len(response.result.tags))
+        for tag in response.result.tags:
+            container = tags.tags.add()
+            container.CopyFrom(tag)
+
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
             'get_profile',
@@ -164,3 +184,4 @@ class GetCategories(actions.Action):
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_recent_hires_category(profile)
+        self._get_trending_tags_category(profile)

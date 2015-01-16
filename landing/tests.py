@@ -141,6 +141,23 @@ class TestLandingService(TestCase):
             organization_id=organization_id,
         )
 
+    def _mock_get_trending_tags(self, organization_id, tags=3):
+        service = 'profile'
+        action = 'get_trending_tags'
+
+        mock_response = mock.get_mockable_response(service, action)
+        for _ in range(tags):
+            tag = mock_response.tags.add()
+            tag.id = fuzzy.FuzzyUUID().fuzz()
+            tag.name = fuzzy.FuzzyText().fuzz()
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            organization_id=organization_id,
+        )
+
     def test_profile_category_invalid_profile_id(self):
         response = self.client.call_action('get_categories', profile_id='invalid')
         self._verify_field_error(response, 'profile_id')
@@ -154,6 +171,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_trending_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -173,6 +191,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_trending_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -194,6 +213,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_trending_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -217,6 +237,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_trending_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -238,6 +259,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_trending_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -259,6 +281,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id)
+        self._mock_get_trending_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -269,4 +292,27 @@ class TestLandingService(TestCase):
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
         self.assertEqual(category.type, LandingService.Containers.Category.NEW_HIRES)
+        self.assertEqual(category.total_count, str(3))
+
+    def test_trending_tags_tag_category(self):
+        profile = self._mock_get_profile()
+        # TODO we should have the mock transport return an error that the mock wasn't registred
+        self._mock_get_peers(profile.id, peers=0)
+        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_addresses(profile.organization_id, addresses=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_trending_tags(profile.organization_id)
+
+        response = self.client.call_action('get_categories', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.categories), 1)
+
+        category = response.result.categories[0]
+        self.assertEqual(category.title, 'Tags')
+        self.assertEqual(len(category.tags), 3)
+        self.assertEqual(category.content_key, 'name')
+        self.assertEqual(category.type, LandingService.Containers.Category.TAGS)
         self.assertEqual(category.total_count, str(3))
