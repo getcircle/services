@@ -716,6 +716,8 @@ class TestProfiles(TestCase):
     def test_get_trending_tags(self):
         tags = factories.TagFactory.create_batch(size=3)
         profile = factories.ProfileFactory.create(tags=[tags[1]])
+        # add duplicate
+        factories.ProfileFactory.create(tags=[tags[1]])
         response = self.client.call_action(
             'get_trending_tags',
             organization_id=str(profile.organization_id),

@@ -490,9 +490,9 @@ class GetTrendingTags(actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        tags = models.Tag.objects.filter(
+        tags = set(models.Tag.objects.filter(
             profiletags__tag_id__isnull=False
-        ).order_by('-profiletags__created')[:10]
+        ).order_by('-profiletags__created')[:10])
         for tag in tags:
             container = self.response.tags.add()
             tag.to_protobuf(container)
