@@ -141,9 +141,9 @@ class TestLandingService(TestCase):
             organization_id=organization_id,
         )
 
-    def _mock_get_trending_tags(self, organization_id, tags=3):
+    def _mock_get_active_tags(self, organization_id, tags=3):
         service = 'profile'
-        action = 'get_trending_tags'
+        action = 'get_active_tags'
 
         mock_response = mock.get_mockable_response(service, action)
         for _ in range(tags):
@@ -171,7 +171,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_trending_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -191,7 +191,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_trending_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -213,7 +213,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_trending_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -237,7 +237,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_trending_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -259,7 +259,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_trending_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -281,7 +281,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id)
-        self._mock_get_trending_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags(profile.organization_id, tags=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -304,7 +304,7 @@ class TestLandingService(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_trending_tags(profile.organization_id)
+        self._mock_get_active_tags(profile.organization_id)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)

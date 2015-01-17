@@ -483,7 +483,7 @@ class GetRecentHires(actions.Action):
             profile.to_protobuf(container)
 
 
-class GetTrendingTags(actions.Action):
+class GetActiveTags(actions.Action):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
@@ -492,7 +492,7 @@ class GetTrendingTags(actions.Action):
     def run(self, *args, **kwargs):
         tags = set(models.Tag.objects.filter(
             profiletags__tag_id__isnull=False
-        ).order_by('-profiletags__created')[:10])
+        ).order_by('-profiletags__created'))
         for tag in tags:
             container = self.response.tags.add()
             tag.to_protobuf(container)

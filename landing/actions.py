@@ -149,9 +149,9 @@ class GetCategories(actions.Action):
             container = hires.profiles.add()
             container.CopyFrom(profile)
 
-    def _get_trending_tags_category(self, profile):
+    def _get_active_tags_category(self, profile):
         response = self.profile_client.call_action(
-            'get_trending_tags',
+            'get_active_tags',
             organization_id=profile.organization_id,
         )
         if not response.success:
@@ -184,4 +184,4 @@ class GetCategories(actions.Action):
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_recent_hires_category(profile)
-        self._get_trending_tags_category(profile)
+        self._get_active_tags_category(profile)
