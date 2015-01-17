@@ -22,11 +22,22 @@ class Factory(DjangoModelFactory):
     _options_class = ProtobufDjangoOptions
 
     @classmethod
-    def create_protobuf(cls, *args, **kwargs):
+    def verify_has_protobuf(cls):
         if cls._meta.protobuf is None:
             raise NotImplementedError('Must define `protobuf` in meta')
 
+    @classmethod
+    def create_protobuf(cls, *args, **kwargs):
+        cls.verify_has_protobuf()
         container = cls._meta.protobuf()
         model = cls.create(*args, **kwargs)
+        model.to_protobuf(container)
+        return container
+
+    # TODO we should move this to the model
+    @classmethod
+    def to_protobuf(cls, model):
+        cls.verify_has_protobuf()
+        container = cls._meta.protobuf()
         model.to_protobuf(container)
         return container

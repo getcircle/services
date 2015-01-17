@@ -126,3 +126,18 @@ class TestProfileTags(TestCase):
         response = self.client.call_action('get_tags', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(tags), len(response.result.tags))
+
+    def test_add_tags_duplicate_noop(self):
+        tag = factories.TagFactory.create()
+        profile = factories.ProfileFactory.create(tags=[tag])
+        import ipdb; ipdb.set_trace()
+        response = self.client.call_action(
+            'add_tags',
+            profile_id=str(profile.id),
+            tags=[factories.TagFactory.to_protobuf(tag)],
+        )
+        self.assertTrue(response.success)
+
+        response = self.client.call_action('get_tags', profile_id=str(profile.id))
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.tags), 1)

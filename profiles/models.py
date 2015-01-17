@@ -45,3 +45,6 @@ class ProfileTags(models.TimestampableModel):
 
     tag = models.ForeignKey(Tag)
     profile = models.ForeignKey(Profile)
+
+    class Meta:
+        unique_together = ('tag', 'profile')

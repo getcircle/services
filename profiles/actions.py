@@ -233,12 +233,23 @@ class AddTags(CreateTags):
         },
     }
 
-    def _add_tags(self, profile_id, tag_ids):
+    def _dedupe_tags(self, tag_ids):
+        # NOTE: This is subject to a race condition, but since we only have 1
+        # interface to add tags we're not going to worry about this for now.
+        through_model = models.Profile.tags.through
+        current_tag_ids = map(str, through_model.objects.filter(
+            profile_id=self.request.profile_id,
+        ).values_list('tag_id', flat=True))
+        return list(set(tag_ids) - set(current_tag_ids))
+
+    def _add_tags(self, tags):
+        tag_ids = [tag.id for tag in tags]
+        deduped_tag_ids = self._dedupe_tags(tag_ids)
         through_model = models.Profile.tags.through
         objects = [through_model(
-            profile_id=profile_id,
-            tag_id=tag.id,
-        ) for tag in self.request.tags]
+            profile_id=self.request.profile_id,
+            tag_id=tag_id,
+        ) for tag_id in deduped_tag_ids]
         return through_model.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
@@ -251,7 +262,7 @@ class AddTags(CreateTags):
             tags_to_add.extend(self._create_tags(organization_id, tags_to_create))
 
         if tags_to_add:
-            self._add_tags(self.request.profile_id, tags_to_add)
+            self._add_tags(tags_to_add)
 
 
 class GetTags(actions.Action):
