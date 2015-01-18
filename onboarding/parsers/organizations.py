@@ -49,6 +49,8 @@ class Row(object):
         'office_region',
         'office_postal_code',
         'office_country_code',
+        'office_latitude',
+        'office_longitude',
     )
 
     def __init__(self, data):
