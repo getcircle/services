@@ -2,7 +2,7 @@ FROM ubuntu:14.04
 
 ADD deploy/ssh /root/.ssh
 RUN chmod 400 /root/.ssh/id_rsa
-ADD deploy/scripts /deploy/scripts
+ADD deploy/scripts/setup.sh /deploy/scripts/setup.sh
 
 RUN ./deploy/scripts/setup.sh
 
