@@ -58,8 +58,8 @@ class Address(models.UUIDModel, models.TimestampableModel):
     address_2 = models.CharField(max_length=128, blank=True)
     city = models.CharField(max_length=64)
     region = models.CharField(max_length=64)
-    postal_code = models.CharField(max_length=5)
-    country_code = models.CharField(max_length=2)
+    postal_code = models.CharField(max_length=64)
+    country_code = models.CharField(max_length=64)
 
     class Meta:
         unique_together = ('name', 'organization')
