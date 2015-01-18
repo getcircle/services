@@ -1,5 +1,6 @@
 from csv import DictReader
 
+from django.utils.encoding import smart_text
 import service.control
 
 from .base import OrganizationParser
@@ -55,7 +56,7 @@ class Row(object):
 
     def __getattr__(self, key):
         if key in self.data:
-            return self.data[key]
+            return smart_text(self.data[key])
 
         return super(Row, self).__getattr__(key)
 
@@ -76,7 +77,7 @@ class Row(object):
     def profile(self):
         profile = {}
         for key in self.profile_fields:
-            profile[key] = self.data[key]
+            profile[key] = smart_text(self.data[key])
         return profile
 
     def is_team_owner(self):
@@ -128,6 +129,7 @@ class Parser(OrganizationParser):
         return user.id
 
     def _save_team(self, team):
+        self.debug_log('saving team: %s' % (team,))
         if team in self.saved_teams:
             return self.saved_teams[team]
 
