@@ -31,11 +31,11 @@ RUN pip install --no-deps twilio==3.6.14
 RUN pip install --no-deps httplib2==0.9
 RUN pip install --no-deps requests==2.5.1
 
+RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
+RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
+RUN pip install --no-deps git+ssh://git@github.com/getcircle/python-soa.git@0.6.12
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/django-common.git@0.2.2
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-registry.git@0.24.0
-RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
-RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
-RUN pip install --no-deps git+ssh://git@github.com/getcircle/python-soa.git@0.6.12
 
 EXPOSE 5000
 
