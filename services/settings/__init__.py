@@ -166,3 +166,11 @@ AWS_ACCESS_KEY_ID = "AKIAJXKUJANGM6O3Z6ZQ"
 AWS_SECRET_ACCESS_KEY = "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"
 
 AWS_S3_MEDIA_BUCKET = 'otterbots-media'
+
+# XXX temporary db cache until we setup memcache
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache',
+    }
+}
