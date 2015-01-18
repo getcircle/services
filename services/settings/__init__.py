@@ -105,6 +105,7 @@ STATIC_ROOT = 'static'
 LOCALIZED_SERVICES = [
     'landing.server.Server',
     'media.server.Server',
+    'notes.server.Server',
     'organizations.server.Server',
     'profiles.server.Server',
     'users.server.Server',

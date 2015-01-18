@@ -1,3 +1,10 @@
+# dev requirements
+gnureadline==6.3.3
+ipdb==0.8
+ipython==2.3.1
+mock==1.0.1
+
+# third party requirements
 bcrypt==1.1.0
 boto==2.35.1
 cffi==0.8.6
@@ -20,3 +27,10 @@ pyotp==1.4.1
 twilio==3.6.14
 httplib2==0.9
 requests==2.5.1
+
+# core requirements
+git+ssh://git@github.com/getcircle/django-common.git@0.2.2
+git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
+git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
+git+ssh://git@github.com/getcircle/python-soa.git@0.6.12
+git+ssh://git@github.com/getcircle/protobuf-registry.git@0.25.1

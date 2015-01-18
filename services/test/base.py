@@ -15,11 +15,14 @@ class TestCase(DjangoTestCase):
         self._verify_error(response, 'FIELD_ERROR', key, detail)
 
     def _verify_values(self, expected_value, value):
-        if isinstance(value, basestring):
+        uuid_convertibles = (basestring, uuid.UUID)
+        if isinstance(value, uuid_convertibles) or isinstance(expected_value, uuid_convertibles):
             # handle various types of UUID (hex and string)
             try:
-                value = uuid.UUID(value, version=4)
-                expected_value = uuid.UUID(expected_value, version=4)
+                if isinstance(value, basestring):
+                    value = uuid.UUID(value, version=4)
+                if isinstance(expected_value, basestring):
+                    expected_value = uuid.UUID(expected_value, version=4)
             except ValueError:
                 pass
         self.assertEqual(value, expected_value)

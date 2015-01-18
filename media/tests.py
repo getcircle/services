@@ -27,6 +27,9 @@ class TestMediaService(TestCase):
         self.client = service.control.Client('media', token='test-token')
         self.client.set_transport(local.instance)
 
+    def tearDown(self):
+        service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
+
     # XXX what should be policy around mocking these?
     def _mock_profile(self, profile):
         profile.id = fuzzy.FuzzyUUID().fuzz()
