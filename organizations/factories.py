@@ -36,6 +36,8 @@ class AddressFactory(factory.Factory):
     region = factory.FuzzyText(length=2)
     postal_code = '94010'
     country_code = 'US'
+    latitude = '37.578286'
+    longitude = '-122.348729'
 
     @classmethod
     def get_protobuf_data(cls, **data):

@@ -59,6 +59,8 @@ class TestProfiles(TestCase):
             'region': 'California',
             'postal_code': '94010',
             'country_code': 'US',
+            'latitude': '37.578286',
+            'longitude': '-122.348729',
         }
         response = self.org_client.call_action(
             'create_address',

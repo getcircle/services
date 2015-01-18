@@ -130,7 +130,6 @@ class TestProfileTags(TestCase):
     def test_add_tags_duplicate_noop(self):
         tag = factories.TagFactory.create()
         profile = factories.ProfileFactory.create(tags=[tag])
-        import ipdb; ipdb.set_trace()
         response = self.client.call_action(
             'add_tags',
             profile_id=str(profile.id),

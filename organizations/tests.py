@@ -27,6 +27,8 @@ class TestOrganizations(TestCase):
             'region': 'California',
             'postal_code': '94010',
             'country_code': 'US',
+            'latitude': '37.578286',
+            'longitude': '-122.348729',
         }
 
     def _create_organization(self, name=None, domain=None):
