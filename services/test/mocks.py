@@ -1,5 +1,7 @@
 from . import fuzzy
+from .. import token
 
+from protobufs.note_service_pb2 import NoteService
 from protobufs.organization_service_pb2 import OrganizationService
 from protobufs.profile_service_pb2 import ProfileService
 
@@ -27,6 +29,16 @@ def _mock_container(container, mock_dict, **extra):
         else:
             setattr(container, field, value)
     return container
+
+
+def mock_token(**values):
+    mock_fields = ['auth_token', 'user_id', 'profile_id', 'organization_id']
+    token_data = {}
+    for field in mock_fields:
+        token_data[field] = fuzzy.FuzzyUUID().fuzz()
+
+    token_data.update(values)
+    return token.make_token(**token_data)
 
 
 def mock_address(container=None, **overrides):
@@ -90,5 +102,16 @@ def mock_profile(container=None, **overrides):
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id'],
         fuzzy.FuzzyText: ['title', 'full_name'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_note(container=None, **overrides):
+    if container is None:
+        container = NoteService.Containers.Note()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'for_profile_id', 'owner_profile_id'],
+        fuzzy.FuzzyText: ['content'],
     }
     return _mock_container(container, mock_dict, **overrides)

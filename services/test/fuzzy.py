@@ -6,4 +6,4 @@ from factory.fuzzy import *  # NOQA
 class FuzzyUUID(BaseFuzzyAttribute):
 
     def fuzz(self):
-        return str(uuid.uuid4())
+        return uuid.uuid4().hex

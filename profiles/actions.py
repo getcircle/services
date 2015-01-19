@@ -12,6 +12,8 @@ from service import (
     validators,
 )
 
+from services.token import parse_token
+
 from . import (
     models,
 )
@@ -149,14 +151,9 @@ class GetProfiles(actions.Action):
 
 class GetExtendedProfile(GetProfile):
 
-    @property
-    def organization_client(self):
-        if not hasattr(self, '_organization_client'):
-            self._organization_client = service.control.Client(
-                'organization',
-                token=self.token,
-            )
-        return self._organization_client
+    def __init__(self, *args, **kwargs):
+        super(GetExtendedProfile, self).__init__(*args, **kwargs)
+        self.organization_client = service.control.Client('organization', token=self.token)
 
     def _fetch_address(self, address_id):
         # TODO this should raise an error if it doesn't succeed
@@ -180,6 +177,18 @@ class GetExtendedProfile(GetProfile):
     def _get_tags(self):
         return models.Tag.objects.filter(profile=self.request.profile_id)
 
+    def _fetch_notes(self):
+        # XXX error if we don't have profile_id?
+        token = parse_token(self.token)
+        client = service.control.Client('note', token=self.token)
+        response = client.call_action(
+            'get_notes',
+            for_profile_id=self.request.profile_id,
+            owner_profile_id=token.profile_id,
+        )
+        # XXX error if this doesn't succeed
+        return response.result.notes
+
     def run(self, *args, **kwargs):
         profile = self._get_profile()
         profile = models.Profile.objects.get(pk=self.request.profile_id)
@@ -198,6 +207,11 @@ class GetExtendedProfile(GetProfile):
         for tag in tags:
             container = self.response.tags.add()
             tag.to_protobuf(container)
+
+        notes = self._fetch_notes()
+        for note in notes:
+            container = self.response.notes.add()
+            container.CopyFrom(note)
 
 
 class CreateTags(actions.Action):
