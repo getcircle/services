@@ -22,6 +22,5 @@ class ServiceTokenAuthentication(TokenAuthentication):
             msg = 'Invalid token header. Token string should not contain spaces.'
             raise exceptions.AuthenticationFailed(msg)
 
-        import ipdb; ipdb.set_trace()
         token = parse_token(auth[1])
         return self.authenticate_credentials(token.auth_token)
