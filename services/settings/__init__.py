@@ -174,3 +174,10 @@ CACHES = {
         'LOCATION': 'cache',
     }
 }
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'services.authentication.ServiceTokenAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    )
+}

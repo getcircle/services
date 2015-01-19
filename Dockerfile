@@ -30,6 +30,7 @@ RUN pip install --no-deps pyotp==1.4.1
 RUN pip install --no-deps twilio==3.6.14
 RUN pip install --no-deps httplib2==0.9
 RUN pip install --no-deps requests==2.5.1
+RUN pip install --no-deps itsdangerous==0.24
 
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2

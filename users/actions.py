@@ -9,6 +9,9 @@ from service import (
     actions,
     validators,
 )
+import service.control
+
+from services.token import make_token
 
 from . import models
 
@@ -116,12 +119,29 @@ class AuthenticateUser(actions.Action):
             )
         return user
 
+    def _get_profile(self, user_id, token):
+        client = service.control.Client('profile', token=token)
+        response = client.call_action('get_profile', user_id=str(user_id))
+        if response.success and response.result.profile:
+            return response.result.profile
+
+    def _get_token(self, user):
+        token, _ = Token.objects.get_or_create(user=user)
+        # XXX this assumes that we have profiles already set up
+        temporary_token = make_token(auth_token=token.key, user_id=user.id)
+        profile = self._get_profile(user.id, temporary_token)
+        return make_token(
+            auth_token=token.key,
+            profile_id=getattr(profile, 'id', None),
+            user_id=user.id,
+            organization_id=getattr(profile, 'organization_id', None),
+        )
+
     def run(self, *args, **kwargs):
         user = self._handle_authentication()
         if not self.is_error():
             self.response.authenticated = True
-            token, _ = Token.objects.get_or_create(user=user)
-            self.response.token = token.key
+            self.response.token = self._get_token(user)
             user.to_protobuf(self.response.user)
 
 

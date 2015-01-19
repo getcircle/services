@@ -16,6 +16,14 @@ class UserFactory(factory.Factory):
     primary_email = fuzzy.FuzzyText(suffix='@example.com')
     phone_number = factory.Sequence(lambda n: '+1949293%40d' % (n,))
 
+    @factory.post_generation
+    def password(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            self.set_password(extracted)
+
 
 class TOTPTokenFactory(factory.Factory):
     class Meta:

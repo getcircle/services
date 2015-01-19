@@ -16,6 +16,7 @@ from .. import factories
 class TestGetExtendedProfile(TestCase):
 
     def setUp(self):
+        super(TestGetExtendedProfile, self).setUp()
         service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
         self.client = service.control.Client('profile', token='test-token')
         self.client.set_transport(local.instance)
