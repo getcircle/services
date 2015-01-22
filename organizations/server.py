@@ -17,4 +17,5 @@ class Server(service.control.Server):
         'get_address': actions.GetAddress,
         'get_addresses': actions.GetAddresses,
         'get_organization': actions.GetOrganization,
+        'get_top_level_team': actions.GetTopLevelTeam,
     }

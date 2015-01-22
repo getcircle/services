@@ -560,3 +560,26 @@ class TestOrganizations(TestCase):
         )
         self.assertTrue(response.success)
         self._verify_containers(address, response.result.address)
+
+    def test_get_top_level_team_invalid_organization_id(self):
+        response = self.client.call_action('get_top_level_team', organization_id='invalid')
+        self._verify_field_error(response, 'organization_id')
+
+    def test_get_top_level_team(self):
+        parent_team = self._create_team()
+
+        # create children teams
+        for _ in range(2):
+            child_team = self._create_team(
+                organization_id=parent_team.organization_id,
+                child_of=parent_team.id,
+            )
+
+        # create a grandchild team
+        self._create_team(organization_id=child_team.organization_id, child_of=child_team.id)
+
+        response = self.client.call_action(
+            'get_top_level_team',
+            organization_id=parent_team.organization_id,
+        )
+        self._verify_containers(parent_team, response.result.team)
