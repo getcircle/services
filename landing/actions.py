@@ -57,10 +57,10 @@ class GetCategories(actions.Action):
             container = reports.profiles.add()
             container.CopyFrom(profile)
 
-    def _get_locations_category(self, profile):
+    def _get_locations_category(self, organization_id):
         response = self.organization_client.call_action(
             'get_addresses',
-            organization_id=profile.organization_id,
+            organization_id=organization_id,
         )
         if not response.success:
             raise Exception('failed to fetch addresses')
@@ -149,10 +149,10 @@ class GetCategories(actions.Action):
             container = hires.profiles.add()
             container.CopyFrom(profile)
 
-    def _get_active_tags_category(self, profile):
+    def _get_active_tags_category(self, organization_id):
         response = self.profile_client.call_action(
             'get_active_tags',
-            organization_id=profile.organization_id,
+            organization_id=organization_id,
         )
         if not response.success:
             raise Exception('failed ot fetch trending tags')
@@ -180,57 +180,46 @@ class GetCategories(actions.Action):
         profile = response.result.profile
         self._get_peers_category()
         self._get_direct_reports_category()
-        self._get_locations_category(profile)
+        self._get_locations_category(profile.organization_id)
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_recent_hires_category(profile)
-        self._get_active_tags_category(profile)
+        self._get_active_tags_category(profile.organization_id)
 
 
-# XXX this should go in organization service but there is an issue with
-# circular imports in protobufs
-class GetExtendedOrganization(actions.Action):
+class GetOrganizationCategories(GetCategories):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
     }
 
     def __init__(self, *args, **kwargs):
-        super(GetExtendedOrganization, self).__init__(*args, **kwargs)
+        super(GetOrganizationCategories, self).__init__(*args, **kwargs)
         self.organization_client = service.control.Client('organization', token=self.token)
         self.profile_client = service.control.Client('profile', token=self.token)
 
-    def _fetch_organization(self):
-        response = self.organization_client.call_action(
-            'get_organization',
-            organization_id=self.request.organization_id,
-        )
-        if not response.success:
-            raise Exception('fuck!')
-        self.response.organization.CopyFrom(response.result.organization)
+    #def _fetch_organization(self):
+        #response = self.organization_client.call_action(
+            #'get_organization',
+            #organization_id=self.request.organization_id,
+        #)
+        #if not response.success:
+            #raise Exception('fuck!')
+        #self.response.organization.CopyFrom(response.result.organization)
 
-    def _fetch_trending_tags(self):
-        response = self.profile_client.call_action(
-            'get_active_tags',
-            organization_id=self.request.organization_id,
-        )
-        if not response.success:
-            raise Exception('ugh...')
-        self.response.trending_tags.extend(response.result.tags)
+    #def _fetch_addresses(self):
+        #response = self.organization_client.call_action(
+            #'get_addresses',
+            #organization_id=self.request.organization_id,
+        #)
+        #if not response.success:
+            #raise Exception('..fuck!')
+        #self.response.addresses.extend(response.result.addresses)
 
-    def _fetch_addresses(self):
-        response = self.organization_client.call_action(
-            'get_addresses',
-            organization_id=self.request.organization_id,
-        )
-        if not response.success:
-            raise Exception('..fuck!')
-        self.response.addresses.extend(response.result.addresses)
-
-    def _fetch_departments_and_executives(self):
+    def _get_departments_and_executives(self, organization_id):
         response = self.organization_client.call_action(
             'get_top_level_team',
-            organization_id=self.request.organization_id,
+            organization_id=organization_id,
         )
         if not response.success:
             raise Exception('..fuck!')
@@ -243,8 +232,18 @@ class GetExtendedOrganization(actions.Action):
         if not response.success:
             raise Exception('..fuck!')
 
-        self.response.departments.extend([top_level_team])
-        self.response.departments.extend(response.result.teams)
+        departments = []
+        departments.extend([top_level_team])
+        departments.extend(response.result.teams)
+
+        category = self.response.categories.add()
+        category.title = 'Departments'
+        category.content_key = 'name'
+        category.type = LandingService.Containers.Category.DEPARTMENTS
+        category.total_count = str(len(departments))
+        for department in departments:
+            container = category.teams.add()
+            container.CopyFrom(department)
 
         response = self.profile_client.call_action('get_profile', user_id=top_level_team.owner_id)
         if not response.success:
@@ -258,11 +257,24 @@ class GetExtendedOrganization(actions.Action):
         if not response.success:
             raise Exception('..fuck!')
 
-        self.response.executives.extend([owner])
-        self.response.executives.extend(response.result.profiles)
+        executives = []
+        executives.extend([owner])
+        executives.extend(response.result.profiles)
+
+        category = self.response.categories.add()
+        category.title = 'Executives'
+        category.content_key = 'name'
+        category.type = LandingService.Containers.Category.EXECUTIVES
+        category.total_count = str(len(executives))
+        for profile in executives:
+            container = category.profiles.add()
+            container.CopyFrom(profile)
 
     def run(self, *args, **kwargs):
-        self._fetch_organization()
-        self._fetch_trending_tags()
-        self._fetch_addresses()
-        self._fetch_departments_and_executives()
+        self._get_active_tags_category(self.request.organization_id)
+        self._get_locations_category(self.request.organization_id)
+        self._get_departments_and_executives(self.request.organization_id)
+        #self._fetch_organization()
+        #self._fetch_trending_tags()
+        #self._fetch_addresses()
+        #self._fetch_departments_and_executives()

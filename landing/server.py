@@ -8,5 +8,5 @@ class Server(service.control.Server):
 
     actions = {
         'get_categories': actions.GetCategories,
-        'get_extended_organization': actions.GetExtendedOrganization,
+        'get_organization_categories': actions.GetOrganizationCategories,
     }
