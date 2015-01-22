@@ -198,24 +198,6 @@ class GetOrganizationCategories(GetCategories):
         self.organization_client = service.control.Client('organization', token=self.token)
         self.profile_client = service.control.Client('profile', token=self.token)
 
-    #def _fetch_organization(self):
-        #response = self.organization_client.call_action(
-            #'get_organization',
-            #organization_id=self.request.organization_id,
-        #)
-        #if not response.success:
-            #raise Exception('fuck!')
-        #self.response.organization.CopyFrom(response.result.organization)
-
-    #def _fetch_addresses(self):
-        #response = self.organization_client.call_action(
-            #'get_addresses',
-            #organization_id=self.request.organization_id,
-        #)
-        #if not response.success:
-            #raise Exception('..fuck!')
-        #self.response.addresses.extend(response.result.addresses)
-
     def _get_departments_and_executives(self, organization_id):
         response = self.organization_client.call_action(
             'get_top_level_team',
@@ -225,26 +207,6 @@ class GetOrganizationCategories(GetCategories):
             raise Exception('..fuck!')
 
         top_level_team = response.result.team
-        response = self.organization_client.call_action(
-            'get_team_children',
-            team_id=top_level_team.id,
-        )
-        if not response.success:
-            raise Exception('..fuck!')
-
-        departments = []
-        departments.extend([top_level_team])
-        departments.extend(response.result.teams)
-
-        category = self.response.categories.add()
-        category.title = 'Departments'
-        category.content_key = 'name'
-        category.type = LandingService.Containers.Category.DEPARTMENTS
-        category.total_count = str(len(departments))
-        for department in departments:
-            container = category.teams.add()
-            container.CopyFrom(department)
-
         response = self.profile_client.call_action('get_profile', user_id=top_level_team.owner_id)
         if not response.success:
             raise Exception('fuck!')
@@ -270,11 +232,27 @@ class GetOrganizationCategories(GetCategories):
             container = category.profiles.add()
             container.CopyFrom(profile)
 
+        response = self.organization_client.call_action(
+            'get_team_children',
+            team_id=top_level_team.id,
+        )
+        if not response.success:
+            raise Exception('..fuck!')
+
+        departments = []
+        departments.extend([top_level_team])
+        departments.extend(response.result.teams)
+
+        category = self.response.categories.add()
+        category.title = 'Departments'
+        category.content_key = 'name'
+        category.type = LandingService.Containers.Category.DEPARTMENTS
+        category.total_count = str(len(departments))
+        for department in departments:
+            container = category.teams.add()
+            container.CopyFrom(department)
+
     def run(self, *args, **kwargs):
-        self._get_active_tags_category(self.request.organization_id)
-        self._get_locations_category(self.request.organization_id)
         self._get_departments_and_executives(self.request.organization_id)
-        #self._fetch_organization()
-        #self._fetch_trending_tags()
-        #self._fetch_addresses()
-        #self._fetch_departments_and_executives()
+        self._get_locations_category(self.request.organization_id)
+        self._get_active_tags_category(self.request.organization_id)
