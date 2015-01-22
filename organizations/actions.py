@@ -178,7 +178,7 @@ class GetTeamChildren(actions.Action):
     }
 
     def _direct_report_team_query(self):
-        return 'SELECT * FROM %s WHERE path ~ %%s' % (models.Team._meta.db_table,)
+        return 'SELECT * FROM %s WHERE path ~ %%s ORDER BY "name"' % (models.Team._meta.db_table,)
 
     def _build_lquery(self, team_id):
         # get the hex value for the lquery

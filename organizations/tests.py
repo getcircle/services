@@ -484,22 +484,29 @@ class TestOrganizations(TestCase):
         parent_team = self._create_team()
 
         # create child teams
-        for _ in range(2):
-            child_team = self._create_team(
-                organization_id=parent_team.organization_id,
-                child_of=parent_team.id,
-            )
+        self._create_team(
+            name='b',
+            organization_id=parent_team.organization_id,
+            child_of=parent_team.id,
+        )
+        second_child_team = self._create_team(
+            name='a',
+            organization_id=parent_team.organization_id,
+            child_of=parent_team.id,
+        )
 
         # create grandchild team
         self._create_team(
-            organization_id=child_team.organization_id,
-            child_of=child_team.id,
+            organization_id=second_child_team.organization_id,
+            child_of=second_child_team.id,
         )
 
         # verify only child teams are returned
         response = self.client.call_action('get_team_children', team_id=parent_team.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.teams), 2)
+        self.assertEqual(response.result.teams[0].name, 'a')
+        self.assertEqual(response.result.teams[1].name, 'b')
 
     def test_create_team_duplicate_name(self):
         team = factories.TeamFactory.create()
