@@ -143,7 +143,7 @@ class GetProfiles(actions.Action):
         else:
             parameters['tags__id'] = self.request.tag_id
 
-        profiles = models.Profile.objects.filter(**parameters)
+        profiles = models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
         for profile in profiles:
             container = self.response.profiles.add()
             profile.to_protobuf(container)

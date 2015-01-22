@@ -165,14 +165,25 @@ class TestProfiles(TestCase):
         self._verify_field_error(response, 'team_id')
 
     def test_get_profiles(self):
-        profile = factories.ProfileFactory.create_protobuf()
+        created_first = factories.ProfileFactory.create_protobuf(first_name='b')
+        created_second = factories.ProfileFactory.create_protobuf(
+            first_name='a',
+            team_id=created_first.team_id,
+        )
+        factories.ProfileFactory.create_batch(
+            size=2,
+            first_name='z',
+            team_id=created_first.team_id,
+        )
         response = self.client.call_action(
             'get_profiles',
-            team_id=profile.team_id,
+            team_id=created_second.team_id,
         )
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profiles), 1)
-        self._verify_containers(profile, response.result.profiles[0])
+        self.assertEqual(len(response.result.profiles), 4)
+        # ensure results are sorted alphabetically
+        self._verify_containers(created_second, response.result.profiles[0])
+        self._verify_containers(created_first, response.result.profiles[1])
 
     def test_get_profile(self):
         expected = factories.ProfileFactory.create_protobuf()
