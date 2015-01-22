@@ -13,7 +13,7 @@ from services.test import (
 )
 
 
-class TestLandingService(TestCase):
+class TestGetCategories(TestCase):
 
     def setUp(self):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'

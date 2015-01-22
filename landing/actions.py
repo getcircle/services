@@ -185,3 +185,84 @@ class GetCategories(actions.Action):
         self._get_upcoming_anniversaries_category(profile)
         self._get_recent_hires_category(profile)
         self._get_active_tags_category(profile)
+
+
+# XXX this should go in organization service but there is an issue with
+# circular imports in protobufs
+class GetExtendedOrganization(actions.Action):
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(GetExtendedOrganization, self).__init__(*args, **kwargs)
+        self.organization_client = service.control.Client('organization', token=self.token)
+        self.profile_client = service.control.Client('profile', token=self.token)
+
+    def _fetch_organization(self):
+        response = self.organization_client.call_action(
+            'get_organization',
+            organization_id=self.request.organization_id,
+        )
+        if not response.success:
+            raise Exception('fuck!')
+        self.response.organization.CopyFrom(response.result.organization)
+
+    def _fetch_trending_tags(self):
+        response = self.profile_client.call_action(
+            'get_active_tags',
+            organization_id=self.request.organization_id,
+        )
+        if not response.success:
+            raise Exception('ugh...')
+        self.response.trending_tags.extend(response.result.tags)
+
+    def _fetch_addresses(self):
+        response = self.organization_client.call_action(
+            'get_addresses',
+            organization_id=self.request.organization_id,
+        )
+        if not response.success:
+            raise Exception('..fuck!')
+        self.response.addresses.extend(response.result.addresses)
+
+    def _fetch_departments_and_executives(self):
+        response = self.organization_client.call_action(
+            'get_top_level_team',
+            organization_id=self.request.organization_id,
+        )
+        if not response.success:
+            raise Exception('..fuck!')
+
+        top_level_team = response.result.team
+        response = self.organization_client.call_action(
+            'get_team_children',
+            team_id=top_level_team.id,
+        )
+        if not response.success:
+            raise Exception('..fuck!')
+
+        self.response.departments.extend([top_level_team])
+        self.response.departments.extend(response.result.teams)
+
+        response = self.profile_client.call_action('get_profile', user_id=top_level_team.owner_id)
+        if not response.success:
+            raise Exception('fuck!')
+        owner = response.result.profile
+
+        response = self.profile_client.call_action(
+            'get_direct_reports',
+            profile_id=owner.id,
+        )
+        if not response.success:
+            raise Exception('..fuck!')
+
+        self.response.executives.extend([owner])
+        self.response.executives.extend(response.result.profiles)
+
+    def run(self, *args, **kwargs):
+        self._fetch_organization()
+        self._fetch_trending_tags()
+        self._fetch_addresses()
+        self._fetch_departments_and_executives()

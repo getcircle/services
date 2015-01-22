@@ -14,6 +14,9 @@ def _mock_container(container, mock_dict, **extra):
         except TypeError:
             pass
 
+        if hasattr(mock_func, 'fuzz') and not callable(mock_func):
+            mock_func = mock_func.fuzz
+
         for field in fields:
             setattr(container, field, mock_func())
 
@@ -102,6 +105,17 @@ def mock_profile(container=None, **overrides):
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id'],
         fuzzy.FuzzyText: ['title', 'full_name'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_tag(container=None, **overrides):
+    if container is None:
+        container = ProfileService.Containers.Tag()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id'],
+        fuzzy.FuzzyText: ['name'],
     }
     return _mock_container(container, mock_dict, **overrides)
 
