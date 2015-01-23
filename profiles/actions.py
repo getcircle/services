@@ -132,6 +132,7 @@ class GetProfiles(actions.Action):
         'team_id': [validators.is_uuid4],
         'organization_id': [validators.is_uuid4],
         'tag_id': [validators.is_uuid4],
+        'address_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
@@ -140,6 +141,8 @@ class GetProfiles(actions.Action):
             parameters['team_id'] = self.request.team_id
         elif self.request.organization_id:
             parameters['organization_id'] = self.request.organization_id
+        elif self.request.address_id:
+            parameters['address_id'] = self.request.address_id
         else:
             parameters['tags__id'] = self.request.tag_id
 

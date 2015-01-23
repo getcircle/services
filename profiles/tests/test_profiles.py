@@ -6,6 +6,7 @@ import service.control
 
 from services.test import (
     fuzzy,
+    mocks,
     TestCase,
 )
 
@@ -649,3 +650,18 @@ class TestProfiles(TestCase):
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.tags), 1)
+
+    def test_get_profiles_address_id_invalid(self):
+        response = self.client.call_action('get_profiles', address_id='invalid')
+        self._verify_field_error(response, 'address_id')
+
+    def test_get_profiles_with_address_id(self):
+        address = mocks.mock_address()
+        factories.ProfileFactory.create_batch(
+            size=5,
+            address_id=address.id,
+            organization_id=address.organization_id,
+        )
+        response = self.client.call_action('get_profiles', address_id=address.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 5)

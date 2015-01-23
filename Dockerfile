@@ -36,7 +36,7 @@ RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-to-dict.gi
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/python-soa.git@0.6.12
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/django-common.git@0.2.2
-RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-registry.git@0.27.1
+RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-registry.git@0.27.2
 
 EXPOSE 5000
 

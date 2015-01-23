@@ -49,7 +49,7 @@ def mock_address(container=None, **overrides):
         container = OrganizationService.Containers.Address()
 
     mock_dict = {
-        fuzzy.FuzzyUUID: ['id'],
+        fuzzy.FuzzyUUID: ['id', 'organization_id'],
         fuzzy.FuzzyText: ['address_1', 'address_2', 'city', 'region'],
     }
     extra = {
