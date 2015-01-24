@@ -20,7 +20,6 @@ RUN pip install --no-deps phonenumbers==7.0.1
 RUN pip install --no-deps protobuf==2.6.1
 RUN pip install --no-deps psycopg2==2.5.4
 RUN pip install --no-deps pycparser==2.10
-RUN pip install --no-deps schematics==1.0-0
 RUN pip install --no-deps six==1.8.0
 RUN pip install --no-deps wsgiref==0.1.2
 RUN pip install --no-deps git+ssh://git@github.com/django/django.git@e7b9a58b081299b30f807d5c66f7a5d1940efe4c
