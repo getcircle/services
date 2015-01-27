@@ -1,10 +1,10 @@
 FROM ubuntu:14.04
 
-ADD deploy/ssh /root/.ssh
-RUN chmod 400 /root/.ssh/id_rsa
-ADD deploy/scripts/setup.sh /deploy/scripts/setup.sh
+# Update packages & Install Dependencies
+RUN apt-get update -y && apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev postgresql-client
 
-RUN ./deploy/scripts/setup.sh
+# Install pip
+RUN easy_install pip
 
 # Install python requirements
 
@@ -33,6 +33,12 @@ RUN pip install --no-deps itsdangerous==0.24
 RUN pip install --no-deps gunicorn==19.1.1
 RUN pip install --no-deps greenlet==0.4.5
 RUN pip install --no-deps gevent==1.0.1
+
+# Install private requirements
+
+ADD deploy/ssh /root/.ssh
+RUN chmod 400 /root/.ssh/id_rsa
+ADD deploy/scripts/setup.sh /deploy/scripts/setup.sh
 
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
