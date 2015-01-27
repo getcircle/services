@@ -1,15 +1,20 @@
 import os
+import urlparse
 
 # import default settings
 from . import *
 
+if 'DATABASE_URL' not in os.environ:
+    raise Exception('"DATABASE_URL" environmental variable required')
+
+url = urlparse.urlparse(os.environ['DATABASE_URL'])
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ['RDS_DB_NAME'],
-        'USER': os.environ['RDS_USERNAME'],
-        'PASSWORD': os.environ['RDS_PASSWORD'],
-        'HOST': os.environ['RDS_HOSTNAME'],
-        'PORT': os.environ['RDS_PORT'],
+        'NAME': url.path[1:],
+        'USER': url.username,
+        'PASSWORD': url.password,
+        'HOST': url.hostname,
+        'PORT': url.port,
     }
 }
