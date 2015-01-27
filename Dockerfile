@@ -22,7 +22,7 @@ RUN pip install --no-deps psycopg2==2.5.4
 RUN pip install --no-deps pycparser==2.10
 RUN pip install --no-deps six==1.8.0
 RUN pip install --no-deps wsgiref==0.1.2
-RUN pip install --no-deps git+ssh://git@github.com/django/django.git@e7b9a58b081299b30f807d5c66f7a5d1940efe4c
+RUN pip install --no-deps Django==1.8a1
 RUN pip install --no-deps arrow==0.4.4
 RUN pip install --no-deps python-dateutil==2.4.0
 RUN pip install --no-deps pyotp==1.4.1
