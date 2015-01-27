@@ -1,7 +1,7 @@
 FROM ubuntu:14.04
 
 # Update packages & Install Dependencies
-RUN apt-get update -y && apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev postgresql-client
+RUN apt-get update -y && apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev
 
 # Install pip
 RUN easy_install pip
