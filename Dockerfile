@@ -33,6 +33,7 @@ RUN pip install --no-deps itsdangerous==0.24
 RUN pip install --no-deps gunicorn==19.1.1
 RUN pip install --no-deps greenlet==0.4.5
 RUN pip install --no-deps gevent==1.0.1
+RUN pip install --no-deps whitenoise==1.0.6
 
 # Install private requirements
 

@@ -22,6 +22,7 @@ httplib2==0.9
 requests==2.5.1
 itsdangerous==0.24
 gunicorn==19.1.1
+whitenoise==1.0.6
 
 # core requirements
 git+ssh://git@github.com/getcircle/django-common.git@0.2.2
