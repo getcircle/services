@@ -38,7 +38,6 @@ RUN pip install --no-deps gevent==1.0.1
 
 ADD deploy/ssh /root/.ssh
 RUN chmod 400 /root/.ssh/id_rsa
-ADD deploy/scripts/setup.sh /deploy/scripts/setup.sh
 
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
 RUN pip install --no-deps git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
