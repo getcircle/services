@@ -49,4 +49,6 @@ EXPOSE 5000
 
 ADD . /src
 WORKDIR /src
+
+RUN python manage.py collectstatic --noinput
 CMD ["gunicorn", "services.wsgi", "-c", "services/gunicorn.py"]
