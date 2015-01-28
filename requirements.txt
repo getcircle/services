@@ -13,7 +13,7 @@ psycopg2==2.5.4
 pycparser==2.10
 six==1.8.0
 wsgiref==0.1.2
-git+ssh://git@github.com/django/django.git@e7b9a58b081299b30f807d5c66f7a5d1940efe4c
+Django==1.8a1
 arrow==0.4.4
 python-dateutil==2.4.0
 pyotp==1.4.1
@@ -25,8 +25,8 @@ gunicorn==19.1.1
 whitenoise==1.0.6
 
 # core requirements
-git+ssh://git@github.com/getcircle/django-common.git@0.2.2
-git+ssh://git@github.com/getcircle/protobuf-soa.git@0.1.2
-git+ssh://git@github.com/getcircle/protobuf-to-dict.git@0.2.0
-git+ssh://git@github.com/getcircle/python-soa.git@0.6.12
-git+ssh://git@github.com/getcircle/protobuf-registry.git@0.28.0
+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/django-common.git@0.2.2
+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-soa.git@0.1.2
+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@0.2.0
+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@0.6.12
+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@0.28.0
