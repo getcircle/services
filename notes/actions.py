@@ -42,7 +42,7 @@ class GetNotes(actions.Action):
         notes = models.Note.objects.filter(
             owner_profile_id=self.request.owner_profile_id,
             for_profile_id=self.request.for_profile_id,
-        ).order_by('-created')
+        ).order_by('-changed')
         for note in notes:
             container = self.response.notes.add()
             note.to_protobuf(container)
