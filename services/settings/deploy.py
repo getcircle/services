@@ -2,7 +2,7 @@ import os
 import urlparse
 
 # import default settings
-from . import *
+from . import *  # noqa
 
 if 'DATABASE_URL' not in os.environ:
     raise Exception('"DATABASE_URL" environmental variable required')
