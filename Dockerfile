@@ -1,5 +1,7 @@
 FROM ubuntu:14.04
 
+RUN echo LAST UPDATED 2015-01-28
+
 # Update packages & Install Dependencies
 RUN apt-get update -y && apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev
 
