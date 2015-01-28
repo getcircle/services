@@ -1,0 +1,4 @@
+python-dev
+libpq-dev
+libffi-dev
+libssl-dev
