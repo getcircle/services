@@ -30,3 +30,9 @@ class ServicesView(APIView):
             response_data,
             content_type='application/x-protobuf',
         )
+
+
+class HealthCheckView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponse('OK', content_type='text')
