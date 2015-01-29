@@ -21,5 +21,5 @@ def serve():
 
 
 @task
-def deploy(deis_remote='deis'):
-    run('git push %s master' % (deis_remote,), pty=True)
+def release(deis_remote='deis'):
+    run('time git push %s master' % (deis_remote,), pty=True)
