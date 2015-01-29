@@ -12,23 +12,29 @@ def execute_with_settings(command, settings='local', **kwargs):
     run('DJANGO_SETTINGS_MODULE=services.settings.%s %s' % (settings, command), **kwargs)
 
 
-@task
-def test(app='', failfast=False, keepdb=False):
+@task(help={
+    'fail-fast': 'Flag for whether or not you want to fail on the first test failure',
+    'keep-db': 'Flag for whether or not you want to reuse the test db',
+})
+def test(app='', fail_fast=False, keep_db=False):
+    """Trigger a test run"""
     test_args = []
-    if failfast:
+    if fail_fast:
         test_args.append('--failfast')
-    if keepdb:
+    if keep_db:
         test_args.append('-k')
     execute_with_settings('./manage.py test %s %s' % (' '.join(test_args), app,), pty=True)
 
 
 @task
 def serve():
+    """Serve the development server"""
     execute_with_settings('./manage.py runserver', pty=True)
 
 
-@task
+@task(help={'deis-remote': 'The deis remote you want to push to'})
 def release(deis_remote='deis'):
+    """Trigger a release to a deis environment"""
     start = time.time()
     try:
         run('time git push %s master' % (deis_remote,), pty=True)
