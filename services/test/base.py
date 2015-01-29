@@ -1,5 +1,6 @@
 import uuid
 from django.test import TestCase as DjangoTestCase
+from ..utils import matching_uuids
 
 
 class TestCase(DjangoTestCase):
@@ -37,10 +38,4 @@ class TestCase(DjangoTestCase):
             self._verify_values(expected_value, value)
 
     def assertEqualUUID4(self, first, second):
-        if not isinstance(first, uuid.UUID):
-            first = uuid.UUID(first, version=4)
-
-        if not isinstance(second, uuid.UUID):
-            second = uuid.UUID(second, version=4)
-
-        self.assertEqual(first, second)
+        self.assertTrue(matching_uuids(first, second))

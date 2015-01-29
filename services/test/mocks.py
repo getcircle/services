@@ -77,7 +77,7 @@ def mock_address(container=None, **overrides):
     return _mock_container(container, mock_dict, **extra)
 
 
-def mock_team_path_parth(container=None, **overrides):
+def mock_team_path_part(container=None, **overrides):
     if container is None:
         container = OrganizationService.Containers.PathPart()
 
@@ -92,12 +92,16 @@ def mock_team(container=None, **overrides):
     if container is None:
         container = OrganizationService.Containers.Team()
 
+    team_id = overrides.pop('id', fuzzy.FuzzyUUID().fuzz())
     mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'owner_id', 'organization_id'],
+        fuzzy.FuzzyUUID: ['owner_id', 'organization_id'],
         fuzzy.FuzzyText: ['name', 'department'],
     }
+    path = overrides.pop('path', [])
+    path.append(mock_team_path_part(id=team_id))
     extra = {
-        'path': [mock_team_path_parth()],
+        'path': path,
+        'id': team_id,
     }
     extra.update(overrides)
     return _mock_container(container, mock_dict, **extra)

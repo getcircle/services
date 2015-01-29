@@ -41,12 +41,13 @@ class TestGetExtendedProfile(TestCase):
         )
         return mock_response.address
 
-    def _mock_get_team(self, profile, **overrides):
+    def _mock_get_team(self, profile, team_id=None, **overrides):
         service = 'organization'
         action = 'get_team'
         mock_response = mock.get_mockable_response(service, action)
         mocks.mock_team(mock_response.team, **overrides)
-        team_id = str(uuid.UUID(profile.team_id, version=4))
+        if not team_id:
+            team_id = str(uuid.UUID(profile.team_id, version=4))
         mock.instance.register_mock_response(
             service,
             action,
@@ -114,3 +115,25 @@ class TestGetExtendedProfile(TestCase):
         self._verify_containers(profile, response.result.profile)
         self.assertEqual(len(tags), len(response.result.tags))
         self.assertEqual(len(notes), len(response.result.notes))
+
+    def test_get_extended_profile_of_manager(self):
+        manager = factories.ProfileFactory.create_protobuf()
+        managers_team = self._mock_get_team(
+            manager,
+            team_id=manager.team_id,
+            owner_id=manager.user_id,
+            id=manager.team_id,
+        )
+
+        profile = factories.ProfileFactory.create_protobuf()
+        self._mock_get_address(profile)
+        self._mock_get_team(profile, owner_id=profile.user_id, path=[managers_team.path[0]])
+        self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
+
+        response = self.client.call_action(
+            'get_extended_profile',
+            profile_id=profile.id,
+        )
+
+        self.assertTrue(response.success)
+        self.assertNotEqual(response.result.manager.id, response.result.profile.id)

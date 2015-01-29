@@ -13,6 +13,7 @@ from service import (
 )
 
 from services.token import parse_token
+from services.utils import matching_uuids
 
 from . import (
     models,
@@ -204,8 +205,22 @@ class GetExtendedProfile(GetProfile):
         )
         return response.result.team
 
-    def _get_manager(self, manager_id):
-        return models.Profile.objects.get(user_id=manager_id)
+    def _get_manager(self, profile, team):
+        user_id = team.owner_id
+        if matching_uuids(team.owner_id, profile.user_id):
+            try:
+                manager_team = team.path[-2]
+            except IndexError:
+                return None
+
+            response = self.organization_client.call_action(
+                'get_team',
+                team_id=manager_team.id,
+            )
+            if not response.success:
+                raise Exception('map error')
+            user_id = response.result.team.owner_id
+        return models.Profile.objects.get(user_id=user_id)
 
     def _get_tags(self):
         return models.Tag.objects.filter(profile=self.request.profile_id)
@@ -233,7 +248,7 @@ class GetExtendedProfile(GetProfile):
         team = self._fetch_team(str(profile.team_id))
         self.response.team.CopyFrom(team)
 
-        manager = self._get_manager(team.owner_id)
+        manager = self._get_manager(profile, team)
         manager.to_protobuf(self.response.manager)
 
         tags = self._get_tags()
