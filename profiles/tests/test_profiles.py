@@ -706,3 +706,16 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_profiles', address_id=address.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 5)
+
+    def test_get_profiles_invalid_id_list(self):
+        response = self.client.call_action('get_profiles', ids=['invalid'])
+        self._verify_field_error(response, 'ids')
+
+    def test_get_profiles_with_id_list(self):
+        profiles = factories.ProfileFactory.create_batch(size=5)
+        response = self.client.call_action(
+            'get_profiles',
+            ids=[str(profile.id) for profile in profiles],
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.profiles), 5)

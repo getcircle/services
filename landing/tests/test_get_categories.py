@@ -9,6 +9,7 @@ from protobufs.landing_service_pb2 import LandingService
 
 from services.test import (
     fuzzy,
+    mocks,
     TestCase,
 )
 
@@ -23,27 +24,11 @@ class TestGetCategories(TestCase):
     def tearDown(self):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
 
-    def _mock_profile(self, profile):
-        profile.id = fuzzy.FuzzyUUID().fuzz()
-        profile.organization_id = fuzzy.FuzzyUUID().fuzz()
-        profile.title = fuzzy.FuzzyText().fuzz()
-        profile.full_name = fuzzy.FuzzyText().fuzz()
-
-    def _mock_address(self, address):
-        address.id = fuzzy.FuzzyUUID().fuzz()
-        address.address_1 = fuzzy.FuzzyText().fuzz()
-        address.address_2 = fuzzy.FuzzyText().fuzz()
-        address.city = fuzzy.FuzzyText().fuzz()
-        address.region = fuzzy.FuzzyText().fuzz()
-        address.postal_code = '94010'
-        address.country_code = 'US'
-        return address
-
     def _mock_action_profiles_response(self, service, action, profiles=3, **kwargs):
         mock_response = mock.get_mockable_response(service, action)
         for _ in range(profiles):
             profile = mock_response.profiles.add()
-            self._mock_profile(profile)
+            mocks.mock_profile(profile)
 
         mock.instance.register_mock_response(service, action, mock_response, **kwargs)
 
@@ -51,7 +36,7 @@ class TestGetCategories(TestCase):
         service = 'profile'
         action = 'get_profile'
         mock_response = mock.get_mockable_response(service, action)
-        self._mock_profile(mock_response.profile)
+        mocks.mock_profile(mock_response.profile)
         if profile_id is not None:
             mock_response.profile.id = profile_id
 
@@ -85,7 +70,7 @@ class TestGetCategories(TestCase):
         address_list = []
         for _ in range(addresses):
             address = mock_response.addresses.add()
-            address_list.append(self._mock_address(address))
+            address_list.append(mocks.mock_address(address))
 
         mock.instance.register_mock_response(
             service,
@@ -158,6 +143,39 @@ class TestGetCategories(TestCase):
             organization_id=organization_id,
         )
 
+    def _mock_get_notes(self, profile_id, notes=3):
+        service = 'note'
+        action = 'get_notes'
+
+        mock_response = mock.get_mockable_response(service, action)
+        for _ in range(notes):
+            note = mock_response.notes.add()
+            mocks.mock_note(note, owner_profile_id=profile_id)
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            owner_profile_id=profile_id,
+        )
+        return mock_response.notes
+
+    def _mock_get_profiles(self, profile_ids):
+        service = 'profile'
+        action = 'get_profiles'
+
+        mock_response = mock.get_mockable_response(service, action)
+        for profile_id in profile_ids:
+            profile = mock_response.profiles.add()
+            mocks.mock_profile(profile, id=profile_id)
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            ids=profile_ids,
+        )
+
     def test_profile_category_invalid_profile_id(self):
         response = self.client.call_action('get_categories', profile_id='invalid')
         self._verify_field_error(response, 'profile_id')
@@ -172,6 +190,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
         self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -192,6 +211,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
         self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -214,6 +234,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
         self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -238,6 +259,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
         self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -260,6 +282,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_birthdays(profile.organization_id)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
         self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -282,6 +305,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id)
         self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -305,6 +329,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
         self._mock_get_active_tags(profile.organization_id)
+        self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -315,4 +340,28 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.tags), 3)
         self.assertEqual(category.content_key, 'name')
         self.assertEqual(category.type, LandingService.Containers.Category.TAGS)
+        self.assertEqual(category.total_count, str(3))
+
+    def test_notes_note_category(self):
+        profile = self._mock_get_profile()
+        self._mock_get_peers(profile.id, peers=0)
+        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_addresses(profile.organization_id, addresses=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_active_tags(profile.organization_id, tags=0)
+        notes = self._mock_get_notes(profile.id)
+        self._mock_get_profiles([note.for_profile_id for note in notes])
+
+        response = self.client.call_action('get_categories', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.categories), 1)
+
+        category = response.result.categories[0]
+        self.assertEqual(category.title, 'Notes')
+        self.assertEqual(len(category.notes), 3)
+        self.assertEqual(category.content_key, 'changed')
+        self.assertEqual(category.type, LandingService.Containers.Category.NOTES)
         self.assertEqual(category.total_count, str(3))

@@ -134,6 +134,7 @@ class GetProfiles(actions.Action):
         'organization_id': [validators.is_uuid4],
         'tag_id': [validators.is_uuid4],
         'address_id': [validators.is_uuid4],
+        'ids': [validators.is_uuid4_list],
     }
 
     def _get_profiles_with_basic_keys(self):
@@ -142,6 +143,8 @@ class GetProfiles(actions.Action):
             parameters['organization_id'] = self.request.organization_id
         elif self.request.address_id:
             parameters['address_id'] = self.request.address_id
+        elif self.request.ids:
+            parameters['id__in'] = list(self.request.ids)
         else:
             parameters['tags__id'] = self.request.tag_id
 
