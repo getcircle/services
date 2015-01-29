@@ -33,16 +33,20 @@ class CreateNote(actions.Action):
 
 class GetNotes(actions.Action):
 
+    # XXX add some concept of required
     type_validators = {
         'for_profile_id': [validators.is_uuid4],
         'owner_profile_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
-        notes = models.Note.objects.filter(
-            owner_profile_id=self.request.owner_profile_id,
-            for_profile_id=self.request.for_profile_id,
-        ).order_by('-changed')
+        parameters = {}
+        if self.request.owner_profile_id:
+            parameters['owner_profile_id'] = self.request.owner_profile_id
+        if self.request.for_profile_id:
+            parameters['for_profile_id'] = self.request.for_profile_id
+
+        notes = models.Note.objects.filter(**parameters).order_by('-changed')
         for note in notes:
             container = self.response.notes.add()
             note.to_protobuf(container)

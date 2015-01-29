@@ -93,3 +93,13 @@ class NotesTests(TestCase):
         # ensure that the notes are sorted by most recently added
         self._verify_containers(response.result.notes[0], second)
         self._verify_containers(response.result.notes[1], first)
+
+    def test_get_notes_all_notes_for_owner(self):
+        owner_profile_id = fuzzy.FuzzyUUID().fuzz()
+        factories.NoteFactory.create_batch(size=5, owner_profile_id=owner_profile_id)
+        response = self.client.call_action(
+            'get_notes',
+            owner_profile_id=owner_profile_id,
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.notes), 5)
