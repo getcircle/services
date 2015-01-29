@@ -249,7 +249,8 @@ class GetExtendedProfile(GetProfile):
         self.response.team.CopyFrom(team)
 
         manager = self._get_manager(profile, team)
-        manager.to_protobuf(self.response.manager)
+        if manager:
+            manager.to_protobuf(self.response.manager)
 
         tags = self._get_tags()
         for tag in tags:

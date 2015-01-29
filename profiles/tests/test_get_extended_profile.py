@@ -137,3 +137,22 @@ class TestGetExtendedProfile(TestCase):
 
         self.assertTrue(response.success)
         self.assertNotEqual(response.result.manager.id, response.result.profile.id)
+
+    def test_get_extended_profile_of_ceo(self):
+        profile = factories.ProfileFactory.create_protobuf(id=self.profile_id)
+        self._mock_get_team(
+            profile,
+            owner_id=profile.user_id,
+            id=profile.team_id,
+        )
+
+        self._mock_get_address(profile)
+        self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
+
+        response = self.client.call_action(
+            'get_extended_profile',
+            profile_id=profile.id,
+        )
+
+        self.assertTrue(response.success)
+        self.assertFalse(response.result.manager.id)
