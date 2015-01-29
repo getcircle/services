@@ -1,10 +1,14 @@
 import service.control
 from services.test import (
     fuzzy,
+    mocks,
     TestCase,
 )
 
-from . import factories
+from . import (
+    factories,
+    models,
+)
 
 
 class NotesTests(TestCase):
@@ -103,3 +107,51 @@ class NotesTests(TestCase):
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.notes), 5)
+
+    def test_delete_note_not_owner(self):
+        note = factories.NoteFactory.create_protobuf()
+        client = service.control.Client('note', token=mocks.mock_token())
+        response = client.call_action('delete_note', note=note)
+        self.assertFalse(response.success)
+        self.assertIn('FORBIDDEN', response.errors)
+
+    def test_delete_note_does_not_exist(self):
+        note = mocks.mock_note()
+        response = self.client.call_action('delete_note', note=note)
+        self._verify_field_error(response, 'note.id', 'DOES_NOT_EXIST')
+
+    def test_delete_note(self):
+        note = factories.NoteFactory.create_protobuf()
+        client = service.control.Client(
+            'note',
+            token=mocks.mock_token(profile_id=note.owner_profile_id),
+        )
+        response = client.call_action('delete_note', note=note)
+        self.assertTrue(response.success)
+
+        note = models.Note.objects.get(pk=note.id)
+        self.assertEqual(note.status, models.Note.DELETED_STATUS)
+
+    def test_update_note_not_owner(self):
+        note = factories.NoteFactory.create_protobuf()
+        client = service.control.Client('note', token=mocks.mock_token())
+        response = client.call_action('update_note', note=note)
+        self.assertFalse(response.success)
+        self.assertIn('FORBIDDEN', response.errors)
+
+    def test_update_note_does_not_exist(self):
+        note = mocks.mock_note()
+        response = self.client.call_action('update_note', note=note)
+        self._verify_field_error(response, 'note.id', 'DOES_NOT_EXIST')
+
+    def test_update_note(self):
+        note = factories.NoteFactory.create_protobuf()
+        note.content = 'updated'
+        client = service.control.Client(
+            'note',
+            token=mocks.mock_token(profile_id=note.owner_profile_id),
+        )
+        response = client.call_action('update_note', note=note)
+        self.assertTrue(response.success)
+
+        self.assertEqual(response.result.note.content, 'updated')

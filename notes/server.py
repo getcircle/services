@@ -9,4 +9,6 @@ class Server(service.control.Server):
     actions = {
         'create_note': actions.CreateNote,
         'get_notes': actions.GetNotes,
+        'delete_note': actions.DeleteNote,
+        'update_note': actions.UpdateNote,
     }

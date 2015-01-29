@@ -3,6 +3,9 @@ from service import (
     validators,
 )
 
+from services.token import parse_token
+from services.utils import matching_uuids
+
 from . import models
 
 
@@ -11,6 +14,10 @@ def valid_content(content):
         return len(content) > 0
     except TypeError:
         return False
+
+
+def valid_note(value):
+    return models.Note.objects.filter(pk=value).exists()
 
 
 class CreateNote(actions.Action):
@@ -52,3 +59,36 @@ class GetNotes(actions.Action):
         for note in notes:
             container = self.response.notes.add()
             note.to_protobuf(container)
+
+
+class DeleteNote(actions.Action):
+
+    field_validators = {
+        'note.id': {
+            valid_note: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def validate(self, *args, **kwargs):
+        super(DeleteNote, self).validate(*args, **kwargs)
+        if not self.is_error():
+            token = parse_token(self.token)
+            if not matching_uuids(token.profile_id, self.request.note.owner_profile_id):
+                self.note_error(
+                    'FORBIDDEN',
+                    ('FORBIDDEN', 'you do not have permission for this action'),
+                )
+                self.note_field_error('note.owner_profile_id', 'FORBIDDEN')
+
+    def run(self, *args, **kwargs):
+        models.Note.objects.filter(pk=self.request.note.id).update(
+            status=models.Note.DELETED_STATUS,
+        )
+
+
+class UpdateNote(DeleteNote):
+
+    def run(self, *args, **kwargs):
+        note = models.Note.objects.get(pk=self.request.note.id)
+        note.update_from_protobuf(self.request.note)
+        note.to_protobuf(self.response.note)

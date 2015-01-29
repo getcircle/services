@@ -10,7 +10,10 @@ from invoke import (
 
 
 def execute_with_settings(command, settings='local', **kwargs):
-    run('DJANGO_SETTINGS_MODULE=services.settings.%s %s' % (settings, command), **kwargs)
+    run(
+        'DJANGO_SETTINGS_MODULE=services.settings.%s ./manage.py %s' % (settings, command),
+        **kwargs
+    )
 
 
 @task(help={
@@ -24,11 +27,11 @@ def test(app='', failfast=False, keepdb=False):
         test_args.append('--failfast')
     if keepdb:
         test_args.append('-k')
-    execute_with_settings('./manage.py test %s %s' % (' '.join(test_args), app,), pty=True)
+    execute_with_settings('test %s %s' % (' '.join(test_args), app,), pty=True)
 
 
 @task
-def qt(app=''):
+def qt(app):
     """Trigger a test run, defaulting to keep database and fail fast"""
     test(app, failfast=True, keepdb=True)
 
@@ -36,7 +39,7 @@ def qt(app=''):
 @task
 def serve():
     """Serve the development server"""
-    execute_with_settings('./manage.py runserver', pty=True)
+    execute_with_settings('runserver', pty=True)
 
 
 @task(help={'remote': 'The deis remote you want to push to'})
@@ -50,3 +53,9 @@ def release(remote='deis'):
         #tags=['deis', 'release', 'release.%s' % (remote,)]
     #):
     run('time git push %s master' % (remote,))
+
+
+@task
+def manage(command, settings='local'):
+    """Execute a manage command with the given settings"""
+    execute_with_settings(command, settings=settings, pty=True)
