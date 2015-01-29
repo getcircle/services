@@ -8,3 +8,8 @@ def execute_with_settings(command, settings='local', **kwargs):
 @task
 def test(app):
     execute_with_settings('./manage.py test -k --failfast %s' % (app,), pty=True)
+
+
+@task
+def serve():
+    execute_with_settings('./manage.py runserver', pty=True)
