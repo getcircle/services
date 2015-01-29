@@ -13,17 +13,23 @@ def execute_with_settings(command, settings='local', **kwargs):
 
 
 @task(help={
-    'fail-fast': 'Flag for whether or not you want to fail on the first test failure',
-    'keep-db': 'Flag for whether or not you want to reuse the test db',
+    'failfast': 'Flag for whether or not you want to fail on the first test failure',
+    'keepdb': 'Flag for whether or not you want to reuse the test db',
 })
-def test(app='', fail_fast=False, keep_db=False):
+def test(app='', failfast=False, keepdb=False):
     """Trigger a test run"""
     test_args = []
-    if fail_fast:
+    if failfast:
         test_args.append('--failfast')
-    if keep_db:
+    if keepdb:
         test_args.append('-k')
     execute_with_settings('./manage.py test %s %s' % (' '.join(test_args), app,), pty=True)
+
+
+@task
+def qt(app=''):
+    """Trigger a test run, defaulting to keep database and fail fast"""
+    test(app, failfast=True, keepdb=True)
 
 
 @task
