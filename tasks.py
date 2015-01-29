@@ -38,16 +38,16 @@ def serve():
     execute_with_settings('./manage.py runserver', pty=True)
 
 
-@task(help={'deis-remote': 'The deis remote you want to push to'})
-def release(deis_remote='deis'):
+@task(help={'remote': 'The deis remote you want to push to'})
+def release(remote='deis'):
     """Trigger a release to a deis environment"""
     start = time.time()
     try:
-        run('time git push %s master' % (deis_remote,), pty=True)
+        run('time git push %s master' % (remote,), pty=True)
     finally:
         dog_stats_api.histogram(
             'deis.release.time',
             time.time() - start,
-            tags=['deis', 'release', 'release.%s' % (deis_remote,)],
+            tags=['deis', 'release', 'release.%s' % (remote,)],
         )
         dog_stats_api.flush()
