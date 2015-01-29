@@ -44,13 +44,9 @@ def release(remote='deis'):
     """Trigger a release to a deis environment"""
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     dog_stats_api.start(api_key='6253fdebf2c8e3648d5eba97a9ba92bf', flush_in_thread=False)
-    start = time.time()
-    try:
-        run('time git push %s master' % (remote,), pty=True)
-    finally:
-        dog_stats_api.histogram(
-            'deis.release.time',
-            time.time() - start,
-            tags=['deis', 'release', 'release.%s' % (remote,)],
-        )
-        dog_stats_api.flush()
+    with dog_stats_api.timer(
+        'deis.release.time',
+        tags=['deis', 'release', 'release.%s' % (remote,)]
+    ):
+        run('time git push %s master' % (remote,))
+    dog_stats_api.flush()
