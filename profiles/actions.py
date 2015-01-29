@@ -317,14 +317,12 @@ class GetDirectReports(actions.Action):
         },
     }
 
-    @property
-    def _client(self):
-        if not hasattr(self, '__client'):
-            self.__client = service.control.Client('organization', token=self.token)
-        return self.__client
+    def __init__(self, *args, **kwargs):
+        super(GetDirectReports, self).__init__(*args, **kwargs)
+        self.organization_client = service.control.Client('organization', token=self.token)
 
     def _get_child_team_owner_ids(self, team):
-        response = self._client.call_action('get_team_children', team_id=team.id)
+        response = self.organization_client.call_action('get_team_children', team_id=team.id)
         if not response.success:
             raise Exception('failed to fetch team children')
 
@@ -339,7 +337,7 @@ class GetDirectReports(actions.Action):
 
         # TODO handle DoesNotExist error with user_id
         profile = models.Profile.objects.get(**parameters)
-        response = self._client.call_action('get_team', team_id=str(profile.team_id))
+        response = self.organization_client.call_action('get_team', team_id=str(profile.team_id))
         if not response.success:
             # TODO we should be mapping these exceptions
             raise Exception('failed to fetch team')
@@ -378,6 +376,7 @@ class GetPeers(actions.Action):
             raise Exception('failed to fetch team')
         team = response.result.team
 
+        # handle CEO -- no peers
         if team.owner_id == str(profile.user_id) and len(team.path) < 2:
             return
 
