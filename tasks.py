@@ -1,11 +1,12 @@
+import logging
 import time
+import sys
+
 from dogapi import dog_stats_api
 from invoke import (
     run,
     task,
 )
-
-dog_stats_api.start(api_key='6253fdebf2c8e3648d5eba97a9ba92bf', flush_in_thread=False)
 
 
 def execute_with_settings(command, settings='local', **kwargs):
@@ -41,6 +42,8 @@ def serve():
 @task(help={'remote': 'The deis remote you want to push to'})
 def release(remote='deis'):
     """Trigger a release to a deis environment"""
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    dog_stats_api.start(api_key='6253fdebf2c8e3648d5eba97a9ba92bf', flush_in_thread=False)
     start = time.time()
     try:
         run('time git push %s master' % (remote,), pty=True)
