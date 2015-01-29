@@ -42,11 +42,11 @@ def serve():
 @task(help={'remote': 'The deis remote you want to push to'})
 def release(remote='deis'):
     """Trigger a release to a deis environment"""
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    dog_stats_api.start(api_key='6253fdebf2c8e3648d5eba97a9ba92bf', flush_in_thread=False)
-    with dog_stats_api.timer(
-        'deis.release.time',
-        tags=['deis', 'release', 'release.%s' % (remote,)]
-    ):
-        run('time git push %s master' % (remote,))
-    dog_stats_api.flush()
+    # XXX look into why invoke causes an issue with this
+    #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    #dog_stats_api.start(api_key='6253fdebf2c8e3648d5eba97a9ba92bf')
+    #with dog_stats_api.timer(
+        #'deis.release.time',
+        #tags=['deis', 'release', 'release.%s' % (remote,)]
+    #):
+    run('time git push %s master' % (remote,))
