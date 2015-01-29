@@ -34,6 +34,8 @@ class CreateNote(actions.Action):
 class GetNotes(actions.Action):
 
     # XXX add some concept of required
+    # XXX we probably shouldn't let the user specify "owner_profile_id" and we
+    # should fetch it off of the token
     type_validators = {
         'for_profile_id': [validators.is_uuid4],
         'owner_profile_id': [validators.is_uuid4],
