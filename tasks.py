@@ -18,3 +18,8 @@ def test(app='', failfast=False, keepdb=False):
 @task
 def serve():
     execute_with_settings('./manage.py runserver', pty=True)
+
+
+@task
+def deploy(deis_remote='deis'):
+    run('git push %s master' % (deis_remote,), pty=True)
