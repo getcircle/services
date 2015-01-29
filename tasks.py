@@ -36,6 +36,6 @@ def release(deis_remote='deis'):
         dog_stats_api.histogram(
             'deis.release.time',
             time.time() - start,
-            tags=['deis', 'release'],
+            tags=['deis', 'release', 'release.%s' % (deis_remote,)],
         )
         dog_stats_api.flush()
