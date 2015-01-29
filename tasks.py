@@ -6,8 +6,13 @@ def execute_with_settings(command, settings='local', **kwargs):
 
 
 @task
-def test(app):
-    execute_with_settings('./manage.py test -k --failfast %s' % (app,), pty=True)
+def test(app='', failfast=False, keepdb=False):
+    test_args = []
+    if failfast:
+        test_args.append('--failfast')
+    if keepdb:
+        test_args.append('-k')
+    execute_with_settings('./manage.py test %s %s' % (' '.join(test_args), app,), pty=True)
 
 
 @task

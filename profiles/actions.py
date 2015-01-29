@@ -135,21 +135,51 @@ class GetProfiles(actions.Action):
         'address_id': [validators.is_uuid4],
     }
 
-    def run(self, *args, **kwargs):
+    def _get_profiles_with_basic_keys(self):
         parameters = {}
-        if self.request.team_id:
-            parameters['team_id'] = self.request.team_id
-        elif self.request.organization_id:
+        if self.request.organization_id:
             parameters['organization_id'] = self.request.organization_id
         elif self.request.address_id:
             parameters['address_id'] = self.request.address_id
         else:
             parameters['tags__id'] = self.request.tag_id
 
-        profiles = models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
+        return models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
+
+    def _get_profiles_by_team_id(self):
+        # fetch the team to get the owner
+        client = service.control.Client('organization', token=self.token)
+        response = client.call_action('get_team', team_id=self.request.team_id)
+        if not response.success:
+            # XXX map this error
+            raise Exception('failed to fetch team')
+        team = response.result.team
+
+        client = service.control.Client('profile', token=self.token)
+        response = client.call_action('get_direct_reports', user_id=team.owner_id)
+        if not response.success:
+            # XXX map this error
+            raise Exception('failed to fetch direct reports')
+        profiles = list(response.result.profiles)
+
+        team_profiles = models.Profile.objects.filter(team_id=self.request.team_id).exclude(
+            id__in=[profile.id for profile in profiles],
+        )
+        profiles.extend(team_profiles)
+        return sorted(profiles, key=lambda x: (x.first_name, x.last_name))
+
+    def run(self, *args, **kwargs):
+        if self.request.team_id:
+            profiles = self._get_profiles_by_team_id()
+        else:
+            profiles = self._get_profiles_with_basic_keys()
+
         for profile in profiles:
             container = self.response.profiles.add()
-            profile.to_protobuf(container)
+            if isinstance(profile, models.Profile):
+                profile.to_protobuf(container)
+            else:
+                container.CopyFrom(profile)
 
 
 class GetExtendedProfile(GetProfile):

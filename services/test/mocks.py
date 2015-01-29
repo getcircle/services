@@ -1,9 +1,26 @@
+from contextlib import contextmanager
+import service.settings
+from service.transports import local
+
 from . import fuzzy
 from .. import token
 
 from protobufs.note_service_pb2 import NoteService
 from protobufs.organization_service_pb2 import OrganizationService
 from protobufs.profile_service_pb2 import ProfileService
+
+
+@contextmanager
+def mock_transport(client):
+    default_transport = service.settings.DEFAULT_TRANSPORT
+    old_transport = client.transport
+    try:
+        service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
+        client.set_transport(local.instance)
+        yield client
+    finally:
+        service.settings.DEFAULT_TRANSPORT = default_transport
+        client.transport = old_transport
 
 
 def _mock_container(container, mock_dict, **extra):
