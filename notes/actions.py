@@ -91,4 +91,5 @@ class UpdateNote(DeleteNote):
     def run(self, *args, **kwargs):
         note = models.Note.objects.get(pk=self.request.note.id)
         note.update_from_protobuf(self.request.note)
+        note.save()
         note.to_protobuf(self.response.note)

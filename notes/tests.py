@@ -162,3 +162,6 @@ class NotesTests(TestCase):
         self.assertTrue(response.success)
 
         self.assertEqual(response.result.note.content, 'updated')
+
+        note = models.Note.objects.get(pk=note.id)
+        self.assertEqual(note.content, 'updated')
