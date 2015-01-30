@@ -56,6 +56,12 @@ def release(remote='deis'):
 
 
 @task
+def release_all():
+    """Release to staging and production"""
+    run('time git push deis master && time git push production master')
+
+
+@task
 def manage(command, settings='local'):
     """Execute a manage command with the given settings"""
     execute_with_settings(command, settings=settings, pty=True)
