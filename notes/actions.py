@@ -49,7 +49,7 @@ class GetNotes(actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        parameters = {}
+        parameters = {'status__isnull': True}
         if self.request.owner_profile_id:
             parameters['owner_profile_id'] = self.request.owner_profile_id
         if self.request.for_profile_id:

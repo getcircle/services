@@ -86,6 +86,11 @@ class NotesTests(TestCase):
             for_profile_id=for_profile_id,
             owner_profile_id=owner_profile_id,
         )
+        factories.NoteFactory.create(
+            for_profile_id=for_profile_id,
+            owner_profile_id=owner_profile_id,
+            status=models.Note.DELETED_STATUS,
+        )
 
         response = self.client.call_action(
             'get_notes',
@@ -94,6 +99,8 @@ class NotesTests(TestCase):
         )
         self.assertTrue(response.success)
 
+        # verify we didn't return the deleted note
+        self.assertEqual(len(response.result.notes), 2)
         # ensure that the notes are sorted by most recently added
         self._verify_containers(response.result.notes[0], second)
         self._verify_containers(response.result.notes[1], first)
