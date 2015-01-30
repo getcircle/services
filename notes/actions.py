@@ -56,9 +56,11 @@ class GetNotes(actions.Action):
             parameters['for_profile_id'] = self.request.for_profile_id
 
         notes = models.Note.objects.filter(**parameters).order_by('-changed')
-        for note in notes:
-            container = self.response.notes.add()
-            note.to_protobuf(container)
+        self.paginated_response(
+            self.response.notes,
+            notes,
+            lambda item, container: item.to_protobuf(container.add()),
+        )
 
 
 class DeleteNote(actions.Action):

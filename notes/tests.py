@@ -165,3 +165,20 @@ class NotesTests(TestCase):
 
         note = models.Note.objects.get(pk=note.id)
         self.assertEqual(note.content, 'updated')
+
+    def test_get_notes_paginated(self):
+        owner_profile_id = fuzzy.FuzzyUUID().fuzz()
+        factories.NoteFactory.create_batch(size=10, owner_profile_id=owner_profile_id)
+        client = service.control.Client(
+            'note',
+            token=mocks.mock_token(profile_id=owner_profile_id),
+        )
+        response = client.call_action(
+            'get_notes',
+            owner_profile_id=owner_profile_id,
+            control={'paginator': {'page_size': 5}},
+        )
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.notes), 5)
+        self.assertEqual(response.control.paginator.next_page, 2)
+        self.assertEqual(response.control.paginator.total_pages, 2)
