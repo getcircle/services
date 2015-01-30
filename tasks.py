@@ -58,7 +58,8 @@ def release(remote='deis'):
 @task
 def release_all():
     """Release to staging and production"""
-    run('time git push deis master && time git push production master')
+    release()
+    release('production')
 
 
 @task
