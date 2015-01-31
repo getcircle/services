@@ -41,7 +41,7 @@ RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x
 RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-soa.git@0.4.0
 RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@0.2.0
 RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@0.7.3
-RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@0.30.0
+RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@0.30.3
 
 EXPOSE 5000
 

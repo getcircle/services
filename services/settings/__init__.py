@@ -176,3 +176,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     )
 }
+
+# Connect With Linkedin
+LINKEDIN_AUTHORIZATION_URL = 'https://www.linkedin.com/uas/oauth2/authorization'
+LINKEDIN_CLIENT_ID = '75ob8lid33ecuv'
+LINKEDIN_REDIRECT_URI = 'http://localhost:8000/oauth2/linkedin/'
+LINKEDIN_SCOPE = 'r_fullprofile r_emailaddress'

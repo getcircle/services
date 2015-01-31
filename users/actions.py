@@ -1,6 +1,10 @@
+import urllib
+
 from django.conf import settings
 from django.contrib.auth import authenticate
 import django.db
+from itsdangerous import TimestampSigner
+from protobufs.user_service_pb2 import UserService
 import pyotp
 from rest_framework.authtoken.models import Token
 from twilio.rest import TwilioRestClient
@@ -214,3 +218,27 @@ class VerifyVerificationCode(actions.Action):
             user.phone_number_verified = True
             user.save()
             self.response.verified = True
+
+
+class GetAuthorizationInstructions(actions.Action):
+
+    def _get_state(self):
+        signer = TimestampSigner(settings.SECRET_KEY)
+        return signer.sign(str(self.request.identity))
+
+    def _get_linkedin_url(self):
+        parameters = {
+            'response_type': 'code',
+            'scope': urllib.quote(settings.LINKEDIN_SCOPE),
+            'client_id': settings.LINKEDIN_CLIENT_ID,
+            'redirect_uri': settings.LINKEDIN_REDIRECT_URI,
+            'state': self._get_state(),
+        }
+        return '%s?%s' % (
+            settings.LINKEDIN_AUTHORIZATION_URL,
+            urllib.urlencode(parameters),
+        )
+
+    def run(self, *args, **kwargs):
+        if self.request.identity == UserService.LINKEDIN:
+            self.response.authorization_url = self._get_linkedin_url()
