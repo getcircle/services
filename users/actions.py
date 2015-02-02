@@ -254,14 +254,17 @@ class CompleteAuthorization(actions.Action):
         if provider is None:
             raise self.ActionFieldError('provider', 'UNSUPPORTED')
 
+        user = self.request.user
         identity = provider.complete_authorization(self.request.oauth2_details)
-        if not self.request.user:
+        if not user:
             # XXX add some concept of "generate_one_time_use_admin_token"
             client = service.control.Client('user', token='one-time-use-token')
             response = client.call_action('create_user', email=identity.email)
-            identity.user_id = response.result.user.id
+            user = response.result.user
+            identity.user_id = user.id
         else:
             identity.user_id = self.request.user.id
 
         identity.save()
         identity.to_protobuf(self.response.identity)
+        self.response.user.CopyFrom(user)
