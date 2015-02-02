@@ -45,7 +45,7 @@ INSTALLED_APPS = (
     'landing',
     'media',
     'notes',
-    'oauth2',
+    #'oauth2',
     'onboarding',
     'organizations',
     'profiles',
