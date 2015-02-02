@@ -3,7 +3,6 @@ from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
 )
-from django.contrib.postgres.fields import HStoreField
 from phonenumber_field.modelfields import PhoneNumberField
 from protobufs.user_service_pb2 import UserService
 import pyotp
@@ -99,7 +98,7 @@ class Identity(models.UUIDModel, models.TimestampableModel):
 
     user = models.ForeignKey(User)
     provider = models.PositiveSmallIntegerField(choices=providers)
-    name = models.CharField(max_length=255)
+    full_name = models.CharField(max_length=255)
     email = models.EmailField()
     access_token = models.CharField(max_length=255)
     refresh_token = models.CharField(max_length=255, null=True)

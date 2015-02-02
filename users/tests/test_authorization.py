@@ -72,6 +72,9 @@ class TestAuthorization(TestCase):
             user=user,
         )
         self.assertEqual(response.result.identity.provider, UserService.LINKEDIN)
+        self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
+        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
+        self.assertEqual(response.result.user.primary_email, user.primary_email)
 
     def test_valid_state_token_quoted_characters(self):
         token = providers.get_state_token(UserService.LINKEDIN)

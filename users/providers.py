@@ -130,10 +130,10 @@ class Linkedin(object):
         profile = application.get_profile(selectors=self.profile_selectors)
 
         identity = models.Identity(provider=self.type)
-        identity.name = self._extract_required_profile_field(
+        identity.full_name = self._extract_required_profile_field(
             profile,
             'formattedName',
-            alias='name',
+            alias='full_name',
         )
         identity.email = self._extract_required_profile_field(
             profile,
