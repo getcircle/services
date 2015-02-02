@@ -1,12 +1,6 @@
-import urllib
-
 from django.conf import settings
 from django.contrib.auth import authenticate
 import django.db
-from itsdangerous import (
-    BadSignature,
-    TimestampSigner,
-)
 from protobufs.user_service_pb2 import UserService
 import pyotp
 from rest_framework.authtoken.models import Token
