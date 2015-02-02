@@ -256,7 +256,7 @@ class CompleteAuthorization(actions.Action):
 
         user = self.request.user
         identity = provider.complete_authorization(self.request.oauth2_details)
-        if not user:
+        if not self.request.HasField('user'):
             # XXX add some concept of "generate_one_time_use_admin_token"
             client = service.control.Client('user', token='one-time-use-token')
             response = client.call_action('create_user', email=identity.email)
