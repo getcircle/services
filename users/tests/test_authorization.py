@@ -9,6 +9,7 @@ import service.control
 
 from services.test import (
     fuzzy,
+    mocks,
     TestCase,
 )
 
@@ -39,7 +40,8 @@ class TestAuthorization(TestCase):
         self.assertEqual(params['client_id'], settings.LINKEDIN_CLIENT_ID)
 
         state = params['state']
-        self.assertTrue(providers.valid_state_token(UserService.LINKEDIN, state))
+        payload = providers.parse_state_token(UserService.LINKEDIN, state)
+        self.assertTrue(payload['csrftoken'])
 
     def test_complete_authorization_state_tampered(self):
         with self.assertFieldError('oauth2_details.state'):
@@ -62,14 +64,14 @@ class TestAuthorization(TestCase):
             'id': fuzzy.FuzzyUUID().fuzz(),
         }
         user = factories.UserFactory.create_protobuf()
+        self.client.token = mocks.mock_token(user_id=user.id)
         response = self.client.call_action(
             'complete_authorization',
             provider=UserService.LINKEDIN,
             oauth2_details={
                 'code': 'some-code',
-                'state': providers.get_state_token(UserService.LINKEDIN),
+                'state': providers.get_state_token(UserService.LINKEDIN, {'user_id': user.id}),
             },
-            user=user,
         )
         self.assertEqual(response.result.identity.provider, UserService.LINKEDIN)
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
@@ -77,10 +79,12 @@ class TestAuthorization(TestCase):
         self.assertEqual(response.result.user.primary_email, user.primary_email)
 
     def test_valid_state_token_quoted_characters(self):
-        token = providers.get_state_token(UserService.LINKEDIN)
+        expected = {'user_id': fuzzy.FuzzyUUID().fuzz()}
+        token = providers.get_state_token(UserService.LINKEDIN, expected)
         # force encoding of periods
         token.replace('.', '%2E')
-        self.assertTrue(providers.valid_state_token(UserService.LINKEDIN, token))
+        payload = providers.parse_state_token(UserService.LINKEDIN, token)
+        self.assertEqual(payload['user_id'], expected['user_id'])
 
     @patch('users.providers.linkedin.LinkedInApplication')
     @patch.object(providers.Linkedin, '_get_access_token')
@@ -97,9 +101,8 @@ class TestAuthorization(TestCase):
                 provider=UserService.LINKEDIN,
                 oauth2_details={
                     'code': 'some-code',
-                    'state': providers.get_state_token(UserService.LINKEDIN),
+                    'state': providers.get_state_token(UserService.LINKEDIN, {}),
                 },
-                user=factories.UserFactory.create_protobuf(),
             )
 
         response = expected.exception.response
@@ -119,7 +122,7 @@ class TestAuthorization(TestCase):
             provider=UserService.LINKEDIN,
             oauth2_details={
                 'code': 'some-code',
-                'state': providers.get_state_token(UserService.LINKEDIN),
+                'state': providers.get_state_token(UserService.LINKEDIN, {}),
             },
         )
         self.assertEqual(response.result.identity.provider, UserService.LINKEDIN)

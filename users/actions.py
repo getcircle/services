@@ -12,7 +12,10 @@ from service import (
 )
 import service.control
 
-from services.token import make_token
+from services.token import (
+    make_token,
+    parse_token,
+)
 
 from . import (
     models,
@@ -239,10 +242,11 @@ class CompleteAuthorization(actions.Action):
 
     def validate(self, *args, **kwargs):
         super(CompleteAuthorization, self).validate(*args, **kwargs)
-        if not providers.valid_state_token(
+        self.payload = providers.parse_state_token(
             self.request.provider,
             self.request.oauth2_details.state,
-        ):
+        )
+        if self.payload is None:
             raise self.ActionFieldError('oauth2_details.state', 'INVALID')
 
     def run(self, *args, **kwargs):
@@ -253,17 +257,18 @@ class CompleteAuthorization(actions.Action):
         if provider is None:
             raise self.ActionFieldError('provider', 'UNSUPPORTED')
 
-        user = self.request.user
         identity = provider.complete_authorization(self.request.oauth2_details)
-        if not self.request.HasField('user'):
+        if not self.token:
             # XXX add some concept of "generate_one_time_use_admin_token"
             client = service.control.Client('user', token='one-time-use-token')
             response = client.call_action('create_user', email=identity.email)
             user = response.result.user
             identity.user_id = user.id
+            self.response.user.CopyFrom(user)
         else:
-            identity.user_id = self.request.user.id
+            token = parse_token(self.token)
+            user = models.User.objects.get(pk=token.user_id).to_protobuf(self.response.user)
+            identity.user_id = token.user_id
 
         identity.save()
         identity.to_protobuf(self.response.identity)
-        self.response.user.CopyFrom(user)

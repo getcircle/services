@@ -39,12 +39,15 @@ RUN pip install --no-deps whitenoise==1.0.6
 RUN pip install --no-deps python-linkedin==4.1
 RUN pip install --no-deps oauthlib==0.7.2
 RUN pip install --no-deps requests-oauthlib==0.4.2
+RUN pip install --no-deps cryptography==0.7.2
+RUN pip install --no-deps enum34==1.0.4
+RUN pip install --no-deps pyasn1==0.1.7
 
 RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/django-common.git@0.2.2
 RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-soa.git@0.4.0
 RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@0.2.0
 RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@0.9.3
-RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@0.31.0
+RUN pip install --no-deps git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@0.31.1
 
 EXPOSE 5000
 

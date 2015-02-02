@@ -1,13 +1,18 @@
+import json
 import urllib
 
 import arrow
+from cryptography.fernet import (
+    Fernet,
+    InvalidToken,
+    MultiFernet,
+)
 from django.conf import settings
 from django.utils.crypto import get_random_string
 from itsdangerous import (
     BadSignature,
     TimestampSigner,
 )
-import json
 from linkedin import linkedin
 from protobufs.user_service_pb2 import UserService
 import requests
@@ -21,19 +26,27 @@ def get_state_signer(provider):
     return TimestampSigner(settings.SECRET_KEY, salt=str(provider))
 
 
-def get_state_token(provider):
+def get_state_token(provider, payload):
+    payload['csrftoken'] = get_random_string(CSRF_KEY_LENGTH)
     signer = get_state_signer(provider)
-    return signer.sign(get_random_string(CSRF_KEY_LENGTH))
+    encrypter = MultiFernet(map(Fernet, settings.SECRET_ENCRYPTION_KEYS))
+    token = encrypter.encrypt(json.dumps(payload))
+    return signer.sign(token)
 
 
-def valid_state_token(provider, token):
-    valid = False
+def parse_state_token(provider, token):
+    payload = None
     signer = get_state_signer(provider)
+    crypt = MultiFernet(map(Fernet, settings.SECRET_ENCRYPTION_KEYS))
     try:
-        valid = bool(signer.unsign(token, max_age=settings.USER_SERVICE_STATE_MAX_AGE))
-    except BadSignature:
-        valid = False
-    return valid
+        encrypted_token = signer.unsign(token, max_age=settings.USER_SERVICE_STATE_MAX_AGE)
+        payload = json.loads(
+            crypt.decrypt(encrypted_token, ttl=settings.USER_SERVICE_STATE_MAX_AGE)
+        )
+    except (BadSignature, InvalidToken, ValueError):
+        # XXX we should be logging what went wrong here
+        payload = None
+    return payload
 
 
 class ExchangeError(Exception):
@@ -97,13 +110,17 @@ class Linkedin(object):
     }
 
     @classmethod
-    def get_authorization_url(self):
+    def get_authorization_url(self, user_id=None):
+        payload = {}
+        if user_id:
+            payload['user_id'] = {}
+
         parameters = {
             'response_type': 'code',
             'scope': settings.LINKEDIN_SCOPE,
             'client_id': settings.LINKEDIN_CLIENT_ID,
             'redirect_uri': settings.LINKEDIN_REDIRECT_URI,
-            'state': get_state_token(self.type),
+            'state': get_state_token(self.type, payload=payload),
         }
         return '%s?%s' % (
             settings.LINKEDIN_AUTHORIZATION_URL,
