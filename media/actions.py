@@ -28,16 +28,12 @@ class StartImageUpload(actions.Action):
 
     def _validate_profile_id(self, profile_id):
         if not validators.is_uuid4(profile_id):
-            self.note_field_error('media_key', 'INVALID')
+            raise self.ActionFieldError('media_key', 'INVALID')
 
-        # XXX FUCK!! really need to do errors
-        if not self.is_error():
-            response = self.profile_client.call_action(
-                'get_profile',
-                profile_id=self.request.media_key,
-            )
-            if not response.success:
-                self.note_field_error('media_key', 'DOES_NOT_EXIST')
+        try:
+            self.profile_client.call_action('get_profile', profile_id=self.request.media_key)
+        except service.control.Client.CallActionError:
+            raise self.ActionFieldError('media_key', 'DOES_NOT_EXIST')
 
     def _get_s3_connection(self):
         return S3Connection(settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY)
@@ -106,10 +102,11 @@ class CompleteImageUpload(StartImageUpload):
 
     def _delete_previous_profile_image(self):
         client = service.control.Client('profile', token=self.token)
-        response = client.call_action('get_profile', profile_id=self.request.media_key)
-        if not response.success:
-            print 'warning: failed to fetch profile'
-            return
+        response = client.call_action(
+            'get_profile',
+            profile_id=self.request.media_key,
+            on_error=self.ActionFieldError('media_key', 'FAILED_TO_RETRIEVE'),
+        )
 
         old_image_url = response.result.profile.image_url
         # update the profile with the new image and delete the previous image
@@ -117,17 +114,17 @@ class CompleteImageUpload(StartImageUpload):
         updated_profile = ProfileService.Containers.Profile()
         updated_profile.CopyFrom(response.result.profile)
         updated_profile.image_url = self.response.media_url
-        response = client.call_action('update_profile', profile=updated_profile)
-        # XXX should we rollback the image upload if this happens?
-        if not response.success:
-            print 'warning: failed to fetch profile'
-            return
-        else:
-            if old_image_url:
-                unquoted_key = urllib.unquote_plus(old_image_url)
-                key_parts = unquoted_key.rsplit('/')[-2:]
-                key_name = '/'.join(key_parts)
-                self.bucket.delete_key(key_name)
+        # XXX should we rollback the image upload if we fail to retrieve the profile?
+        response = client.call_action(
+            'update_profile',
+            profile=updated_profile,
+            on_error=self.ActionFieldError('media_key', 'FAILED_TO_RETRIEVE'),
+        )
+        if old_image_url:
+            unquoted_key = urllib.unquote_plus(old_image_url)
+            key_parts = unquoted_key.rsplit('/')[-2:]
+            key_name = '/'.join(key_parts)
+            self.bucket.delete_key(key_name)
 
     def _delete_previous_image(self):
         if self.request.media_object == MediaService.PROFILE:

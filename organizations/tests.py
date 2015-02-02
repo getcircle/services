@@ -122,11 +122,11 @@ class TestOrganizations(TestCase):
         )
         self.assertTrue(response.success)
 
-        response = self.client.call_action(
-            'create_organization',
-            organization=organization_data,
-        )
-        self._verify_field_error(response, 'organization.domain', 'DUPLICATE')
+        with self.assertFieldError('organization.domain', 'DUPLICATE'):
+            self.client.call_action(
+                'create_organization',
+                organization=organization_data,
+            )
 
     def test_create_team_invalid_owner_id(self):
         organization = self._create_organization()
@@ -135,11 +135,11 @@ class TestOrganizations(TestCase):
             'owner_id': 'invalid',
             'name': fuzzy.FuzzyText().fuzz(),
         }
-        response = self.client.call_action(
-            'create_team',
-            team=team_data,
-        )
-        self._verify_field_error(response, 'team.owner_id')
+        with self.assertFieldError('team.owner_id'):
+            self.client.call_action(
+                'create_team',
+                team=team_data,
+            )
 
     def test_create_team_invalid_organization_id(self):
         team_data = {
@@ -147,11 +147,11 @@ class TestOrganizations(TestCase):
             'owner_id': fuzzy.FuzzyUUID().fuzz(),
             'name': fuzzy.FuzzyText().fuzz(),
         }
-        response = self.client.call_action(
-            'create_team',
-            team=team_data,
-        )
-        self._verify_field_error(response, 'team.organization_id')
+        with self.assertFieldError('team.organization_id'):
+            self.client.call_action(
+                'create_team',
+                team=team_data,
+            )
 
     def test_create_team_non_existant_organization(self):
         team_data = {
@@ -159,15 +159,11 @@ class TestOrganizations(TestCase):
             'owner_id': fuzzy.FuzzyUUID().fuzz(),
             'name': fuzzy.FuzzyText().fuzz(),
         }
-        response = self.client.call_action(
-            'create_team',
-            team=team_data,
-        )
-        self._verify_field_error(
-            response,
-            'team.organization_id',
-            'DOES_NOT_EXIST',
-        )
+        with self.assertFieldError('team.organization_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'create_team',
+                team=team_data,
+            )
 
     def test_create_team_null_child_of_means_root(self):
         owner_id = fuzzy.FuzzyUUID().fuzz()
@@ -197,12 +193,12 @@ class TestOrganizations(TestCase):
             'owner_id': fuzzy.FuzzyUUID().fuzz(),
             'name': fuzzy.FuzzyText().fuzz(),
         }
-        response = self.client.call_action(
-            'create_team',
-            team=team_data,
-            child_of='invalid',
-        )
-        self._verify_field_error(response, 'child_of')
+        with self.assertFieldError('child_of'):
+            self.client.call_action(
+                'create_team',
+                team=team_data,
+                child_of='invalid',
+            )
 
     def test_create_team_non_existant_child_of(self):
         organization = self._create_organization()
@@ -211,12 +207,12 @@ class TestOrganizations(TestCase):
             'owner_id': fuzzy.FuzzyUUID().fuzz(),
             'name': fuzzy.FuzzyText().fuzz(),
         }
-        response = self.client.call_action(
-            'create_team',
-            team=team_data,
-            child_of=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'child_of', 'DOES_NOT_EXIST')
+        with self.assertFieldError('child_of', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'create_team',
+                team=team_data,
+                child_of=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_create_team_child_of_must_be_in_same_organization(self):
         organization_1 = self._create_organization(domain='first')
@@ -231,12 +227,12 @@ class TestOrganizations(TestCase):
             'owner_id': fuzzy.FuzzyUUID().fuzz(),
             'name': fuzzy.FuzzyText().fuzz(),
         }
-        response = self.client.call_action(
-            'create_team',
-            team=team_data,
-            child_of=root_team.id,
-        )
-        self._verify_field_error(response, 'child_of', 'DOES_NOT_EXIST')
+        with self.assertFieldError('child_of', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'create_team',
+                team=team_data,
+                child_of=root_team.id,
+            )
 
     def test_create_team_child_of_one_level(self):
         organization = self._create_organization()
@@ -300,11 +296,11 @@ class TestOrganizations(TestCase):
 
     def test_create_address_invalid_organization_id(self):
         self.address_data['organization_id'] = 'invalid'
-        response = self.client.call_action(
-            'create_address',
-            address=self.address_data,
-        )
-        self._verify_field_error(response, 'address.organization_id')
+        with self.assertFieldError('address.organization_id'):
+            self.client.call_action(
+                'create_address',
+                address=self.address_data,
+            )
 
     def test_create_address(self):
         organization = self._create_organization()
@@ -318,18 +314,18 @@ class TestOrganizations(TestCase):
             self.assertEqual(getattr(response.result.address, key), value)
 
     def test_delete_address_invalid_address_id(self):
-        response = self.client.call_action(
-            'delete_address',
-            address_id='invalid',
-        )
-        self._verify_field_error(response, 'address_id')
+        with self.assertFieldError('address_id'):
+            self.client.call_action(
+                'delete_address',
+                address_id='invalid',
+            )
 
     def test_delete_address_does_not_exist(self):
-        response = self.client.call_action(
-            'delete_address',
-            address_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'address_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('address_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'delete_address',
+                address_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_delete_address(self):
         address = self._create_address()
@@ -341,18 +337,18 @@ class TestOrganizations(TestCase):
         self.assertFalse(models.Address.objects.filter(pk=address.id).exists())
 
     def test_get_address_invalid_address_id(self):
-        response = self.client.call_action(
-            'get_address',
-            address_id='invalid',
-        )
-        self._verify_field_error(response, 'address_id')
+        with self.assertFieldError('address_id'):
+            self.client.call_action(
+                'get_address',
+                address_id='invalid',
+            )
 
     def test_get_address_does_not_exist(self):
-        response = self.client.call_action(
-            'get_address',
-            address_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'address_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('address_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_address',
+                address_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_get_address(self):
         expected = self._create_address()
@@ -364,11 +360,11 @@ class TestOrganizations(TestCase):
         self._verify_containers(expected, response.result.address)
 
     def test_get_addresses_invalid_organization_id(self):
-        response = self.client.call_action(
-            'get_addresses',
-            organization_id='invalid',
-        )
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action(
+                'get_addresses',
+                organization_id='invalid',
+            )
 
     def test_get_addresses(self):
         organization = self._create_organization()
@@ -383,18 +379,18 @@ class TestOrganizations(TestCase):
         self.assertTrue(len(response.result.addresses), 2)
 
     def test_get_team_invalid_team_id(self):
-        response = self.client.call_action(
-            'get_team',
-            team_id='invalid',
-        )
-        self._verify_field_error(response, 'team_id')
+        with self.assertFieldError('team_id'):
+            self.client.call_action(
+                'get_team',
+                team_id='invalid',
+            )
 
     def test_get_team_does_not_exist(self):
-        response = self.client.call_action(
-            'get_team',
-            team_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'team_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('team_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_team',
+                team_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_get_team(self):
         expected = self._create_team()
@@ -405,18 +401,18 @@ class TestOrganizations(TestCase):
         self._verify_containers(expected, response.result.team)
 
     def test_get_organization_invalid_organization_id(self):
-        response = self.client.call_action(
-            'get_organization',
-            organization_id='invalid',
-        )
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action(
+                'get_organization',
+                organization_id='invalid',
+            )
 
     def test_get_organization_does_not_exist(self):
-        response = self.client.call_action(
-            'get_organization',
-            organization_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'organization_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('organization_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_organization',
+                organization_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_get_organization(self):
         expected = self._create_organization()
@@ -427,15 +423,8 @@ class TestOrganizations(TestCase):
         self._verify_containers(expected, response.result.organization)
 
     def test_get_organization_with_domain_does_not_exist(self):
-        response = self.client.call_action(
-            'get_organization',
-            organization_domain='doesnotexist.com',
-        )
-        self._verify_field_error(
-            response,
-            'organization_domain',
-            'DOES_NOT_EXIST',
-        )
+        with self.assertFieldError('organization_domain', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_organization', organization_domain='doesnotexist.com')
 
     def test_get_organization_with_domain(self):
         expected = self._create_organization()
@@ -446,18 +435,12 @@ class TestOrganizations(TestCase):
         self._verify_containers(expected, response.result.organization)
 
     def test_get_teams_invalid_organization_id(self):
-        response = self.client.call_action(
-            'get_teams',
-            organization_id='invalid',
-        )
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_teams', organization_id='invalid')
 
     def test_get_teams_does_not_exist(self):
-        response = self.client.call_action(
-            'get_teams',
-            organization_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'organization_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('organization_id', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_teams', organization_id=fuzzy.FuzzyUUID().fuzz())
 
     def test_get_teams(self):
         organization = self._create_organization()
@@ -473,12 +456,12 @@ class TestOrganizations(TestCase):
         self.assertTrue(len(response.result.teams), 5)
 
     def test_get_team_children_invalid_team_id(self):
-        response = self.client.call_action('get_team_children', team_id='invalid')
-        self._verify_field_error(response, 'team_id')
+        with self.assertFieldError('team_id'):
+            self.client.call_action('get_team_children', team_id='invalid')
 
     def test_get_team_children_does_not_exist(self):
-        response = self.client.call_action('get_team_children', team_id=fuzzy.FuzzyUUID().fuzz())
-        self._verify_field_error(response, 'team_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('team_id', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_team_children', team_id=fuzzy.FuzzyUUID().fuzz())
 
     def test_get_team_children(self):
         parent_team = self._create_team()
@@ -514,16 +497,17 @@ class TestOrganizations(TestCase):
         clear_keys = ['id', 'created', 'changed', 'path']
         for key in clear_keys:
             team_dict.pop(key)
-        response = self.client.call_action('create_team', team=team_dict)
-        self._verify_field_error(response, 'team.name', 'DUPLICATE')
+
+        with self.assertFieldError('team.name', 'DUPLICATE'):
+            self.client.call_action('create_team', team=team_dict)
 
     def test_get_team_with_name_and_organization_id_organization_id_invalid(self):
-        response = self.client.call_action('get_team', name='test', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_team', name='test', organization_id='invalid')
 
     def test_get_team_with_name_and_organization_id_only_name_provided(self):
-        response = self.client.call_action('get_team', name='test')
-        self._verify_field_error(response, 'organization_id', 'MISSING')
+        with self.assertFieldError('organization_id', 'MISSING'):
+            self.client.call_action('get_team', name='test')
 
     def test_get_team_with_name_and_organization_id(self):
         team = factories.TeamFactory.create()
@@ -537,19 +521,19 @@ class TestOrganizations(TestCase):
 
     def test_create_address_duplicate(self):
         address = factories.AddressFactory.create()
-        response = self.client.call_action(
-            'create_address',
-            address=address.as_dict(exclude=('id', 'created', 'changed')),
-        )
-        self._verify_field_error(response, 'address.name', 'DUPLICATE')
+        with self.assertFieldError('address.name', 'DUPLICATE'):
+            self.client.call_action(
+                'create_address',
+                address=address.as_dict(exclude=('id', 'created', 'changed')),
+            )
 
     def test_get_address_name_and_organization_organization_id_invalid(self):
-        response = self.client.call_action('get_address', name='test', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_address', name='test', organization_id='invalid')
 
     def test_get_address_name_and_organization_organization_required_if_name(self):
-        response = self.client.call_action('get_address', name='test')
-        self._verify_field_error(response, 'organization_id', 'MISSING')
+        with self.assertFieldError('organization_id', 'MISSING'):
+            self.client.call_action('get_address', name='test')
 
     def test_get_address_name_and_organization_id(self):
         address = factories.AddressFactory.create_protobuf()
@@ -562,8 +546,8 @@ class TestOrganizations(TestCase):
         self._verify_containers(address, response.result.address)
 
     def test_get_top_level_team_invalid_organization_id(self):
-        response = self.client.call_action('get_top_level_team', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_top_level_team', organization_id='invalid')
 
     def test_get_top_level_team(self):
         parent_team = self._create_team()

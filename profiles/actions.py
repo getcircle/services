@@ -153,17 +153,19 @@ class GetProfiles(actions.Action):
     def _get_profiles_by_team_id(self):
         # fetch the team to get the owner
         client = service.control.Client('organization', token=self.token)
-        response = client.call_action('get_team', team_id=self.request.team_id)
-        if not response.success:
-            # XXX map this error
-            raise Exception('failed to fetch team')
+        response = client.call_action(
+            'get_team',
+            team_id=self.request.team_id,
+            on_error=self.ActionFieldError('team_id', 'INVALID'),
+        )
         team = response.result.team
 
         client = service.control.Client('profile', token=self.token)
-        response = client.call_action('get_direct_reports', user_id=team.owner_id)
-        if not response.success:
-            # XXX map this error
-            raise Exception('failed to fetch direct reports')
+        response = client.call_action(
+            'get_direct_reports',
+            user_id=team.owner_id,
+            on_error=self.ActionError('ERROR_FETCHING_DIRECT_REPORTS'),
+        )
         profiles = list(response.result.profiles)
 
         team_profiles = models.Profile.objects.filter(team_id=self.request.team_id).exclude(
@@ -219,9 +221,8 @@ class GetExtendedProfile(GetProfile):
             response = self.organization_client.call_action(
                 'get_team',
                 team_id=manager_team.id,
+                on_error=self.ActionError('ERROR_FETCHING_MANAGER_TEAM'),
             )
-            if not response.success:
-                raise Exception('map error')
             user_id = response.result.team.owner_id
         return models.Profile.objects.get(user_id=user_id)
 
@@ -371,10 +372,11 @@ class GetDirectReports(actions.Action):
         self.organization_client = service.control.Client('organization', token=self.token)
 
     def _get_child_team_owner_ids(self, team):
-        response = self.organization_client.call_action('get_team_children', team_id=team.id)
-        if not response.success:
-            raise Exception('failed to fetch team children')
-
+        response = self.organization_client.call_action(
+            'get_team_children',
+            team_id=team.id,
+            on_error=self.ActionError('ERROR_FETCHING_TEAM_CHILDREN'),
+        )
         return [item.owner_id for item in response.result.teams]
 
     def run(self, *args, **kwargs):
@@ -384,13 +386,16 @@ class GetDirectReports(actions.Action):
         else:
             parameters['user_id'] = self.request.user_id
 
-        # TODO handle DoesNotExist error with user_id
-        profile = models.Profile.objects.get(**parameters)
-        response = self.organization_client.call_action('get_team', team_id=str(profile.team_id))
-        if not response.success:
-            # TODO we should be mapping these exceptions
-            raise Exception('failed to fetch team')
+        try:
+            profile = models.Profile.objects.get(**parameters)
+        except models.Profile.DoesNotExist:
+            raise self.ActionFieldError('user_id', 'DOES_NOT_EXIST')
 
+        response = self.organization_client.call_action(
+            'get_team',
+            team_id=str(profile.team_id),
+            on_error=self.ActionError('ERROR_FETCHING_TEAM'),
+        )
         team = response.result.team
         user_ids = []
         if team.owner_id == str(profile.user_id):
@@ -419,10 +424,11 @@ class GetPeers(actions.Action):
     def run(self, *args, **kwargs):
         profile = models.Profile.objects.get(pk=self.request.profile_id)
         client = service.control.Client('organization', token=self.token)
-        response = client.call_action('get_team', team_id=str(profile.team_id))
-        if not response.success:
-            # XXX we should be mapping these
-            raise Exception('failed to fetch team')
+        response = client.call_action(
+            'get_team',
+            team_id=str(profile.team_id),
+            on_error=self.ActionError('ERROR_FETCHING_TEAM'),
+        )
         team = response.result.team
 
         # handle CEO -- no peers
@@ -431,10 +437,11 @@ class GetPeers(actions.Action):
 
         if team.owner_id == str(profile.user_id):
             client = service.control.Client('profile', token=self.token)
-            response = client.call_action('get_direct_reports', user_id=team.path[-2].owner_id)
-            if not response.success:
-                raise Exception('failed to fetch direct reports')
-
+            response = client.call_action(
+                'get_direct_reports',
+                user_id=team.path[-2].owner_id,
+                on_error=self.ActionError('ERROR_FETCHING_DIRECT_REPORTS'),
+            )
             for item in response.result.profiles:
                 if str(item.id) == str(profile.pk):
                     continue

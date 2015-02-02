@@ -39,12 +39,12 @@ class TestProfileTags(TestCase):
         return response.result.tags
 
     def test_create_tags_invalid(self):
-        response = self.client.call_action(
-            'create_tags',
-            organization_id='invalid',
-            tags=[{'name': 'python'}],
-        )
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action(
+                'create_tags',
+                organization_id='invalid',
+                tags=[{'name': 'python'}],
+            )
 
     # TODO i'm unsure whether or not we need to check to see if the organization exists
     #def test_create_tags_does_not_exist(self):
@@ -81,12 +81,12 @@ class TestProfileTags(TestCase):
         self.assertEqual(len(response.tags), len(self.tags))
 
     def test_get_tags_for_organization_invalid_organization_id(self):
-        response = self.client.call_action('get_tags', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_tags', organization_id='invalid')
 
     def test_get_tags_for_profile_invalid_profile_id(self):
-        response = self.client.call_action('get_tags', profile_id='invalid')
-        self._verify_field_error(response, 'profile_id')
+        with self.assertFieldError('profile_id'):
+            self.client.call_action('get_tags', profile_id='invalid')
 
     def test_get_tags_for_organization(self):
         self._create_tags_for_organization(self.organization.id, tags=self.tags)
@@ -95,20 +95,20 @@ class TestProfileTags(TestCase):
         self.assertEqual(len(self.tags), len(response.result.tags))
 
     def test_add_tags_invalid_profile_id(self):
-        response = self.client.call_action(
-            'add_tags',
-            profile_id='invalid',
-            tags=[{'id': fuzzy.FuzzyUUID().fuzz(), 'name': 'mysql'}],
-        )
-        self._verify_field_error(response, 'profile_id')
+        with self.assertFieldError('profile_id'):
+            self.client.call_action(
+                'add_tags',
+                profile_id='invalid',
+                tags=[{'id': fuzzy.FuzzyUUID().fuzz(), 'name': 'mysql'}],
+            )
 
     def test_add_tags_profile_does_not_exist(self):
-        response = self.client.call_action(
-            'add_tags',
-            profile_id=fuzzy.FuzzyUUID().fuzz(),
-            tags=[{'id': fuzzy.FuzzyUUID().fuzz(), 'name': 'mysql'}],
-        )
-        self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('profile_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'add_tags',
+                profile_id=fuzzy.FuzzyUUID().fuzz(),
+                tags=[{'id': fuzzy.FuzzyUUID().fuzz(), 'name': 'mysql'}],
+            )
 
     def test_add_tags(self):
         tags = self._create_tags_for_organization(self.organization.id, tags=self.tags)

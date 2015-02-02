@@ -95,35 +95,35 @@ class TestProfiles(TestCase):
 
     def test_create_profile_invalid_organization_id(self):
         self.profile_data['organization_id'] = 'invalid'
-        response = self.client.call_action(
-            'create_profile',
-            profile=self.profile_data,
-        )
-        self._verify_field_error(response, 'profile.organization_id')
+        with self.assertFieldError('profile.organization_id'):
+            self.client.call_action(
+                'create_profile',
+                profile=self.profile_data,
+            )
 
     def test_create_profile_invalid_user_id(self):
         self.profile_data['user_id'] = 'invalid'
-        response = self.client.call_action(
-            'create_profile',
-            profile=self.profile_data,
-        )
-        self._verify_field_error(response, 'profile.user_id')
+        with self.assertFieldError('profile.user_id'):
+            self.client.call_action(
+                'create_profile',
+                profile=self.profile_data,
+            )
 
     def test_create_profile_invalid_address_id(self):
         self.profile_data['address_id'] = 'invalid'
-        response = self.client.call_action(
-            'create_profile',
-            profile=self.profile_data,
-        )
-        self._verify_field_error(response, 'profile.address_id')
+        with self.assertFieldError('profile.address_id'):
+            self.client.call_action(
+                'create_profile',
+                profile=self.profile_data,
+            )
 
     def test_create_profile_invalid_team_id(self):
         self.profile_data['team_id'] = 'invalid'
-        response = self.client.call_action(
-            'create_profile',
-            profile=self.profile_data,
-        )
-        self._verify_field_error(response, 'profile.team_id')
+        with self.assertFieldError('profile.team_id'):
+            self.client.call_action(
+                'create_profile',
+                profile=self.profile_data,
+            )
 
     def test_create_profile(self):
         profile_data = factories.ProfileFactory.get_protobuf_data()
@@ -132,11 +132,11 @@ class TestProfiles(TestCase):
         self._verify_container_matches_data(response.result.profile, profile_data)
 
     def test_get_profiles_invalid_organization_id(self):
-        response = self.client.call_action(
-            'get_profiles',
-            organization_id='invalid',
-        )
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action(
+                'get_profiles',
+                organization_id='invalid',
+            )
 
     def test_get_profiles_with_organization_id(self):
         profile = factories.ProfileFactory.create_protobuf()
@@ -149,8 +149,8 @@ class TestProfiles(TestCase):
         self._verify_containers(profile, response.result.profiles[0])
 
     def test_get_profiles_invalid_tag_id(self):
-        response = self.client.call_action('get_profiles', tag_id='invalid')
-        self._verify_field_error(response, 'tag_id')
+        with self.assertFieldError('tag_id'):
+            self.client.call_action('get_profiles', tag_id='invalid')
 
     def test_get_profiles_tags(self):
         tag = factories.TagFactory.create()
@@ -160,11 +160,11 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 4)
 
     def test_get_profiles_invalid_team_id(self):
-        response = self.client.call_action(
-            'get_profiles',
-            team_id='invalid',
-        )
-        self._verify_field_error(response, 'team_id')
+        with self.assertFieldError('team_id'):
+            self.client.call_action(
+                'get_profiles',
+                team_id='invalid',
+            )
 
     def _mock_get_direct_reports(self, user_id, profiles=2):
         service = 'profile'
@@ -240,28 +240,28 @@ class TestProfiles(TestCase):
         self.assertTrue(profile.full_name)
 
     def test_get_profile_invalid_profile_id(self):
-        response = self.client.call_action(
-            'get_profile',
-            profile_id='invalid',
-        )
-        self._verify_field_error(response, 'profile_id')
+        with self.assertFieldError('profile_id'):
+            self.client.call_action(
+                'get_profile',
+                profile_id='invalid',
+            )
 
     def test_get_profile_does_not_exist(self):
-        response = self.client.call_action(
-            'get_profile',
-            profile_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('profile_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_profile',
+                profile_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_update_profile_invalid_profile_id(self):
         self.profile_data['id'] = 'invalid'
-        response = self.client.call_action('update_profile', profile=self.profile_data)
-        self._verify_field_error(response, 'profile.id')
+        with self.assertFieldError('profile.id'):
+            self.client.call_action('update_profile', profile=self.profile_data)
 
     def test_update_profile_does_not_exist(self):
         self.profile_data['id'] = fuzzy.FuzzyUUID().fuzz()
-        response = self.client.call_action('update_profile', profile=self.profile_data)
-        self._verify_field_error(response, 'profile.id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('profile.id', 'DOES_NOT_EXIST'):
+            self.client.call_action('update_profile', profile=self.profile_data)
 
     def test_update_profile(self):
         original = factories.ProfileFactory.create_protobuf()
@@ -281,27 +281,27 @@ class TestProfiles(TestCase):
         self._verify_containers(profile, response.result.profile)
 
     def test_get_direct_reports_invalid_profile_id(self):
-        response = self.client.call_action('get_direct_reports', profile_id='invalid')
-        self._verify_field_error(response, 'profile_id')
+        with self.assertFieldError('profile_id'):
+            self.client.call_action('get_direct_reports', profile_id='invalid')
 
     def test_get_direct_reports_profile_does_not_exist(self):
-        response = self.client.call_action(
-            'get_direct_reports',
-            profile_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('profile_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_direct_reports',
+                profile_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_get_peers_invalid_profile_id(self):
-        response = self.client.call_action('get_peers', profile_id='invalid')
-        self._verify_field_error(response, 'profile_id')
+        with self.assertFieldError('profile_id'):
+            self.client.call_action('get_peers', profile_id='invalid')
 
     def test_get_peers_profile_does_not_exist(self):
-        response = self.client.call_action('get_peers', profile_id=fuzzy.FuzzyUUID().fuzz())
-        self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('profile_id', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_peers', profile_id=fuzzy.FuzzyUUID().fuzz())
 
     def test_get_direct_reports_invalid_user_id(self):
-        response = self.client.call_action('get_direct_reports', user_id='invalid')
-        self._verify_field_error(response, 'user_id')
+        with self.assertFieldError('user_id'):
+            self.client.call_action('get_direct_reports', user_id='invalid')
 
     def _setup_direct_reports_test(self):
         address = self._create_address()
@@ -434,8 +434,8 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 0)
 
     def test_get_profile_stats_address_invalid(self):
-        response = self.client.call_action('get_profile_stats', address_ids=['invalid'])
-        self._verify_field_error(response, 'address_ids')
+        with self.assertFieldError('address_ids'):
+            self.client.call_action('get_profile_stats', address_ids=['invalid'])
 
     def test_get_profile_stats_address_no_profiles(self):
         response = self.client.call_action(
@@ -456,13 +456,13 @@ class TestProfiles(TestCase):
 
     def test_create_profile_duplicate(self):
         profile = factories.ProfileFactory.create_protobuf()
-        response = self.client.call_action('create_profile', profile=profile)
-        self.assertFalse(response.success)
-        self.assertIn('DUPLICATE', response.errors)
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action('create_profile', profile=profile)
+        self.assertIn('DUPLICATE', expected.exception.response.errors)
 
     def test_get_upcoming_anniversaries_invalid_organization_id(self):
-        response = self.client.call_action('get_upcoming_anniversaries', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_upcoming_anniversaries', organization_id='invalid')
 
     @freeze_time('2015-01-09')
     def test_get_upcoming_anniversaries(self):
@@ -571,8 +571,8 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 1)
 
     def test_get_upcoming_birthdays_invalid_organization_id(self):
-        response = self.client.call_action('get_upcoming_birthdays', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_upcoming_birthdays', organization_id='invalid')
 
     @freeze_time('2015-01-09')
     def test_get_upcoming_birthdays(self):
@@ -632,8 +632,8 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 1)
 
     def test_get_recent_hires_invalid_organization_id(self):
-        response = self.client.call_action('get_recent_hires', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_recent_hires', organization_id='invalid')
 
     @freeze_time('2015-01-10')
     def test_get_recent_hires(self):
@@ -677,8 +677,8 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 1)
 
     def test_get_active_tags_invalid_organization_id(self):
-        response = self.client.call_action('get_active_tags', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_active_tags', organization_id='invalid')
 
     def test_get_active_tags(self):
         tags = factories.TagFactory.create_batch(size=3)
@@ -693,8 +693,8 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.tags), 1)
 
     def test_get_profiles_address_id_invalid(self):
-        response = self.client.call_action('get_profiles', address_id='invalid')
-        self._verify_field_error(response, 'address_id')
+        with self.assertFieldError('address_id'):
+            self.client.call_action('get_profiles', address_id='invalid')
 
     def test_get_profiles_with_address_id(self):
         address = mocks.mock_address()
@@ -708,8 +708,8 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 5)
 
     def test_get_profiles_invalid_id_list(self):
-        response = self.client.call_action('get_profiles', ids=['invalid'])
-        self._verify_field_error(response, 'ids')
+        with self.assertFieldError('ids'):
+            self.client.call_action('get_profiles', ids=['invalid'])
 
     def test_get_profiles_with_id_list(self):
         profiles = factories.ProfileFactory.create_batch(size=5)

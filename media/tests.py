@@ -68,12 +68,12 @@ class TestMediaService(TestCase):
         return mock_response.profile
 
     def test_start_image_upload_profile_invalid_key(self):
-        response = self.client.call_action(
-            'start_image_upload',
-            media_object=MediaService.PROFILE,
-            media_key='invalid',
-        )
-        self._verify_field_error(response, 'media_key')
+        with self.assertFieldError('media_key'):
+            self.client.call_action(
+                'start_image_upload',
+                media_object=MediaService.PROFILE,
+                media_key='invalid',
+            )
 
     def test_start_image_upload_profile_does_not_exist(self):
         # mock the get_profile call to return DOES_NOT_EXIST
@@ -87,12 +87,12 @@ class TestMediaService(TestCase):
             is_action_response=True,
             profile_id=profile_id,
         )
-        response = self.client.call_action(
-            'start_image_upload',
-            media_object=MediaService.PROFILE,
-            media_key=profile_id,
-        )
-        self._verify_field_error(response, 'media_key', 'DOES_NOT_EXIST')
+        with self.assertFieldError('media_key', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'start_image_upload',
+                media_object=MediaService.PROFILE,
+                media_key=profile_id,
+            )
 
     # TODO add tests for failing connections
     @patch('media.actions.S3Connection')
@@ -113,13 +113,13 @@ class TestMediaService(TestCase):
         self.assertTrue(response.result.upload_instructions.upload_url.startswith('https'))
 
     def test_complete_image_upload_profile_invalid_profile_id(self):
-        response = self.client.call_action(
-            'complete_image_upload',
-            media_object=MediaService.PROFILE,
-            media_key='invalid',
-            upload_id='fake',
-        )
-        self._verify_field_error(response, 'media_key')
+        with self.assertFieldError('media_key'):
+            self.client.call_action(
+                'complete_image_upload',
+                media_object=MediaService.PROFILE,
+                media_key='invalid',
+                upload_id='fake',
+            )
 
     def test_complete_image_upload_profile_does_not_exist(self):
         # mock the get_profile call to return DOES_NOT_EXIST
@@ -133,13 +133,13 @@ class TestMediaService(TestCase):
             is_action_response=True,
             profile_id=profile_id,
         )
-        response = self.client.call_action(
-            'complete_image_upload',
-            media_object=MediaService.PROFILE,
-            media_key=profile_id,
-            upload_id='fake',
-        )
-        self._verify_field_error(response, 'media_key', 'DOES_NOT_EXIST')
+        with self.assertFieldError('media_key', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'complete_image_upload',
+                media_object=MediaService.PROFILE,
+                media_key=profile_id,
+                upload_id='fake',
+            )
 
     def _mock_complete_image_upload(self, mock_s3_connection, mock_multipart):
         # mock the s3 initiation call

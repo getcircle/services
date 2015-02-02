@@ -17,37 +17,37 @@ class NotesTests(TestCase):
         self.client = service.control.Client('note', token='test-token')
 
     def test_create_note_invalid_for_profile_id(self):
-        response = self.client.call_action(
-            'create_note',
-            note={
-                'for_profile_id': 'invalid',
-                'owner_profile_id': fuzzy.FuzzyUUID().fuzz(),
-                'content': fuzzy.FuzzyText().fuzz(),
-            },
-        )
-        self._verify_field_error(response, 'note.for_profile_id')
+        with self.assertFieldError('note.for_profile_id'):
+            self.client.call_action(
+                'create_note',
+                note={
+                    'for_profile_id': 'invalid',
+                    'owner_profile_id': fuzzy.FuzzyUUID().fuzz(),
+                    'content': fuzzy.FuzzyText().fuzz(),
+                },
+            )
 
     def test_create_note_invalid_owner_profile_id(self):
-        response = self.client.call_action(
-            'create_note',
-            note={
-                'for_profile_id': fuzzy.FuzzyUUID().fuzz(),
-                'owner_profile_id': 'invalid',
-                'content': fuzzy.FuzzyText().fuzz(),
-            },
-        )
-        self._verify_field_error(response, 'note.owner_profile_id')
+        with self.assertFieldError('note.owner_profile_id'):
+            self.client.call_action(
+                'create_note',
+                note={
+                    'for_profile_id': fuzzy.FuzzyUUID().fuzz(),
+                    'owner_profile_id': 'invalid',
+                    'content': fuzzy.FuzzyText().fuzz(),
+                },
+            )
 
     def test_create_note_content_required(self):
-        response = self.client.call_action(
-            'create_note',
-            note={
-                'for_profile_id': fuzzy.FuzzyUUID().fuzz(),
-                'owner_profile_id': fuzzy.FuzzyUUID().fuzz(),
-                'content': '',
-            },
-        )
-        self._verify_field_error(response, 'note.content', 'MISSING')
+        with self.assertFieldError('note.content', 'MISSING'):
+            self.client.call_action(
+                'create_note',
+                note={
+                    'for_profile_id': fuzzy.FuzzyUUID().fuzz(),
+                    'owner_profile_id': fuzzy.FuzzyUUID().fuzz(),
+                    'content': '',
+                },
+            )
 
     def test_create_note(self):
         note = {
@@ -60,20 +60,20 @@ class NotesTests(TestCase):
         self._verify_container_matches_data(response.result.note, note)
 
     def test_get_notes_invalid_for_profile_id(self):
-        response = self.client.call_action(
-            'get_notes',
-            for_profile_id='invalid',
-            owner_profile_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'for_profile_id')
+        with self.assertFieldError('for_profile_id'):
+            self.client.call_action(
+                'get_notes',
+                for_profile_id='invalid',
+                owner_profile_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_get_notes_invalid_owner_profile_id(self):
-        response = self.client.call_action(
-            'get_notes',
-            for_profile_id=fuzzy.FuzzyUUID().fuzz(),
-            owner_profile_id='invalid',
-        )
-        self._verify_field_error(response, 'owner_profile_id')
+        with self.assertFieldError('owner_profile_id'):
+            self.client.call_action(
+                'get_notes',
+                for_profile_id=fuzzy.FuzzyUUID().fuzz(),
+                owner_profile_id='invalid',
+            )
 
     def test_get_notes(self):
         for_profile_id = fuzzy.FuzzyUUID().fuzz()
@@ -118,14 +118,15 @@ class NotesTests(TestCase):
     def test_delete_note_not_owner(self):
         note = factories.NoteFactory.create_protobuf()
         client = service.control.Client('note', token=mocks.mock_token())
-        response = client.call_action('delete_note', note=note)
-        self.assertFalse(response.success)
-        self.assertIn('FORBIDDEN', response.errors)
+        with self.assertRaisesCallActionError() as expected:
+            client.call_action('delete_note', note=note)
+
+        self.assertIn('FORBIDDEN', expected.exception.response.errors)
 
     def test_delete_note_does_not_exist(self):
         note = mocks.mock_note()
-        response = self.client.call_action('delete_note', note=note)
-        self._verify_field_error(response, 'note.id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('note.id', 'DOES_NOT_EXIST'):
+            self.client.call_action('delete_note', note=note)
 
     def test_delete_note(self):
         note = factories.NoteFactory.create_protobuf()
@@ -142,14 +143,14 @@ class NotesTests(TestCase):
     def test_update_note_not_owner(self):
         note = factories.NoteFactory.create_protobuf()
         client = service.control.Client('note', token=mocks.mock_token())
-        response = client.call_action('update_note', note=note)
-        self.assertFalse(response.success)
-        self.assertIn('FORBIDDEN', response.errors)
+        with self.assertRaisesCallActionError() as expected:
+            client.call_action('update_note', note=note)
+        self.assertIn('FORBIDDEN', expected.exception.response.errors)
 
     def test_update_note_does_not_exist(self):
         note = mocks.mock_note()
-        response = self.client.call_action('update_note', note=note)
-        self._verify_field_error(response, 'note.id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('note.id', 'DOES_NOT_EXIST'):
+            self.client.call_action('update_note', note=note)
 
     def test_update_note(self):
         note = factories.NoteFactory.create_protobuf()

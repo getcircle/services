@@ -78,18 +78,18 @@ class TestGetExtendedProfile(TestCase):
         return mock_response.notes
 
     def test_get_extended_profile_invalid_profile_id(self):
-        response = self.client.call_action(
-            'get_extended_profile',
-            profile_id='invalid',
-        )
-        self._verify_field_error(response, 'profile_id')
+        with self.assertFieldError('profile_id'):
+            self.client.call_action(
+                'get_extended_profile',
+                profile_id='invalid',
+            )
 
     def test_get_extended_profile_does_not_exist(self):
-        response = self.client.call_action(
-            'get_extended_profile',
-            profile_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'profile_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('profile_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_extended_profile',
+                profile_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_get_extended_profile(self):
         manager = factories.ProfileFactory.create_protobuf()

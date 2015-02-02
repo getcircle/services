@@ -177,8 +177,8 @@ class TestGetCategories(TestCase):
         )
 
     def test_profile_category_invalid_profile_id(self):
-        response = self.client.call_action('get_categories', profile_id='invalid')
-        self._verify_field_error(response, 'profile_id')
+        with self.assertFieldError('profile_id'):
+            self.client.call_action('get_categories', profile_id='invalid')
 
     def test_peers_profile_category(self):
         profile = self._mock_get_profile()

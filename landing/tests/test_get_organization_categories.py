@@ -129,8 +129,8 @@ class TestGetExtendedOrganization(TestCase):
         )
 
     def test_get_organization_categories_invalid_organization_id(self):
-        response = self.client.call_action('get_organization_categories', organization_id='invalid')
-        self._verify_field_error(response, 'organization_id')
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_organization_categories', organization_id='invalid')
 
     def test_get_organization_categories(self):
         organization = self._mock_get_organization()

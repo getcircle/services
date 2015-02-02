@@ -104,13 +104,13 @@ class Parser(OrganizationParser):
         }
         address.update(data)
         self.debug_log('saving address: %s' % (address,))
-        response = self.organization_client.call_action(
-            'create_address',
-            address=address,
-        )
-        if response.success:
+        try:
+            response = self.organization_client.call_action(
+                'create_address',
+                address=address,
+            )
             address = response.result.address
-        else:
+        except self.organization_client.CallActionError:
             response = self.organization_client.call_action(
                 'get_address',
                 name=address['name'],
@@ -122,10 +122,10 @@ class Parser(OrganizationParser):
     def _save_user(self, row):
         self.debug_log('saving user: %s' % (row.email,))
         client = service.control.Client('user', token=self.token)
-        response = client.call_action('create_user', email=row.email, password='rhlabs123')
-        if response.success:
+        try:
+            response = client.call_action('create_user', email=row.email, password='rhlabs123')
             user = response.result.user
-        else:
+        except client.CallActionError:
             response = client.call_action('get_user', email=row.email)
             user = response.result.user
         return user.id
@@ -150,13 +150,13 @@ class Parser(OrganizationParser):
             'child_of': child_of,
         }
         self.debug_log('creating team: %s' % (parameters,))
-        response = self.organization_client.call_action(
-            'create_team',
-            **parameters
-        )
-        if response.success:
+        try:
+            response = self.organization_client.call_action(
+                'create_team',
+                **parameters
+            )
             team = response.result.team
-        else:
+        except self.organization_client.CallActionError:
             response = self.organization_client.call_action(
                 'get_team',
                 name=team,
@@ -177,10 +177,11 @@ class Parser(OrganizationParser):
         profile_data.update(row.profile)
         self.debug_log('creating profile: %s' % (profile_data,))
         client = service.control.Client('profile', token=self.token)
-        response = client.call_action('create_profile', profile=profile_data)
-        profile = response.result.profile
-        if not response.success:
-            self.debug_log('error creating profile: %s' % (response.errors,))
+        try:
+            response = client.call_action('create_profile', profile=profile_data)
+            profile = response.result.profile
+        except client.CallActionError as e:
+            self.debug_log('error creating profile: %s' % (e,))
             # fetch the profile
             response = client.call_action('get_profile', user_id=self.saved_users[row.email])
             profile = response.result.profile
