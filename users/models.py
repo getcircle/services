@@ -111,4 +111,4 @@ class Identity(models.UUIDModel, models.TimestampableModel):
         return super(Identity, self).to_protobuf(provider=self.provider, *args, **kwargs)
 
     class Meta:
-        unique_together = ('user', 'provider')
+        unique_together = (('user', 'provider'), ('provider', 'provider_uid'))

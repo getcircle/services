@@ -70,7 +70,7 @@ class TestAuthorization(TestCase):
             provider=UserService.LINKEDIN,
             oauth2_details={
                 'code': 'some-code',
-                'state': providers.get_state_token(UserService.LINKEDIN, {'user_id': user.id}),
+                'state': providers.get_state_token(UserService.LINKEDIN, {}),
             },
         )
         self.assertEqual(response.result.identity.provider, UserService.LINKEDIN)
@@ -129,3 +129,36 @@ class TestAuthorization(TestCase):
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
+
+    @patch('users.providers.linkedin.LinkedInApplication')
+    @patch.object(providers.Linkedin, '_get_access_token')
+    def test_complete_authorization_identity_exists(
+            self,
+            mocked_get_access_token,
+            mocked_linkedin,
+        ):
+        mocked_get_access_token.return_value = (fuzzy.FuzzyUUID().fuzz(), 5184000)
+        linkedin_id = fuzzy.FuzzyUUID().fuzz()
+        mocked_linkedin().get_profile.return_value = {
+            'formattedName': 'Michael Hahn',
+            'emailAddress': 'mwhahn@gmail.com',
+            'id': linkedin_id,
+        }
+        identity = factories.IdentityFactory.create_protobuf(
+            access_token='old',
+            provider_uid=linkedin_id,
+        )
+        self.client.token = mocks.mock_token(user_id=identity.user_id)
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=UserService.LINKEDIN,
+            oauth2_details={
+                'code': 'some-code',
+                'state': providers.get_state_token(UserService.LINKEDIN, {}),
+            },
+        )
+        self.assertEqual(response.result.identity.provider, UserService.LINKEDIN)
+        self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
+        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
+        self.assertNotEqual(response.result.identity.access_token, 'old')
+        self.assertTrue(response.result.identity.access_token)

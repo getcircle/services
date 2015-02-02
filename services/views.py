@@ -20,7 +20,9 @@ class ServicesView(APIView):
         pass
 
     def post(self, request, *args, **kwargs):
+        # XXX handle errors if the request.body fails to serialize
         service_request = soa_pb2.ServiceRequest.FromString(request.body)
+        # XXX: handle errors if the token fails to parse
         # TODO: come up with a better way to do this
         if not request.auth:
             service_request.control.token = ''

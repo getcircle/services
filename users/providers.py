@@ -140,13 +140,27 @@ class Linkedin(object):
             urllib.urlencode(parameters),
         )
 
+    def get_identity(self, provider_uid):
+        identity = models.Identity.objects.get_or_none(
+            provider_uid=provider_uid,
+            provider=self.type,
+        )
+        if identity is None:
+            identity = models.Identity(provider=self.type, provider_uid=provider_uid)
+        return identity
+
     def complete_authorization(self, oauth2_details):
         url = self.get_exchange_url(oauth2_details)
         token, expires_in = self._get_access_token(url)
         application = linkedin.LinkedInApplication(token=token)
         profile = application.get_profile(selectors=self.profile_selectors)
 
-        identity = models.Identity(provider=self.type)
+        provider_uid = self._extract_required_profile_field(
+            profile,
+            'id',
+            alias='provider_uid',
+        )
+        identity = self.get_identity(provider_uid)
         identity.full_name = self._extract_required_profile_field(
             profile,
             'formattedName',
@@ -156,11 +170,6 @@ class Linkedin(object):
             profile,
             'emailAddress',
             alias='email_address',
-        )
-        identity.provider_uid = self._extract_required_profile_field(
-            profile,
-            'id',
-            alias='provider_uid',
         )
         identity.data = json.dumps(profile)
         identity.access_token = token
