@@ -244,7 +244,7 @@ class CompleteAuthorization(actions.Action):
             self.request.provider,
             self.request.oauth2_details.state,
         ):
-            self.note_field_error('oauth2_details.state', 'INVALID')
+            raise self.ActionFieldError('oauth2_details.state', 'INVALID')
 
     def run(self, *args, **kwargs):
         provider = None
