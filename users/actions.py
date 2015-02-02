@@ -113,12 +113,12 @@ class AuthenticateUser(actions.Action):
         user = authenticate(**auth_params)
         if user is not None:
             if not user.is_active:
-                self.note_error(
+                raise self.ActionError(
                     'DISABLED_USER',
                     ('DISABLED_USER', 'user has been disabled'),
                 )
         else:
-            self.note_error(
+            raise self.ActionError(
                 'INVALID_LOGIN',
                 ('INVALID_LOGIN', 'user or credentials were invalid'),
             )
@@ -148,10 +148,9 @@ class AuthenticateUser(actions.Action):
 
     def run(self, *args, **kwargs):
         user = self._handle_authentication()
-        if not self.is_error():
-            self.response.authenticated = True
-            self.response.token = self._get_token(user)
-            user.to_protobuf(self.response.user)
+        self.response.authenticated = True
+        self.response.token = self._get_token(user)
+        user.to_protobuf(self.response.user)
 
 
 class SendVerificationCode(actions.Action):
