@@ -17,20 +17,20 @@ class TestUserActions(TestCase):
         self.email = fuzzy.FuzzyText(suffix='@example.com').fuzz()
 
     def test_create_user_minimum_password_length(self):
-        response = self.client.call_action(
-            'create_user',
-            password='s',
-            email=self.email,
-        )
-        self._verify_field_error(response, 'password', 'INVALID_MIN_LENGTH')
+        with self.assertFieldError('password', 'INVALID_MIN_LENGTH'):
+            self.client.call_action(
+                'create_user',
+                password='s',
+                email=self.email,
+            )
 
     def test_create_user_maximum_password_length(self):
-        response = self.client.call_action(
-            'create_user',
-            password='s' * 100,
-            email=self.email,
-        )
-        self._verify_field_error(response, 'password', 'INVALID_MAX_LENGTH')
+        with self.assertFieldError('password', 'INVALID_MAX_LENGTH'):
+            self.client.call_action(
+                'create_user',
+                password='s' * 100,
+                email=self.email,
+            )
 
     def test_create_user(self):
         response = self.client.call_action(
@@ -57,8 +57,10 @@ class TestUserActions(TestCase):
     def test_create_user_duplicate(self):
         response = self.client.call_action('create_user', email=self.email)
         self.assertTrue(response.success)
-        response = self.client.call_action('create_user', email=self.email)
-        self.assertFalse(response.success)
+
+        with self.assertRaises(self.client.CallActionError) as expected:
+            self.client.call_action('create_user', email=self.email)
+        response = expected.exception.response
         self.assertEqual(response.error_details[0].detail, 'ALREADY_EXISTS')
 
     def test_get_user(self):
@@ -68,12 +70,12 @@ class TestUserActions(TestCase):
         response = self.client.call_action('get_user', email=self.email)
 
     def test_update_user_invalid_user_id(self):
-        response = self.client.call_action('update_user', user={'id': 'invalid'})
-        self._verify_field_error(response, 'user.id')
+        with self.assertFieldError('user.id'):
+            self.client.call_action('update_user', user={'id': 'invalid'})
 
     def test_update_user_does_not_exist(self):
-        response = self.client.call_action('update_user', user={'id': fuzzy.FuzzyUUID().fuzz()})
-        self._verify_field_error(response, 'user.id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('user.id', 'DOES_NOT_EXIST'):
+            self.client.call_action('update_user', user={'id': fuzzy.FuzzyUUID().fuzz()})
 
     def test_update_user(self):
         user = factories.UserFactory.create_protobuf()

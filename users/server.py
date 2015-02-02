@@ -9,6 +9,7 @@ class Server(service.control.Server):
     auth_exempt_actions = (
         'authenticate_user',
         'get_authorization_instructions',
+        'complete_authorization',
     )
 
     actions = {
@@ -20,4 +21,5 @@ class Server(service.control.Server):
         'send_verification_code': actions.SendVerificationCode,
         'verify_verification_code': actions.VerifyVerificationCode,
         'get_authorization_instructions': actions.GetAuthorizationInstructions,
+        'complete_authorization': actions.CompleteAuthorization,
     }

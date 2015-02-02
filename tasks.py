@@ -9,31 +9,33 @@ from invoke import (
 )
 
 
-def execute_with_settings(command, settings='local', **kwargs):
-    run(
-        'DJANGO_SETTINGS_MODULE=services.settings.%s ./manage.py %s' % (settings, command),
-        **kwargs
+def execute_with_settings(command, settings='local', extra='', **kwargs):
+    command = 'DJANGO_SETTINGS_MODULE=services.settings.%s ./manage.py %s %s' % (
+        settings,
+        command,
+        extra,
     )
+    run(command, **kwargs)
 
 
 @task(help={
     'failfast': 'Flag for whether or not you want to fail on the first test failure',
     'keepdb': 'Flag for whether or not you want to reuse the test db',
 })
-def test(app='', failfast=False, keepdb=False):
+def test(app='', failfast=False, keepdb=False, extra=''):
     """Trigger a test run"""
     test_args = []
     if failfast:
         test_args.append('--failfast')
     if keepdb:
         test_args.append('-k')
-    execute_with_settings('test %s %s' % (' '.join(test_args), app,), pty=True)
+    execute_with_settings('test %s %s' % (' '.join(test_args), app,), extra=extra, pty=True)
 
 
 @task
-def qt(app):
+def qt(app, extra=''):
     """Trigger a test run, defaulting to keep database and fail fast"""
-    test(app, failfast=True, keepdb=True)
+    test(app, failfast=True, keepdb=True, extra=extra)
 
 
 @task

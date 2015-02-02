@@ -3,7 +3,10 @@ import urllib
 from django.conf import settings
 from django.contrib.auth import authenticate
 import django.db
-from itsdangerous import TimestampSigner
+from itsdangerous import (
+    BadSignature,
+    TimestampSigner,
+)
 from protobufs.user_service_pb2 import UserService
 import pyotp
 from rest_framework.authtoken.models import Token
@@ -17,7 +20,10 @@ import service.control
 
 from services.token import make_token
 
-from . import models
+from . import (
+    models,
+    providers,
+)
 
 
 def validate_new_password_min_length(value):
@@ -39,9 +45,10 @@ def get_totp_code(token):
 
 class CreateUser(actions.Action):
 
+    required_fields = ('email',)
+
     def validate(self, *args, **kwargs):
         super(CreateUser, self).validate(*args, **kwargs)
-        # XXX if we had some concept of required this wouldn't be necessary
         if not self.is_error() and self.request.password:
             if not validate_new_password_min_length(self.request.password):
                 self.note_field_error('password', 'INVALID_MIN_LENGTH')
@@ -124,10 +131,14 @@ class AuthenticateUser(actions.Action):
         return user
 
     def _get_profile(self, user_id, token):
+        profile = None
         client = service.control.Client('profile', token=token)
-        response = client.call_action('get_profile', user_id=str(user_id))
-        if response.success and response.result.profile:
-            return response.result.profile
+        try:
+            response = client.call_action('get_profile', user_id=str(user_id))
+            profile = response.result.profile
+        except service.control.Client.CallActionError:
+            profile = None
+        return profile
 
     def _get_token(self, user):
         token, _ = Token.objects.get_or_create(user=user)
@@ -222,23 +233,41 @@ class VerifyVerificationCode(actions.Action):
 
 class GetAuthorizationInstructions(actions.Action):
 
-    def _get_state(self):
-        signer = TimestampSigner(settings.SECRET_KEY)
-        return signer.sign(str(self.request.identity))
+    def run(self, *args, **kwargs):
+        if self.request.provider == UserService.LINKEDIN:
+            self.response.authorization_url = providers.Linkedin.get_authorization_url()
 
-    def _get_linkedin_url(self):
-        parameters = {
-            'response_type': 'code',
-            'scope': urllib.quote(settings.LINKEDIN_SCOPE),
-            'client_id': settings.LINKEDIN_CLIENT_ID,
-            'redirect_uri': settings.LINKEDIN_REDIRECT_URI,
-            'state': self._get_state(),
-        }
-        return '%s?%s' % (
-            settings.LINKEDIN_AUTHORIZATION_URL,
-            urllib.urlencode(parameters),
-        )
+
+class CompleteAuthorization(actions.Action):
+
+    def __init__(self, *args, **kwargs):
+        super(CompleteAuthorization, self).__init__(*args, **kwargs)
+        self.exception_to_error_map.update(providers.Linkedin.exception_to_error_map)
+
+    def validate(self, *args, **kwargs):
+        super(CompleteAuthorization, self).validate(*args, **kwargs)
+        if not providers.valid_state_token(
+            self.request.provider,
+            self.request.oauth2_details.state,
+        ):
+            self.note_field_error('oauth2_details.state', 'INVALID')
 
     def run(self, *args, **kwargs):
-        if self.request.identity == UserService.LINKEDIN:
-            self.response.authorization_url = self._get_linkedin_url()
+        provider = None
+        if self.request.provider == UserService.LINKEDIN:
+            provider = providers.Linkedin()
+
+        if provider is None:
+            raise self.ActionFieldError('provider', 'UNSUPPORTED')
+
+        identity = provider.complete_authorization(self.request.oauth2_details)
+        if not self.request.user:
+            # XXX add some concept of "generate_one_time_use_admin_token"
+            client = service.control.Client('user', token='one-time-use-token')
+            response = client.call_action('create_user', email=identity.email)
+            identity.user_id = response.result.user.id
+        else:
+            identity.user_id = self.request.user.id
+
+        identity.save()
+        identity.to_protobuf(self.response.identity)

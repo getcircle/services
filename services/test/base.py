@@ -1,5 +1,7 @@
+from contextlib import contextmanager
 import uuid
 from django.test import TestCase as DjangoTestCase
+import service.control
 from ..utils import matching_uuids
 
 
@@ -12,8 +14,16 @@ class TestCase(DjangoTestCase):
         self.assertEqual(key, error.key)
         self.assertEqual(detail, error.detail)
 
-    def _verify_field_error(self, response, key, detail='INVALID'):
-        self._verify_error(response, 'FIELD_ERROR', key, detail)
+    @contextmanager
+    def assertFieldError(self, key, detail='INVALID'):
+        with self.assertRaisesCallActionError() as expected:
+            yield
+        self._verify_error(expected.exception.response, 'FIELD_ERROR', key, detail)
+
+    @contextmanager
+    def assertRaisesCallActionError(self):
+        with self.assertRaises(service.control.Client.CallActionError) as expected:
+            yield expected
 
     def _verify_values(self, expected_value, value):
         uuid_convertibles = (basestring, uuid.UUID)

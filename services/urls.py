@@ -12,4 +12,5 @@ urlpatterns = patterns('',
     url(r'^$', views.ServicesView.as_view()),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^grappelli/', include('grappelli.urls')),
+    url(r'^oauth2/', include('oauth2.urls')),
 )

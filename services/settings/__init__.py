@@ -45,6 +45,7 @@ INSTALLED_APPS = (
     'landing',
     'media',
     'notes',
+    'oauth2',
     'onboarding',
     'organizations',
     'profiles',
@@ -179,6 +180,11 @@ REST_FRAMEWORK = {
 
 # Connect With Linkedin
 LINKEDIN_AUTHORIZATION_URL = 'https://www.linkedin.com/uas/oauth2/authorization'
+LINKEDIN_ACCESS_TOKEN_URL = 'https://www.linkedin.com/uas/oauth2/accessToken'
 LINKEDIN_CLIENT_ID = '75ob8lid33ecuv'
+LINKEDIN_CLIENT_SECRET = 'vZsCybgJMvZ0rPEj'
 LINKEDIN_REDIRECT_URI = 'http://localhost:8000/oauth2/linkedin/'
-LINKEDIN_SCOPE = 'r_fullprofile r_emailaddress'
+LINKEDIN_SCOPE = 'r_fullprofile r_emailaddress r_contactinfo'
+
+# User Service Settings
+USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state token

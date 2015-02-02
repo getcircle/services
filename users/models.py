@@ -3,7 +3,9 @@ from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
 )
+from django.contrib.postgres.fields import HStoreField
 from phonenumber_field.modelfields import PhoneNumberField
+from protobufs.user_service_pb2 import UserService
 import pyotp
 
 
@@ -83,6 +85,31 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
 
 class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
+    # XXX switch to 1-1 field
     user = models.ForeignKey(User, unique=True)
     # XXX not sure if this needs to be encrypted
     token = models.CharField(max_length=16, default=pyotp.random_base32)
+
+
+class Identity(models.UUIDModel, models.TimestampableModel):
+
+    providers = (
+        (UserService.LINKEDIN, 'LinkedIn'),
+    )
+
+    user = models.ForeignKey(User)
+    provider = models.PositiveSmallIntegerField(choices=providers)
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    access_token = models.CharField(max_length=255)
+    refresh_token = models.CharField(max_length=255, null=True)
+    provider_uid = models.CharField(max_length=255)
+    expires_at = models.PositiveIntegerField()
+    data = models.TextField(null=True)
+
+    def to_protobuf(self, *args, **kwargs):
+        # override "provider" to prevent casting as a string
+        return super(Identity, self).to_protobuf(provider=self.provider, *args, **kwargs)
+
+    class Meta:
+        unique_together = ('user', 'provider')

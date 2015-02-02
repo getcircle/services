@@ -29,15 +29,15 @@ class TestUsersAuthentication(TestCase):
         self._verify_containers(response.result.user, self.user)
 
     def test_authenticate_user_invalid_password(self):
-        response = self.client.call_action(
-            'authenticate_user',
-            backend=0,
-            credentials={
-                'key': self.user.primary_email,
-                'secret': 'invalid',
-            },
-        )
-        self.assertFalse(response.success)
+        with self.assertRaises(self.client.CallActionError):
+            self.client.call_action(
+                'authenticate_user',
+                backend=0,
+                credentials={
+                    'key': self.user.primary_email,
+                    'secret': 'invalid',
+                },
+            )
 
     def test_authenticate_user_decode_token(self):
         response = self._authenticate_user()

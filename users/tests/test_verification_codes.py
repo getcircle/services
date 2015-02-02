@@ -25,21 +25,21 @@ class TestUsersVerificationCodes(TestCase):
         mock_class().messages.create.return_value = mock_message
 
     def test_send_verification_code_invalid_user_id(self):
-        response = self.client.call_action('send_verification_code', user_id='invalid')
-        self._verify_field_error(response, 'user_id')
+        with self.assertFieldError('user_id'):
+            self.client.call_action('send_verification_code', user_id='invalid')
 
     def test_send_verification_code_user_does_not_exist(self):
-        response = self.client.call_action(
-            'send_verification_code',
-            user_id=fuzzy.FuzzyUUID().fuzz(),
-        )
-        self._verify_field_error(response, 'user_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('user_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'send_verification_code',
+                user_id=fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_send_verification_code_no_cell_number(self):
         user = factories.UserFactory.create(phone_number=None)
-        response = self.client.call_action('send_verification_code', user_id=str(user.id))
-        self.assertFalse(response.success)
-        self.assertIn('NO_PHONE_NUMBER', response.errors)
+        with self.assertRaises(self.client.CallActionError) as expected:
+            self.client.call_action('send_verification_code', user_id=str(user.id))
+        self.assertIn('NO_PHONE_NUMBER', expected.exception.response.errors)
 
     @mock.patch('users.actions.TwilioRestClient')
     def test_send_verification_code_invalid_number(self, mock_class):
@@ -49,9 +49,9 @@ class TestUsersVerificationCodes(TestCase):
             'failed',
         )
         user = factories.UserFactory.create()
-        response = self.client.call_action('send_verification_code', user_id=str(user.id))
-        self.assertFalse(response.success)
-        self.assertIn('FAILED', response.errors)
+        with self.assertRaises(self.client.CallActionError) as expected:
+            self.client.call_action('send_verification_code', user_id=str(user.id))
+        self.assertIn('FAILED', expected.exception.response.errors)
 
     @mock.patch('users.actions.TwilioRestClient')
     def test_send_verification_code(self, mock_class):
@@ -83,29 +83,29 @@ class TestUsersVerificationCodes(TestCase):
         self.assertEqual(len(models.TOTPToken.objects.filter(user_id=user.id)), 1)
 
     def test_verify_verification_code_user_does_not_exist(self):
-        response = self.client.call_action(
-            'verify_verification_code',
-            user_id=fuzzy.FuzzyUUID().fuzz(),
-            code='invalid',
-        )
-        self._verify_field_error(response, 'user_id', 'DOES_NOT_EXIST')
+        with self.assertFieldError('user_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'verify_verification_code',
+                user_id=fuzzy.FuzzyUUID().fuzz(),
+                code='invalid',
+            )
 
     def test_verify_verification_code_invalid_user_id(self):
-        response = self.client.call_action(
-            'verify_verification_code',
-            user_id='invalid',
-            code='invalid',
-        )
-        self._verify_field_error(response, 'user_id')
+        with self.assertFieldError('user_id'):
+            self.client.call_action(
+                'verify_verification_code',
+                user_id='invalid',
+                code='invalid',
+            )
 
     def test_verify_verification_code_invalid_code(self):
         token = factories.TOTPTokenFactory.create()
-        response = self.client.call_action(
-            'verify_verification_code',
-            user_id=str(token.user_id),
-            code='789878',
-        )
-        self._verify_field_error(response, 'code')
+        with self.assertFieldError('code'):
+            self.client.call_action(
+                'verify_verification_code',
+                user_id=str(token.user_id),
+                code='789878',
+            )
 
         user = models.User.objects.get(pk=token.user_id)
         self.assertFalse(user.phone_number_verified)
