@@ -110,10 +110,10 @@ class Linkedin(object):
     }
 
     @classmethod
-    def get_authorization_url(self, user_id=None):
+    def get_authorization_url(self, token=None):
         payload = {}
-        if user_id:
-            payload['user_id'] = {}
+        if token:
+            payload['token'] = token
 
         parameters = {
             'response_type': 'code',

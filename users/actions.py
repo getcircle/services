@@ -231,7 +231,9 @@ class GetAuthorizationInstructions(actions.Action):
 
     def run(self, *args, **kwargs):
         if self.request.provider == UserService.LINKEDIN:
-            self.response.authorization_url = providers.Linkedin.get_authorization_url()
+            self.response.authorization_url = providers.Linkedin.get_authorization_url(
+                token=self.token,
+            )
 
 
 class CompleteAuthorization(actions.Action):
@@ -257,8 +259,9 @@ class CompleteAuthorization(actions.Action):
         if provider is None:
             raise self.ActionFieldError('provider', 'UNSUPPORTED')
 
+        token = self.token or self.payload.get('token')
         identity = provider.complete_authorization(self.request.oauth2_details)
-        if not self.token:
+        if not token:
             # XXX add some concept of "generate_one_time_use_admin_token"
             client = service.control.Client('user', token='one-time-use-token')
             response = client.call_action('create_user', email=identity.email)
@@ -266,7 +269,7 @@ class CompleteAuthorization(actions.Action):
             identity.user_id = user.id
             self.response.user.CopyFrom(user)
         else:
-            token = parse_token(self.token)
+            token = parse_token(token)
             user = models.User.objects.get(pk=token.user_id).to_protobuf(self.response.user)
             identity.user_id = token.user_id
 

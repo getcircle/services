@@ -79,12 +79,12 @@ class TestAuthorization(TestCase):
         self.assertEqual(response.result.user.primary_email, user.primary_email)
 
     def test_valid_state_token_quoted_characters(self):
-        expected = {'user_id': fuzzy.FuzzyUUID().fuzz()}
+        expected = {'token': mocks.mock_token()}
         token = providers.get_state_token(UserService.LINKEDIN, expected)
         # force encoding of periods
         token.replace('.', '%2E')
         payload = providers.parse_state_token(UserService.LINKEDIN, token)
-        self.assertEqual(payload['user_id'], expected['user_id'])
+        self.assertEqual(payload['token'], expected['token'])
 
     @patch('users.providers.linkedin.LinkedInApplication')
     @patch.object(providers.Linkedin, '_get_access_token')
