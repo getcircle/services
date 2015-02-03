@@ -10,8 +10,8 @@ class OAuth2Linkedin(APIView):
 
     def _handle_error(self, error_or_request):
         error = error_or_request
-        if hasattr(error, 'content'):
-            error = error_or_request.content
+        if hasattr(error, 'GET'):
+            error = error.GET.get('error_description', 'invalid_request')
 
         params = {'error': error}
         return redirect('/oauth2/linkedin/error/?%s' % (urllib.urlencode(params),))
