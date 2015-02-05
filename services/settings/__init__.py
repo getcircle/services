@@ -136,21 +136,34 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'stream': sys.stdout,
-        }
+        },
     },
     'loggers': {
         'django': {
+            'level': 'INFO',
             'handlers': ['console'],
             'propagate': True,
-            'level': 'INFO',
         },
         'django.request': {
-            'handlers': ['console'],
             'level': 'ERROR',
+            'handlers': ['console'],
             'propagate': False,
         },
-    }
-
+        'gunicorn.error': {
+            'level': 'INFO',
+            'handlers': ['console'],
+            'propagate': True,
+        },
+        'gunicorn.access': {
+            'level': 'INFO',
+            'handlers': ['console'],
+            'propagate': False,
+        },
+    },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console'],
+    },
 }
 
 # Twilio API Settings
