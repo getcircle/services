@@ -6,4 +6,3 @@ worker_class = 'gevent'
 accesslog = '-'
 errorlog = '-'
 loglevel = 'info'
-preload_app = True
