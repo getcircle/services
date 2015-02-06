@@ -211,7 +211,7 @@ REST_FRAMEWORK = {
     )
 }
 
-# Connect With Linkedin
+# Connect With LinkedIn
 LINKEDIN_AUTHORIZATION_URL = 'https://www.linkedin.com/uas/oauth2/authorization'
 LINKEDIN_ACCESS_TOKEN_URL = 'https://www.linkedin.com/uas/oauth2/accessToken'
 LINKEDIN_CLIENT_ID = '75ob8lid33ecuv'

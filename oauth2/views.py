@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 import service.control
 
 
-class OAuth2Linkedin(APIView):
+class OAuth2LinkedIn(APIView):
 
     def _handle_error(self, error_or_request):
         error = error_or_request

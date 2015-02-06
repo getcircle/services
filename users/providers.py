@@ -61,7 +61,7 @@ class MissingRequiredProfileFieldError(Exception):
     """Exception raised when a required profile field is missing"""
 
 
-class Linkedin(object):
+class LinkedIn(object):
 
     type = UserService.LINKEDIN
     profile_selectors = (

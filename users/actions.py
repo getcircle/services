@@ -231,7 +231,7 @@ class GetAuthorizationInstructions(actions.Action):
 
     def run(self, *args, **kwargs):
         if self.request.provider == UserService.LINKEDIN:
-            self.response.authorization_url = providers.Linkedin.get_authorization_url(
+            self.response.authorization_url = providers.LinkedIn.get_authorization_url(
                 token=self.token,
             )
 
@@ -240,7 +240,7 @@ class CompleteAuthorization(actions.Action):
 
     def __init__(self, *args, **kwargs):
         super(CompleteAuthorization, self).__init__(*args, **kwargs)
-        self.exception_to_error_map.update(providers.Linkedin.exception_to_error_map)
+        self.exception_to_error_map.update(providers.LinkedIn.exception_to_error_map)
 
     def validate(self, *args, **kwargs):
         super(CompleteAuthorization, self).validate(*args, **kwargs)
@@ -254,7 +254,7 @@ class CompleteAuthorization(actions.Action):
     def run(self, *args, **kwargs):
         provider = None
         if self.request.provider == UserService.LINKEDIN:
-            provider = providers.Linkedin()
+            provider = providers.LinkedIn()
 
         if provider is None:
             raise self.ActionFieldError('provider', 'UNSUPPORTED')
