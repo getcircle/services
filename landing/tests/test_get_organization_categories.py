@@ -36,13 +36,13 @@ class TestGetExtendedOrganization(TestCase):
         )
         return mock_response.organization
 
-    def _mock_get_active_tags(self, organization_id, tags=3):
+    def _mock_get_active_skills(self, organization_id, skills=3):
         service = 'profile'
-        action = 'get_active_tags'
+        action = 'get_active_skills'
         mock_response = mock.get_mockable_response(service, action)
-        for _ in range(tags):
-            tag = mock_response.tags.add()
-            mocks.mock_tag(tag)
+        for _ in range(skills):
+            skill = mock_response.skills.add()
+            mocks.mock_skill(skill)
 
         mock.instance.register_mock_response(
             service,
@@ -50,7 +50,7 @@ class TestGetExtendedOrganization(TestCase):
             mock_response,
             organization_id=organization_id,
         )
-        return mock_response.tags
+        return mock_response.skills
 
     def _mock_get_addresses(self, organization_id, addresses=3):
         service = 'organization'
@@ -134,7 +134,7 @@ class TestGetExtendedOrganization(TestCase):
 
     def test_get_organization_categories(self):
         organization = self._mock_get_organization()
-        trending_tags = self._mock_get_active_tags(organization.id, tags=10)
+        trending_skills = self._mock_get_active_skills(organization.id, skills=10)
         addresses = self._mock_get_addresses(organization.id)
         self._mock_get_profile_stats([address.id for address in addresses])
         top_level_team = self._mock_get_top_level_team(organization.id)
@@ -150,8 +150,8 @@ class TestGetExtendedOrganization(TestCase):
 
         category_dict = dict((res.type, res) for res in response.result.categories)
 
-        tags = category_dict[LandingService.Containers.Category.TAGS]
-        self.assertEqual(len(tags.tags), len(trending_tags))
+        skills = category_dict[LandingService.Containers.Category.SKILLS]
+        self.assertEqual(len(skills.skills), len(trending_skills))
 
         locations = category_dict[LandingService.Containers.Category.LOCATIONS]
         self.assertEqual(len(locations.addresses), len(addresses))

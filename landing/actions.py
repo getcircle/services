@@ -150,25 +150,25 @@ class GetCategories(actions.Action):
             container = hires.profiles.add()
             container.CopyFrom(profile)
 
-    def _get_active_tags_category(self, organization_id):
+    def _get_active_skills_category(self, organization_id):
         response = self.profile_client.call_action(
-            'get_active_tags',
+            'get_active_skills',
             organization_id=organization_id,
         )
         if not response.success:
-            raise Exception('failed ot fetch trending tags')
+            raise Exception('failed ot fetch trending skills')
 
-        if not len(response.result.tags):
+        if not len(response.result.skills):
             return
 
-        tags = self.response.categories.add()
-        tags.title = 'Tags'
-        tags.content_key = 'name'
-        tags.type = LandingService.Containers.Category.TAGS
-        tags.total_count = str(len(response.result.tags))
-        for tag in response.result.tags:
-            container = tags.tags.add()
-            container.CopyFrom(tag)
+        skills = self.response.categories.add()
+        skills.title = 'Skills'
+        skills.content_key = 'name'
+        skills.type = LandingService.Containers.Category.SKILLS
+        skills.total_count = str(len(response.result.skills))
+        for skill in response.result.skills:
+            container = skills.skills.add()
+            container.CopyFrom(skill)
 
     def _get_recent_notes_category(self, profile):
         response = self.note_client.call_action(
@@ -220,7 +220,7 @@ class GetCategories(actions.Action):
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_recent_hires_category(profile)
-        self._get_active_tags_category(profile.organization_id)
+        self._get_active_skills_category(profile.organization_id)
 
 
 class GetOrganizationCategories(GetCategories):
@@ -291,4 +291,4 @@ class GetOrganizationCategories(GetCategories):
     def run(self, *args, **kwargs):
         self._get_departments_and_executives(self.request.organization_id)
         self._get_locations_category(self.request.organization_id)
-        self._get_active_tags_category(self.request.organization_id)
+        self._get_active_skills_category(self.request.organization_id)

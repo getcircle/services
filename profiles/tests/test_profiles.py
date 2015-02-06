@@ -148,14 +148,14 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 1)
         self._verify_containers(profile, response.result.profiles[0])
 
-    def test_get_profiles_invalid_tag_id(self):
-        with self.assertFieldError('tag_id'):
-            self.client.call_action('get_profiles', tag_id='invalid')
+    def test_get_profiles_invalid_skill_id(self):
+        with self.assertFieldError('skill_id'):
+            self.client.call_action('get_profiles', skill_id='invalid')
 
-    def test_get_profiles_tags(self):
-        tag = factories.TagFactory.create()
-        factories.ProfileFactory.create_batch(size=4, tags=[tag])
-        response = self.client.call_action('get_profiles', tag_id=str(tag.id))
+    def test_get_profiles_skills(self):
+        skill = factories.SkillFactory.create()
+        factories.ProfileFactory.create_batch(size=4, skills=[skill])
+        response = self.client.call_action('get_profiles', skill_id=str(skill.id))
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 4)
 
@@ -676,21 +676,21 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
 
-    def test_get_active_tags_invalid_organization_id(self):
+    def test_get_active_skills_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
-            self.client.call_action('get_active_tags', organization_id='invalid')
+            self.client.call_action('get_active_skills', organization_id='invalid')
 
-    def test_get_active_tags(self):
-        tags = factories.TagFactory.create_batch(size=3)
-        profile = factories.ProfileFactory.create(tags=[tags[1]])
+    def test_get_active_skills(self):
+        skills = factories.SkillFactory.create_batch(size=3)
+        profile = factories.ProfileFactory.create(skills=[skills[1]])
         # add duplicate
-        factories.ProfileFactory.create(tags=[tags[1]])
+        factories.ProfileFactory.create(skills=[skills[1]])
         response = self.client.call_action(
-            'get_active_tags',
+            'get_active_skills',
             organization_id=str(profile.organization_id),
         )
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.tags), 1)
+        self.assertEqual(len(response.result.skills), 1)
 
     def test_get_profiles_address_id_invalid(self):
         with self.assertFieldError('address_id'):

@@ -65,6 +65,6 @@ def release_all():
 
 
 @task
-def manage(command, settings='local'):
+def manage(command, settings='local', extra=''):
     """Execute a manage command with the given settings"""
-    execute_with_settings(command, settings=settings, pty=True)
+    execute_with_settings(command, settings=settings, extra=extra, pty=True)

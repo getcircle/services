@@ -132,7 +132,7 @@ class GetProfiles(actions.Action):
     type_validators = {
         'team_id': [validators.is_uuid4],
         'organization_id': [validators.is_uuid4],
-        'tag_id': [validators.is_uuid4],
+        'skill_id': [validators.is_uuid4],
         'address_id': [validators.is_uuid4],
         'ids': [validators.is_uuid4_list],
     }
@@ -146,7 +146,7 @@ class GetProfiles(actions.Action):
         elif self.request.ids:
             parameters['id__in'] = list(self.request.ids)
         else:
-            parameters['tags__id'] = self.request.tag_id
+            parameters['skills__id'] = self.request.skill_id
 
         return models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
 
@@ -226,8 +226,8 @@ class GetExtendedProfile(GetProfile):
             user_id = response.result.team.owner_id
         return models.Profile.objects.get(user_id=user_id)
 
-    def _get_tags(self):
-        return models.Tag.objects.filter(profile=self.request.profile_id)
+    def _get_skills(self):
+        return models.Skill.objects.filter(profile=self.request.profile_id)
 
     def _fetch_notes(self):
         # XXX error if we don't have profile_id?
@@ -256,10 +256,10 @@ class GetExtendedProfile(GetProfile):
         if manager:
             manager.to_protobuf(self.response.manager)
 
-        tags = self._get_tags()
-        for tag in tags:
-            container = self.response.tags.add()
-            tag.to_protobuf(container)
+        skills = self._get_skills()
+        for skill in skills:
+            container = self.response.skills.add()
+            skill.to_protobuf(container)
 
         notes = self._fetch_notes()
         for note in notes:
@@ -267,28 +267,28 @@ class GetExtendedProfile(GetProfile):
             container.CopyFrom(note)
 
 
-class CreateTags(actions.Action):
+class CreateSkills(actions.Action):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
     }
 
-    def _create_tags(self, organization_id, tags):
-        objects = [models.Tag.objects.from_protobuf(
-            tag,
+    def _create_skills(self, organization_id, skills):
+        objects = [models.Skill.objects.from_protobuf(
+            skill,
             commit=False,
             organization_id=organization_id,
-        ) for tag in tags]
-        return models.Tag.objects.bulk_create(objects)
+        ) for skill in skills]
+        return models.Skill.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
-        tags = self._create_tags(self.request.organization_id, self.request.tags)
-        for tag in tags:
-            container = self.response.tags.add()
-            tag.to_protobuf(container)
+        skills = self._create_skills(self.request.organization_id, self.request.skills)
+        for skill in skills:
+            container = self.response.skills.add()
+            skill.to_protobuf(container)
 
 
-class AddTags(CreateTags):
+class AddSkills(CreateSkills):
 
     type_validators = {
         'profile_id': [validators.is_uuid4],
@@ -300,39 +300,39 @@ class AddTags(CreateTags):
         },
     }
 
-    def _dedupe_tags(self, tag_ids):
+    def _dedupe_skills(self, skill_ids):
         # NOTE: This is subject to a race condition, but since we only have 1
-        # interface to add tags we're not going to worry about this for now.
-        through_model = models.Profile.tags.through
-        current_tag_ids = map(str, through_model.objects.filter(
+        # interface to add skills we're not going to worry about this for now.
+        through_model = models.Profile.skills.through
+        current_skill_ids = map(str, through_model.objects.filter(
             profile_id=self.request.profile_id,
-        ).values_list('tag_id', flat=True))
-        return list(set(tag_ids) - set(current_tag_ids))
+        ).values_list('skill_id', flat=True))
+        return list(set(skill_ids) - set(current_skill_ids))
 
-    def _add_tags(self, tags):
-        tag_ids = [tag.id for tag in tags]
-        deduped_tag_ids = self._dedupe_tags(tag_ids)
-        through_model = models.Profile.tags.through
+    def _add_skills(self, skills):
+        skill_ids = [skill.id for skill in skills]
+        deduped_skill_ids = self._dedupe_skills(skill_ids)
+        through_model = models.Profile.skills.through
         objects = [through_model(
             profile_id=self.request.profile_id,
-            tag_id=tag_id,
-        ) for tag_id in deduped_tag_ids]
+            skill_id=skill_id,
+        ) for skill_id in deduped_skill_ids]
         return through_model.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
-        tags_to_create = [tag for tag in self.request.tags if not tag.id]
-        tags_to_add = [tag for tag in self.request.tags if tag.id]
-        if tags_to_create:
+        skills_to_create = [skill for skill in self.request.skills if not skill.id]
+        skills_to_add = [skill for skill in self.request.skills if skill.id]
+        if skills_to_create:
             organization_id = models.Profile.objects.get(
                 pk=self.request.profile_id
             ).values('organization_id')
-            tags_to_add.extend(self._create_tags(organization_id, tags_to_create))
+            skills_to_add.extend(self._create_skills(organization_id, skills_to_create))
 
-        if tags_to_add:
-            self._add_tags(tags_to_add)
+        if skills_to_add:
+            self._add_skills(skills_to_add)
 
 
-class GetTags(actions.Action):
+class GetSkills(actions.Action):
 
     # XXX should we have field_validators for whether or not organization and profile exist?
 
@@ -348,10 +348,10 @@ class GetTags(actions.Action):
         else:
             parameters['profile'] = self.request.profile_id
 
-        tags = models.Tag.objects.filter(**parameters)
-        for tag in tags:
-            container = self.response.tags.add()
-            tag.to_protobuf(container)
+        skills = models.Skill.objects.filter(**parameters)
+        for skill in skills:
+            container = self.response.skills.add()
+            skill.to_protobuf(container)
 
 
 class GetDirectReports(actions.Action):
@@ -566,16 +566,16 @@ class GetRecentHires(actions.Action):
             profile.to_protobuf(container)
 
 
-class GetActiveTags(actions.Action):
+class GetActiveSkills(actions.Action):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
-        tags = set(models.Tag.objects.filter(
-            profiletags__tag_id__isnull=False
-        ).order_by('-profiletags__created'))
-        for tag in tags:
-            container = self.response.tags.add()
-            tag.to_protobuf(container)
+        skills = set(models.Skill.objects.filter(
+            profileskills__skill_id__isnull=False
+        ).order_by('-profileskills__created'))
+        for skill in skills:
+            container = self.response.skills.add()
+            skill.to_protobuf(container)

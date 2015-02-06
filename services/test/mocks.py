@@ -130,9 +130,9 @@ def mock_profile(container=None, **overrides):
     return _mock_container(container, mock_dict, **overrides)
 
 
-def mock_tag(container=None, **overrides):
+def mock_skill(container=None, **overrides):
     if container is None:
-        container = ProfileService.Containers.Tag()
+        container = ProfileService.Containers.Skill()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],

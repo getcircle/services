@@ -126,15 +126,15 @@ class TestGetCategories(TestCase):
             organization_id=organization_id,
         )
 
-    def _mock_get_active_tags(self, organization_id, tags=3):
+    def _mock_get_active_skills(self, organization_id, skills=3):
         service = 'profile'
-        action = 'get_active_tags'
+        action = 'get_active_skills'
 
         mock_response = mock.get_mockable_response(service, action)
-        for _ in range(tags):
-            tag = mock_response.tags.add()
-            tag.id = fuzzy.FuzzyUUID().fuzz()
-            tag.name = fuzzy.FuzzyText().fuzz()
+        for _ in range(skills):
+            skill = mock_response.skills.add()
+            skill.id = fuzzy.FuzzyUUID().fuzz()
+            skill.name = fuzzy.FuzzyText().fuzz()
 
         mock.instance.register_mock_response(
             service,
@@ -189,7 +189,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_skills(profile.organization_id, skills=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
@@ -210,7 +210,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_skills(profile.organization_id, skills=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
@@ -233,7 +233,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_skills(profile.organization_id, skills=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
@@ -258,7 +258,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_skills(profile.organization_id, skills=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
@@ -281,7 +281,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_skills(profile.organization_id, skills=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
@@ -304,7 +304,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_skills(profile.organization_id, skills=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
@@ -318,7 +318,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.type, LandingService.Containers.Category.NEW_HIRES)
         self.assertEqual(category.total_count, str(3))
 
-    def test_trending_tags_tag_category(self):
+    def test_trending_skills_skill_category(self):
         profile = self._mock_get_profile()
         # TODO we should have the mock transport return an error that the mock wasn't registred
         self._mock_get_peers(profile.id, peers=0)
@@ -328,7 +328,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id)
+        self._mock_get_active_skills(profile.organization_id)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_categories', profile_id=profile.id)
@@ -336,10 +336,10 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(response.result.categories), 1)
 
         category = response.result.categories[0]
-        self.assertEqual(category.title, 'Tags')
-        self.assertEqual(len(category.tags), 3)
+        self.assertEqual(category.title, 'Skills')
+        self.assertEqual(len(category.skills), 3)
         self.assertEqual(category.content_key, 'name')
-        self.assertEqual(category.type, LandingService.Containers.Category.TAGS)
+        self.assertEqual(category.type, LandingService.Containers.Category.SKILLS)
         self.assertEqual(category.total_count, str(3))
 
     def test_notes_note_category(self):
@@ -351,7 +351,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_skills(profile.organization_id, skills=0)
         notes = self._mock_get_notes(profile.id)
         self._mock_get_profiles([note.for_profile_id for note in notes])
 

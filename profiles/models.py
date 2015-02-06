@@ -3,7 +3,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 from common.db import models
 
 
-class Tag(models.UUIDModel, models.TimestampableModel):
+class Skill(models.UUIDModel, models.TimestampableModel):
 
     organization_id = models.UUIDField(db_index=True)
     name = models.CharField(max_length=64)
@@ -31,7 +31,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     hire_date = models.DateField()
     verified = models.BooleanField(default=False)
 
-    tags = models.ManyToManyField(Tag, through='ProfileTags')
+    skills = models.ManyToManyField(Skill, through='ProfileSkills')
 
     @property
     def full_name(self):
@@ -41,10 +41,10 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         unique_together = ('organization_id', 'user_id')
 
 
-class ProfileTags(models.TimestampableModel):
+class ProfileSkills(models.TimestampableModel):
 
-    tag = models.ForeignKey(Tag)
+    skill = models.ForeignKey(Skill)
     profile = models.ForeignKey(Profile)
 
     class Meta:
-        unique_together = ('tag', 'profile')
+        unique_together = ('skill', 'profile')
