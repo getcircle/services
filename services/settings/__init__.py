@@ -132,10 +132,20 @@ TEST_RUNNER = 'services.test.runner.ServicesTestSuiteRunner'
 # TODO setup proper logging
 LOGGING = {
     'version': 1,
+    'formatters': {
+        'generic': {
+            'format': '%(name)s %(message)s',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'stream': sys.stdout,
+        },
+        'console_generic': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'generic',
         },
     },
     'loggers': {
@@ -151,12 +161,17 @@ LOGGING = {
         },
         'gunicorn.error': {
             'level': 'INFO',
-            'handlers': ['console'],
+            'handlers': ['console_generic'],
             'propagate': True,
         },
         'gunicorn.access': {
             'level': 'INFO',
-            'handlers': ['console'],
+            'handlers': ['console_generic'],
+            'propagate': False,
+        },
+        'services': {
+            'level': 'INFO',
+            'handlers': ['console_generic'],
             'propagate': False,
         },
     },
