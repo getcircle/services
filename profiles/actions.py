@@ -274,6 +274,8 @@ class CreateSkills(actions.Action):
     }
 
     def _create_skills(self, organization_id, skills):
+        # dedupe the skills
+        skills = dict((skill.name, skill) for skill in skills).values()
         objects = [models.Skill.objects.from_protobuf(
             skill,
             commit=False,
