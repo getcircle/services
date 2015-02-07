@@ -253,13 +253,16 @@ class CompleteAuthorization(actions.Action):
 
     def run(self, *args, **kwargs):
         provider = None
+        token = self.token or self.payload.get('token')
+        if token:
+            token = parse_token(token)
+
         if self.request.provider == UserService.LINKEDIN:
-            provider = providers.LinkedIn()
+            provider = providers.LinkedIn(token)
 
         if provider is None:
             raise self.ActionFieldError('provider', 'UNSUPPORTED')
 
-        token = self.token or self.payload.get('token')
         identity = provider.complete_authorization(self.request.oauth2_details)
         if not token:
             # XXX add some concept of "generate_one_time_use_admin_token"
@@ -269,7 +272,6 @@ class CompleteAuthorization(actions.Action):
             identity.user_id = user.id
             self.response.user.CopyFrom(user)
         else:
-            token = parse_token(token)
             user = models.User.objects.get(pk=token.user_id).to_protobuf(self.response.user)
             identity.user_id = token.user_id
 

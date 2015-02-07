@@ -2,6 +2,11 @@ from contextlib import contextmanager
 import uuid
 from django.test import TestCase as DjangoTestCase
 import service.control
+from service.transports import (
+    local,
+    mock,
+)
+
 from ..utils import matching_uuids
 
 
@@ -49,3 +54,10 @@ class TestCase(DjangoTestCase):
 
     def assertEqualUUID4(self, first, second):
         self.assertTrue(matching_uuids(first, second))
+
+    @contextmanager
+    def default_mock_transport(self, client):
+        service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
+        client.set_transport(local.instance)
+        yield mock
+        service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'

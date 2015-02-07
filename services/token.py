@@ -16,7 +16,8 @@ class ServiceToken(object):
     required_fields = ('auth_token', 'user_id')
     optional_fields = ('profile_id', 'organization_id')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, token=None, *args, **kwargs):
+        self._token = token
         for field in self.required_fields:
             try:
                 setattr(self, field, kwargs[field])
@@ -45,4 +46,4 @@ def make_token(**values):
 def parse_token(token):
     serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
     token_values = serializer.loads(token)
-    return ServiceToken(**token_values)
+    return ServiceToken(token=token, **token_values)

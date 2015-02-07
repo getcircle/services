@@ -16,6 +16,7 @@ from itsdangerous import (
 from linkedin import linkedin
 from protobufs.user_service_pb2 import UserService
 import requests
+import service.control
 
 from . import models
 
@@ -109,6 +110,9 @@ class LinkedIn(object):
         MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
     }
 
+    def __init__(self, token):
+        self.token = token
+
     @classmethod
     def get_authorization_url(self, token=None):
         payload = {}
@@ -154,6 +158,7 @@ class LinkedIn(object):
         token, expires_in = self._get_access_token(url)
         application = linkedin.LinkedInApplication(token=token)
         profile = application.get_profile(selectors=self.profile_selectors)
+        self._add_skills_to_profile(profile)
 
         provider_uid = self._extract_required_profile_field(
             profile,
@@ -175,6 +180,28 @@ class LinkedIn(object):
         identity.access_token = token
         identity.expires_at = arrow.utcnow().timestamp + expires_in
         return identity
+
+    def _add_skills_to_profile(self, data):
+        if not self.token.profile_id:
+            return None
+
+        linkedin_skills = data.get('skills', {}).get('values', [])
+        internal_skills = []
+        for linkedin_skill in linkedin_skills:
+            internal_skill = linkedin_skill.get('skill')
+            if internal_skill:
+                internal_skills.append(internal_skill)
+
+        client = service.control.Client('profile', token=self.token._token)
+        try:
+            client.call_action(
+                'add_skills',
+                profile_id=self.token.profile_id,
+                skills=internal_skills,
+            )
+        except client.CallActionError:
+            pass
+        return None
 
     def _extract_required_profile_field(self, profile, field_name, alias=None):
         try:

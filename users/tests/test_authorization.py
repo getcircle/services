@@ -12,6 +12,7 @@ from services.test import (
     mocks,
     TestCase,
 )
+from services.token import parse_token
 
 from .. import (
     factories,
@@ -62,17 +63,33 @@ class TestAuthorization(TestCase):
             'formattedName': 'Michael Hahn',
             'emailAddress': 'mwhahn@gmail.com',
             'id': fuzzy.FuzzyUUID().fuzz(),
+            'skills': {
+                'values': [
+                    {'skill': {'name': 'Python'}, 'id': 42},
+                    {'skill': {'name': 'MySQL'}, 'id': 43},
+                ],
+            },
         }
         user = factories.UserFactory.create_protobuf()
         self.client.token = mocks.mock_token(user_id=user.id)
-        response = self.client.call_action(
-            'complete_authorization',
-            provider=UserService.LINKEDIN,
-            oauth2_details={
-                'code': 'some-code',
-                'state': providers.get_state_token(UserService.LINKEDIN, {}),
-            },
-        )
+        parsed_token = parse_token(self.client.token)
+        with self.default_mock_transport(self.client) as mock:
+            mock_response = mock.get_mockable_response('profile', 'add_skills')
+            mock.instance.register_mock_response(
+                'profile',
+                'add_skills',
+                mock_response,
+                profile_id=parsed_token.profile_id,
+                skills=[{'name': 'Python'}, {'name': 'MySQL'}],
+            )
+            response = self.client.call_action(
+                'complete_authorization',
+                provider=UserService.LINKEDIN,
+                oauth2_details={
+                    'code': 'some-code',
+                    'state': providers.get_state_token(UserService.LINKEDIN, {}),
+                },
+            )
         self.assertEqual(response.result.identity.provider, UserService.LINKEDIN)
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
