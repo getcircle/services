@@ -1,5 +1,4 @@
 import service.control
-import unittest
 
 from services.test import (
     fuzzy,
@@ -142,4 +141,15 @@ class TestProfileSkills(TestCase):
 
         response = self.client.call_action('get_skills', profile_id=str(profile.id))
         self.assertTrue(response.success)
+        self.assertEqual(len(response.result.skills), 1)
+
+    def test_add_skills_create_required(self):
+        profile = factories.ProfileFactory.create()
+        self.client.call_action(
+            'add_skills',
+            profile_id=str(profile.id),
+            skills=[{'name': 'Some Skill'}],
+        )
+
+        response = self.client.call_action('get_skills', profile_id=str(profile.id))
         self.assertEqual(len(response.result.skills), 1)

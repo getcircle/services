@@ -327,7 +327,7 @@ class AddSkills(CreateSkills):
         if skills_to_create:
             organization_id = models.Profile.objects.get(
                 pk=self.request.profile_id
-            ).values('organization_id')
+            ).organization_id
             skills_to_add.extend(self._create_skills(organization_id, skills_to_create))
 
         if skills_to_add:
