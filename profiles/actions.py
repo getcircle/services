@@ -107,7 +107,7 @@ class GetProfile(actions.Action):
     def validate(self, *args, **kwargs):
         super(GetProfile, self).validate(*args, **kwargs)
         if not self.is_error():
-            if self.request.WhichOneof('lookup_key') is None:
+            if not any([self.request.user_id, self.request.profile_id]):
                 self.note_error(
                     'INVALID',
                     ('MISSING', '`user_id` or `profile_id` must be provided'),
