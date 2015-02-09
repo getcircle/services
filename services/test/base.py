@@ -30,7 +30,7 @@ class TestCase(DjangoTestCase):
         with self.assertRaises(service.control.Client.CallActionError) as expected:
             yield expected
 
-    def _verify_values(self, expected_value, value):
+    def _verify_values(self, expected_value, value, message=''):
         uuid_convertibles = (basestring, uuid.UUID)
         if isinstance(value, uuid_convertibles) or isinstance(expected_value, uuid_convertibles):
             # handle various types of UUID (hex and string)
@@ -41,11 +41,15 @@ class TestCase(DjangoTestCase):
                     expected_value = uuid.UUID(expected_value, version=4)
             except ValueError:
                 pass
-        self.assertEqual(value, expected_value)
+        self.assertEqual(
+            value,
+            expected_value,
+            '%s - expected: "%s", got: "%s"' % (message, expected_value, value),
+        )
 
     def _verify_container_matches_data(self, container, data):
         for key, value in data.iteritems():
-            self._verify_values(getattr(container, key), value)
+            self._verify_values(getattr(container, key), value, message='key: %s' % (key,))
 
     def _verify_containers(self, expected, to_verify):
         for field, expected_value in expected.ListFields():

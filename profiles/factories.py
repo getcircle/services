@@ -20,6 +20,7 @@ class ProfileFactory(factory.Factory):
     last_name = factory.FuzzyText()
     # TODO add a custom factory FuzzyPhoneNumber
     cell_phone = '+19492933322'
+    work_phone = '+19492933322'
     image_url = factory.FuzzyText(prefix='http://www.media.com/')
     email = factory.FuzzyText(suffix='@example.com')
     hire_date = factory.FuzzyDate(datetime.date(2000, 1, 1))
@@ -28,7 +29,7 @@ class ProfileFactory(factory.Factory):
     @classmethod
     def get_protobuf_data(cls, **data):
         model = cls.build(**data)
-        return model.as_dict(exclude=('created', 'changed'))
+        return model.as_dict(exclude=('created', 'changed', 'items'))
 
     @factory.post_generation
     def skills(self, create, extracted, **kwargs):
