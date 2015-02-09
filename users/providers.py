@@ -182,7 +182,7 @@ class LinkedIn(object):
         return identity
 
     def _add_skills_to_profile(self, data):
-        if not self.token.profile_id:
+        if not self.token or not self.token.profile_id:
             return None
 
         linkedin_skills = data.get('skills', {}).get('values', [])
