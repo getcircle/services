@@ -1,3 +1,4 @@
+import httplib2
 import json
 import urllib
 
@@ -16,6 +17,7 @@ from itsdangerous import (
 from linkedin import linkedin
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import (
+    AccessTokenRefreshError,
     credentials_from_code,
     FlowExchangeError,
     OAuth2Credentials,
@@ -262,6 +264,7 @@ class Google(BaseProvider):
     exception_to_error_map = {
         FlowExchangeError: 'PROVIDER_API_ERROR',
         MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
+        AccessTokenRefreshError: 'TOKEN_EXPIRED',
     }
 
     def _get_credentials_from_identity(self, identity):
@@ -289,6 +292,24 @@ class Google(BaseProvider):
             raise ExchangeError(response)
         return payload
 
+    def _get_credentials_from_code(self, identity, request):
+        credentials = credentials_from_code(
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            scope=settings.GOOGLE_SCOPE,
+            code=request.oauth_sdk_details.code,
+            redirect_uri='',
+        )
+        identity.email = self._extract_required_profile_field(credentials.id_token, 'email')
+        identity.expires_at = arrow.get(credentials.token_expiry).timestamp
+        identity.access_token = credentials.access_token
+        identity.refresh_token = credentials.refresh_token
+        return credentials
+
+    def _update_identity_access_token(self, identity, access_token, token_expiry):
+        identity.expires_at = arrow.get(token_expiry).timestamp
+        identity.access_token = access_token
+
     def complete_authorization(self, request):
         try:
             id_token = verify_id_token(
@@ -297,28 +318,46 @@ class Google(BaseProvider):
             )
         except AppIdentityError:
             raise actions.Action.ActionFieldError('oauth_sdk_details.id_token', 'INVALID')
+
         identity, new = self.get_identity(id_token['sub'])
         if new:
-            credentials = credentials_from_code(
-                client_id=settings.GOOGLE_CLIENT_ID,
-                client_secret=settings.GOOGLE_CLIENT_SECRET,
-                scope=settings.GOOGLE_SCOPE,
-                code=request.oauth_sdk_details.code,
-                redirect_uri='',
-            )
-            identity.email = self._extract_required_profile_field(credentials.id_token, 'email')
-            identity.expires_at = arrow.get(credentials.token_expiry).timestamp
-            identity.access_token = credentials.access_token
-            identity.refresh_token = credentials.refresh_token
+            credentials = self._get_credentials_from_code(identity, request)
         else:
             credentials = self._get_credentials_from_identity(identity)
 
-        token_info = credentials.get_access_token()
-        if token_info.access_token != identity.access_token:
-            identity.expires_at = arrow.get(credentials.token_expiry).timestamp
-            identity.access_token = token_info.access_token
+        try:
+            token_info = credentials.get_access_token()
+        except AccessTokenRefreshError:
+            # Token has expired based on expiry time
+            # Attempt to fetch new credentials based on the code submitted by the client
+            credentials = self._get_credentials_from_code(identity, request)
+            token_info = credentials.get_access_token()
 
-        profile = self._get_profile(token_info.access_token)
+        if token_info.access_token != identity.access_token:
+            self._update_identity_access_token(
+                identity,
+                token_info.access_token,
+                credentials.token_expiry,
+            )
+
+        try:
+            profile = self._get_profile(token_info.access_token)
+        except ExchangeError as e:
+            if e.response.status_code == 401:
+                # Token has been revoked
+                # Attempt to refresh the credentials
+                try:
+                    credentials.refresh(httplib2.Http())
+                except AccessTokenRefreshError:
+                    credentials = self._get_credentials_from_code(identity, request)
+
+                self._update_identity_access_token(
+                    identity,
+                    credentials.access_token,
+                    credentials.token_expiry,
+                )
+                profile = self._get_profile(credentials.access_token)
+
         identity.full_name = self._extract_required_profile_field(
             profile,
             'displayName',

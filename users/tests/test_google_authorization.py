@@ -1,7 +1,11 @@
 import arrow
-from mock import patch
+from mock import (
+    MagicMock,
+    patch,
+)
 from oauth2client.client import (
     AccessTokenInfo,
+    AccessTokenRefreshError,
     FlowExchangeError,
 )
 from oauth2client.crypt import AppIdentityError
@@ -198,3 +202,82 @@ class TestGoogleAuthorization(TestCase):
         field_error = expected.exception.response.error_details[0]
         self.assertEqual(field_error.key, 'oauth_sdk_details.id_token')
         self.assertEqual(field_error.detail, 'INVALID')
+
+    @patch.object(providers.OAuth2Credentials, 'get_access_token')
+    @patch('users.providers.verify_id_token')
+    @patch.object(providers.Google, '_get_profile')
+    @patch.object(providers.Google, '_get_credentials_from_code')
+    def test_complete_authorization_expired_access_tokens(
+            self,
+            mocked_credentials_from_code,
+            mocked_get_profile,
+            mocked_verify_id_token,
+            mocked_get_access_token,
+        ):
+        mocked_credentials_from_code().get_access_token.side_effect = AccessTokenRefreshError
+        mocked_get_access_token.side_effect = AccessTokenRefreshError
+        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_verify_id_token.return_value = self.id_token
+        user = factories.UserFactory.create()
+        factories.IdentityFactory.create(
+            user=user,
+            provider_uid=self.id_token['sub'],
+            provider=UserService.GOOGLE,
+        )
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action(
+                'complete_authorization',
+                provider=UserService.GOOGLE,
+                oauth_sdk_details={
+                    'code': 'some-code',
+                    'id_token': 'id-token',
+                },
+            )
+
+        self.assertIn('TOKEN_EXPIRED', expected.exception.response.errors)
+
+    @patch.object(providers.Google, '_get_credentials_from_code')
+    @patch.object(providers.OAuth2Credentials, 'refresh')
+    @patch.object(providers.OAuth2Credentials, 'get_access_token')
+    @patch('users.providers.verify_id_token')
+    @patch.object(providers.Google, '_get_profile')
+    def test_complete_authorization_token_revoked(
+            self,
+            mocked_get_profile,
+            mocked_verify_id_token,
+            mocked_get_access_token,
+            mocked_refresh,
+            mocked_get_credentials_from_code,
+        ):
+        mock_response = MagicMock()
+        type(mock_response).status_code = 401
+        mocked_get_profile.side_effect = [
+            providers.ExchangeError(mock_response),
+            {'displayName': 'Michael Hahn'},
+        ]
+        mocked_verify_id_token.return_value = self.id_token
+        mocked_refresh.side_effect = AccessTokenRefreshError
+        mocked_get_credentials_from_code.return_value = MockCredentials(self.id_token)
+        user = factories.UserFactory.create()
+        identity = factories.IdentityFactory.create(
+            user=user,
+            provider_uid=self.id_token['sub'],
+            provider=UserService.GOOGLE,
+        )
+        mocked_get_access_token.return_value = AccessTokenInfo(
+            access_token=identity.access_token,
+            expires_in=4333,
+        )
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=UserService.GOOGLE,
+            oauth_sdk_details={
+                'code': 'some-code',
+                'id_token': 'id-token',
+            },
+        )
+        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
+        self.assertEqual(response.result.identity.email, identity.email)
+        self.assertEqual(response.result.identity.user_id, response.result.user.id)
+        self.assertEqual(mocked_get_credentials_from_code.call_count, 1)
