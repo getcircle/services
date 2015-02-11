@@ -15,3 +15,5 @@ DATABASES = {
         'PORT': url.port,
     }
 }
+
+LINKEDIN_REDIRECT_URI = 'http://staging.otterbots.net/oauth2/linkedin/'
