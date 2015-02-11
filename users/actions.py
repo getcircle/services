@@ -54,10 +54,11 @@ class CreateUser(actions.Action):
 
     def run(self, *args, **kwargs):
         try:
-            user = models.User.objects.create_user(
-                primary_email=self.request.email,
-                password=self.request.password,
-            )
+            with django.db.transaction.atomic():
+                user = models.User.objects.create_user(
+                    primary_email=self.request.email,
+                    password=self.request.password,
+                )
             user.to_protobuf(self.response.user)
         except django.db.IntegrityError:
             self.note_field_error('email', 'ALREADY_EXISTS')
@@ -274,7 +275,18 @@ class CompleteAuthorization(actions.Action):
         if not user_id:
             # XXX add some concept of "generate_one_time_use_admin_token"
             client = service.control.Client('user', token='one-time-use-token')
-            response = client.call_action('create_user', email=identity.email)
+            try:
+                response = client.call_action('create_user', email=identity.email)
+            except client.CallActionError as e:
+                if 'FIELD_ERROR' in e.response.errors:
+                    field_error = e.response.error_details[0]
+                    if field_error.key == 'email' and field_error.detail == 'ALREADY_EXISTS':
+                        response = client.call_action('get_user', email=identity.email)
+                    else:
+                        raise
+                else:
+                    raise
+
             user = response.result.user
             self.response.user.CopyFrom(user)
         else:

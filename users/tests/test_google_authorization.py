@@ -12,7 +12,10 @@ from oauth2client.crypt import AppIdentityError
 from protobufs.user_service_pb2 import UserService
 import service.control
 
-from services.test import TestCase
+from services.test import (
+    fuzzy,
+    TestCase,
+)
 
 from . import MockCredentials
 from .. import (
@@ -281,3 +284,34 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.email, identity.email)
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
         self.assertEqual(mocked_get_credentials_from_code.call_count, 1)
+
+    @patch.object(providers.OAuth2Credentials, 'get_access_token')
+    @patch('users.providers.verify_id_token')
+    @patch.object(providers.Google, '_get_profile')
+    @patch('users.providers.credentials_from_code')
+    def test_complete_authorization_user_exists_no_identity(
+            self,
+            mocked_credentials_from_code,
+            mocked_get_profile,
+            mocked_verify_id_token,
+            mocked_get_access_token,
+        ):
+        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
+        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_verify_id_token.return_value = self.id_token
+        factories.UserFactory.create(primary_email='mwhahn@gmail.com')
+        mocked_get_access_token.return_value = AccessTokenInfo(
+            access_token=fuzzy.FuzzyUUID().fuzz(),
+            expires_in=4333,
+        )
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=UserService.GOOGLE,
+            oauth_sdk_details={
+                'code': 'some-code',
+                'id_token': 'id-token',
+            },
+        )
+        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
+        self.assertEqual(response.result.identity.user_id, response.result.user.id)
