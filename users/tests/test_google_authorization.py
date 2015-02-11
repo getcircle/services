@@ -1,6 +1,9 @@
 import arrow
 from mock import patch
-from oauth2client.client import FlowExchangeError
+from oauth2client.client import (
+    AccessTokenInfo,
+    FlowExchangeError,
+)
 from protobufs.user_service_pb2 import UserService
 import service.control
 
@@ -22,6 +25,9 @@ class MockCredentials(object):
         self.token_expiry = arrow.utcnow()
         self.access_token = fuzzy.FuzzyUUID().fuzz()
         self.refresh_token = fuzzy.FuzzyUUID().fuzz()
+
+    def get_access_token(self):
+        return AccessTokenInfo(access_token=self.access_token, expires_in=self.token_expiry)
 
 
 class TestGoogleAuthorization(TestCase):
@@ -66,12 +72,14 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
 
+    @patch.object(providers.OAuth2Credentials, 'get_access_token')
     @patch('users.providers.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
     def test_complete_authorization_user_exists(
             self,
             mocked_get_profile,
             mocked_verify_id_token,
+            mocked_get_access_token,
         ):
         mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
         mocked_verify_id_token.return_value = self.id_token
@@ -80,6 +88,10 @@ class TestGoogleAuthorization(TestCase):
             user=user,
             provider_uid=self.id_token['sub'],
             provider=UserService.GOOGLE,
+        )
+        mocked_get_access_token.return_value = AccessTokenInfo(
+            access_token=identity.access_token,
+            expires_in=4333,
         )
         response = self.client.call_action(
             'complete_authorization',
@@ -142,3 +154,36 @@ class TestGoogleAuthorization(TestCase):
             )
 
         self.assertIn('PROVIDER_PROFILE_FIELD_MISSING', expected.exception.response.errors)
+
+    @patch.object(providers.OAuth2Credentials, '_refresh')
+    @patch('users.providers.verify_id_token')
+    @patch.object(providers.Google, '_get_profile')
+    def test_complete_authorization_expired_access_token(
+            self,
+            mocked_get_profile,
+            mocked_verify_id_token,
+            mocked_refresh,
+        ):
+        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_verify_id_token.return_value = self.id_token
+        user = factories.UserFactory.create()
+        identity = factories.IdentityFactory.create(
+            user=user,
+            provider_uid=self.id_token['sub'],
+            provider=UserService.GOOGLE,
+            expires_at=arrow.utcnow().replace(days=-2).timestamp,
+        )
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=UserService.GOOGLE,
+            oauth_sdk_details={
+                'code': 'some-code',
+                'id_token': 'id-token',
+            },
+        )
+        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
+        self.assertEqual(response.result.identity.email, identity.email)
+        self.assertEqual(response.result.identity.user_id, response.result.user.id)
+        self.assertEqual(response.result.identity.access_token, identity.access_token)
+        self.assertEqual(mocked_refresh.call_count, 1)

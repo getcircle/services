@@ -14,15 +14,16 @@ from itsdangerous import (
     TimestampSigner,
 )
 from linkedin import linkedin
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import (
     credentials_from_code,
     FlowExchangeError,
+    OAuth2Credentials,
     verify_id_token,
 )
 from protobufs.user_service_pb2 import UserService
 import requests
 import service.control
-from service import actions
 
 from . import models
 
@@ -261,6 +262,17 @@ class Google(BaseProvider):
         MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
     }
 
+    def _get_credentials_from_identity(self, identity):
+        return OAuth2Credentials(
+            identity.access_token,
+            settings.GOOGLE_CLIENT_ID,
+            settings.GOOGLE_CLIENT_SECRET,
+            identity.refresh_token,
+            arrow.get(identity.expires_at).naive,
+            GOOGLE_TOKEN_URI,
+            settings.GOOGLE_USER_AGENT,
+        )
+
     def _get_profile(self, access_token):
         response = requests.get(
             settings.GOOGLE_PROFILE_URL,
@@ -290,8 +302,15 @@ class Google(BaseProvider):
             identity.expires_at = arrow.get(credentials.token_expiry).timestamp
             identity.access_token = credentials.access_token
             identity.refresh_token = credentials.refresh_token
+        else:
+            credentials = self._get_credentials_from_identity(identity)
 
-        profile = self._get_profile(identity.access_token)
+        token_info = credentials.get_access_token()
+        if token_info.access_token != identity.access_token:
+            identity.expires_at = arrow.get(credentials.token_expiry).timestamp
+            identity.access_token = token_info.access_token
+
+        profile = self._get_profile(token_info.access_token)
         identity.full_name = self._extract_required_profile_field(
             profile,
             'displayName',
