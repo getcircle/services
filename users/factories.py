@@ -14,7 +14,7 @@ class UserFactory(factory.Factory):
         protobuf = UserService.Containers.User
 
     primary_email = fuzzy.FuzzyText(suffix='@example.com')
-    phone_number = factory.Sequence(lambda n: '+1949293%40d' % (n,))
+    phone_number = factory.Sequence(lambda n: '+1949293%04d' % (n,))
 
     @factory.post_generation
     def password(self, create, extracted, **kwargs):

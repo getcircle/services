@@ -112,6 +112,11 @@ class AuthenticateUser(actions.Action):
         if self.request.backend == self.request.INTERNAL:
             auth_params['username'] = self.request.credentials.key
             auth_params['password'] = self.request.credentials.secret
+        elif self.request.backend == self.request.GOOGLE:
+            auth_params['code'] = self.request.credentials.key
+            auth_params['id_token'] = self.request.credentials.secret
+        else:
+            raise self.ActionFieldError('backend', 'INVALID')
 
         user = authenticate(**auth_params)
         if user is not None:

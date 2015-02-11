@@ -21,9 +21,11 @@ from oauth2client.client import (
     OAuth2Credentials,
     verify_id_token,
 )
+from oauth2client.crypt import AppIdentityError
 from protobufs.user_service_pb2 import UserService
 import requests
 import service.control
+from service import actions
 
 from . import models
 
@@ -288,7 +290,13 @@ class Google(BaseProvider):
         return payload
 
     def complete_authorization(self, request):
-        id_token = verify_id_token(request.oauth_sdk_details.id_token, settings.GOOGLE_CLIENT_ID)
+        try:
+            id_token = verify_id_token(
+                request.oauth_sdk_details.id_token,
+                settings.GOOGLE_CLIENT_ID,
+            )
+        except AppIdentityError:
+            raise actions.Action.ActionFieldError('oauth_sdk_details.id_token', 'INVALID')
         identity, new = self.get_identity(id_token['sub'])
         if new:
             credentials = credentials_from_code(

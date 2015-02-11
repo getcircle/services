@@ -104,6 +104,11 @@ LOCALIZED_SERVICES = [
 
 AUTH_USER_MODEL = 'users.User'
 
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'users.backends.GoogleAuthenticationBackend',
+)
+
 SESSION_SERIALIZER = 'services.serializers.JSONSerializer'
 
 TEMPLATE_CONTEXT_PROCESSORS = [
