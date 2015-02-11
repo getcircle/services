@@ -14,9 +14,15 @@ from itsdangerous import (
     TimestampSigner,
 )
 from linkedin import linkedin
+from oauth2client.client import (
+    credentials_from_code,
+    FlowExchangeError,
+    verify_id_token,
+)
 from protobufs.user_service_pb2 import UserService
 import requests
 import service.control
+from service import actions
 
 from . import models
 
@@ -62,7 +68,48 @@ class MissingRequiredProfileFieldError(Exception):
     """Exception raised when a required profile field is missing"""
 
 
-class LinkedIn(object):
+class ImproperlyConfiguredError(Exception):
+    """Exception raised when a provider isn't configured correctly"""
+
+
+class BaseProvider(object):
+
+    type = None
+    csrf_exempt = False
+
+    def __init__(self, token):
+        self.token = token
+        if self.type is None:
+            raise ImproperlyConfiguredError
+
+    def get_identity(self, provider_uid):
+        new = False
+        identity = models.Identity.objects.get_or_none(
+            provider_uid=provider_uid,
+            provider=self.type,
+        )
+        if identity is None:
+            new = True
+            identity = models.Identity(provider=self.type, provider_uid=provider_uid)
+        return identity, new
+
+    @classmethod
+    def get_authorization_url(self, token=None):
+        raise NotImplementedError('Subclasses must override this method')
+
+    def complete_authorization(self, request):
+        raise NotImplementedError('Subclasses must override this method')
+
+    def _extract_required_profile_field(self, profile, field_name, alias=None):
+        try:
+            value = profile[field_name]
+        except KeyError:
+            alias = alias or field_name
+            raise MissingRequiredProfileFieldError(alias)
+        return value
+
+
+class LinkedIn(BaseProvider):
 
     type = UserService.LINKEDIN
     profile_selectors = (
@@ -110,9 +157,6 @@ class LinkedIn(object):
         MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
     }
 
-    def __init__(self, token):
-        self.token = token
-
     @classmethod
     def get_authorization_url(self, token=None):
         payload = {}
@@ -144,17 +188,8 @@ class LinkedIn(object):
             urllib.urlencode(parameters),
         )
 
-    def get_identity(self, provider_uid):
-        identity = models.Identity.objects.get_or_none(
-            provider_uid=provider_uid,
-            provider=self.type,
-        )
-        if identity is None:
-            identity = models.Identity(provider=self.type, provider_uid=provider_uid)
-        return identity
-
-    def complete_authorization(self, oauth2_details):
-        url = self.get_exchange_url(oauth2_details)
+    def complete_authorization(self, request):
+        url = self.get_exchange_url(request.oauth2_details)
         token, expires_in = self._get_access_token(url)
         application = linkedin.LinkedInApplication(token=token)
         profile = application.get_profile(selectors=self.profile_selectors)
@@ -165,7 +200,7 @@ class LinkedIn(object):
             'id',
             alias='provider_uid',
         )
-        identity = self.get_identity(provider_uid)
+        identity, _ = self.get_identity(provider_uid)
         identity.full_name = self._extract_required_profile_field(
             profile,
             'formattedName',
@@ -203,14 +238,6 @@ class LinkedIn(object):
             pass
         return None
 
-    def _extract_required_profile_field(self, profile, field_name, alias=None):
-        try:
-            value = profile[field_name]
-        except KeyError:
-            alias = alias or field_name
-            raise MissingRequiredProfileFieldError(alias)
-        return value
-
     def _get_access_token(self, url):
         response = requests.post(url)
         if not response.ok:
@@ -222,3 +249,53 @@ class LinkedIn(object):
             raise ExchangeError(response)
 
         return payload['access_token'], payload['expires_in']
+
+
+class Google(BaseProvider):
+
+    type = UserService.GOOGLE
+    csrf_exempt = True
+
+    exception_to_error_map = {
+        FlowExchangeError: 'PROVIDER_API_ERROR',
+        MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
+    }
+
+    def _get_profile(self, access_token):
+        response = requests.get(
+            settings.GOOGLE_PROFILE_URL,
+            headers={'Authorization': 'Bearer %s' % (access_token,)},
+        )
+        if not response.ok:
+            raise ExchangeError(response)
+
+        try:
+            payload = response.json()
+        except ValueError:
+            raise ExchangeError(response)
+        return payload
+
+    def complete_authorization(self, request):
+        id_token = verify_id_token(request.oauth_sdk_details.id_token, settings.GOOGLE_CLIENT_ID)
+        identity, new = self.get_identity(id_token['sub'])
+        if new:
+            credentials = credentials_from_code(
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+                scope=settings.GOOGLE_SCOPE,
+                code=request.oauth_sdk_details.code,
+                redirect_uri='',
+            )
+            identity.email = self._extract_required_profile_field(credentials.id_token, 'email')
+            identity.expires_at = arrow.get(credentials.token_expiry).timestamp
+            identity.access_token = credentials.access_token
+            identity.refresh_token = credentials.refresh_token
+
+        profile = self._get_profile(identity.access_token)
+        identity.full_name = self._extract_required_profile_field(
+            profile,
+            'displayName',
+            alias='full_name',
+        )
+        identity.data = json.dumps(profile)
+        return identity

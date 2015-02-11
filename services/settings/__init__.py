@@ -219,5 +219,10 @@ LINKEDIN_CLIENT_SECRET = 'vZsCybgJMvZ0rPEj'
 LINKEDIN_REDIRECT_URI = 'http://localhost:8000/oauth2/linkedin/'
 LINKEDIN_SCOPE = 'r_fullprofile r_emailaddress r_contactinfo'
 
+GOOGLE_CLIENT_ID = '1077014421904-1a697ks3qvtt6975qfqhmed8529en8s2.apps.googleusercontent.com'
+GOOGLE_CLIENT_SECRET = 'lIjknz85LXHAQGMWM7A8QtPx'
+GOOGLE_SCOPE = 'https://www.googleapis.com/auth/plus.me'
+GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
+
 # User Service Settings
 USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state token

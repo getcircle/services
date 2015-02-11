@@ -238,42 +238,52 @@ class GetAuthorizationInstructions(actions.Action):
 
 class CompleteAuthorization(actions.Action):
 
-    def __init__(self, *args, **kwargs):
-        super(CompleteAuthorization, self).__init__(*args, **kwargs)
-        self.exception_to_error_map.update(providers.LinkedIn.exception_to_error_map)
+    def _get_provider_class(self):
+        provider_class = None
+        if self.request.provider == UserService.LINKEDIN:
+            provider_class = providers.LinkedIn
+        elif self.request.provider == UserService.GOOGLE:
+            provider_class = providers.Google
+
+        if provider_class is None:
+            self.ActionFieldError('provider', 'UNSUPPORTED')
+
+        self.exception_to_error_map.update(provider_class.exception_to_error_map)
+        return provider_class
 
     def validate(self, *args, **kwargs):
         super(CompleteAuthorization, self).validate(*args, **kwargs)
+        self.provider_class = self._get_provider_class()
         self.payload = providers.parse_state_token(
             self.request.provider,
             self.request.oauth2_details.state,
         )
         if self.payload is None:
-            raise self.ActionFieldError('oauth2_details.state', 'INVALID')
+            if not self.provider_class.csrf_exempt:
+                raise self.ActionFieldError('oauth2_details.state', 'INVALID')
+            else:
+                self.payload = {}
 
-    def run(self, *args, **kwargs):
-        provider = None
-        token = self.token or self.payload.get('token')
-        if token:
-            token = parse_token(token)
-
-        if self.request.provider == UserService.LINKEDIN:
-            provider = providers.LinkedIn(token)
-
-        if provider is None:
-            raise self.ActionFieldError('provider', 'UNSUPPORTED')
-
-        identity = provider.complete_authorization(self.request.oauth2_details)
-        if not token:
+    def _get_or_create_user(self, identity, token):
+        user_id = identity.user_id or getattr(token, 'user_id', None)
+        if not user_id:
             # XXX add some concept of "generate_one_time_use_admin_token"
             client = service.control.Client('user', token='one-time-use-token')
             response = client.call_action('create_user', email=identity.email)
             user = response.result.user
-            identity.user_id = user.id
             self.response.user.CopyFrom(user)
         else:
-            user = models.User.objects.get(pk=token.user_id).to_protobuf(self.response.user)
-            identity.user_id = token.user_id
+            user = models.User.objects.get(pk=user_id).to_protobuf(self.response.user)
+        return self.response.user
 
+    def run(self, *args, **kwargs):
+        token = self.token or self.payload.get('token')
+        if token:
+            token = parse_token(token)
+
+        provider = self.provider_class(token)
+        identity = provider.complete_authorization(self.request)
+        user = self._get_or_create_user(identity, token)
+        identity.user_id = user.id
         identity.save()
         identity.to_protobuf(self.response.identity)
