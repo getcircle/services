@@ -7,7 +7,7 @@ from . import models
 class GoogleAuthenticationBackend(object):
 
     def authenticate(self, code=None, id_token=None):
-        if code and id_token:
+        if id_token:
             client = service.control.Client('user')
             try:
                 response = client.call_action(
