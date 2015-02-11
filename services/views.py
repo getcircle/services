@@ -1,11 +1,14 @@
 from django.http import HttpResponse
 from django.utils.module_loading import import_string
+from django.views.generic import TemplateView
 from rest_framework.views import APIView
 from service import settings as service_settings
 from service_protobufs import soa_pb2
 
 
-class ServicesView(APIView):
+class ServicesView(APIView, TemplateView):
+
+    template_name = 'home.html'
 
     def __init__(self, *args, **kwargs):
         super(ServicesView, self).__init__(*args, **kwargs)
@@ -32,6 +35,3 @@ class ServicesView(APIView):
             response_data,
             content_type='application/x-protobuf',
         )
-
-    def get(self, request, *args, **kwargs):
-        return HttpResponse('OK', content_type='text')

@@ -54,6 +54,7 @@ INSTALLED_APPS = (
     'onboarding',
     'organizations',
     'profiles',
+    'services',
     'users',
 )
 
@@ -124,6 +125,10 @@ PASSWORD_HASHERS = (
     'django.contrib.auth.hashers.SHA1PasswordHasher',
     'django.contrib.auth.hashers.MD5PasswordHasher',
     'django.contrib.auth.hashers.CryptPasswordHasher',
+)
+
+TEMPLATE_LOADERS = (
+    'django.template.loaders.app_directories.Loader',
 )
 
 TEST_RUNNER = 'services.test.runner.ServicesTestSuiteRunner'
