@@ -159,6 +159,7 @@ class AuthenticateUser(actions.Action):
         user = self._handle_authentication()
         self.response.authenticated = True
         self.response.token = self._get_token(user)
+        self.response.new_user = user.new
         user.to_protobuf(self.response.user)
 
 
@@ -277,6 +278,7 @@ class CompleteAuthorization(actions.Action):
             client = service.control.Client('user', token='one-time-use-token')
             try:
                 response = client.call_action('create_user', email=identity.email)
+                self.response.new_user = True
             except client.CallActionError as e:
                 if 'FIELD_ERROR' in e.response.errors:
                     field_error = e.response.error_details[0]

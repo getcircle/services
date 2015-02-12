@@ -43,6 +43,7 @@ class TestUsersAuthentication(TestCase):
         response = self._authenticate_user()
         self.assertTrue(response.success)
         self.assertTrue(response.result.token)
+        self.assertFalse(response.result.new_user)
         self._verify_containers(response.result.user, self.user)
 
     def test_authenticate_user_invalid_password(self):
@@ -92,6 +93,7 @@ class TestUsersAuthentication(TestCase):
                 'secret': 'some-id-token',
             },
         )
+        self.assertFalse(response.result.new_user)
         self._verify_containers(
             response.result.user,
             user.to_protobuf(UserService.Containers.User()),
@@ -121,3 +123,4 @@ class TestUsersAuthentication(TestCase):
             },
         )
         self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
+        self.assertTrue(response.result.new_user)

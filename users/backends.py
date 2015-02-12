@@ -21,4 +21,6 @@ class GoogleAuthenticationBackend(object):
             except client.CallActionError:
                 pass
             else:
-                return models.User.objects.get(pk=response.result.user.id)
+                user = models.User.objects.get(pk=response.result.user.id)
+                user.new = response.result.new_user
+                return user

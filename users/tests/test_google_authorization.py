@@ -65,6 +65,7 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
+        self.assertTrue(response.result.new_user)
 
     @patch.object(providers.OAuth2Credentials, 'get_access_token')
     @patch('users.providers.verify_id_token')
@@ -100,6 +101,7 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.email, identity.email)
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
         self.assertEqual(response.result.identity.access_token, identity.access_token)
+        self.assertFalse(response.result.new_user)
 
     @patch('users.providers.verify_id_token')
     @patch.object(providers.Google, '_get_profile')

@@ -63,6 +63,10 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
     phone_number = PhoneNumberField(null=True, unique=True)
     phone_number_verified = models.BooleanField(default=False)
 
+    def __init__(self, *args, **kwargs):
+        super(User, self).__init__(*args, **kwargs)
+        self.new = False
+
     def get_full_name(self):
         return self.primary_email
 
