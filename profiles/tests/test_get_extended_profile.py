@@ -77,6 +77,22 @@ class TestGetExtendedProfile(TestCase):
         )
         return mock_response.notes
 
+    def _mock_get_direct_reports(self, profile, count=3, **overrides):
+        service = 'profile'
+        action = 'get_direct_reports'
+        mock_response = mock.get_mockable_response(service, action)
+        for _ in range(count):
+            container = mock_response.profiles.add()
+            mocks.mock_profile(container)
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            profile_id=profile.id,
+        )
+        return mock_response.profiles
+
     def test_get_extended_profile_invalid_profile_id(self):
         with self.assertFieldError('profile_id'):
             self.client.call_action(
@@ -101,6 +117,7 @@ class TestGetExtendedProfile(TestCase):
             for_profile_id=profile.id,
             owner_profile_id=self.profile_id,
         )
+        direct_reports = self._mock_get_direct_reports(profile)
 
         # fetch the extended profile
         response = self.client.call_action(
@@ -115,6 +132,7 @@ class TestGetExtendedProfile(TestCase):
         self._verify_containers(profile, response.result.profile)
         self.assertEqual(len(skills), len(response.result.skills))
         self.assertEqual(len(notes), len(response.result.notes))
+        self.assertEqual(len(direct_reports), len(response.result.direct_reports))
 
     def test_get_extended_profile_of_manager(self):
         manager = factories.ProfileFactory.create_protobuf()
@@ -129,6 +147,7 @@ class TestGetExtendedProfile(TestCase):
         self._mock_get_address(profile)
         self._mock_get_team(profile, owner_id=profile.user_id, path=[managers_team.path[0]])
         self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
+        self._mock_get_direct_reports(profile)
 
         response = self.client.call_action(
             'get_extended_profile',
@@ -148,6 +167,7 @@ class TestGetExtendedProfile(TestCase):
 
         self._mock_get_address(profile)
         self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
+        self._mock_get_direct_reports(profile)
 
         response = self.client.call_action(
             'get_extended_profile',

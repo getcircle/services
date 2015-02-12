@@ -241,6 +241,14 @@ class GetExtendedProfile(GetProfile):
         # XXX error if this doesn't succeed
         return response.result.notes
 
+    def _fetch_direct_reports(self):
+        client = service.control.Client('profile', token=self.token)
+        response = client.call_action(
+            'get_direct_reports',
+            profile_id=self.request.profile_id,
+        )
+        return response.result.profiles
+
     def run(self, *args, **kwargs):
         profile = self._get_profile()
         profile = models.Profile.objects.get(pk=self.request.profile_id)
@@ -251,6 +259,9 @@ class GetExtendedProfile(GetProfile):
 
         team = self._fetch_team(str(profile.team_id))
         self.response.team.CopyFrom(team)
+
+        direct_reports = self._fetch_direct_reports()
+        self.response.direct_reports.extend(direct_reports)
 
         manager = self._get_manager(profile, team)
         if manager:
