@@ -1,3 +1,4 @@
+import arrow
 from contextlib import contextmanager
 import service.settings
 from service.transports import local
@@ -8,6 +9,7 @@ from .. import token
 from protobufs.note_service_pb2 import NoteService
 from protobufs.organization_service_pb2 import OrganizationService
 from protobufs.profile_service_pb2 import ProfileService
+from protobufs.user_service_pb2 import UserService
 
 
 @contextmanager
@@ -150,3 +152,21 @@ def mock_note(container=None, **overrides):
         fuzzy.FuzzyText: ['content'],
     }
     return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_identity(container=None, **overrides):
+    if container is None:
+        container = UserService.Containers.Identity()
+
+    defaults = {
+        'provider': UserService.LINKEDIN,
+        'expires_at': str(arrow.utcnow().timestamp),
+    }
+    defaults.update(overrides)
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'access_token', 'provider_uid', 'user_id'],
+        fuzzy.FuzzyText: ['full_name'],
+        fuzzy.FuzzyText(suffix='@example.com'): ['email'],
+    }
+    return _mock_container(container, mock_dict, **defaults)

@@ -249,9 +249,16 @@ class GetExtendedProfile(GetProfile):
         )
         return response.result.profiles
 
+    def _fetch_identities(self, profile):
+        client = service.control.Client('user', token=self.token)
+        response = client.call_action(
+            'get_identities',
+            user_id=str(profile.user_id),
+        )
+        return response.result.identities
+
     def run(self, *args, **kwargs):
         profile = self._get_profile()
-        profile = models.Profile.objects.get(pk=self.request.profile_id)
         profile.to_protobuf(self.response.profile)
 
         address = self._fetch_address(str(profile.address_id))
@@ -262,6 +269,9 @@ class GetExtendedProfile(GetProfile):
 
         direct_reports = self._fetch_direct_reports()
         self.response.direct_reports.extend(direct_reports)
+
+        identities = self._fetch_identities(profile)
+        self.response.identities.extend(identities)
 
         manager = self._get_manager(profile, team)
         if manager:
