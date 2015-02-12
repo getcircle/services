@@ -16,4 +16,4 @@ DATABASES = {
     }
 }
 
-LINKEDIN_REDIRECT_URI = 'http://www.staging.otterbots.net/oauth2/linkedin/'
+LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
