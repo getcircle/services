@@ -304,3 +304,18 @@ class CompleteAuthorization(actions.Action):
         identity.user_id = user.id
         identity.save()
         identity.to_protobuf(self.response.identity)
+
+
+class GetIdentities(actions.Action):
+
+    type_validators = {
+        'user_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        identities = models.Identity.objects.filter(user_id=self.request.user_id)
+        self.paginated_response(
+            self.response.identities,
+            identities,
+            lambda item, container: item.to_protobuf(container.add()),
+        )

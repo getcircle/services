@@ -22,4 +22,5 @@ class Server(service.control.Server):
         'verify_verification_code': actions.VerifyVerificationCode,
         'get_authorization_instructions': actions.GetAuthorizationInstructions,
         'complete_authorization': actions.CompleteAuthorization,
+        'get_identities': actions.GetIdentities,
     }
