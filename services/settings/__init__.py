@@ -54,6 +54,7 @@ INSTALLED_APPS = (
     'onboarding',
     'organizations',
     'profiles',
+    'resumes',
     'users',
 )
 
@@ -99,6 +100,7 @@ LOCALIZED_SERVICES = [
     'notes.server.Server',
     'organizations.server.Server',
     'profiles.server.Server',
+    'resumes.server.Server',
     'users.server.Server',
 ]
 

@@ -54,7 +54,7 @@ class TestCase(DjangoTestCase):
     def _verify_containers(self, expected, to_verify):
         for field, expected_value in expected.ListFields():
             value = getattr(to_verify, field.name, None)
-            self._verify_values(expected_value, value)
+            self._verify_values(expected_value, value, message='field: %s' % (field.name,))
 
     def assertEqualUUID4(self, first, second):
         self.assertTrue(matching_uuids(first, second))

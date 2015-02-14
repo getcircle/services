@@ -9,6 +9,7 @@ from .. import token
 from protobufs.note_service_pb2 import NoteService
 from protobufs.organization_service_pb2 import OrganizationService
 from protobufs.profile_service_pb2 import ProfileService
+from protobufs.resume_service_pb2 import ResumeService
 from protobufs.user_service_pb2 import UserService
 
 
@@ -26,6 +27,12 @@ def mock_transport(client):
 
 
 def _mock_container(container, mock_dict, **extra):
+    # If "id" is None make sure we don't set it as a field on the protobuf. If
+    # we set the value, then django won't auto create the id
+    if extra.get('id', '') is None:
+        extra.pop('id')
+        mock_dict.get(fuzzy.FuzzyUUID, []).remove('id')
+
     for mock_func, fields in mock_dict.iteritems():
         try:
             if issubclass(mock_func, fuzzy.BaseFuzzyAttribute):
@@ -48,6 +55,8 @@ def _mock_container(container, mock_dict, **extra):
                 raise NotImplementedError('can only add protobuf to repeated fields')
             subcontainer = getattr(container, field).add()
             subcontainer.CopyFrom(value)
+        elif hasattr(field_attribute, 'CopyFrom'):
+            field_attribute.CopyFrom(value)
         else:
             setattr(container, field, value)
     return container
@@ -168,5 +177,41 @@ def mock_identity(container=None, **overrides):
         fuzzy.FuzzyUUID: ['id', 'access_token', 'provider_uid', 'user_id'],
         fuzzy.FuzzyText: ['full_name'],
         fuzzy.FuzzyText(suffix='@example.com'): ['email'],
+    }
+    return _mock_container(container, mock_dict, **defaults)
+
+
+def mock_company(container=None, **overrides):
+    if container is None:
+        container = ResumeService.Containers.Company()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'linkedin_id'],
+        fuzzy.FuzzyText: ['name'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_education(container=None, **overrides):
+    if container is None:
+        container = ResumeService.Containers.Education()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'user_id'],
+        fuzzy.FuzzyText: ['school_name', 'notes'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_position(container=None, **overrides):
+    if container is None:
+        container = ResumeService.Containers.Position()
+
+    defaults = {'company': mock_company()}
+    defaults.update(overrides)
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'user_id'],
+        fuzzy.FuzzyText: ['title', 'summary'],
     }
     return _mock_container(container, mock_dict, **defaults)
