@@ -1,4 +1,4 @@
-import datetime
+from django_date_extensions.fields import ApproximateDate
 from protobufs.resume_service_pb2 import ResumeService
 
 from services.test import factory
@@ -22,8 +22,8 @@ class EducationFactory(factory.Factory):
 
     user_id = factory.FuzzyUUID()
     school_name = factory.FuzzyText()
-    start_date = factory.FuzzyDate(datetime.date(2000, 1, 1))
-    end_date = factory.FuzzyDate(datetime.date(2001, 1, 1))
+    start_date = ApproximateDate(year=2000)
+    end_date = ApproximateDate(year=2001)
     notes = factory.FuzzyText()
 
 
@@ -34,7 +34,7 @@ class PositionFactory(factory.Factory):
 
     user_id = factory.FuzzyUUID()
     title = factory.FuzzyText()
-    start_date = factory.FuzzyDate(datetime.date(2006, 1, 1))
-    end_date = factory.FuzzyDate(datetime.date(2007, 1, 1))
+    start_date = ApproximateDate(year=2006)
+    end_date = ApproximateDate(year=2007)
     summary = factory.FuzzyText()
     company = factory.SubFactory(CompanyFactory)
