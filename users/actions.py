@@ -306,6 +306,7 @@ class CompleteAuthorization(actions.Action):
         identity.user_id = user.id
         identity.save()
         identity.to_protobuf(self.response.identity)
+        provider.finalize_authorization(identity, user)
 
 
 class GetIdentities(actions.Action):

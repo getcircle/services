@@ -11,4 +11,5 @@ class Server(service.control.Server):
         'bulk_create_positions': actions.BulkCreatePositions,
         'create_company': actions.CreateCompany,
         'get_resume': actions.GetResume,
+        'bulk_create_companies': actions.BulkCreateCompanies,
     }

@@ -24,6 +24,7 @@ from oauth2client.client import (
     verify_id_token,
 )
 from oauth2client.crypt import AppIdentityError
+from protobufs.resume_service_pb2 import ResumeService
 from protobufs.user_service_pb2 import UserService
 import requests
 import service.control
@@ -105,6 +106,9 @@ class BaseProvider(object):
     def complete_authorization(self, request):
         raise NotImplementedError('Subclasses must override this method')
 
+    def finalize_authorization(self, identity, user):
+        pass
+
     def _extract_required_profile_field(self, profile, field_name, alias=None):
         try:
             value = profile[field_name]
@@ -162,6 +166,9 @@ class LinkedIn(BaseProvider):
         MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
     }
 
+    def __init__(self, *args, **kwargs):
+        super(LinkedIn, self).__init__(*args, **kwargs)
+
     @classmethod
     def get_authorization_url(self, token=None):
         payload = {}
@@ -197,29 +204,113 @@ class LinkedIn(BaseProvider):
         url = self.get_exchange_url(request.oauth2_details)
         token, expires_in = self._get_access_token(url)
         application = linkedin.LinkedInApplication(token=token)
-        profile = application.get_profile(selectors=self.profile_selectors)
-        self._add_skills_to_profile(profile)
+        self.profile = application.get_profile(selectors=self.profile_selectors)
+        self._add_skills_to_profile(self.profile)
 
         provider_uid = self._extract_required_profile_field(
-            profile,
+            self.profile,
             'id',
             alias='provider_uid',
         )
         identity, _ = self.get_identity(provider_uid)
         identity.full_name = self._extract_required_profile_field(
-            profile,
+            self.profile,
             'formattedName',
             alias='full_name',
         )
         identity.email = self._extract_required_profile_field(
-            profile,
+            self.profile,
             'emailAddress',
             alias='email_address',
         )
-        identity.data = json.dumps(profile)
+        identity.data = json.dumps(self.profile)
         identity.access_token = token
         identity.expires_at = arrow.utcnow().timestamp + expires_in
         return identity
+
+    def finalize_authorization(self, identity, user):
+        self._create_resume(user, self.profile)
+
+    def _copy_approximate_date_to_container(self, date, container):
+        if 'year' in date:
+            container.year = date['year']
+        if 'month' in date:
+            container.month = date['month']
+        if 'day' in date:
+            container.day = date['day']
+
+    def _create_educations(self, user, data):
+        educations = data.get('educations', {}).get('values', [])
+        containers = []
+        for education in educations:
+            container = ResumeService.Containers.Education()
+            container.user_id = str(user.id)
+            end_date = education.get('endDate')
+            if end_date:
+                self._copy_approximate_date_to_container(end_date, container.end_date)
+            start_date = education.get('startDate')
+            if start_date:
+                self._copy_approximate_date_to_container(start_date, container.start_date)
+
+            if 'activities' in education:
+                container.activities = education['activities']
+            if 'notes' in education:
+                container.notes = education['notes']
+            if 'fieldOfStudy' in education:
+                container.field_of_study = education['fieldOfStudy']
+            if 'degree' in education:
+                container.degree = education['degree']
+            if 'schoolName' in education:
+                container.school_name = education['schoolName']
+            containers.append(container)
+
+        client = service.control.Client('resume', token=self.token._token)
+        client.call_action('bulk_create_educations', educations=containers)
+
+    def _create_positions(self, user, data):
+        positions = data.get('positions', {}).get('values', [])
+        companies = []
+        for position in positions:
+            if 'company' in position:
+                company = {
+                    'linkedin_id': position['company']['id'],
+                    'name': position['company']['name'],
+                }
+                companies.append(company)
+
+        client = service.control.Client('resume', token=self.token._token)
+        response = client.call_action('bulk_create_companies', companies=companies)
+        company_dict = dict((company.name, company) for company in response.result.companies)
+
+        containers = []
+        for position in positions:
+            container = ResumeService.Containers.Position()
+            container.user_id = str(user.id)
+            end_date = position.get('endDate')
+            if end_date:
+                self._copy_approximate_date_to_container(end_date, container.end_date)
+            start_date = position.get('startDate')
+            if start_date:
+                self._copy_approximate_date_to_container(start_date, container.start_date)
+
+            if 'title' in position:
+                container.title = position['title']
+
+            if 'summary' in position:
+                container.summary = position['summary']
+
+            if 'company' in position and position['company']['name'] in company_dict:
+                container.company.CopyFrom(company_dict[position['company']['name']])
+
+            containers.append(container)
+        client.call_action('bulk_create_positions', positions=containers)
+
+    def _create_resume(self, user, data):
+        if not self.token:
+            return None
+
+        self._create_educations(user, data)
+        self._create_positions(user, data)
 
     def _add_skills_to_profile(self, data):
         if not self.token or not self.token.profile_id:

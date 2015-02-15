@@ -43,6 +43,9 @@ class Education(ApproximateDateAsDictMixin, models.UUIDModel, models.Timestampab
     start_date = ApproximateDateField(max_length=10, null=True)
     end_date = ApproximateDateField(max_length=10, null=True)
     notes = models.TextField(null=True)
+    activities = models.TextField(null=True)
+    degree = models.CharField(max_length=255, null=True)
+    field_of_study = models.CharField(max_length=255, null=True)
 
 
 class Position(ApproximateDateAsDictMixin, models.UUIDModel, models.TimestampableModel):

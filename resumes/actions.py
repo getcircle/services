@@ -1,5 +1,3 @@
-from django.db import IntegrityError
-from django.db import transaction
 from service import (
     actions,
     validators,
@@ -53,12 +51,29 @@ class BulkCreatePositions(actions.Action):
 class CreateCompany(actions.Action):
 
     def run(self, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                company = models.Company.objects.from_protobuf(self.request.company)
-        except IntegrityError:
-            company = models.Company.objects.get(name=self.request.company.name)
-        company.to_protobuf(self.response.company)
+        companies = BulkCreateCompanies.bulk_create_companies([self.request.company])
+        companies[0].to_protobuf(self.response.company)
+
+
+class BulkCreateCompanies(actions.Action):
+
+    @staticmethod
+    def bulk_create_companies(protobufs):
+        companies = dict((company.name, company) for company in protobufs)
+        names = companies.keys()
+        companies = companies.values()
+        objects = [models.Company.objects.from_protobuf(
+            company,
+            commit=False,
+        ) for company in companies]
+        models.Company.objects.bulk_create(objects)
+        return models.Company.objects.filter(name__in=names)
+
+    def run(self, *args, **kwargs):
+        companies = self.bulk_create_companies(self.request.companies)
+        for company in companies:
+            container = self.response.companies.add()
+            company.to_protobuf(container)
 
 
 class GetResume(actions.Action):

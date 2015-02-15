@@ -27,11 +27,12 @@ def mock_transport(client):
 
 
 def _mock_container(container, mock_dict, **extra):
-    # If "id" is None make sure we don't set it as a field on the protobuf. If
-    # we set the value, then django won't auto create the id
-    if extra.get('id', '') is None:
-        extra.pop('id')
-        mock_dict.get(fuzzy.FuzzyUUID, []).remove('id')
+    # Support unsetting ids that we don't want set on the container
+    clear_fields = []
+    for key, value in extra.iteritems():
+        if value is None:
+            clear_fields.append(key)
+    [extra.pop(key) for key in clear_fields]
 
     for mock_func, fields in mock_dict.iteritems():
         try:
@@ -59,6 +60,9 @@ def _mock_container(container, mock_dict, **extra):
             field_attribute.CopyFrom(value)
         else:
             setattr(container, field, value)
+
+    for field in clear_fields:
+        container.ClearField(field)
     return container
 
 
@@ -198,7 +202,7 @@ def mock_education(container=None, **overrides):
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'user_id'],
-        fuzzy.FuzzyText: ['school_name', 'notes'],
+        fuzzy.FuzzyText: ['school_name', 'notes', 'activities', 'degree', 'field_of_study'],
     }
     return _mock_container(container, mock_dict, **overrides)
 

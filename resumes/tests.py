@@ -7,7 +7,10 @@ from services.test import (
     mocks,
 )
 
-from . import factories
+from . import (
+    factories,
+    models,
+)
 
 
 class TestResumes(TestCase):
@@ -80,3 +83,32 @@ class TestResumes(TestCase):
         response = self.client.call_action('get_resume', user_id=user_id)
         self.assertEqual(len(response.result.resume.positions), len(positions))
         self.assertEqual(len(response.result.resume.educations), len(educations))
+
+    def test_bulk_create_companies(self):
+        companies = [mocks.mock_company(id=None), mocks.mock_company(id=None)]
+        response = self.client.call_action('bulk_create_companies', companies=companies)
+        self.assertEqual(len(response.result.companies), len(companies))
+
+    def test_bulk_create_companies_duplicates(self):
+        company = factories.CompanyFactory.create_protobuf()
+        duplicate_company = ResumeService.Containers.Company()
+        duplicate_company.CopyFrom(company)
+        duplicate_company.ClearField('id')
+
+        duplicate_same_request = mocks.mock_company(id=None)
+        companies = [
+            duplicate_company,
+            duplicate_same_request,
+            duplicate_same_request,
+            mocks.mock_company(id=None),
+        ]
+        response = self.client.call_action('bulk_create_companies', companies=companies)
+        self.assertEqual(len(response.result.companies), 3)
+
+        companies = models.Company.objects.all()
+        self.assertEqual(len(companies), 3)
+
+    def test_bulk_create_educations_user_id_required(self):
+        education = mocks.mock_education(id=None, user_id=None)
+        with self.assertFieldError('educations.0.user_id'):
+            self.client.call_action('bulk_create_educations', educations=[education])
