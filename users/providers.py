@@ -273,7 +273,7 @@ class LinkedIn(BaseProvider):
         for position in positions:
             if 'company' in position:
                 company = {
-                    'linkedin_id': position['company']['id'],
+                    'linkedin_id': str(position['company']['id']),
                     'name': position['company']['name'],
                 }
                 companies.append(company)
