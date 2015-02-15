@@ -47,6 +47,9 @@ class Education(ApproximateDateAsDictMixin, models.UUIDModel, models.Timestampab
     degree = models.CharField(max_length=255, null=True)
     field_of_study = models.CharField(max_length=255, null=True)
 
+    class Meta:
+        unique_together = ('user_id', 'school_name', 'start_date', 'end_date')
+
 
 class Position(ApproximateDateAsDictMixin, models.UUIDModel, models.TimestampableModel):
 
@@ -56,3 +59,6 @@ class Position(ApproximateDateAsDictMixin, models.UUIDModel, models.Timestampabl
     end_date = ApproximateDateField(max_length=10, null=True)
     summary = models.TextField(null=True)
     company = models.ForeignKey(Company, null=True)
+
+    class Meta:
+        unique_together = ('user_id', 'title', 'company')

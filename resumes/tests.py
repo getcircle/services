@@ -37,8 +37,30 @@ class TestResumes(TestCase):
         response = self.client.call_action('bulk_create_educations', educations=educations)
         self.assertEqual(len(response.result.educations), len(educations))
         [self.assertTrue(education.id) for education in response.result.educations]
-        self._verify_containers(educations[0], response.result.educations[0])
-        self._verify_containers(educations[1], response.result.educations[1])
+        educations_by_name = dict((education.school_name, education) for education in educations)
+        for education in response.result.educations:
+            self._verify_containers(educations_by_name[education.school_name], education)
+
+    def test_bulk_create_educations_duplicates(self):
+        education = factories.EducationFactory.create_protobuf()
+        duplicate_education = ResumeService.Containers.Education()
+        duplicate_education.CopyFrom(education)
+        duplicate_education.ClearField('id')
+        duplicate_same_request = mocks.mock_education(id=None)
+        response = self.client.call_action(
+            'bulk_create_educations',
+            educations=[
+                duplicate_education,
+                duplicate_same_request,
+                duplicate_same_request,
+                mocks.mock_education(id=None),
+            ],
+        )
+        self.assertEqual(len(response.result.educations), 3)
+
+        self._verify_containers(education, response.result.educations[0])
+        educations = models.Education.objects.all()
+        self.assertEqual(len(educations), 3)
 
     def test_bulk_create_positions_invalid_user_id(self):
         position = mocks.mock_position(user_id='invalid')
@@ -46,15 +68,49 @@ class TestResumes(TestCase):
             self.client.call_action('bulk_create_positions', positions=[position])
 
     def test_bulk_create_positions(self):
-        positions = [mocks.mock_position(id=None), mocks.mock_position(id=None)]
+        company = factories.CompanyFactory.create_protobuf()
+        positions = [
+            mocks.mock_position(id=None, company=company),
+            mocks.mock_position(id=None, company=company),
+        ]
         for position in positions:
             position.start_date.year = 2007
             position.start_date.month = 11
         response = self.client.call_action('bulk_create_positions', positions=positions)
         self.assertEqual(len(response.result.positions), len(positions))
         [self.assertTrue(position.id) for position in response.result.positions]
-        self._verify_containers(positions[0], response.result.positions[0])
-        self._verify_containers(positions[1], response.result.positions[1])
+        positions_by_title = dict((position.title, position) for position in positions)
+        for position in response.result.positions:
+            self._verify_containers(positions_by_title[position.title], position)
+
+    def test_bulk_create_positions_duplicates(self):
+        company = factories.CompanyFactory.create_protobuf()
+        position = factories.PositionFactory.build()
+        position.company_id = company.id
+        position.save()
+        duplicate_position = ResumeService.Containers.Position()
+        position.to_protobuf(duplicate_position)
+        duplicate_position.ClearField('id')
+        duplicate_position.company.CopyFrom(company)
+        duplicate_same_request = mocks.mock_position(id=None, company=company)
+        response = self.client.call_action(
+            'bulk_create_positions',
+            positions=[
+                duplicate_position,
+                duplicate_same_request,
+                duplicate_same_request,
+                mocks.mock_position(id=None, company=company),
+            ],
+        )
+        self.assertEqual(len(response.result.positions), 3)
+        positions_by_title = dict(
+            (position.title, position) for position in response.result.positions
+        )
+
+        positions = models.Position.objects.all()
+        self.assertEqual(len(positions), 3)
+        duplicate_position.id = position.id.hex
+        self._verify_containers(duplicate_position, positions_by_title[position.title])
 
     def test_create_company(self):
         company = mocks.mock_company(id=None)

@@ -15,12 +15,45 @@ class BulkCreateEducations(actions.Action):
                 if not validators.is_uuid4(education.user_id):
                     self.note_field_error('educations.%s.user_id' % (index,), 'INVALID')
 
-    def run(self, *args, **kwargs):
+    @staticmethod
+    def _build_unique_key(education):
+        return '%s.%s.%s.%s' % (
+            education.user_id,
+            education.school_name,
+            str(education.start_date),
+            str(education.end_date),
+        )
+
+    @classmethod
+    def bulk_create_educations(cls, protobufs):
         objects = [models.Education.objects.from_protobuf(
             education,
             commit=False,
-        ) for education in self.request.educations]
-        educations = models.Education.objects.bulk_create(objects)
+        ) for education in protobufs]
+        educations = dict(
+            (cls._build_unique_key(education), education) for education in objects
+        ).values()
+        models.Education.objects.bulk_create(educations)
+
+        user_ids = set()
+        school_names = set()
+        start_dates = set()
+        end_dates = set()
+        for education in educations:
+            user_ids.add(education.user_id)
+            school_names.add(education.school_name)
+            start_dates.add(education.start_date)
+            end_dates.add(education.end_date)
+
+        return models.Education.objects.filter(
+            user_id__in=user_ids,
+            school_name__in=school_names,
+            start_date__in=start_dates,
+            end_date__in=end_dates,
+        )
+
+    def run(self, *args, **kwargs):
+        educations = self.bulk_create_educations(self.request.educations)
         for education in educations:
             container = self.response.educations.add()
             education.to_protobuf(container)
@@ -35,17 +68,46 @@ class BulkCreatePositions(actions.Action):
                 if not validators.is_uuid4(position.user_id):
                     self.note_field_error('positions.%s.user_id' % (index,), 'INVALID')
 
-    def run(self, *args, **kwargs):
+    @staticmethod
+    def _build_unique_key(position):
+        return '%s.%s.%s' % (
+            position.user_id,
+            position.title,
+            position.company_id,
+        )
+
+    @classmethod
+    def bulk_create_positions(cls, protobufs):
         objects = [models.Position.objects.from_protobuf(
             position,
             commit=False,
             company_id=position.company.id,
-        ) for position in self.request.positions]
-        positions = models.Position.objects.bulk_create(objects)
-        for index, position in enumerate(positions):
+        ) for position in protobufs]
+        positions = dict(
+            (cls._build_unique_key(position), position) for position in objects
+        ).values()
+        models.Position.objects.bulk_create(positions)
+
+        user_ids = set()
+        titles = set()
+        company_ids = set()
+        for position in positions:
+            user_ids.add(position.user_id)
+            titles.add(position.title)
+            company_ids.add(position.company_id)
+
+        return models.Position.objects.select_related('company').filter(
+            user_id__in=user_ids,
+            title__in=titles,
+            company_id__in=filter(None, company_ids),
+        )
+
+    def run(self, *args, **kwargs):
+        positions = self.bulk_create_positions(self.request.positions)
+        for position in positions:
             container = self.response.positions.add()
             position.to_protobuf(container)
-            container.company.CopyFrom(self.request.positions[index].company)
+            position.company.to_protobuf(container.company)
 
 
 class CreateCompany(actions.Action):
