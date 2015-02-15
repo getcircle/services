@@ -47,6 +47,9 @@ class TestResumes(TestCase):
 
     def test_bulk_create_positions(self):
         positions = [mocks.mock_position(id=None), mocks.mock_position(id=None)]
+        for position in positions:
+            position.start_date.year = 2007
+            position.start_date.month = 11
         response = self.client.call_action('bulk_create_positions', positions=positions)
         self.assertEqual(len(response.result.positions), len(positions))
         [self.assertTrue(position.id) for position in response.result.positions]
