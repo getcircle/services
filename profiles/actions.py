@@ -302,7 +302,8 @@ class CreateSkills(actions.Action):
             commit=False,
             organization_id=organization_id,
         ) for skill in skills]
-        return models.Skill.objects.bulk_create(objects)
+        models.Skill.objects.bulk_create(objects)
+        return models.Skill.objects.filter(name__in=[skill.name for skill in skills])
 
     def run(self, *args, **kwargs):
         skills = self._create_skills(self.request.organization_id, self.request.skills)
