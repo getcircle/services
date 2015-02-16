@@ -140,7 +140,7 @@ def mock_profile(container=None, **overrides):
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id'],
-        fuzzy.FuzzyText: ['title', 'full_name'],
+        fuzzy.FuzzyText: ['title', 'full_name', 'about'],
     }
     return _mock_container(container, mock_dict, **overrides)
 

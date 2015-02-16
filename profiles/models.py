@@ -36,6 +36,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         ArrayField(models.CharField(max_length=256, null=True), size=2),
         null=True,
     )
+    about = models.TextField(null=True)
 
     @property
     def full_name(self):
