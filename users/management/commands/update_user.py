@@ -6,7 +6,7 @@ from services.management.base import (
 
 
 class Command(BaseCommand):
-    args = '<user primary_email> <fields>...'
+    args = '<user primary_email> <fields>'
     help = 'Updates the given user based on fields'
 
     def handle(self, *args, **options):
