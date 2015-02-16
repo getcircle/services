@@ -147,10 +147,10 @@ class GetResume(actions.Action):
     def run(self, *args, **kwargs):
         educations = models.Education.objects.filter(
             user_id=self.request.user_id,
-        )
+        ).order_by('-start_date')
         positions = models.Position.objects.select_related('company').filter(
             user_id=self.request.user_id,
-        )
+        ).order_by('-start_date')
 
         resume = self.response.resume
         resume.user_id = self.request.user_id
