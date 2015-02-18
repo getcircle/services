@@ -273,9 +273,10 @@ class LinkedIn(BaseProvider):
         for position in positions:
             if 'company' in position:
                 company = {
-                    'linkedin_id': str(position['company']['id']),
                     'name': position['company']['name'],
                 }
+                if 'id' in position['company']:
+                    company['linkedin_id'] = str(position['company']['id'])
                 companies.append(company)
 
         client = service.control.Client('resume', token=self.token._token)
