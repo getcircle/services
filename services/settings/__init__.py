@@ -222,7 +222,7 @@ LINKEDIN_SCOPE = 'r_fullprofile r_emailaddress r_contactinfo'
 
 GOOGLE_CLIENT_ID = '1077014421904-1a697ks3qvtt6975qfqhmed8529en8s2.apps.googleusercontent.com'
 GOOGLE_CLIENT_SECRET = 'lIjknz85LXHAQGMWM7A8QtPx'
-GOOGLE_SCOPE = 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.me https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile'
+GOOGLE_SCOPE = 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.profile.emails.read'
 GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 GOOGLE_USER_AGENT = 'circlehq-v1.0'
 
