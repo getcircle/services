@@ -10,7 +10,7 @@ RUN easy_install pip && pip install git+https://github.com/mhahn/curdling.git
 
 # Install python requirements
 ADD requirements.txt /opt/requirements.txt
-RUN curd install -r /opt/requirements.txt -c http://requirements-cache.otterbots.net -u
+RUN pip install --no-deps -r /opt/requirements.txt
 
 EXPOSE 5000
 
