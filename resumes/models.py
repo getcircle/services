@@ -59,6 +59,7 @@ class Position(ApproximateDateAsDictMixin, models.UUIDModel, models.Timestampabl
     end_date = ApproximateDateField(max_length=10, null=True)
     summary = models.TextField(null=True)
     company = models.ForeignKey(Company, null=True)
+    is_current = models.NullBooleanField(null=True, default=False)
 
     class Meta:
         unique_together = ('user_id', 'title', 'company')
