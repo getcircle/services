@@ -154,16 +154,25 @@ class GetProfiles(actions.Action):
         'ids': [validators.is_uuid4_list],
     }
 
+    def validate(self, *args, **kwargs):
+        super(GetProfiles, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if self.request.HasField('skill_id') and not self.request.HasField('organization_id'):
+                raise self.ActionFieldError('organization_id', 'REQUIRED')
+
     def _get_profiles_with_basic_keys(self):
         parameters = {}
-        if self.request.organization_id:
+        if self.request.skill_id:
+            parameters['organization_id'] = self.request.organization_id
+            parameters['skills__id'] = self.request.skill_id
+        elif self.request.organization_id:
             parameters['organization_id'] = self.request.organization_id
         elif self.request.address_id:
             parameters['address_id'] = self.request.address_id
         elif self.request.ids:
             parameters['id__in'] = list(self.request.ids)
         else:
-            parameters['skills__id'] = self.request.skill_id
+            raise self.ActionError('missing parameters')
 
         return models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
 

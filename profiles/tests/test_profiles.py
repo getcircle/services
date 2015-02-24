@@ -152,11 +152,28 @@ class TestProfiles(TestCase):
         with self.assertFieldError('skill_id'):
             self.client.call_action('get_profiles', skill_id='invalid')
 
-    def test_get_profiles_skills(self):
+    def test_get_profiles_skills_organization_id_required(self):
         skill = factories.SkillFactory.create()
-        factories.ProfileFactory.create_batch(size=4, skills=[skill])
-        response = self.client.call_action('get_profiles', skill_id=str(skill.id))
-        self.assertTrue(response.success)
+        factories.ProfileFactory.create_batch(size=2, skills=[skill])
+        with self.assertFieldError('organization_id', 'REQUIRED'):
+            self.client.call_action(
+                'get_profiles',
+                skill_id=str(skill.id),
+            )
+
+    def test_get_profiles_skills(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        skill = factories.SkillFactory.create(organization_id=organization_id)
+        factories.ProfileFactory.create_batch(
+            size=4,
+            skills=[skill],
+            organization_id=organization_id,
+        )
+        response = self.client.call_action(
+            'get_profiles',
+            skill_id=str(skill.id),
+            organization_id=organization_id,
+        )
         self.assertEqual(len(response.result.profiles), 4)
 
     def test_get_profiles_invalid_team_id(self):
