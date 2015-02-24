@@ -719,3 +719,11 @@ class TestProfiles(TestCase):
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 5)
+
+    def test_bulk_create_profiles(self):
+        profiles = []
+        for _ in range(3):
+            profiles.append(mocks.mock_profile())
+
+        response = self.client.call_action('bulk_create_profiles', profiles=profiles)
+        self.assertEqual(len(response.result.profiles), len(profiles))

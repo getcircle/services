@@ -45,7 +45,10 @@ def _mock_container(container, mock_dict, **extra):
             mock_func = mock_func.fuzz
 
         for field in fields:
-            setattr(container, field, mock_func())
+            value = mock_func()
+            if value and not isinstance(value, (bool, int)):
+                value = str(value)
+            setattr(container, field, value)
 
     for field, value in extra.iteritems():
         field_attribute = getattr(container, field)
@@ -139,8 +142,9 @@ def mock_profile(container=None, **overrides):
         container = ProfileService.Containers.Profile()
 
     mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'organization_id'],
+        fuzzy.FuzzyUUID: ['id', 'organization_id', 'user_id', 'address_id', 'team_id'],
         fuzzy.FuzzyText: ['title', 'full_name', 'about'],
+        fuzzy.FuzzyDate(arrow.Arrow(1980, 1, 1)): ['birth_date', 'hire_date'],
     }
     return _mock_container(container, mock_dict, **overrides)
 

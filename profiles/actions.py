@@ -63,6 +63,23 @@ class CreateProfile(actions.Action):
             profile.to_protobuf(self.response.profile)
 
 
+class BulkCreateProfiles(actions.Action):
+
+    @classmethod
+    def bulk_create_profiles(cls, protobufs):
+        objects = [models.Profile.objects.from_protobuf(
+            profile,
+            commit=False,
+        ) for profile in protobufs]
+        return models.Profile.objects.bulk_create(objects)
+
+    def run(self, *args, **kwargs):
+        profiles = self.bulk_create_profiles(self.request.profiles)
+        for profile in profiles:
+            container = self.response.profiles.add()
+            profile.to_protobuf(container)
+
+
 class UpdateProfile(actions.Action):
 
     type_validators = {

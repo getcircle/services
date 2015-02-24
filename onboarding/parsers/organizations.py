@@ -168,31 +168,37 @@ class Parser(OrganizationParser):
         self.saved_teams[team.name] = team.id
         return self.saved_teams[team.name]
 
-    def _save_profile(self, row):
-        profile_data = {
-            'organization_id': self.organization.id,
-            'team_id': self.saved_teams[row.team],
-            'address_id': self.saved_addresses[row.address_composite_key],
-            'user_id': self.saved_users[row.email],
-        }
-        profile_data.update(row.profile)
-        self.debug_log('creating profile: %s' % (profile_data,))
-        client = service.control.Client('profile', token=self.token)
-        try:
-            response = client.call_action('create_profile', profile=profile_data)
-            profile = response.result.profile
-        except client.CallActionError as e:
-            self.debug_log('error creating profile: %s' % (e,))
-            # fetch the profile
-            response = client.call_action('get_profile', user_id=self.saved_users[row.email])
-            profile = response.result.profile
+    def _save_profiles(self, rows):
+        profiles = []
+        for row in rows:
+            profile_data = {
+                'organization_id': self.organization.id,
+                'team_id': self.saved_teams[row.team],
+                'address_id': self.saved_addresses[row.address_composite_key],
+                'user_id': self.saved_users[row.email],
+            }
+            profile_data.update(row.profile)
+            self.debug_log('creating profile: %s' % (profile_data,))
+            profiles.append(profile_data)
 
-            # update the profile
-            for key, value in profile_data.iteritems():
-                setattr(profile, key, value)
-            response = client.call_action('update_profile', profile=profile)
-            profile = response.result.profile
-        return profile
+        client = service.control.Client('profile', token=self.token)
+        #try:
+            #response = client.call_action('create_profile', profile=profile_data)
+            #profile = response.result.profile
+        #except client.CallActionError as e:
+            #self.debug_log('error creating profile: %s' % (e,))
+            ## fetch the profile
+            #response = client.call_action('get_profile', user_id=self.saved_users[row.email])
+            #profile = response.result.profile
+
+            ## update the profile
+            #for key, value in profile_data.iteritems():
+                #setattr(profile, key, value)
+            #response = client.call_action('update_profile', profile=profile)
+            #profile = response.result.profile
+        #return profile
+        response = client.call_action('bulk_create_profiles', profiles=profiles)
+        return response.result.profiles
 
     def _parse_address(self, row):
         if row.address_composite_key not in self.addresses:
@@ -220,8 +226,7 @@ class Parser(OrganizationParser):
             self.saved_teams[team] = self._save_team(team)
 
         # create the profiles
-        for row in self.rows:
-            self._save_profile(row)
+        self._save_profiles(self.rows)
 
     def _parse_row(self, row):
         self._parse_address(row)
