@@ -85,7 +85,7 @@ class Row(object):
         return profile
 
     def is_team_owner(self):
-        return self.owns_team == '1'
+        return self.owns_team == '1' or self.owns_team == 'True'
 
 
 class Parser(OrganizationParser):
@@ -220,7 +220,7 @@ class Parser(OrganizationParser):
         # create users for all the rows
         users = self._save_users(self.rows)
         for user in users:
-            self.saved_users[user.email] = user
+            self.saved_users[user.primary_email] = user.id
 
         for team in self.teams:
             self.saved_teams[team] = self._save_team(team)
