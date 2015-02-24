@@ -21,7 +21,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     user_id = models.UUIDField()
     address_id = models.UUIDField()
     team_id = models.UUIDField()
-    title = models.CharField(max_length=64)
+    title = models.CharField(max_length=255)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     cell_phone = PhoneNumberField(null=True)
