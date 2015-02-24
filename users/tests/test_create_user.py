@@ -47,6 +47,7 @@ class TestUserActions(TestCase):
         )
         self.assertTrue(response.result.user.is_active)
         self.assertFalse(response.result.user.is_admin)
+        self.assertFalse(response.result.user.HasField('password'))
 
     def test_create_user_no_password(self):
         response = self.client.call_action('create_user', email=self.email)
