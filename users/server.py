@@ -14,6 +14,7 @@ class Server(service.control.Server):
 
     actions = {
         'create_user': actions.CreateUser,
+        'bulk_create_users': actions.BulkCreateUsers,
         'update_user': actions.UpdateUser,
         'get_user': actions.GetUser,
         'valid_user': actions.ValidUser,

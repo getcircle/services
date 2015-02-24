@@ -85,3 +85,16 @@ class TestUserActions(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(user.id, response.result.user.id)
         self.assertEqual(user.phone_number, response.result.user.phone_number)
+
+    def test_bulk_create_users(self):
+        users = []
+        for _ in range(3):
+            users.append({
+                'primary_email': fuzzy.FuzzyText(suffix='@example.com').fuzz(),
+                'password': fuzzy.FuzzyText().fuzz(),
+            })
+
+        response = self.client.call_action('bulk_create_users', users=users)
+        self.assertEqual(len(response.result.users), len(users))
+
+    # XXX add test cases for duplicates similar to resume service

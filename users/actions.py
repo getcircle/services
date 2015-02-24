@@ -64,6 +64,20 @@ class CreateUser(actions.Action):
             self.note_field_error('email', 'ALREADY_EXISTS')
 
 
+class BulkCreateUsers(actions.Action):
+
+    @classmethod
+    def bulk_create_users(cls, protobufs):
+        objects = [models.User.objects.from_protobuf(user, commit=False) for user in protobufs]
+        return models.User.objects.bulk_create(objects)
+
+    def run(self, *args, **kwargs):
+        users = self.bulk_create_users(self.request.users)
+        for user in users:
+            container = self.response.users.add()
+            user.to_protobuf(container)
+
+
 class UpdateUser(actions.Action):
 
     # XXX this isn't working if a protobuf instance is passed

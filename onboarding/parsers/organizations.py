@@ -5,6 +5,8 @@ import service.control
 
 from .base import OrganizationParser
 
+DEFAULT_PASSWORD = 'rhlabs123'
+
 
 class TeamStore(object):
 
@@ -119,16 +121,15 @@ class Parser(OrganizationParser):
             address = response.result.address
         return address.id
 
-    def _save_user(self, row):
-        self.debug_log('saving user: %s' % (row.email,))
+    def _save_users(self, rows):
+        users = []
+        for row in rows:
+            self.debug_log('saving user: %s' % (row.email,))
+            users.append({'primary_email': row.email, 'password': DEFAULT_PASSWORD})
+
         client = service.control.Client('user', token=self.token)
-        try:
-            response = client.call_action('create_user', email=row.email, password='rhlabs123')
-            user = response.result.user
-        except client.CallActionError:
-            response = client.call_action('get_user', email=row.email)
-            user = response.result.user
-        return user.id
+        response = client.call_action('bulk_create_users', users=users)
+        return response.result.users
 
     def _save_team(self, team):
         self.debug_log('saving team: %s' % (team,))
@@ -211,8 +212,9 @@ class Parser(OrganizationParser):
             self.saved_addresses[composite_key] = self._save_address(address)
 
         # create users for all the rows
-        for row in self.rows:
-            self.saved_users[row.email] = self._save_user(row)
+        users = self._save_users(self.rows)
+        for user in users:
+            self.saved_users[user.email] = user
 
         for team in self.teams:
             self.saved_teams[team] = self._save_team(team)
