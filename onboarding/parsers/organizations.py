@@ -16,6 +16,11 @@ class TeamStore(object):
         self.team_to_parent_owner_email = {}
 
     def store(self, team, owner_email, parent_owner_email):
+        print 'storing team: %s, owner: %s, parent email: %s' % (
+            team,
+            owner_email,
+            parent_owner_email,
+        )
         self.owner_email_to_team[owner_email] = team
         self.team_to_owner_email[team] = owner_email
         self.team_to_parent_owner_email[team] = parent_owner_email
