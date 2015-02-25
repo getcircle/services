@@ -698,8 +698,14 @@ class TestProfiles(TestCase):
             self.client.call_action('get_active_skills', organization_id='invalid')
 
     def test_get_active_skills(self):
-        skills = factories.SkillFactory.create_batch(size=3)
-        profile = factories.ProfileFactory.create(skills=[skills[1]])
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        skills = factories.SkillFactory.create_batch(size=3, organization_id=organization_id)
+        profile = factories.ProfileFactory.create(
+            skills=[skills[1]],
+            organization_id=organization_id,
+        )
+        # create a profile in another organization
+        factories.ProfileFactory.create(skills=[factories.SkillFactory.create()])
         # add duplicate
         factories.ProfileFactory.create(skills=[skills[1]])
         response = self.client.call_action(

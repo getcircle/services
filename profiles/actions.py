@@ -635,7 +635,8 @@ class GetActiveSkills(actions.Action):
 
     def run(self, *args, **kwargs):
         skills = set(models.Skill.objects.filter(
-            profileskills__skill_id__isnull=False
+            profileskills__skill_id__isnull=False,
+            organization_id=self.request.organization_id,
         ).order_by('-profileskills__created'))
         for skill in skills:
             container = self.response.skills.add()
