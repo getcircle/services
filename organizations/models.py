@@ -17,7 +17,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
     protobuf_include_fields = ('department',)
 
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=255)
     owner_id = models.UUIDField(db_index=True)
     organization = models.ForeignKey(Organization, db_index=True)
     path = LTreeField(null=True)
