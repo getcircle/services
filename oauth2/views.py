@@ -1,5 +1,6 @@
 import urllib
 
+from django.views.generic.base import TemplateView
 from django.shortcuts import redirect
 from protobufs.user_service_pb2 import UserService
 from rest_framework.views import APIView
@@ -41,3 +42,8 @@ class OAuth2LinkedIn(APIView):
             return self._handle_error(request)
 
         return self._complete_authorization(code, state)
+
+
+class ConnectionSuccessView(TemplateView):
+
+    template_name = 'connection-success.html'

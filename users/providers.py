@@ -170,14 +170,15 @@ class LinkedIn(BaseProvider):
         super(LinkedIn, self).__init__(*args, **kwargs)
 
     @classmethod
-    def get_authorization_url(self, token=None):
+    def get_authorization_url(self, token=None, additional_scopes=''):
         payload = {}
         if token:
             payload['token'] = token
 
+        scope = ' '.join([settings.LINKEDIN_SCOPE, additional_scopes]).strip()
         parameters = {
             'response_type': 'code',
-            'scope': settings.LINKEDIN_SCOPE,
+            'scope': scope,
             'client_id': settings.LINKEDIN_CLIENT_ID,
             'redirect_uri': settings.LINKEDIN_REDIRECT_URI,
             'state': get_state_token(self.type, payload=payload),

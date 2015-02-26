@@ -6,6 +6,8 @@ from django.conf.urls import (
 from django.contrib import admin
 # from django.views.decorators.csrf import csrf_exempt
 
+from users.views import ConnectLinkedInView
+
 from . import views
 
 urlpatterns = patterns('',
@@ -13,4 +15,5 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     url(r'^grappelli/', include('grappelli.urls')),
     url(r'^oauth2/', include('oauth2.urls')),
+    url(r'^connect/', ConnectLinkedInView.as_view()),
 )
