@@ -49,7 +49,7 @@ class TestCase(DjangoTestCase):
 
     def _verify_container_matches_data(self, container, data):
         for key, value in data.iteritems():
-            self._verify_values(getattr(container, key), value, message='key: %s' % (key,))
+            self._verify_values(value, getattr(container, key), message='key: %s' % (key,))
 
     def _verify_containers(self, expected, to_verify):
         for field, expected_value in expected.ListFields():

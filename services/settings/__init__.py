@@ -47,6 +47,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework.authtoken',
 
+    'appreciation',
     'landing',
     'media',
     'notes',
@@ -95,6 +96,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
+    'appreciation.server.Server',
     'landing.server.Server',
     'media.server.Server',
     'notes.server.Server',

@@ -34,6 +34,14 @@ class Factory(DjangoModelFactory):
         model.to_protobuf(container)
         return container
 
+    @classmethod
+    def build_protobuf(cls, *args, **kwargs):
+        cls.verify_has_protobuf()
+        container = cls._meta.protobuf()
+        model = cls.build(*args, **kwargs)
+        model.to_protobuf(container)
+        return container
+
     # TODO we should move this to the model
     @classmethod
     def to_protobuf(cls, model):
