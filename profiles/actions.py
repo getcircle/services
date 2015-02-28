@@ -339,7 +339,7 @@ class CreateSkills(actions.Action):
         models.Skill.objects.bulk_create(objects)
         return models.Skill.objects.filter(
             name__in=[skill.name for skill in skills],
-            organization_id=self.request.organization_id,
+            organization_id=organization_id,
         )
 
     def run(self, *args, **kwargs):
