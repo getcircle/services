@@ -15,5 +15,4 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     url(r'^grappelli/', include('grappelli.urls')),
     url(r'^oauth2/', include('oauth2.urls')),
-    url(r'^connect/', ConnectLinkedInView.as_view()),
 )
