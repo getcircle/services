@@ -402,3 +402,35 @@ class GetExtendedLocation(actions.Action):
         for team in teams:
             container = self.response.teams.add()
             team.to_protobuf(container, path=team.get_path())
+
+
+class GetLocation(actions.Action):
+
+    type_validators = {
+        'location_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'location_id': {
+            valid_location: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def validate(self, *args, **kwargs):
+        super(GetLocation, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if self.request.HasField('name') and not self.request.HasField('organization_id'):
+                raise self.ActionFieldError('organization_id', 'REQUIRED')
+
+    def run(self, *args, **kwargs):
+        parameters = {}
+        if self.request.location_id:
+            parameters['pk'] = self.request.location_id
+        elif self.request.name:
+            parameters['name'] = self.request.name
+            parameters['organization_id'] = self.request.organization_id
+        else:
+            raise self.ActionError('FAILURE', ('FAILURE', 'missing parameters'))
+
+        location = models.Location.objects.get(**parameters)
+        location.to_protobuf(self.response.location)
