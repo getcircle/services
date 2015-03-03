@@ -750,3 +750,19 @@ class TestProfiles(TestCase):
 
         response = self.client.call_action('bulk_create_profiles', profiles=profiles)
         self.assertEqual(len(response.result.profiles), len(profiles))
+
+    def test_get_profiles_with_location_id(self):
+        location_id = fuzzy.FuzzyUUID().fuzz()
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        profiles = factories.ProfileFactory.create_batch(
+            size=5,
+            location_id=location_id,
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create_batch(size=5, organization_id=organization_id)
+        response = self.client.call_action('get_profiles', location_id=location_id)
+        self.assertEqual(len(profiles), len(response.result.profiles))
+
+    def test_get_profiles_with_location_id_invalid_location_id(self):
+        with self.assertFieldError('location_id'):
+            self.client.call_action('get_profiles', location_id='invalid')

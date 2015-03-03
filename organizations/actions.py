@@ -1,9 +1,13 @@
+import base64
 import uuid
+
 import django.db
+from protobufs.profile_service_pb2 import ProfileService
 from service import (
     actions,
     validators,
 )
+import service.control
 
 from . import models
 
@@ -22,6 +26,10 @@ def valid_team(team_id):
 
 def valid_address(address_id):
     return models.Address.objects.filter(pk=address_id).exists()
+
+
+def valid_location(location_id):
+    return models.Location.objects.filter(pk=location_id).exists()
 
 
 class CreateOrganization(actions.Action):
@@ -312,3 +320,85 @@ class GetTopLevelTeam(actions.Action):
             organization_id=self.request.organization_id,
         ).order_by('path')[0]
         team.to_protobuf(self.response.team, path=team.get_path())
+
+
+class CreateLocation(actions.Action):
+
+    type_validators = {
+        'location.organization_id': [validators.is_uuid4],
+        'location.address_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            location = models.Location.objects.from_protobuf(
+                self.request.location,
+            )
+        except django.db.IntegrityError:
+            raise self.ActionFieldError('location', 'DUPLICATE')
+        location.to_protobuf(self.response.location)
+
+
+class UpdateLocation(actions.Action):
+
+    type_validators = {
+        'location.id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'location.id': {
+            valid_location: 'DOES_NOT_EXIST',
+        }
+    }
+
+    def run(self, *args, **kwargs):
+        location = models.Location.objects.get(pk=self.request.location.id)
+        location.update_from_protobuf(self.request.location)
+        location.save()
+        location.to_protobuf(self.response.location)
+
+
+class GetExtendedLocation(actions.Action):
+
+    type_validators = {
+        'location_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'location_id': {
+            valid_location: 'DOES_NOT_EXIST',
+        }
+    }
+
+    def _fetch_profile_array(self, location_id):
+        client = service.control.Client('profile', token=self.token)
+        try:
+            response = client.call_action('get_profiles', location_id=location_id)
+        except client.CallActionError as e:
+            raise self.ActionError('FAILURE', ('FAILURE', 'Failed to fetch profiles: %s' % (e,)))
+
+        profile_array = ProfileService.Containers.ProfileArray()
+        for profile in response.result.profiles:
+            container = profile_array.items.add()
+            container.CopyFrom(profile)
+        return profile_array
+
+    def _get_teams(self, profiles):
+        team_ids = set([profile.team_id for profile in profiles])
+        return models.Team.objects.filter(pk__in=team_ids)
+
+    def run(self, *args, **kwargs):
+        location = models.Location.objects.select_related('address').get(
+            pk=self.request.location_id,
+        )
+        location.to_protobuf(self.response.location)
+        location.address.to_protobuf(self.response.address)
+        profile_array = self._fetch_profile_array(str(location.id))
+        self.response.member_profiles_payload = base64.encodestring(
+            profile_array.SerializeToString(),
+        )
+
+        teams = self._get_teams(profile_array.items)
+        for team in teams:
+            container = self.response.teams.add()
+            team.to_protobuf(container, path=team.get_path())

@@ -43,3 +43,13 @@ class AddressFactory(factory.Factory):
     def get_protobuf_data(cls, **data):
         model = cls.build(**data)
         return model.as_dict(exclude=('created', 'changed'))
+
+
+class LocationFactory(factory.Factory):
+    class Meta:
+        model = models.Location
+        protobuf = OrganizationService.Containers.Location
+
+    name = factory.FuzzyText()
+    address = factory.SubFactory(AddressFactory)
+    organization = factory.SubFactory(OrganizationFactory)

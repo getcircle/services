@@ -5,7 +5,7 @@ from services.test import (
     fuzzy,
     TestCase,
 )
-from . import (
+from .. import (
     factories,
     models,
 )
