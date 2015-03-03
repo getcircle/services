@@ -58,34 +58,6 @@ class GetCategories(actions.Action):
             container = reports.profiles.add()
             container.CopyFrom(profile)
 
-    def _get_locations_category(self, organization_id):
-        response = self.organization_client.call_action(
-            'get_addresses',
-            organization_id=organization_id,
-        )
-        if not response.success:
-            raise Exception('failed to fetch addresses')
-
-        if not len(response.result.addresses):
-            return
-
-        addresses = response.result.addresses
-        address_ids = [address.id for address in addresses]
-        response = self.profile_client.call_action('get_profile_stats', address_ids=address_ids)
-        if not response.success:
-            raise Exception('failed to fetch profile stats')
-
-        stats = dict((stat.id, stat.count) for stat in response.result.stats)
-        locations = self.response.categories.add()
-        locations.title = 'Locations'
-        locations.content_key = 'address_1'
-        locations.type = LandingService.Containers.Category.LOCATIONS
-        locations.total_count = str(len(addresses))
-        for address in addresses:
-            container = locations.addresses.add()
-            container.CopyFrom(address)
-            container.profile_count = str(stats.get(address.id, 0))
-
     def _get_upcoming_anniversaries_category(self, profile):
         response = self.profile_client.call_action(
             'get_upcoming_anniversaries',
@@ -216,7 +188,6 @@ class GetCategories(actions.Action):
         self._get_recent_notes_category(profile)
         self._get_peers_category()
         self._get_direct_reports_category()
-        self._get_locations_category(profile.organization_id)
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_recent_hires_category(profile)
@@ -287,6 +258,34 @@ class GetOrganizationCategories(GetCategories):
         for department in departments:
             container = category.teams.add()
             container.CopyFrom(department)
+
+    def _get_locations_category(self, organization_id):
+        response = self.organization_client.call_action(
+            'get_locations',
+            organization_id=organization_id,
+        )
+        if not response.success:
+            raise Exception('failed to fetch locations')
+
+        if not len(response.result.locations):
+            return
+
+        items = response.result.locations
+        location_ids = [address.id for address in items]
+        response = self.profile_client.call_action('get_profile_stats', location_ids=location_ids)
+        if not response.success:
+            raise Exception('failed to fetch profile stats')
+
+        stats = dict((stat.id, stat.count) for stat in response.result.stats)
+        locations = self.response.categories.add()
+        locations.title = 'Locations'
+        locations.content_key = 'address_1'
+        locations.type = LandingService.Containers.Category.LOCATIONS
+        locations.total_count = str(len(items))
+        for location in items:
+            container = locations.locations.add()
+            container.CopyFrom(location)
+            container.profile_count = int(stats.get(location.id, 0))
 
     def run(self, *args, **kwargs):
         self._get_departments_and_executives(self.request.organization_id)

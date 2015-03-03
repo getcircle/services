@@ -163,3 +163,14 @@ class AppreciationTests(TestCase):
             organization_id=location.organization_id,
         )
         self._verify_containers(location, response.result.location)
+
+    def test_get_locations_invalid_organization_id(self):
+        with self.assertFieldError('organization_id'):
+            self.client.call_action('get_locations', organization_id='invalid')
+
+    def test_get_locations(self):
+        organization = factories.OrganizationFactory.create()
+        locations = factories.LocationFactory.create_batch(size=3, organization=organization)
+        factories.LocationFactory.create_batch(size=3)
+        response = self.client.call_action('get_locations', organization_id=str(organization.id))
+        self.assertEqual(len(locations), len(response.result.locations))

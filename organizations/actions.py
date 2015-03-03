@@ -434,3 +434,16 @@ class GetLocation(actions.Action):
 
         location = models.Location.objects.get(**parameters)
         location.to_protobuf(self.response.location)
+
+
+class GetLocations(actions.Action):
+
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        locations = models.Location.objects.filter(organization_id=self.request.organization_id)
+        for location in locations:
+            container = self.response.locations.add()
+            location.to_protobuf(container)
