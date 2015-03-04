@@ -223,13 +223,13 @@ class GetExtendedProfile(GetProfile):
         super(GetExtendedProfile, self).__init__(*args, **kwargs)
         self.organization_client = service.control.Client('organization', token=self.token)
 
-    def _fetch_address(self, address_id):
+    def _fetch_location(self, location_id):
         # TODO this should raise an error if it doesn't succeed
         response = self.organization_client.call_action(
-            'get_address',
-            address_id=address_id,
+            'get_location',
+            location_id=location_id,
         )
-        return response.result.address
+        return response.result.location
 
     def _fetch_team(self, team_id):
         # TODO this should raise an error if it doesn't succeed
@@ -295,8 +295,8 @@ class GetExtendedProfile(GetProfile):
         profile = self._get_profile()
         profile.to_protobuf(self.response.profile)
 
-        address = self._fetch_address(str(profile.address_id))
-        self.response.address.CopyFrom(address)
+        location = self._fetch_location(str(profile.location_id))
+        self.response.location.CopyFrom(location)
 
         team = self._fetch_team(str(profile.team_id))
         self.response.team.CopyFrom(team)

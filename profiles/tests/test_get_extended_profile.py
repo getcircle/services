@@ -31,19 +31,19 @@ class TestGetExtendedProfile(TestCase):
     def tearDown(self):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
 
-    def _mock_get_address(self, profile, **overrides):
+    def _mock_get_location(self, profile, **overrides):
         service = 'organization'
-        action = 'get_address'
+        action = 'get_location'
         mock_response = mock.get_mockable_response(service, action)
-        mocks.mock_address(mock_response.address, **overrides)
-        address_id = str(uuid.UUID(profile.address_id, version=4))
+        mocks.mock_location(mock_response.location, **overrides)
+        location_id = str(uuid.UUID(profile.location_id, version=4))
         mock.instance.register_mock_response(
             service,
             action,
             mock_response,
-            address_id=address_id,
+            location_id=location_id,
         )
-        return mock_response.address
+        return mock_response.location
 
     def _mock_get_team(self, profile, team_id=None, **overrides):
         service = 'organization'
@@ -151,7 +151,7 @@ class TestGetExtendedProfile(TestCase):
         manager = factories.ProfileFactory.create_protobuf()
         skills = factories.SkillFactory.create_batch(size=2)
         profile = factories.ProfileFactory.create_protobuf(skills=skills)
-        address = self._mock_get_address(profile)
+        location = self._mock_get_location(profile)
         team = self._mock_get_team(profile, owner_id=manager.user_id)
         notes = self._mock_get_notes(
             for_profile_id=profile.id,
@@ -167,7 +167,7 @@ class TestGetExtendedProfile(TestCase):
 
         self.assertTrue(response.success)
         self._verify_containers(manager, response.result.manager)
-        self._verify_containers(address, response.result.address)
+        self._verify_containers(location, response.result.location)
         self._verify_containers(team, response.result.team)
         self._verify_containers(profile, response.result.profile)
         self.assertEqual(len(skills), len(response.result.skills))
@@ -186,7 +186,7 @@ class TestGetExtendedProfile(TestCase):
         )
 
         profile = factories.ProfileFactory.create_protobuf()
-        self._mock_get_address(profile)
+        self._mock_get_location(profile)
         self._mock_get_team(profile, owner_id=profile.user_id, path=[managers_team.path[0]])
         self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
         self._mock_get_direct_reports(profile)
@@ -207,7 +207,7 @@ class TestGetExtendedProfile(TestCase):
             id=profile.team_id,
         )
 
-        self._mock_get_address(profile)
+        self._mock_get_location(profile)
         self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
         self._mock_get_direct_reports(profile)
 
