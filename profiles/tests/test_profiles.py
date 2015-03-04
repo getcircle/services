@@ -471,6 +471,27 @@ class TestProfiles(TestCase):
         stats = response.result.stats[0]
         self.assertEqual(stats.count, '5')
 
+    def test_get_profile_stats_location_invalid(self):
+        with self.assertFieldError('location_ids'):
+            self.client.call_action('get_profile_stats', location_ids=['invalid'])
+
+    def test_get_profile_stats_location_no_profiles(self):
+        response = self.client.call_action(
+            'get_profile_stats',
+            location_ids=[fuzzy.FuzzyUUID().fuzz()],
+        )
+        self.assertTrue(response.success)
+        stats = response.result.stats[0]
+        self.assertEqual(stats.count, '0')
+
+    def test_get_profile_stats_location(self):
+        location_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create_batch(5, location_id=location_id)
+        response = self.client.call_action('get_profile_stats', location_ids=[location_id])
+        self.assertTrue(response.success)
+        stats = response.result.stats[0]
+        self.assertEqual(stats.count, '5')
+
     def test_create_profile_duplicate(self):
         profile = factories.ProfileFactory.create_protobuf()
         with self.assertRaisesCallActionError() as expected:

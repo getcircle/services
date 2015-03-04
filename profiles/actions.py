@@ -528,21 +528,43 @@ class GetProfileStats(actions.Action):
 
     type_validators = {
         'address_ids': [validators.is_uuid4_list],
+        'location_ids': [validators.is_uuid4_list],
     }
 
-    def run(self, *args, **kwargs):
-        stats = models.Profile.objects.filter(address_id__in=self.request.address_ids).values(
+    def _get_profile_stats_for_address_ids(self, address_ids):
+        stats = models.Profile.objects.filter(address_id__in=address_ids).values(
             'address_id',
         ).annotate(profiles=Count('id'))
-        stats_dict = dict((stat['address_id'], stat['profiles']) for stat in stats)
-        for address_id in self.request.address_ids:
+        return dict((stat['address_id'], stat['profiles']) for stat in stats)
+
+    def _get_profile_stats_for_location_id(self, location_ids):
+        stats = models.Profile.objects.filter(location_id__in=location_ids).values(
+            'location_id',
+        ).annotate(profiles=Count('id'))
+        return dict((stat['location_id'], stat['profiles']) for stat in stats)
+
+    def run(self, *args, **kwargs):
+        lookup_ids = []
+        if self.request.address_ids:
+            lookup_ids = self.request.address_ids
+            stats_dict = self._get_profile_stats_for_address_ids(lookup_ids)
+        elif self.request.location_ids:
+            lookup_ids = self.request.location_ids
+            stats_dict = self._get_profile_stats_for_location_id(lookup_ids)
+        else:
+            raise self.ActionError(
+                'FAILURE',
+                ('FAILURE', 'Must provide either `location_ids` or `address_ids`'),
+            )
+
+        for lookup_id in lookup_ids:
             # TODO type validators should check type and then transform to that
             # type so we're working with consistent values. ie. if we validate
             # uuid, we should have "uuid" type, not string
-            address_id = uuid.UUID(address_id, version=4)
+            lookup_id = uuid.UUID(lookup_id, version=4)
             container = self.response.stats.add()
-            container.id = str(address_id)
-            container.count = str(stats_dict.get(address_id, 0))
+            container.id = str(lookup_id)
+            container.count = str(stats_dict.get(lookup_id, 0))
 
 
 class GetUpcomingAnniversaries(actions.Action):
