@@ -128,7 +128,7 @@ class Parser(OrganizationParser):
         location = {
             'name': address.name,
             'organization_id': address.organization_id,
-            'address_id': address.id,
+            'address': address,
         }
         try:
             response = self.organization_client.call_action('create_location', location=location)

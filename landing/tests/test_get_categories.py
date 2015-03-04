@@ -63,37 +63,20 @@ class TestGetCategories(TestCase):
             profile_id=profile_id,
         )
 
-    def _mock_get_addresses(self, organization_id, addresses=3):
-        service = 'organization'
-        action = 'get_addresses'
-        mock_response = mock.get_mockable_response(service, action)
-        address_list = []
-        for _ in range(addresses):
-            address = mock_response.addresses.add()
-            address_list.append(mocks.mock_address(address))
-
-        mock.instance.register_mock_response(
-            service,
-            action,
-            mock_response,
-            organization_id=organization_id,
-        )
-        return address_list
-
-    def _mock_get_profile_stats(self, address_ids, count=3):
+    def _mock_get_profile_stats(self, location_ids, count=3):
         service = 'profile'
         action = 'get_profile_stats'
         mock_response = mock.get_mockable_response(service, action)
-        for address_id in address_ids:
+        for location_id in location_ids:
             container = mock_response.stats.add()
-            container.id = address_id
+            container.id = location_id
             container.count = str(count)
 
         mock.instance.register_mock_response(
             service,
             action,
             mock_response,
-            address_ids=address_ids,
+            location_ids=location_ids,
         )
 
     def _mock_get_upcoming_anniversaries(self, organization_id, profiles=3):
@@ -184,7 +167,6 @@ class TestGetCategories(TestCase):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id)
         self._mock_get_direct_reports(profile.id, direct_reports=0)
-        self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
@@ -205,7 +187,6 @@ class TestGetCategories(TestCase):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id, peers=0)
         self._mock_get_direct_reports(profile.id)
-        self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
@@ -224,36 +205,10 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.type, LandingService.Containers.Category.DIRECT_REPORTS)
         self.assertEqual(category.total_count, str(3))
 
-    def test_locations_address_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
-        addresses = self._mock_get_addresses(profile.organization_id)
-        self._mock_get_profile_stats([a.id for a in addresses])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_skills(profile.organization_id, skills=0)
-        self._mock_get_notes(profile.id, notes=0)
-
-        response = self.client.call_action('get_categories', profile_id=profile.id)
-        self.assertTrue(response.success)
-        self.assertEqual(len(response.result.categories), 1)
-
-        category = response.result.categories[0]
-        self.assertEqual(category.title, 'Locations')
-        self.assertEqual(len(category.addresses), 3)
-        self.assertEqual(category.content_key, 'address_1')
-        self.assertEqual(category.type, LandingService.Containers.Category.LOCATIONS)
-        self.assertEqual(category.total_count, str(3))
-        for address in category.addresses:
-            self.assertEqual(address.profile_count, '3')
-
     def test_anniversaries_profile_category(self):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id, peers=0)
         self._mock_get_direct_reports(profile.id, direct_reports=0)
-        self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
@@ -276,7 +231,6 @@ class TestGetCategories(TestCase):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id, peers=0)
         self._mock_get_direct_reports(profile.id, direct_reports=0)
-        self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id)
@@ -299,7 +253,6 @@ class TestGetCategories(TestCase):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id, peers=0)
         self._mock_get_direct_reports(profile.id, direct_reports=0)
-        self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
@@ -323,7 +276,6 @@ class TestGetCategories(TestCase):
         # TODO we should have the mock transport return an error that the mock wasn't registred
         self._mock_get_peers(profile.id, peers=0)
         self._mock_get_direct_reports(profile.id, direct_reports=0)
-        self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
@@ -346,7 +298,6 @@ class TestGetCategories(TestCase):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id, peers=0)
         self._mock_get_direct_reports(profile.id, direct_reports=0)
-        self._mock_get_addresses(profile.organization_id, addresses=0)
         self._mock_get_profile_stats([])
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)

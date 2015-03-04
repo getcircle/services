@@ -326,7 +326,7 @@ class CreateLocation(actions.Action):
 
     type_validators = {
         'location.organization_id': [validators.is_uuid4],
-        'location.address_id': [validators.is_uuid4],
+        'location.address.id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
@@ -392,7 +392,7 @@ class GetExtendedLocation(actions.Action):
             pk=self.request.location_id,
         )
         location.to_protobuf(self.response.location)
-        location.address.to_protobuf(self.response.address)
+        location.address.to_protobuf(self.response.location.address)
         profile_array = self._fetch_profile_array(str(location.id))
         self.response.member_profiles_payload = base64.encodestring(
             profile_array.SerializeToString(),

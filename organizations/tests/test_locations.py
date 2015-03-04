@@ -26,35 +26,36 @@ class AppreciationTests(TestCase):
                 'create_location',
                 location={
                     'organization_id': 'invalid',
-                    'address_id': fuzzy.FuzzyUUID().fuzz(),
+                    'address': mocks.mock_address(),
                     'name': fuzzy.FuzzyText().fuzz(),
                 },
             )
 
     def test_create_location_invalid_address_id(self):
-        with self.assertFieldError('location.address_id'):
+        address = mocks.mock_address(id='invalid')
+        with self.assertFieldError('location.address.id'):
             self.client.call_action(
                 'create_location',
                 location={
                     'organization_id': fuzzy.FuzzyUUID().fuzz(),
-                    'address_id': 'invalid',
+                    'address': address,
                     'name': fuzzy.FuzzyText().fuzz(),
                 },
             )
 
     def test_create_location(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
-        address_id = fuzzy.FuzzyUUID().fuzz()
+        address = mocks.mock_address(organization_id=organization_id)
         response = self.client.call_action(
             'create_location',
             location={
                 'organization_id': organization_id,
-                'address_id': address_id,
+                'address': address,
                 'name': fuzzy.FuzzyText().fuzz(),
             },
         )
         self.assertEqual(response.result.location.organization_id, organization_id)
-        self.assertEqual(response.result.location.address_id, address_id)
+        self._verify_containers(response.result.location.address, address)
 
     def test_create_location_duplicate(self):
         location = factories.LocationFactory.create_protobuf()
@@ -63,7 +64,7 @@ class AppreciationTests(TestCase):
                 'create_location',
                 location={
                     'organization_id': location.organization_id,
-                    'address_id': fuzzy.FuzzyUUID().fuzz(),
+                    'address': location.address,
                     'name': location.name,
                 },
             )
@@ -130,7 +131,7 @@ class AppreciationTests(TestCase):
             )
 
         self._verify_containers(location_protobuf, response.result.location)
-        self._verify_containers(address_protobuf, response.result.address)
+        self._verify_containers(address_protobuf, response.result.location.address)
 
         profiles_payload = base64.decodestring(response.result.member_profiles_payload)
         response_profiles = ProfileService.Containers.ProfileArray.FromString(profiles_payload)
