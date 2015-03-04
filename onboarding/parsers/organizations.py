@@ -16,11 +16,14 @@ class TeamStore(object):
         self.team_to_parent_owner_email = {}
 
     def store(self, team, owner_email, parent_owner_email):
-        print 'storing team: %s, owner: %s, parent email: %s' % (
-            smart_text(team),
-            smart_text(owner_email),
-            smart_text(parent_owner_email),
-        )
+        try:
+            print 'storing team: %s, owner: %s, parent email: %s' % (
+                smart_text(team),
+                smart_text(owner_email),
+                smart_text(parent_owner_email),
+            )
+        except Exception as e:
+            print e
         self.owner_email_to_team[owner_email] = team
         self.team_to_owner_email[team] = owner_email
         self.team_to_parent_owner_email[team] = parent_owner_email
