@@ -432,8 +432,8 @@ class GetLocation(actions.Action):
         else:
             raise self.ActionError('FAILURE', ('FAILURE', 'missing parameters'))
 
-        location = models.Location.objects.get(**parameters)
-        location.to_protobuf(self.response.location)
+        location = models.Location.objects.select_related('address').get(**parameters)
+        location.to_protobuf(self.response.location, address=location.address.as_dict())
 
 
 class GetLocations(actions.Action):
@@ -443,7 +443,9 @@ class GetLocations(actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        locations = models.Location.objects.filter(organization_id=self.request.organization_id)
+        locations = models.Location.objects.select_related('address').filter(
+            organization_id=self.request.organization_id,
+        )
         for location in locations:
             container = self.response.locations.add()
-            location.to_protobuf(container)
+            location.to_protobuf(container, address=location.address.as_dict())

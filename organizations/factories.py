@@ -53,3 +53,11 @@ class LocationFactory(factory.Factory):
     name = factory.FuzzyText()
     address = factory.SubFactory(AddressFactory)
     organization = factory.SubFactory(OrganizationFactory)
+
+    @classmethod
+    def create_protobuf(cls, *args, **kwargs):
+        cls.verify_has_protobuf()
+        container = cls._meta.protobuf()
+        model = cls.create(*args, **kwargs)
+        model.to_protobuf(container, address=model.address.as_dict())
+        return container
