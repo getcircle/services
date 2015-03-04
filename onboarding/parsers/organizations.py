@@ -101,11 +101,11 @@ class Parser(OrganizationParser):
         self.addresses = {}
         self.teams = set()
         self.team_store = TeamStore()
-        self.saved_addresses = {}
+        self.saved_locations = {}
         self.saved_teams = {}
         self.saved_users = {}
 
-    def _save_address(self, data):
+    def _save_location(self, data):
         address = {
             'organization_id': self.organization.id,
         }
@@ -124,7 +124,21 @@ class Parser(OrganizationParser):
                 organization_id=address['organization_id'],
             )
             address = response.result.address
-        return address.id
+
+        location = {
+            'name': address.name,
+            'organization_id': address.organization_id,
+            'address': address,
+        }
+        try:
+            response = self.organization_client.call_action('create_location', location=location)
+        except self.organization_client.CallActionError:
+            response = self.organization_client.call_action(
+                'get_location',
+                name=location['name'],
+                organization_id=location['organization_id'],
+            )
+        return response.result.location.id
 
     def _save_users(self, rows):
         users = []
@@ -179,7 +193,7 @@ class Parser(OrganizationParser):
             profile_data = {
                 'organization_id': self.organization.id,
                 'team_id': self.saved_teams[row.team],
-                'address_id': self.saved_addresses[row.address_composite_key],
+                'location_id': self.saved_locations[row.address_composite_key],
                 'user_id': self.saved_users[row.email],
             }
             profile_data.update(row.profile)
@@ -220,7 +234,7 @@ class Parser(OrganizationParser):
 
     def _save(self):
         for composite_key, address in self.addresses.iteritems():
-            self.saved_addresses[composite_key] = self._save_address(address)
+            self.saved_locations[composite_key] = self._save_location(address)
 
         # create users for all the rows
         users = self._save_users(self.rows)

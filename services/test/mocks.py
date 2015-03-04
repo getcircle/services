@@ -223,3 +223,17 @@ def mock_position(container=None, **overrides):
         fuzzy.FuzzyText: ['title', 'summary'],
     }
     return _mock_container(container, mock_dict, **defaults)
+
+
+def mock_location(container=None, **overrides):
+    if container is None:
+        container = OrganizationService.Containers.Location()
+
+    defaults = {'address': mock_address()}
+    defaults.update(overrides)
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'organization_id'],
+        fuzzy.FuzzyText: ['name'],
+    }
+    return _mock_container(container, mock_dict, **defaults)

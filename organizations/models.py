@@ -65,3 +65,13 @@ class Address(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('name', 'organization')
+
+
+class Location(models.UUIDModel, models.TimestampableModel):
+
+    organization = models.ForeignKey(Organization, db_index=True)
+    name = models.CharField(max_length=64)
+    address = models.ForeignKey(Address)
+
+    class Meta:
+        unique_together = ('name', 'organization')

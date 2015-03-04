@@ -19,8 +19,9 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     organization_id = models.UUIDField()
     user_id = models.UUIDField()
-    address_id = models.UUIDField()
-    team_id = models.UUIDField()
+    address_id = models.UUIDField(null=True, db_index=True)
+    location_id = models.UUIDField(null=True, db_index=True)
+    team_id = models.UUIDField(db_index=True)
     title = models.CharField(max_length=255)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)

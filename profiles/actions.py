@@ -152,6 +152,7 @@ class GetProfiles(actions.Action):
         'skill_id': [validators.is_uuid4],
         'address_id': [validators.is_uuid4],
         'ids': [validators.is_uuid4_list],
+        'location_id': [validators.is_uuid4],
     }
 
     def validate(self, *args, **kwargs):
@@ -171,6 +172,8 @@ class GetProfiles(actions.Action):
             parameters['address_id'] = self.request.address_id
         elif self.request.ids:
             parameters['id__in'] = list(self.request.ids)
+        elif self.request.location_id:
+            parameters['location_id'] = self.request.location_id
         else:
             raise self.ActionError('missing parameters')
 

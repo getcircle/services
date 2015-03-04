@@ -52,13 +52,13 @@ class TestGetExtendedOrganization(TestCase):
         )
         return mock_response.skills
 
-    def _mock_get_addresses(self, organization_id, addresses=3):
+    def _mock_get_locations(self, organization_id, locations=3):
         service = 'organization'
-        action = 'get_addresses'
+        action = 'get_locations'
         mock_response = mock.get_mockable_response(service, action)
-        for _ in range(addresses):
-            address = mock_response.addresses.add()
-            mocks.mock_address(address, organization_id=organization_id)
+        for _ in range(locations):
+            location = mock_response.locations.add()
+            mocks.mock_location(location, organization_id=organization_id)
 
         mock.instance.register_mock_response(
             service,
@@ -66,7 +66,7 @@ class TestGetExtendedOrganization(TestCase):
             mock_response,
             organization_id=organization_id,
         )
-        return mock_response.addresses
+        return mock_response.locations
 
     def _mock_get_top_level_team(self, organization_id):
         service = 'organization'
@@ -112,20 +112,20 @@ class TestGetExtendedOrganization(TestCase):
         mock.instance.register_mock_response(service, action, mock_response, user_id=user_id)
         return mock_response.profile
 
-    def _mock_get_profile_stats(self, address_ids, count=3):
+    def _mock_get_profile_stats(self, location_ids, count=3):
         service = 'profile'
         action = 'get_profile_stats'
         mock_response = mock.get_mockable_response(service, action)
-        for address_id in address_ids:
+        for location_id in location_ids:
             container = mock_response.stats.add()
-            container.id = address_id
+            container.id = location_id
             container.count = str(count)
 
         mock.instance.register_mock_response(
             service,
             action,
             mock_response,
-            address_ids=address_ids,
+            location_ids=location_ids,
         )
 
     def test_get_organization_categories_invalid_organization_id(self):
@@ -135,8 +135,8 @@ class TestGetExtendedOrganization(TestCase):
     def test_get_organization_categories(self):
         organization = self._mock_get_organization()
         trending_skills = self._mock_get_active_skills(organization.id, skills=10)
-        addresses = self._mock_get_addresses(organization.id)
-        self._mock_get_profile_stats([address.id for address in addresses])
+        locations = self._mock_get_locations(organization.id)
+        self._mock_get_profile_stats([location.id for location in locations])
         top_level_team = self._mock_get_top_level_team(organization.id)
         self._mock_get_team_children(top_level_team.id, teams=5)
         owner = self._mock_get_profile_with_user_id(top_level_team.owner_id)
@@ -153,8 +153,8 @@ class TestGetExtendedOrganization(TestCase):
         skills = category_dict[LandingService.Containers.Category.SKILLS]
         self.assertEqual(len(skills.skills), len(trending_skills))
 
-        locations = category_dict[LandingService.Containers.Category.LOCATIONS]
-        self.assertEqual(len(locations.addresses), len(addresses))
+        location_category = category_dict[LandingService.Containers.Category.LOCATIONS]
+        self.assertEqual(len(location_category.locations), len(locations))
 
         executives = category_dict[LandingService.Containers.Category.EXECUTIVES]
         # equal to 4 because we include the owner (the rest are just direct reports)
