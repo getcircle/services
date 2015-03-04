@@ -89,8 +89,7 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
 
 class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
-    # XXX switch to 1-1 field
-    user = models.ForeignKey(User, unique=True)
+    user = models.OneToOneField(User)
     # XXX not sure if this needs to be encrypted
     token = models.CharField(max_length=16, default=pyotp.random_base32)
 
