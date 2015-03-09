@@ -207,6 +207,7 @@ class GetTeams(actions.Action):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
+        'location_id': [validators.is_uuid4],
     }
 
     field_validators = {
@@ -215,10 +216,29 @@ class GetTeams(actions.Action):
         }
     }
 
-    def run(self, *args, **kwargs):
-        teams = models.Team.objects.filter(
+    def _get_teams_by_organization_id(self):
+        return models.Team.objects.filter(
             organization_id=self.request.organization_id,
         )
+
+    def _get_teams_by_location_id(self):
+        client = service.control.Client('profile', token=self.token)
+        response = client.call_action(
+            'get_attributes_for_profiles',
+            location_id=self.request.location_id,
+            distinct=True,
+            attributes=['team_id'],
+        )
+        return models.Team.objects.filter(
+            id__in=[attribute.value for attribute in response.result.attributes],
+        )
+
+    def run(self, *args, **kwargs):
+        if self.request.organization_id:
+            teams = self._get_teams_by_organization_id()
+        else:
+            teams = self._get_teams_by_location_id()
+
         for team in teams:
             result = self.response.teams.add()
             team.to_protobuf(result, path=team.get_path())

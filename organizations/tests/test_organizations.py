@@ -455,6 +455,31 @@ class TestOrganizations(TestCase):
         self.assertTrue(response.success)
         self.assertTrue(len(response.result.teams), 5)
 
+    def test_get_teams_by_location_id(self):
+        location_id = fuzzy.FuzzyUUID().fuzz()
+        organization = factories.OrganizationFactory.create()
+        teams = factories.TeamFactory.create_batch(2, organization=organization)
+        with self.default_mock_transport(self.client) as mock:
+            mock_response = mock.get_mockable_response('profile', 'get_attributes_for_profiles')
+            for team in teams:
+                attribute = mock_response.attributes.add()
+                attribute.name = 'team_id'
+                attribute.value = str(team.id)
+            mock.instance.register_mock_response(
+                'profile',
+                'get_attributes_for_profiles',
+                mock_response,
+                location_id=location_id,
+                distinct=True,
+                attributes=['team_id'],
+            )
+            response = self.client.call_action('get_teams', location_id=location_id)
+        self.assertEqual(len(response.result.teams), 2)
+
+    def test_get_teams_invalid_location_id(self):
+        with self.assertFieldError('location_id'):
+            self.client.call_action('get_teams', location_id='invalid')
+
     def test_get_team_children_invalid_team_id(self):
         with self.assertFieldError('team_id'):
             self.client.call_action('get_team_children', team_id='invalid')
