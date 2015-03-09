@@ -23,4 +23,5 @@ class Server(service.control.Server):
         'get_upcoming_birthdays': actions.GetUpcomingBirthdays,
         'get_recent_hires': actions.GetRecentHires,
         'get_active_skills': actions.GetActiveSkills,
+        'get_attributes_for_profiles': actions.GetAttributesForProfiles,
     }

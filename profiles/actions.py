@@ -1,6 +1,7 @@
 import uuid
 
 import arrow
+from django.core.exceptions import FieldError
 import django.db
 from django.db.models import (
     Count,
@@ -666,3 +667,27 @@ class GetActiveSkills(actions.Action):
         for skill in skills:
             container = self.response.skills.add()
             skill.to_protobuf(container)
+
+
+class GetAttributesForProfiles(actions.Action):
+
+    required_fields = ('attributes', 'location_id')
+    type_validators = {
+        'location_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            items = models.Profile.objects.filter(location_id=self.request.location_id).values(
+                *self.request.attributes
+            )
+            if self.request.distinct:
+                items = items.distinct(*self.request.attributes)
+        except FieldError:
+            raise self.ActionFieldError('attributes', 'INVALID')
+
+        for item in items:
+            for name in self.request.attributes:
+                container = self.response.attributes.add()
+                container.name = name
+                container.value = str(item[name])

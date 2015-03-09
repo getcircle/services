@@ -787,3 +787,64 @@ class TestProfiles(TestCase):
     def test_get_profiles_with_location_id_invalid_location_id(self):
         with self.assertFieldError('location_id'):
             self.client.call_action('get_profiles', location_id='invalid')
+
+    def test_get_attributes_for_profiles_with_invalid_location_id(self):
+        with self.assertFieldError('location_id'):
+            self.client.call_action(
+                'get_attributes_for_profiles',
+                location_id='invalid',
+                attributes=['team_id'],
+            )
+
+    def test_get_attributes_for_profiles_location_id_required(self):
+        with self.assertFieldError('location_id', 'MISSING'):
+            self.client.call_action(
+                'get_attributes_for_profiles',
+                attributes=['team_id'],
+            )
+
+    def test_get_attributes_for_profiles_attributes_required(self):
+        with self.assertFieldError('attributes', 'MISSING'):
+            self.client.call_action(
+                'get_attributes_for_profiles',
+                location_id=fuzzy.FuzzyUUID().fuzz(),
+            )
+
+    def test_get_attributes_for_profiles_team_id_by_location_id_distinct(self):
+        location_id = fuzzy.FuzzyUUID().fuzz()
+        team_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create_batch(
+            size=2,
+            location_id=location_id,
+            team_id=team_id,
+        )
+        factories.ProfileFactory.create_batch(3, location_id=location_id)
+
+        response = self.client.call_action(
+            'get_attributes_for_profiles',
+            location_id=location_id,
+            attributes=['team_id'],
+            distinct=True,
+        )
+        self.assertEqual(len(response.result.attributes), 4)
+
+    def test_get_attributes_for_profiles_non_distinct(self):
+        location_id = fuzzy.FuzzyUUID().fuzz()
+        team_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create_batch(4, location_id=location_id, team_id=team_id)
+        response = self.client.call_action(
+            'get_attributes_for_profiles',
+            location_id=location_id,
+            attributes=['team_id'],
+        )
+        self.assertEqual(len(response.result.attributes), 4)
+
+    def test_get_attributes_for_profiles_invalid_attribute_by_location_id(self):
+        location_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create(location_id=location_id)
+        with self.assertFieldError('attributes'):
+            self.client.call_action(
+                'get_attributes_for_profiles',
+                attributes=['invalid'],
+                location_id=location_id,
+            )
