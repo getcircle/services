@@ -8,16 +8,13 @@ from services.test import (
     TestCase,
 )
 
-from .. import (
-    factories,
-    models,
-)
+from .. import factories
 
 
-class AppreciationTests(TestCase):
+class OrganizationLocationTests(TestCase):
 
     def setUp(self):
-        super(AppreciationTests, self).setUp()
+        super(OrganizationLocationTests, self).setUp()
         self.client = service.control.Client('organization', token=mocks.mock_token())
 
     def test_create_location_invalid_organization_id(self):
