@@ -46,6 +46,7 @@ INSTALLED_APPS = (
 
     'rest_framework',
     'rest_framework.authtoken',
+    'timezone_field',
 
     'services',
 
@@ -229,6 +230,8 @@ GOOGLE_CLIENT_SECRET = 'lIjknz85LXHAQGMWM7A8QtPx'
 GOOGLE_SCOPE = 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.profile.emails.read'
 GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 GOOGLE_USER_AGENT = 'circlehq-v1.0'
+GOOGLE_API_KEY = 'AIzaSyAM0Kl2eU_nyo4OnL529-TEocozCiE_HY8'
+GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'
 
 # User Service Settings
 USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state token

@@ -1,8 +1,6 @@
-import base64
 import uuid
 
 import django.db
-from protobufs.profile_service_pb2 import ProfileService
 from service import (
     actions,
     validators,

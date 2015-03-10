@@ -38,6 +38,7 @@ class AddressFactory(factory.Factory):
     country_code = 'US'
     latitude = '37.578286'
     longitude = '-122.348729'
+    timezone = 'America/Los_Angeles'
 
     @classmethod
     def get_protobuf_data(cls, **data):

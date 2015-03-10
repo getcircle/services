@@ -1,6 +1,7 @@
 import os
 import unittest
 
+from mock import patch
 import service.control
 
 from services.test import TestCase
@@ -59,7 +60,11 @@ class TestParser(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.teams), 0)
 
-    def test_parser_commit(self):
+    @patch(
+        'onboarding.parsers.organizations.get_timezone_for_location',
+        return_value='America/Los_Angeles',
+    )
+    def test_parser_commit(self, mock_get_timezone_for_location):
         parser = Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path('sample_organization.csv'),

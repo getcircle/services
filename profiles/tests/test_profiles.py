@@ -63,6 +63,7 @@ class TestProfiles(TestCase):
             'country_code': 'US',
             'latitude': '37.578286',
             'longitude': '-122.348729',
+            'timezone': 'America/Los_Angeles',
         }
         response = self.org_client.call_action(
             'create_address',

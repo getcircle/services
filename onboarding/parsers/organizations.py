@@ -3,6 +3,7 @@ from csv import DictReader
 from django.utils.encoding import smart_text
 import service.control
 
+from services.utils import get_timezone_for_location
 from .base import OrganizationParser
 
 DEFAULT_PASSWORD = 'rhlabs123'
@@ -111,6 +112,7 @@ class Parser(OrganizationParser):
     def _save_location(self, data):
         address = {
             'organization_id': self.organization.id,
+            'timezone': get_timezone_for_location(data['latitude'], data['longitude']),
         }
         address.update(data)
         self.debug_log('saving address: %s' % (address,))

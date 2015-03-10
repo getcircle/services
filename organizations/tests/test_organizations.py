@@ -29,6 +29,7 @@ class TestOrganizations(TestCase):
             'country_code': 'US',
             'latitude': '37.578286',
             'longitude': '-122.348729',
+            'timezone': 'America/Los_Angeles',
         }
 
     def _create_organization(self, name=None, domain=None):
