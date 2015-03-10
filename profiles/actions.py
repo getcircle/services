@@ -162,7 +162,7 @@ class GetProfiles(actions.Action):
             if self.request.HasField('skill_id') and not self.request.HasField('organization_id'):
                 raise self.ActionFieldError('organization_id', 'REQUIRED')
 
-    def _get_profiles_with_basic_keys(self):
+    def _populate_profiles_with_basic_keys(self):
         parameters = {}
         if self.request.skill_id:
             parameters['organization_id'] = self.request.organization_id
@@ -178,9 +178,14 @@ class GetProfiles(actions.Action):
         else:
             raise self.ActionError('missing parameters')
 
-        return models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
+        profiles = models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
+        self.paginated_response(
+            self.response.profiles,
+            profiles,
+            lambda item, container: item.to_protobuf(container.add()),
+        )
 
-    def _get_profiles_by_team_id(self):
+    def _populate_profiles_by_team_id(self):
         # fetch the team to get the owner
         client = service.control.Client('organization', token=self.token)
         response = client.call_action(
@@ -202,20 +207,19 @@ class GetProfiles(actions.Action):
             id__in=[profile.id for profile in profiles],
         )
         profiles.extend(team_profiles)
-        return sorted(profiles, key=lambda x: (x.first_name, x.last_name))
-
-    def run(self, *args, **kwargs):
-        if self.request.team_id:
-            profiles = self._get_profiles_by_team_id()
-        else:
-            profiles = self._get_profiles_with_basic_keys()
-
+        profiles = sorted(profiles, key=lambda x: (x.first_name, x.last_name))
         for profile in profiles:
             container = self.response.profiles.add()
             if isinstance(profile, models.Profile):
                 profile.to_protobuf(container)
             else:
                 container.CopyFrom(profile)
+
+    def run(self, *args, **kwargs):
+        if self.request.team_id:
+            self._populate_profiles_by_team_id()
+        else:
+            self._populate_profiles_with_basic_keys()
 
 
 class GetExtendedProfile(GetProfile):
