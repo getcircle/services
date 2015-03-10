@@ -378,52 +378,6 @@ class UpdateLocation(actions.Action):
         location.to_protobuf(self.response.location)
 
 
-class GetExtendedLocation(actions.Action):
-
-    type_validators = {
-        'location_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'location_id': {
-            valid_location: 'DOES_NOT_EXIST',
-        }
-    }
-
-    def _fetch_profile_array(self, location_id):
-        client = service.control.Client('profile', token=self.token)
-        try:
-            response = client.call_action('get_profiles', location_id=location_id)
-        except client.CallActionError as e:
-            raise self.ActionError('FAILURE', ('FAILURE', 'Failed to fetch profiles: %s' % (e,)))
-
-        profile_array = ProfileService.Containers.ProfileArray()
-        for profile in response.result.profiles:
-            container = profile_array.items.add()
-            container.CopyFrom(profile)
-        return profile_array
-
-    def _get_teams(self, profiles):
-        team_ids = set([profile.team_id for profile in profiles])
-        return models.Team.objects.filter(pk__in=team_ids)
-
-    def run(self, *args, **kwargs):
-        location = models.Location.objects.select_related('address').get(
-            pk=self.request.location_id,
-        )
-        location.to_protobuf(self.response.location)
-        location.address.to_protobuf(self.response.location.address)
-        profile_array = self._fetch_profile_array(str(location.id))
-        self.response.member_profiles_payload = base64.encodestring(
-            profile_array.SerializeToString(),
-        )
-
-        teams = self._get_teams(profile_array.items)
-        for team in teams:
-            container = self.response.teams.add()
-            team.to_protobuf(container, path=team.get_path())
-
-
 class GetLocation(actions.Action):
 
     type_validators = {
