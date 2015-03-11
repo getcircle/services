@@ -237,9 +237,11 @@ class GetTeams(actions.Action):
         else:
             teams = self._get_teams_by_location_id()
 
-        for team in teams:
-            result = self.response.teams.add()
-            team.to_protobuf(result, path=team.get_path())
+        self.paginated_response(
+            self.response.teams,
+            teams,
+            lambda item, container: item.to_protobuf(container.add(), path=item.get_path()),
+        )
 
 
 class CreateAddress(actions.Action):
