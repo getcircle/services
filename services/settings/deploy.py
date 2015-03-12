@@ -4,6 +4,9 @@ import urlparse
 # import default settings
 from . import *  # noqa
 
+from service import settings
+settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 100)
+
 url = urlparse.urlparse(os.environ['DATABASE_URL'])
 DATABASES = {
     'default': {
