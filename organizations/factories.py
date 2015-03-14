@@ -11,6 +11,7 @@ class OrganizationFactory(factory.Factory):
 
     name = factory.FuzzyText()
     domain = factory.FuzzyText(suffix='.com')
+    image_url = factory.FuzzyText(prefix='http://www.', suffix='.com')
 
 
 class TeamFactory(factory.Factory):

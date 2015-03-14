@@ -12,6 +12,7 @@ class Organization(models.UUIDModel, models.TimestampableModel):
 
     name = models.CharField(max_length=64)
     domain = models.CharField(max_length=64, unique=True)
+    image_url = models.URLField(max_length=255, null=True)
 
 
 class Team(models.UUIDModel, models.TimestampableModel):

@@ -27,7 +27,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     last_name = models.CharField(max_length=64)
     cell_phone = PhoneNumberField(null=True)
     work_phone = PhoneNumberField(null=True)
-    image_url = models.CharField(max_length=256, null=True)
+    image_url = models.URLField(max_length=256, null=True)
     email = models.EmailField()
     birth_date = models.DateField()
     hire_date = models.DateField()
