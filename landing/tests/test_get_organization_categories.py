@@ -119,7 +119,7 @@ class TestGetExtendedOrganization(TestCase):
         for location_id in location_ids:
             container = mock_response.stats.add()
             container.id = location_id
-            container.count = str(count)
+            container.count = count
 
         mock.instance.register_mock_response(
             service,

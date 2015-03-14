@@ -70,7 +70,7 @@ class TestGetCategories(TestCase):
         for location_id in location_ids:
             container = mock_response.stats.add()
             container.id = location_id
-            container.count = str(count)
+            container.count = count
 
         mock.instance.register_mock_response(
             service,
@@ -203,7 +203,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'title')
         self.assertEqual(category.type, LandingService.Containers.Category.DIRECT_REPORTS)
-        self.assertEqual(category.total_count, str(3))
+        self.assertEqual(category.total_count, 3)
 
     def test_anniversaries_profile_category(self):
         profile = self._mock_get_profile()
@@ -225,7 +225,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
         self.assertEqual(category.type, LandingService.Containers.Category.ANNIVERSARIES)
-        self.assertEqual(category.total_count, str(3))
+        self.assertEqual(category.total_count, 3)
 
     def test_birthdays_profile_category(self):
         profile = self._mock_get_profile()
@@ -247,7 +247,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'birth_date')
         self.assertEqual(category.type, LandingService.Containers.Category.BIRTHDAYS)
-        self.assertEqual(category.total_count, str(3))
+        self.assertEqual(category.total_count, 3)
 
     def test_recent_hires_profile_category(self):
         profile = self._mock_get_profile()
@@ -269,7 +269,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
         self.assertEqual(category.type, LandingService.Containers.Category.NEW_HIRES)
-        self.assertEqual(category.total_count, str(3))
+        self.assertEqual(category.total_count, 3)
 
     def test_trending_skills_skill_category(self):
         profile = self._mock_get_profile()
@@ -292,7 +292,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.skills), 3)
         self.assertEqual(category.content_key, 'name')
         self.assertEqual(category.type, LandingService.Containers.Category.SKILLS)
-        self.assertEqual(category.total_count, str(3))
+        self.assertEqual(category.total_count, 3)
 
     def test_notes_note_category(self):
         profile = self._mock_get_profile()
@@ -315,4 +315,4 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.notes), 3)
         self.assertEqual(category.content_key, 'changed')
         self.assertEqual(category.type, LandingService.Containers.Category.NOTES)
-        self.assertEqual(category.total_count, str(3))
+        self.assertEqual(category.total_count, 3)

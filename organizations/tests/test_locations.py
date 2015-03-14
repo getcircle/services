@@ -1,6 +1,3 @@
-import base64
-
-from protobufs.profile_service_pb2 import ProfileService
 import service.control
 from services.test import (
     fuzzy,
@@ -16,6 +13,22 @@ class OrganizationLocationTests(TestCase):
     def setUp(self):
         super(OrganizationLocationTests, self).setUp()
         self.client = service.control.Client('organization', token=mocks.mock_token())
+
+    def _mock_get_profile_stats(self, mock, location_ids):
+        service = 'profile'
+        action = 'get_profile_stats'
+        mock_response = mock.get_mockable_response(service, action)
+        for location_id in location_ids:
+            stat = mock_response.stats.add()
+            stat.id = location_id
+            stat.count = 5
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            location_ids=location_ids,
+        )
 
     def test_create_location_invalid_organization_id(self):
         with self.assertFieldError('location.organization_id'):
@@ -94,8 +107,11 @@ class OrganizationLocationTests(TestCase):
 
     def test_get_location_with_location_id(self):
         location = factories.LocationFactory.create_protobuf()
-        response = self.client.call_action('get_location', location_id=location.id)
+        with self.default_mock_transport(self.client) as mock:
+            self._mock_get_profile_stats(mock, [str(location.id)])
+            response = self.client.call_action('get_location', location_id=location.id)
         self._verify_containers(location, response.result.location)
+        self.assertEqual(response.result.location.profile_count, 5)
 
     def test_get_location_by_name_organization_id_required(self):
         with self.assertFieldError('organization_id', 'REQUIRED'):
@@ -118,5 +134,12 @@ class OrganizationLocationTests(TestCase):
         organization = factories.OrganizationFactory.create()
         locations = factories.LocationFactory.create_batch(size=3, organization=organization)
         factories.LocationFactory.create_batch(size=3)
-        response = self.client.call_action('get_locations', organization_id=str(organization.id))
+        with self.default_mock_transport(self.client) as mock:
+            self._mock_get_profile_stats(mock, [str(location.id) for location in locations])
+            response = self.client.call_action(
+                'get_locations',
+                organization_id=str(organization.id),
+            )
         self.assertEqual(len(locations), len(response.result.locations))
+        for location in response.result.locations:
+            self.assertEqual(location.profile_count, 5)

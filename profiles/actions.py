@@ -569,7 +569,7 @@ class GetProfileStats(actions.Action):
             lookup_id = uuid.UUID(lookup_id, version=4)
             container = self.response.stats.add()
             container.id = str(lookup_id)
-            container.count = str(stats_dict.get(lookup_id, 0))
+            container.count = stats_dict.get(lookup_id, 0)
 
 
 class GetUpcomingAnniversaries(actions.Action):

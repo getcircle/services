@@ -32,7 +32,7 @@ class GetCategories(actions.Action):
         peers.title = 'Peers'
         peers.content_key = 'title'
         peers.type = LandingService.Containers.Category.PEERS
-        peers.total_count = str(len(response.result.profiles))
+        peers.total_count = len(response.result.profiles)
         for profile in response.result.profiles:
             container = peers.profiles.add()
             container.CopyFrom(profile)
@@ -53,7 +53,7 @@ class GetCategories(actions.Action):
         reports.title = 'Direct Reports'
         reports.content_key = 'title'
         reports.type = LandingService.Containers.Category.DIRECT_REPORTS
-        reports.total_count = str(len(response.result.profiles))
+        reports.total_count = len(response.result.profiles)
         for profile in response.result.profiles:
             container = reports.profiles.add()
             container.CopyFrom(profile)
@@ -73,7 +73,7 @@ class GetCategories(actions.Action):
         anniversaries.title = 'Work Anniversaries'
         anniversaries.content_key = 'hire_date'
         anniversaries.type = LandingService.Containers.Category.ANNIVERSARIES
-        anniversaries.total_count = str(len(response.result.profiles))
+        anniversaries.total_count = len(response.result.profiles)
         # TODO fix this logic in the client
         #for profile in response.result.profiles[:3]:
         for profile in response.result.profiles:
@@ -95,7 +95,7 @@ class GetCategories(actions.Action):
         birthdays.title = 'Birthdays'
         birthdays.content_key = 'birth_date'
         birthdays.type = LandingService.Containers.Category.BIRTHDAYS
-        birthdays.total_count = str(len(response.result.profiles))
+        birthdays.total_count = len(response.result.profiles)
         #for profile in response.result.profiles[:3]:
         for profile in response.result.profiles:
             container = birthdays.profiles.add()
@@ -116,7 +116,7 @@ class GetCategories(actions.Action):
         hires.title = 'New Hires'
         hires.content_key = 'hire_date'
         hires.type = LandingService.Containers.Category.NEW_HIRES
-        hires.total_count = str(len(response.result.profiles))
+        hires.total_count = len(response.result.profiles)
         #for profile in response.result.profiles[:3]:
         for profile in response.result.profiles:
             container = hires.profiles.add()
@@ -137,7 +137,7 @@ class GetCategories(actions.Action):
         skills.title = 'Skills'
         skills.content_key = 'name'
         skills.type = LandingService.Containers.Category.SKILLS
-        skills.total_count = str(len(response.result.skills))
+        skills.total_count = len(response.result.skills)
         for skill in response.result.skills:
             container = skills.skills.add()
             container.CopyFrom(skill)
@@ -167,7 +167,7 @@ class GetCategories(actions.Action):
         category.title = 'Notes'
         category.content_key = 'changed'
         category.type = LandingService.Containers.Category.NOTES
-        category.total_count = str(len(notes))
+        category.total_count = len(notes)
         for note in notes:
             note_container = category.notes.add()
             note_container.CopyFrom(note)
@@ -234,7 +234,7 @@ class GetOrganizationCategories(GetCategories):
         category.title = 'Executives'
         category.content_key = 'name'
         category.type = LandingService.Containers.Category.EXECUTIVES
-        category.total_count = str(len(executives))
+        category.total_count = len(executives)
         for profile in executives:
             container = category.profiles.add()
             container.CopyFrom(profile)
@@ -254,7 +254,7 @@ class GetOrganizationCategories(GetCategories):
         category.title = 'Departments'
         category.content_key = 'name'
         category.type = LandingService.Containers.Category.DEPARTMENTS
-        category.total_count = str(len(departments))
+        category.total_count = len(departments)
         for department in departments:
             container = category.teams.add()
             container.CopyFrom(department)
@@ -281,11 +281,11 @@ class GetOrganizationCategories(GetCategories):
         locations.title = 'Locations'
         locations.content_key = 'address_1'
         locations.type = LandingService.Containers.Category.LOCATIONS
-        locations.total_count = str(len(items))
+        locations.total_count = len(items)
         for location in items:
             container = locations.locations.add()
             container.CopyFrom(location)
-            container.profile_count = int(stats.get(location.id, 0))
+            container.profile_count = stats.get(location.id, 0)
 
     def run(self, *args, **kwargs):
         self._get_departments_and_executives(self.request.organization_id)

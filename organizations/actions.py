@@ -378,7 +378,18 @@ class UpdateLocation(actions.Action):
         location.to_protobuf(self.response.location)
 
 
-class GetLocation(actions.Action):
+class BaseLocationAction(actions.Action):
+
+    def _fetch_profile_stats(self, locations):
+        client = service.control.Client('profile', token=self.token)
+        response = client.call_action(
+            'get_profile_stats',
+            location_ids=[str(location.id) for location in locations],
+        )
+        return dict((stat.id, stat.count) for stat in response.result.stats)
+
+
+class GetLocation(BaseLocationAction):
 
     type_validators = {
         'location_id': [validators.is_uuid4],
@@ -407,10 +418,15 @@ class GetLocation(actions.Action):
             raise self.ActionError('FAILURE', ('FAILURE', 'missing parameters'))
 
         location = models.Location.objects.select_related('address').get(**parameters)
-        location.to_protobuf(self.response.location, address=location.address.as_dict())
+        profile_stats = self._fetch_profile_stats([location])
+        location.to_protobuf(
+            self.response.location,
+            address=location.address.as_dict(),
+            profile_count=profile_stats.get(str(location.id), 0),
+        )
 
 
-class GetLocations(actions.Action):
+class GetLocations(BaseLocationAction):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
@@ -420,6 +436,11 @@ class GetLocations(actions.Action):
         locations = models.Location.objects.select_related('address').filter(
             organization_id=self.request.organization_id,
         )
+        profile_stats = self._fetch_profile_stats(locations)
         for location in locations:
             container = self.response.locations.add()
-            location.to_protobuf(container, address=location.address.as_dict())
+            location.to_protobuf(
+                container,
+                address=location.address.as_dict(),
+                profile_count=profile_stats.get(str(location.id), 0),
+            )

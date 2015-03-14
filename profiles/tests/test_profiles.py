@@ -462,7 +462,7 @@ class TestProfiles(TestCase):
         )
         self.assertTrue(response.success)
         stats = response.result.stats[0]
-        self.assertEqual(stats.count, '0')
+        self.assertEqual(stats.count, 0)
 
     def test_get_profile_stats_address(self):
         address_id = fuzzy.FuzzyUUID().fuzz()
@@ -470,7 +470,7 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_profile_stats', address_ids=[address_id])
         self.assertTrue(response.success)
         stats = response.result.stats[0]
-        self.assertEqual(stats.count, '5')
+        self.assertEqual(stats.count, 5)
 
     def test_get_profile_stats_location_invalid(self):
         with self.assertFieldError('location_ids'):
@@ -483,7 +483,7 @@ class TestProfiles(TestCase):
         )
         self.assertTrue(response.success)
         stats = response.result.stats[0]
-        self.assertEqual(stats.count, '0')
+        self.assertEqual(stats.count, 0)
 
     def test_get_profile_stats_location(self):
         location_id = fuzzy.FuzzyUUID().fuzz()
@@ -491,7 +491,7 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_profile_stats', location_ids=[location_id])
         self.assertTrue(response.success)
         stats = response.result.stats[0]
-        self.assertEqual(stats.count, '5')
+        self.assertEqual(stats.count, 5)
 
     def test_create_profile_duplicate(self):
         profile = factories.ProfileFactory.create_protobuf()
