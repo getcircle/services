@@ -271,12 +271,6 @@ class GetOrganizationCategories(GetCategories):
             return
 
         items = response.result.locations
-        location_ids = [address.id for address in items]
-        response = self.profile_client.call_action('get_profile_stats', location_ids=location_ids)
-        if not response.success:
-            raise Exception('failed to fetch profile stats')
-
-        stats = dict((stat.id, stat.count) for stat in response.result.stats)
         locations = self.response.categories.add()
         locations.title = 'Locations'
         locations.content_key = 'address_1'
@@ -285,7 +279,6 @@ class GetOrganizationCategories(GetCategories):
         for location in items:
             container = locations.locations.add()
             container.CopyFrom(location)
-            container.profile_count = stats.get(location.id, 0)
 
     def run(self, *args, **kwargs):
         self._get_departments_and_executives(self.request.organization_id)
