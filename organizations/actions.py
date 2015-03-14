@@ -6,6 +6,7 @@ from service import (
     validators,
 )
 import service.control
+from service.paginator import Paginator
 
 from . import models
 
@@ -28,6 +29,17 @@ def valid_address(address_id):
 
 def valid_location(location_id):
     return models.Location.objects.filter(pk=location_id).exists()
+
+
+class TeamProfileStatsMixin(object):
+
+    def _fetch_profile_stats(self, team_ids):
+        result = {}
+        if team_ids:
+            client = service.control.Client('profile', token=self.token)
+            response = client.call_action('get_profile_stats', team_ids=team_ids)
+            result = dict((stat.id, stat.count) for stat in response.result.stats)
+        return result
 
 
 class CreateOrganization(actions.Action):
@@ -138,7 +150,7 @@ class CreateTeam(actions.Action):
             team.to_protobuf(self.response.team, path=team.get_path())
 
 
-class GetTeam(actions.Action):
+class GetTeam(actions.Action, TeamProfileStatsMixin):
 
     type_validators = {
         'team_id': [validators.is_uuid4],
@@ -168,7 +180,12 @@ class GetTeam(actions.Action):
 
         # TODO map this error
         team = models.Team.objects.get(**parameters)
-        team.to_protobuf(self.response.team, path=team.get_path())
+        profile_stats = self._fetch_profile_stats([str(team.id)])
+        team.to_protobuf(
+            self.response.team,
+            path=team.get_path(),
+            profile_count=profile_stats.get(str(team.id), 0),
+        )
 
 
 class GetTeamChildren(actions.Action):
@@ -201,7 +218,7 @@ class GetTeamChildren(actions.Action):
             team.to_protobuf(container, path=team.get_path())
 
 
-class GetTeams(actions.Action):
+class GetTeams(actions.Action, TeamProfileStatsMixin):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
@@ -237,10 +254,19 @@ class GetTeams(actions.Action):
         else:
             teams = self._get_teams_by_location_id()
 
+        paginator = self.get_paginator(teams)
+        page = self.get_page(paginator)
+        stats_dict = self._fetch_profile_stats([str(item.id) for item in page.object_list])
         self.paginated_response(
             self.response.teams,
             teams,
-            lambda item, container: item.to_protobuf(container.add(), path=item.get_path()),
+            lambda item, container: item.to_protobuf(
+                container.add(),
+                path=item.get_path(),
+                profile_count=stats_dict.get(str(item.id), 0),
+            ),
+            paginator=paginator,
+            page=page,
         )
 
 

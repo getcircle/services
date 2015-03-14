@@ -534,6 +534,7 @@ class GetProfileStats(actions.Action):
     type_validators = {
         'address_ids': [validators.is_uuid4_list],
         'location_ids': [validators.is_uuid4_list],
+        'team_ids': [validators.is_uuid4_list],
     }
 
     def _get_profile_stats_for_address_ids(self, address_ids):
@@ -542,11 +543,17 @@ class GetProfileStats(actions.Action):
         ).annotate(profiles=Count('id'))
         return dict((stat['address_id'], stat['profiles']) for stat in stats)
 
-    def _get_profile_stats_for_location_id(self, location_ids):
+    def _get_profile_stats_for_location_ids(self, location_ids):
         stats = models.Profile.objects.filter(location_id__in=location_ids).values(
             'location_id',
         ).annotate(profiles=Count('id'))
         return dict((stat['location_id'], stat['profiles']) for stat in stats)
+
+    def _get_profile_stats_for_team_ids(self, team_ids):
+        stats = models.Profile.objects.filter(team_id__in=team_ids).values(
+            'team_id',
+        ).annotate(profiles=Count('id'))
+        return dict((stat['team_id'], stat['profiles']) for stat in stats)
 
     def run(self, *args, **kwargs):
         lookup_ids = []
@@ -555,11 +562,14 @@ class GetProfileStats(actions.Action):
             stats_dict = self._get_profile_stats_for_address_ids(lookup_ids)
         elif self.request.location_ids:
             lookup_ids = self.request.location_ids
-            stats_dict = self._get_profile_stats_for_location_id(lookup_ids)
+            stats_dict = self._get_profile_stats_for_location_ids(lookup_ids)
+        elif self.request.team_ids:
+            lookup_ids = self.request.team_ids
+            stats_dict = self._get_profile_stats_for_team_ids(lookup_ids)
         else:
             raise self.ActionError(
                 'FAILURE',
-                ('FAILURE', 'Must provide either `location_ids` or `address_ids`'),
+                ('FAILURE', 'Must specify filter parameter'),
             )
 
         for lookup_id in lookup_ids:

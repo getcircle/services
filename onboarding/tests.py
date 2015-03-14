@@ -46,6 +46,22 @@ class TestParser(TestCase):
         )
         parser.parse(commit=True)
 
+    def _mock_get_profile_stats(self, mock):
+        service = 'profile'
+        action = 'get_profile_stats'
+        mock_response = mock.get_mockable_response(service, action)
+        for fake_id in range(3):
+            stat = mock_response.stats.add()
+            stat.id = str(fake_id)
+            stat.count = 5
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            mock_regex_lookup=r'%s:%s:.*' % (service, action,),
+        )
+
     def test_parser_no_commit(self):
         parser = Parser(
             organization_domain=self.organization.domain,
@@ -53,6 +69,9 @@ class TestParser(TestCase):
             token='test-token',
         )
         parser.parse(commit=False)
+        with self.default_mock_transport(self.profile_client) as mock:
+            self._mock_get_profile_stats(mock)
+
         response = self.organization_client.call_action(
             'get_teams',
             organization_id=self.organization.id,

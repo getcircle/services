@@ -472,6 +472,23 @@ class TestProfiles(TestCase):
         stats = response.result.stats[0]
         self.assertEqual(stats.count, 5)
 
+    def test_get_profile_stats_team_invalid(self):
+        with self.assertFieldError('team_ids'):
+            self.client.call_action('get_profile_stats', team_ids=['invalid'])
+
+    def test_get_profile_stats_team_no_profiles(self):
+        response = self.client.call_action(
+            'get_profile_stats',
+            team_ids=[fuzzy.FuzzyUUID().fuzz()],
+        )
+        self.assertEqual(response.result.stats[0].count, 0)
+
+    def test_get_profile_stats_team_ids(self):
+        team_id = fuzzy.FuzzyUUID().fuzz()
+        factories.ProfileFactory.create_batch(5, team_id=team_id)
+        response = self.client.call_action('get_profile_stats', team_ids=[team_id])
+        self.assertEqual(response.result.stats[0].count, 5)
+
     def test_get_profile_stats_location_invalid(self):
         with self.assertFieldError('location_ids'):
             self.client.call_action('get_profile_stats', location_ids=['invalid'])

@@ -97,6 +97,22 @@ class TestOrganizations(TestCase):
         self.assertTrue(response.success)
         return response.result.address
 
+    def _mock_get_profile_stats(self, mock, team_ids):
+        service = 'profile'
+        action = 'get_profile_stats'
+        mock_response = mock.get_mockable_response(service, action)
+        for team_id in team_ids:
+            stat = mock_response.stats.add()
+            stat.id = team_id
+            stat.count = 5
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            mock_regex_lookup=r'%s:%s:.*' % (service, action,),
+        )
+
     def test_create_organization(self):
         response = self.client.call_action(
             'create_organization',
@@ -395,11 +411,14 @@ class TestOrganizations(TestCase):
 
     def test_get_team(self):
         expected = self._create_team()
-        response = self.client.call_action(
-            'get_team',
-            team_id=expected.id,
-        )
+        with self.default_mock_transport(self.client) as mock:
+            self._mock_get_profile_stats(mock, [expected.id])
+            response = self.client.call_action(
+                'get_team',
+                team_id=expected.id,
+            )
         self._verify_containers(expected, response.result.team)
+        self.assertEqual(response.result.team.profile_count, 5)
 
     def test_get_organization_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
@@ -461,6 +480,7 @@ class TestOrganizations(TestCase):
         organization = factories.OrganizationFactory.create()
         teams = factories.TeamFactory.create_batch(2, organization=organization)
         with self.default_mock_transport(self.client) as mock:
+            self._mock_get_profile_stats(mock, [str(team.id) for team in teams])
             mock_response = mock.get_mockable_response('profile', 'get_attributes_for_profiles')
             for team in teams:
                 attribute = mock_response.attributes.add()
