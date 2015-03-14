@@ -553,7 +553,18 @@ class GetProfileStats(actions.Action):
         stats = models.Profile.objects.filter(team_id__in=team_ids).values(
             'team_id',
         ).annotate(profiles=Count('id'))
-        return dict((stat['team_id'], stat['profiles']) for stat in stats)
+        stats_dict = dict((stat['team_id'], stat['profiles']) for stat in stats)
+
+        client = service.control.Client('organization', token=self.token)
+        for team_id in team_ids:
+            response = client.call_action('get_team_children', team_id=team_id)
+            stats = models.Profile.objects.filter(
+                team_id__in=[item.id for item in response.result.teams],
+            ).values('team_id').annotate(profiles=Count('id'))
+            for stat in stats:
+                stats_dict[uuid.UUID(team_id, version=4)] += stat['profiles']
+
+        return stats_dict
 
     def run(self, *args, **kwargs):
         lookup_ids = []

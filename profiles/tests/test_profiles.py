@@ -3,7 +3,6 @@ import datetime
 from freezegun import freeze_time
 from protobufs.profile_service_pb2 import ProfileService
 import service.control
-from service.transports import mock
 
 from services.test import (
     fuzzy,
@@ -184,7 +183,7 @@ class TestProfiles(TestCase):
                 team_id='invalid',
             )
 
-    def _mock_get_direct_reports(self, user_id, profiles=2):
+    def _mock_get_direct_reports(self, mock, user_id, profiles=2):
         service = 'profile'
         action = 'get_direct_reports'
         mock_response = mock.get_mockable_response(service, action)
@@ -193,7 +192,7 @@ class TestProfiles(TestCase):
             mocks.mock_profile(profile)
         mock.instance.register_mock_response(service, action, mock_response, user_id=user_id)
 
-    def _mock_get_team(self, **overrides):
+    def _mock_get_team(self, mock, **overrides):
         service = 'organization'
         action = 'get_team'
         mock_response = mock.get_mockable_response(service, action)
@@ -206,21 +205,38 @@ class TestProfiles(TestCase):
         )
         return mock_response.team
 
+    def _mock_get_team_children(self, mock, team_id, children_ids):
+        service = 'organization'
+        action = 'get_team_children'
+        mock_response = mock.get_mockable_response(service, action)
+        for child_id in children_ids:
+            team = mock_response.teams.add()
+            mocks.mock_team(team, id=child_id)
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            team_id=team_id,
+        )
+
     def test_get_profiles(self):
-        team = self._mock_get_team()
-        created_first = factories.ProfileFactory.create_protobuf(first_name='b', team_id=team.id)
-        self._mock_get_direct_reports(team.owner_id, profiles=0)
-        created_second = factories.ProfileFactory.create_protobuf(
-            first_name='a',
-            team_id=created_first.team_id,
-        )
-        factories.ProfileFactory.create_batch(
-            size=2,
-            first_name='z',
-            team_id=created_first.team_id,
-        )
-        with mocks.mock_transport(self.client) as local_client:
-            response = local_client.call_action(
+        with self.default_mock_transport(self.client) as mock:
+            team = self._mock_get_team(mock)
+            created_first = factories.ProfileFactory.create_protobuf(
+                first_name='b',
+                team_id=team.id,
+            )
+            self._mock_get_direct_reports(mock, team.owner_id, profiles=0)
+            created_second = factories.ProfileFactory.create_protobuf(
+                first_name='a',
+                team_id=created_first.team_id,
+            )
+            factories.ProfileFactory.create_batch(
+                size=2,
+                first_name='z',
+                team_id=created_first.team_id,
+            )
+            response = self.client.call_action(
                 'get_profiles',
                 team_id=created_second.team_id,
             )
@@ -233,13 +249,13 @@ class TestProfiles(TestCase):
 
     def test_get_profiles_team_id_includes_owners_direct_reports(self):
         owner = factories.ProfileFactory.create_protobuf(first_name='owner')
-        team = self._mock_get_team(id=owner.team_id, owner_id=owner.user_id)
-        self._mock_get_team(owner_id=owner.id)
         factories.ProfileFactory.create_batch(size=2, team_id=owner.team_id)
-        self._mock_get_direct_reports(team.owner_id)
 
-        with mocks.mock_transport(self.client) as local_client:
-            response = local_client.call_action('get_profiles', team_id=team.id)
+        with self.default_mock_transport(self.client) as mock:
+            team = self._mock_get_team(mock, id=owner.team_id, owner_id=owner.user_id)
+            self._mock_get_team(mock, owner_id=owner.id)
+            self._mock_get_direct_reports(mock, team.owner_id)
+            response = self.client.call_action('get_profiles', team_id=team.id)
 
         self.assertTrue(response.success)
         # should include owner, profiles with same team_id and any direct reports of owner
@@ -477,17 +493,26 @@ class TestProfiles(TestCase):
             self.client.call_action('get_profile_stats', team_ids=['invalid'])
 
     def test_get_profile_stats_team_no_profiles(self):
-        response = self.client.call_action(
-            'get_profile_stats',
-            team_ids=[fuzzy.FuzzyUUID().fuzz()],
-        )
+        team_id = fuzzy.FuzzyUUID().fuzz()
+        with self.default_mock_transport(self.client) as mock:
+            self._mock_get_team_children(mock, team_id, [])
+            response = self.client.call_action(
+                'get_profile_stats',
+                team_ids=[team_id],
+            )
         self.assertEqual(response.result.stats[0].count, 0)
 
     def test_get_profile_stats_team_ids(self):
         team_id = fuzzy.FuzzyUUID().fuzz()
+        sub_team_ids = [fuzzy.FuzzyUUID().fuzz(), fuzzy.FuzzyUUID().fuzz()]
         factories.ProfileFactory.create_batch(5, team_id=team_id)
-        response = self.client.call_action('get_profile_stats', team_ids=[team_id])
-        self.assertEqual(response.result.stats[0].count, 5)
+        for sub_team_id in sub_team_ids:
+            factories.ProfileFactory.create(team_id=sub_team_id)
+
+        with self.default_mock_transport(self.client) as mock:
+            self._mock_get_team_children(mock, team_id, sub_team_ids)
+            response = self.client.call_action('get_profile_stats', team_ids=[team_id])
+        self.assertEqual(response.result.stats[0].count, 7)
 
     def test_get_profile_stats_location_invalid(self):
         with self.assertFieldError('location_ids'):
