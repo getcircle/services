@@ -345,10 +345,26 @@ class TestProfiles(TestCase):
 
         # create teams that children to the parent_team
         for _ in range(3):
-            self._create_team_and_owner(
+            team, sub_owner = self._create_team_and_owner(
                 address.organization_id,
                 address.id,
                 child_of=parent_team.id,
+            )
+
+            # add sub teams
+            for _ in range(2):
+                self._create_team_and_owner(
+                    address.organization_id,
+                    address.id,
+                    child_of=team.id,
+                )
+
+            # add members to these sub teams
+            factories.ProfileFactory.create(
+                address_id=address.id,
+                organization_id=address.organization_id,
+                team_id=team.id,
+                user_id=self._create_user().id,
             )
 
         # add team members to the owners direct team
@@ -359,6 +375,7 @@ class TestProfiles(TestCase):
                 team_id=parent_team.id,
                 user_id=self._create_user().id,
             )
+
         return owner
 
     def test_get_direct_reports(self):
