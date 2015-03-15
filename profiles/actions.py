@@ -445,6 +445,8 @@ class GetDirectReports(actions.Action):
             'get_team_descendants',
             team_id=team.id,
             on_error=self.ActionError('ERROR_FETCHING_TEAM_CHILDREN'),
+            attributes=['owner_id'],
+            depth=1,
         )
         return [item.owner_id for item in response.result.teams]
 
@@ -558,7 +560,11 @@ class GetProfileStats(actions.Action):
         client = service.control.Client('organization', token=self.token)
         for team_id in team_ids:
             # XXX should specify "id" as the only attribute
-            response = client.call_action('get_team_descendants', team_id=team_id)
+            response = client.call_action(
+                'get_team_descendants',
+                team_id=team_id,
+                attributes=['id'],
+            )
             stats = models.Profile.objects.filter(
                 team_id__in=[item.id for item in response.result.teams],
             ).values('team_id').annotate(profiles=Count('id'))
