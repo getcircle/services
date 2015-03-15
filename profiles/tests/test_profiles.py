@@ -217,6 +217,7 @@ class TestProfiles(TestCase):
             action,
             mock_response,
             team_id=team_id,
+            attributes=['id'],
         )
 
     def test_get_profiles(self):
