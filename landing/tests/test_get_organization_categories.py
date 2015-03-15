@@ -82,9 +82,9 @@ class TestGetExtendedOrganization(TestCase):
         )
         return mock_response.team
 
-    def _mock_get_team_children(self, team_id, teams=3):
+    def _mock_get_team_descendants(self, team_id, teams=3):
         service = 'organization'
-        action = 'get_team_children'
+        action = 'get_team_descendants'
         mock_response = mock.get_mockable_response(service, action)
         for _ in range(teams):
             team = mock_response.teams.add()
@@ -121,7 +121,7 @@ class TestGetExtendedOrganization(TestCase):
         trending_skills = self._mock_get_active_skills(organization.id, skills=10)
         locations = self._mock_get_locations(organization.id)
         top_level_team = self._mock_get_top_level_team(organization.id)
-        self._mock_get_team_children(top_level_team.id, teams=5)
+        self._mock_get_team_descendants(top_level_team.id, teams=5)
         owner = self._mock_get_profile_with_user_id(top_level_team.owner_id)
         self._mock_get_direct_reports(owner.id)
 

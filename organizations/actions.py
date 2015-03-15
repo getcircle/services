@@ -6,7 +6,6 @@ from service import (
     validators,
 )
 import service.control
-from service.paginator import Paginator
 
 from . import models
 
@@ -188,7 +187,7 @@ class GetTeam(actions.Action, TeamProfileStatsMixin):
         )
 
 
-class GetTeamChildren(actions.Action):
+class GetTeamDescendants(actions.Action):
 
     type_validators = {
         'team_id': [validators.is_uuid4],
@@ -200,22 +199,47 @@ class GetTeamChildren(actions.Action):
         },
     }
 
-    def _direct_report_team_query(self):
-        return 'SELECT * FROM %s WHERE path ~ %%s ORDER BY "name"' % (models.Team._meta.db_table,)
+    def validate(self, *args, **kwargs):
+        super(GetTeamDescendants, self).validate(*args, **kwargs)
+        field_names = map(lambda x: x.attname, models.Team._meta.fields)
+        if self.request.attributes:
+            self.attributes = filter(lambda x: x in field_names, self.request.attributes)
+            if len(self.attributes) != len(self.request.attributes):
+                raise self.ActionFieldError('attributes', 'INVALID')
+        else:
+            self.attributes = ['*']
 
-    def _build_lquery(self, team_id):
+    def _direct_report_team_query(self):
+        return 'SELECT %s FROM %s WHERE path ~ %%s ORDER BY "name"' % (
+            ','.join(self.attributes),
+            models.Team._meta.db_table,
+        )
+
+    def _build_lquery(self, team_id, depth=None):
         # get the hex value for the lquery
         hex_value = uuid.UUID(team_id, version=4).hex
-        return '*.%s.*{1}' % (hex_value,)
+        return '*.%s.*{1,%s}' % (hex_value, self._get_depth())
+
+    def _get_depth(self):
+        depth = ''
+        if self.request.depth > 0:
+            depth = self.request.depth
+        return depth
 
     def run(self, *args, **kwargs):
         teams = models.Team.objects.raw(
             self._direct_report_team_query(),
             [self._build_lquery(self.request.team_id)],
         )
+
         for team in teams:
             container = self.response.teams.add()
-            team.to_protobuf(container, path=team.get_path())
+            parameters = {}
+            if self.request.attributes:
+                parameters['only'] = self.attributes
+            else:
+                parameters['path'] = team.get_path()
+            team.to_protobuf(container, **parameters)
 
 
 class GetTeams(actions.Action, TeamProfileStatsMixin):

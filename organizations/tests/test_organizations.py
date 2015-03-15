@@ -501,15 +501,15 @@ class TestOrganizations(TestCase):
         with self.assertFieldError('location_id'):
             self.client.call_action('get_teams', location_id='invalid')
 
-    def test_get_team_children_invalid_team_id(self):
+    def test_get_team_descendants_invalid_team_id(self):
         with self.assertFieldError('team_id'):
-            self.client.call_action('get_team_children', team_id='invalid')
+            self.client.call_action('get_team_descendants', team_id='invalid')
 
-    def test_get_team_children_does_not_exist(self):
+    def test_get_team_descendants_does_not_exist(self):
         with self.assertFieldError('team_id', 'DOES_NOT_EXIST'):
-            self.client.call_action('get_team_children', team_id=fuzzy.FuzzyUUID().fuzz())
+            self.client.call_action('get_team_descendants', team_id=fuzzy.FuzzyUUID().fuzz())
 
-    def test_get_team_children(self):
+    def test_get_team_descendants_depth_1(self):
         parent_team = self._create_team()
 
         # create child teams
@@ -531,11 +531,92 @@ class TestOrganizations(TestCase):
         )
 
         # verify only child teams are returned
-        response = self.client.call_action('get_team_children', team_id=parent_team.id)
+        response = self.client.call_action(
+            'get_team_descendants',
+            team_id=parent_team.id,
+            depth=1,
+        )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.teams), 2)
         self.assertEqual(response.result.teams[0].name, 'a')
         self.assertEqual(response.result.teams[1].name, 'b')
+
+    def test_get_team_descendants_invalid_depth(self):
+        team = factories.TeamFactory.create()
+        with self.assertRaises(ValueError):
+            self.client.call_action('get_team_descendants', team_id=str(team.id), depth=-1)
+
+        with self.assertRaises(TypeError):
+            self.client.call_action('get_team_descendants', team_id=str(team.id), depth='invalid')
+
+    def test_get_team_descendants(self):
+        parent_team = self._create_team()
+
+        # create child teams
+        self._create_team(
+            name='b',
+            organization_id=parent_team.organization_id,
+            child_of=parent_team.id,
+        )
+        second_child_team = self._create_team(
+            name='a',
+            organization_id=parent_team.organization_id,
+            child_of=parent_team.id,
+        )
+
+        # create grandchild team
+        self._create_team(
+            name='c',
+            organization_id=second_child_team.organization_id,
+            child_of=second_child_team.id,
+        )
+
+        response = self.client.call_action('get_team_descendants', team_id=parent_team.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.teams), 3)
+        self.assertEqual(response.result.teams[0].name, 'a')
+        self.assertEqual(response.result.teams[1].name, 'b')
+
+    def test_get_team_descendants_specific_attributes(self):
+        parent_team = self._create_team()
+        # create child teams
+        self._create_team(
+            name='b',
+            organization_id=parent_team.organization_id,
+            child_of=parent_team.id,
+        )
+        second_child_team = self._create_team(
+            name='a',
+            organization_id=parent_team.organization_id,
+            child_of=parent_team.id,
+        )
+        # create grandchild team
+        self._create_team(
+            name='c',
+            organization_id=second_child_team.organization_id,
+            child_of=second_child_team.id,
+        )
+
+        response = self.client.call_action(
+            'get_team_descendants',
+            team_id=parent_team.id,
+            attributes=['id', 'name'],
+        )
+        self.assertEqual(len(response.result.teams), 3)
+        for team in response.result.teams:
+            fields = team.ListFields()
+            self.assertEqual(len(fields), 2)
+            self.assertTrue(fields[0][0].name, 'id')
+            self.assertTrue(fields[1][0].name, 'name')
+
+    def test_get_team_descendants_invalid_attributes(self):
+        team = self._create_team()
+        with self.assertFieldError('attributes'):
+            self.client.call_action(
+                'get_team_descendants',
+                team_id=team.id,
+                attributes=['invalid', '; drop schema public;'],
+            )
 
     def test_create_team_duplicate_name(self):
         team = factories.TeamFactory.create()

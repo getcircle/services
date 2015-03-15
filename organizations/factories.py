@@ -8,6 +8,7 @@ from . import models
 class OrganizationFactory(factory.Factory):
     class Meta:
         model = models.Organization
+        protobuf = OrganizationService.Containers.Organization
 
     name = factory.FuzzyText()
     domain = factory.FuzzyText(suffix='.com')
@@ -17,6 +18,7 @@ class OrganizationFactory(factory.Factory):
 class TeamFactory(factory.Factory):
     class Meta:
         model = models.Team
+        protobuf = OrganizationService.Containers.Team
 
     name = factory.FuzzyText()
     owner_id = factory.FuzzyUUID()

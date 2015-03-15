@@ -240,7 +240,7 @@ class GetOrganizationCategories(GetCategories):
             container.CopyFrom(profile)
 
         response = self.organization_client.call_action(
-            'get_team_children',
+            'get_team_descendants',
             team_id=top_level_team.id,
         )
         if not response.success:

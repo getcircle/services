@@ -205,9 +205,9 @@ class TestProfiles(TestCase):
         )
         return mock_response.team
 
-    def _mock_get_team_children(self, mock, team_id, children_ids):
+    def _mock_get_team_descendants(self, mock, team_id, children_ids):
         service = 'organization'
-        action = 'get_team_children'
+        action = 'get_team_descendants'
         mock_response = mock.get_mockable_response(service, action)
         for child_id in children_ids:
             team = mock_response.teams.add()
@@ -495,7 +495,7 @@ class TestProfiles(TestCase):
     def test_get_profile_stats_team_no_profiles(self):
         team_id = fuzzy.FuzzyUUID().fuzz()
         with self.default_mock_transport(self.client) as mock:
-            self._mock_get_team_children(mock, team_id, [])
+            self._mock_get_team_descendants(mock, team_id, [])
             response = self.client.call_action(
                 'get_profile_stats',
                 team_ids=[team_id],
@@ -510,7 +510,7 @@ class TestProfiles(TestCase):
             factories.ProfileFactory.create(team_id=sub_team_id)
 
         with self.default_mock_transport(self.client) as mock:
-            self._mock_get_team_children(mock, team_id, sub_team_ids)
+            self._mock_get_team_descendants(mock, team_id, sub_team_ids)
             response = self.client.call_action('get_profile_stats', team_ids=[team_id])
         self.assertEqual(response.result.stats[0].count, 7)
 
