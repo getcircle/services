@@ -281,6 +281,5 @@ class GetOrganizationCategories(GetCategories):
             container.CopyFrom(location)
 
     def run(self, *args, **kwargs):
-        self._get_departments_and_executives(self.request.organization_id)
         self._get_locations_category(self.request.organization_id)
-        self._get_active_skills_category(self.request.organization_id)
+        self._get_departments_and_executives(self.request.organization_id)
