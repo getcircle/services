@@ -188,9 +188,9 @@ class GetCategories(actions.Action):
         self._get_recent_notes_category(profile)
         self._get_peers_category()
         self._get_direct_reports_category()
+        self._get_recent_hires_category(profile)
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
-        self._get_recent_hires_category(profile)
         self._get_active_skills_category(profile.organization_id)
 
 
