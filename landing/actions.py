@@ -205,7 +205,7 @@ class GetOrganizationCategories(GetCategories):
         self.organization_client = service.control.Client('organization', token=self.token)
         self.profile_client = service.control.Client('profile', token=self.token)
 
-    def _get_departments_and_executives(self, organization_id):
+    def _get_executives(self, organization_id):
         response = self.organization_client.call_action(
             'get_top_level_team',
             organization_id=organization_id,
@@ -238,7 +238,9 @@ class GetOrganizationCategories(GetCategories):
         for profile in executives:
             container = category.profiles.add()
             container.CopyFrom(profile)
+        return top_level_team
 
+    def _get_departments(self, top_level_team):
         response = self.organization_client.call_action(
             'get_team_descendants',
             team_id=top_level_team.id,
@@ -281,5 +283,6 @@ class GetOrganizationCategories(GetCategories):
             container.CopyFrom(location)
 
     def run(self, *args, **kwargs):
+        top_level_team = self._get_executives(self.request.organization_id)
         self._get_locations_category(self.request.organization_id)
-        self._get_departments_and_executives(self.request.organization_id)
+        self._get_departments(top_level_team)
