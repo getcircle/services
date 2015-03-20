@@ -13,6 +13,7 @@ psycopg2==2.5.4
 pycparser==2.10
 six==1.8.0
 wsgiref==0.1.2
+Django==1.8c1
 arrow==0.4.4
 python-dateutil==2.4.0
 pyotp==1.4.1
@@ -38,9 +39,6 @@ django-timezone-field==1.2
 pytz==2014.10
 contextlib2==0.4.0
 dogapi==1.11.0
-
-# Most recent version of django
-https://pypi.python.org/packages/py2.py3/D/Django/Django-1.8c1-py2.py3-none-any.whl#md5=6288c878e8d643033026f50f456cb05c
 
 # core requirements
 git+https://github.com/circlehq/django-date-extensions.git@0b65a33
