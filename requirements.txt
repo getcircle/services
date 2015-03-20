@@ -13,7 +13,7 @@ psycopg2==2.5.4
 pycparser==2.10
 six==1.8.0
 wsgiref==0.1.2
-Django==1.8a1
+Django==1.8c1
 arrow==0.4.4
 python-dateutil==2.4.0
 pyotp==1.4.1
