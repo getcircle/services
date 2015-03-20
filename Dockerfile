@@ -6,7 +6,7 @@ RUN echo LAST UPDATED 2015-01-28
 RUN apt-get update -y && apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev postgresql-client
 
 # Install pip & curdling
-RUN easy_install pip && pip install git+https://github.com/mhahn/curdling.git
+RUN easy_install pip
 
 # Install python requirements
 ADD requirements.txt /opt/requirements.txt
