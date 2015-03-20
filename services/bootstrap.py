@@ -15,6 +15,12 @@ class Bootstrap(object):
         print 'bootstrapping application...'
         cls.localize_servers()
         cls.load_protobuf_registries()
+        cls.start_metrics()
+
+    @classmethod
+    def start_metrics(cls):
+        """Start DataDog metrics"""
+        service.control.start_metrics_handler(api_key=settings.DATADOG_API_KEY)
 
     @classmethod
     def localize_servers(cls):

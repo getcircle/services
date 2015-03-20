@@ -37,6 +37,8 @@ rsa==3.1.4
 pycrypto==2.6.1
 django-timezone-field==1.2
 pytz==2014.10
+contextlib2==0.4.0
+dogapi==1.11.0
 
 # core requirements
 git+https://github.com/circlehq/django-date-extensions.git@0b65a33
@@ -44,5 +46,5 @@ git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/ge
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-soa.git@0.4.0
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@0.2.0
 
-git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@0.9.13
+git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@0.9.15
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@0.36.0
