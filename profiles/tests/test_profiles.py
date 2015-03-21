@@ -387,6 +387,9 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 6)
 
+        for profile in response.result.profiles:
+            print '%s %s' % (profile.first_name, profile.last_name)
+
         # verify profiles are sorted by first_name, last_name
         sorted_profiles = sorted(
             response.result.profiles,
