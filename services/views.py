@@ -35,6 +35,6 @@ class ServicesView(APIView):
 
     def get(self, request, *args, **kwargs):
         return HttpResponse(
-            '<http://imgs.xkcd.com/comics/regex_golf.png>',
-            content_type='image/png',
+            '<a href="http://imgs.xkcd.com/comics/regex_golf.png">image</a>',
+            content_type='text/html',
         )
