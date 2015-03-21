@@ -4,7 +4,3 @@ machine:
 dependencies:
     override:
         - pip install --no-deps -r requirements.txt
-database:
-    override:
-        - createdb services
-        - python manage.py migrate
