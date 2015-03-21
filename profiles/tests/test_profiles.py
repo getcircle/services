@@ -387,14 +387,10 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 6)
 
-        print '---- response profiles ----'
-        for profile in response.result.profiles:
-            print '%s %s' % (profile.first_name, profile.last_name)
-
-        # verify profiles are sorted by first_name, last_name
+        # verify profiles are case-insensitive sorted by first_name, last_name
         sorted_profiles = sorted(
             response.result.profiles,
-            key=lambda x: (x.first_name, x.last_name),
+            key=lambda x: (x.first_name.lower(), x.last_name.lower()),
         )
         for index, profile in enumerate(response.result.profiles):
             self._verify_containers(profile, sorted_profiles[index])
@@ -462,7 +458,7 @@ class TestProfiles(TestCase):
         # verify peers are sorted alphabetically by first_name, last_name
         sorted_profiles = sorted(
             response.result.profiles,
-            key=lambda x: (x.first_name, x.last_name),
+            key=lambda x: (x.first_name.lower(), x.last_name.lower()),
         )
         for index, profile in enumerate(response.result.profiles):
             self._verify_containers(sorted_profiles[index], profile)

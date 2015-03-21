@@ -207,7 +207,7 @@ class GetProfiles(actions.Action):
             id__in=[profile.id for profile in profiles],
         )
         profiles.extend(team_profiles)
-        profiles = sorted(profiles, key=lambda x: (x.first_name, x.last_name))
+        profiles = sorted(profiles, key=lambda x: (x.first_name.lower(), x.last_name.lower()))
         for profile in profiles:
             container = self.response.profiles.add()
             if isinstance(profile, models.Profile):
@@ -474,7 +474,12 @@ class GetDirectReports(actions.Action):
             profiles = models.Profile.objects.filter(
                 Q(user_id__in=user_ids) | Q(team_id=team.id),
                 organization_id=profile.organization_id,
-            ).exclude(pk=profile.id).order_by('first_name', 'last_name')
+            ).exclude(pk=profile.id).extra(
+                select={
+                    'case_insensitive_first_name': 'lower(first_name)',
+                    'case_insensitive_last_name': 'lower(last_name)',
+                }
+            ).order_by('case_insensitive_first_name', 'case_insensitive_last_name')
             for profile in profiles:
                 container = self.response.profiles.add()
                 profile.to_protobuf(container)
@@ -522,7 +527,12 @@ class GetPeers(actions.Action):
         else:
             profiles = models.Profile.objects.filter(team_id=profile.team_id).exclude(
                 user_id=team.owner_id,
-            ).order_by('first_name', 'last_name')
+            ).exclude(pk=profile.id).extra(
+                select={
+                    'case_insensitive_first_name': 'lower(first_name)',
+                    'case_insensitive_last_name': 'lower(last_name)',
+                }
+            ).order_by('case_insensitive_first_name', 'case_insensitive_last_name')
             for item in profiles:
                 if item.pk == profile.pk:
                     continue
