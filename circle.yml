@@ -4,6 +4,6 @@ machine:
 dependencies:
     override:
         - pip install --no-deps -r requirements.txt
-databases:
+database:
     pre:
         - python manage.py makemigrations
