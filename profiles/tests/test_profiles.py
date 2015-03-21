@@ -387,6 +387,7 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 6)
 
+        print '---- response profiles ----'
         for profile in response.result.profiles:
             print '%s %s' % (profile.first_name, profile.last_name)
 
