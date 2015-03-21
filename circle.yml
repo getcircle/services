@@ -3,7 +3,7 @@ machine:
         DJANGO_SETTINGS_MODULE: services.settings.local
 dependencies:
     override:
-        - pip install --no-deps -r requirements.txt
+        - pip install --no-deps -r dev-requirements.txt
 database:
     pre:
         - python manage.py makemigrations
