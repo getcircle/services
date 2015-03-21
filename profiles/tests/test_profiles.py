@@ -392,15 +392,6 @@ class TestProfiles(TestCase):
             response.result.profiles,
             key=lambda x: (x.first_name, x.last_name),
         )
-        print '--- response profiles: ---'
-        for profile in response.result.profiles:
-            print '%s - %s' % (profile.first_name, profile.last_name)
-            print '%s - %s' % (profile.first_name, profile.last_name)
-
-        print '--- sorted profiles: ---'
-        for profile in sorted_profiles:
-            print '%s - %s' % (profile.first_name, profile.last_name)
-            print '%s - %s' % (profile.first_name, profile.last_name)
         for index, profile in enumerate(response.result.profiles):
             self._verify_containers(profile, sorted_profiles[index])
 
