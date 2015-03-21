@@ -461,7 +461,7 @@ class TestProfiles(TestCase):
             key=lambda x: (x.first_name, x.last_name),
         )
         for index, profile in enumerate(response.result.profiles):
-            self.assertEqual(sorted_profiles[index], profile)
+            self._verify_containers(sorted_profiles[index], profile)
 
     def test_get_peers_ceo(self):
         address = self._create_address()
