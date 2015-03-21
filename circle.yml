@@ -3,4 +3,5 @@ machine:
         DJANGO_SETTINGS_MODULE: services.settings.local
 database:
     override:
+        - createdb services
         - python manage.py migrate
