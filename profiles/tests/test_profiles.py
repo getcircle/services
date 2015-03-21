@@ -393,7 +393,7 @@ class TestProfiles(TestCase):
             key=lambda x: (x.first_name, x.last_name),
         )
         for index, profile in enumerate(response.result.profiles):
-            self.assertEqual(profile, sorted_profiles[index])
+            self._verify_containers(profile, sorted_profiles[index])
 
     def test_get_direct_reports_user_id(self):
         owner = self._setup_direct_reports_test()
