@@ -393,6 +393,12 @@ class TestProfiles(TestCase):
             key=lambda x: (x.first_name, x.last_name),
         )
         for index, profile in enumerate(response.result.profiles):
+            print '%s:%s | %s:%s' % (
+                profile.first_name,
+                sorted_profiles[index].first_name,
+                profile.last_name,
+                sorted_profiles[index].last_name,
+            )
             self._verify_containers(profile, sorted_profiles[index])
 
     def test_get_direct_reports_user_id(self):
