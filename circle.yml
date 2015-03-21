@@ -1,3 +1,6 @@
 machine:
     environment:
         DJANGO_SETTINGS_MODULE: services.settings.local
+database:
+    override:
+        - python manage.py migrate
