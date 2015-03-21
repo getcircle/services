@@ -1,6 +1,9 @@
 machine:
     environment:
         DJANGO_SETTINGS_MODULE: services.settings.local
+dependencies:
+    pre:
+        - pip install --no-deps -r requirements.txt
 database:
     override:
         - createdb services
