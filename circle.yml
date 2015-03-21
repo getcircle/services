@@ -4,6 +4,6 @@ machine:
 dependencies:
     override:
         - pip install --no-deps -r dev-requirements.txt
-database:
-    pre:
-        - python manage.py makemigrations
+test:
+    override:
+        - python manage.py test profiles.tests.test_profiles.TestProfiles.test_get_direct_reports
