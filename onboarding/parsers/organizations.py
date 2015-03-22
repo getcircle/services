@@ -116,6 +116,7 @@ class Parser(OrganizationParser):
             'timezone': get_timezone_for_location(data['latitude'], data['longitude']),
         }
         address.update(data)
+        address.pop('image_url')
         self.debug_log('saving address: %s' % (address,))
         try:
             response = self.organization_client.call_action(
@@ -135,6 +136,7 @@ class Parser(OrganizationParser):
             'name': address.name,
             'organization_id': address.organization_id,
             'address': address,
+            'image_url': data.get('image_url'),
         }
         try:
             response = self.organization_client.call_action('create_location', location=location)
