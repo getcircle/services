@@ -62,6 +62,7 @@ class Row(object):
         'office_country_code',
         'office_latitude',
         'office_longitude',
+        'office_image_url',
     )
 
     def __init__(self, data):
