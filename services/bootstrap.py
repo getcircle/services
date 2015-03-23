@@ -20,7 +20,7 @@ class Bootstrap(object):
     @classmethod
     def start_metrics(cls):
         """Start DataDog metrics"""
-        service.control.start_metrics_handler(api_key=settings.DATADOG_API_KEY)
+        service.control.start_metrics_handler(**settings.METRICS_HANDLER_KWARGS)
 
     @classmethod
     def localize_servers(cls):

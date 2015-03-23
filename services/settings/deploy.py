@@ -23,3 +23,4 @@ DATABASES = {
 LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 
 DATADOG_API_KEY = os.environ.get('DATADOG_API_KEY', '')
+METRICS_HANDLER_KWARGS = {'api_key': settings.DATADOG_API_KEY}

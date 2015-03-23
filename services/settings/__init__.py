@@ -238,3 +238,6 @@ USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state toke
 
 # Data Dog API Key
 DATADOG_API_KEY = ''
+
+# Metrics Handler
+METRICS_HANDLER_KWARGS = {}
