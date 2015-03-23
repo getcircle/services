@@ -22,7 +22,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
     name = models.CharField(max_length=255)
     owner_id = models.UUIDField(db_index=True)
     organization = models.ForeignKey(Organization, db_index=True)
-    path = LTreeField(null=True)
+    path = LTreeField(null=True, db_index=True)
 
     # TODO cache the result
     def get_path(self):
