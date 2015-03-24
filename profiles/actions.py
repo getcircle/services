@@ -701,11 +701,27 @@ class GetActiveSkills(actions.Action):
         'organization_id': [validators.is_uuid4],
     }
 
+    def _build_skills_query(self):
+        return (
+            'SELECT * from "%(profiles_skill)s" where "%(profiles_skill)s"."id" in ('
+            'SELECT DISTINCT id FROM ('
+            'SELECT "%(profiles_skill)s"."id" FROM "%(profiles_skill)s" INNER JOIN '
+            '"%(profiles_profileskills)s" ON ('
+            '"%(profiles_skill)s"."id" = "%(profiles_profileskills)s"."skill_id")'
+            ' WHERE ("%(profiles_profileskills)s"."skill_id" IS NOT NULL '
+            'AND "%(profiles_skill)s"."organization_id" = %%s) ORDER BY'
+            ' "%(profiles_profileskills)s"."created" DESC) as nested_query) LIMIT %(limit)s'
+        ) % {
+            'profiles_skill': models.Skill._meta.db_table,
+            'profiles_profileskills': models.ProfileSkills._meta.db_table,
+            'limit': self.control.paginator.page_size,
+        }
+
     def run(self, *args, **kwargs):
-        skills = set(models.Skill.objects.filter(
-            profileskills__skill_id__isnull=False,
-            organization_id=self.request.organization_id,
-        ).order_by('-profileskills__created'))
+        skills = models.Skill.objects.raw(
+            self._build_skills_query(),
+            [self.request.organization_id],
+        )
         for skill in skills:
             container = self.response.skills.add()
             skill.to_protobuf(container)
