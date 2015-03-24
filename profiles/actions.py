@@ -3,6 +3,7 @@ import uuid
 import arrow
 from django.core.exceptions import FieldError
 import django.db
+from django.db import connection
 from django.db.models import (
     Count,
     Q,
@@ -701,30 +702,49 @@ class GetActiveSkills(actions.Action):
         'organization_id': [validators.is_uuid4],
     }
 
-    def _build_skills_query(self):
+    def _get_main_query(self):
         return (
-            'SELECT * from "%(profiles_skill)s" where "%(profiles_skill)s"."id" in ('
+            '"%(profiles_skill)s" where "%(profiles_skill)s"."id" in ('
             'SELECT DISTINCT id FROM ('
             'SELECT "%(profiles_skill)s"."id" FROM "%(profiles_skill)s" INNER JOIN '
             '"%(profiles_profileskills)s" ON ('
             '"%(profiles_skill)s"."id" = "%(profiles_profileskills)s"."skill_id")'
             ' WHERE ("%(profiles_profileskills)s"."skill_id" IS NOT NULL '
             'AND "%(profiles_skill)s"."organization_id" = %%s) ORDER BY'
-            ' "%(profiles_profileskills)s"."created" DESC) as nested_query) LIMIT %(limit)s'
+            ' "%(profiles_profileskills)s"."created" DESC) as nested_query)'
         ) % {
             'profiles_skill': models.Skill._meta.db_table,
             'profiles_profileskills': models.ProfileSkills._meta.db_table,
-            'limit': self.control.paginator.page_size,
         }
 
+
+    def _build_count_query(self):
+        return 'SELECT COUNT(*) FROM %s' % (self._get_main_query(),)
+
+    def _build_skills_query(self, offset, limit):
+        return 'SELECT * FROM %s OFFSET %s LIMIT %s' % (self._get_main_query(), offset, limit)
+
+    def _get_count(self):
+        cursor = connection.cursor()
+        cursor.execute(self._build_count_query(), [self.request.organization_id])
+        return cursor.fetchone()[0]
+
     def run(self, *args, **kwargs):
-        skills = models.Skill.objects.raw(
-            self._build_skills_query(),
+        count = self._get_count()
+        offset, limit = self.get_pagination_offset_and_limit(count)
+        # NB: Cast the raw queryset to a list so that it doesn't raise a
+        # TypeError within paginated_response since RawQuerySet has no length
+        # attribute
+        skills = list(models.Skill.objects.raw(
+            self._build_skills_query(offset, limit),
             [self.request.organization_id],
+        ))
+        self.paginated_response(
+            self.response.skills,
+            skills,
+            lambda item, container: item.to_protobuf(container.add()),
+            count=count,
         )
-        for skill in skills:
-            container = self.response.skills.add()
-            skill.to_protobuf(container)
 
 
 class GetAttributesForProfiles(actions.Action):

@@ -137,7 +137,7 @@ class GetCategories(actions.Action):
         skills.title = 'Skills'
         skills.content_key = 'name'
         skills.type = LandingService.Containers.Category.SKILLS
-        skills.total_count = len(response.result.skills)
+        skills.total_count = response.control.paginator.count
         for skill in response.result.skills:
             container = skills.skills.add()
             container.CopyFrom(skill)
