@@ -207,9 +207,8 @@ class GetTeamDescendants(actions.Action):
             if len(self.attributes) != len(self.request.attributes):
                 raise self.ActionFieldError('attributes', 'INVALID')
 
-            # XXX we should be pulling this off the Team model (pk)
             # NB: Raw queries must always contain the primary key
-            if 'id' not in self.attributes:
+            if models.Team._meta.pk.attname not in self.attributes:
                 self.attributes.append('id')
         else:
             self.attributes = ['*']
