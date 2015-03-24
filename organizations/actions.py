@@ -273,7 +273,7 @@ class GetTeamDescendants(actions.Action):
                             parameters['path'] = team.get_path()
                         team.to_protobuf(team_container, **parameters)
             response_teams += len(container.teams)
-        metrics.gauge( 'service.action.get_team_descendants.response.teams.gauge', response_teams)
+        metrics.gauge('service.action.get_team_descendants.response.teams.gauge', response_teams)
 
 
 class GetTeams(actions.Action, TeamProfileStatsMixin):
