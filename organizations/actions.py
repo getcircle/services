@@ -254,10 +254,10 @@ class GetTeamDescendants(actions.Action):
             'service.action.get_team_descendants.request.team_ids.gauge',
             len(self.request.team_ids),
         )
-        teams = models.Team.objects.raw(
+        teams = list(models.Team.objects.raw(
             self._direct_report_team_query(),
             self._build_lqueries(self.request.team_ids),
-        )
+        ))
 
         response_teams = 0
         for team_id in self.request.team_ids:
