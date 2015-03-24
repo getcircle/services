@@ -243,14 +243,18 @@ class GetOrganizationCategories(GetCategories):
     def _get_departments(self, top_level_team):
         response = self.organization_client.call_action(
             'get_team_descendants',
-            team_id=top_level_team.id,
+            team_ids=[top_level_team.id],
+            depth=1,
         )
+        # XXX remove all of these places i wasn't handling if one of these calls raises an error
         if not response.success:
             raise Exception('..fuck!')
 
         departments = []
         departments.extend([top_level_team])
-        departments.extend(response.result.teams)
+
+        descendants = response.result.descendants[0]
+        departments.extend(descendants.teams)
 
         category = self.response.categories.add()
         category.title = 'Departments'

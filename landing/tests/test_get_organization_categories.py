@@ -70,12 +70,14 @@ class TestGetExtendedOrganization(TestCase):
         service = 'organization'
         action = 'get_team_descendants'
         mock_response = mock.get_mockable_response(service, action)
+        descendants = mock_response.descendants.add()
+        descendants.parent_team_id = team_id
         for _ in range(teams):
-            team = mock_response.teams.add()
+            team = descendants.teams.add()
             mocks.mock_team(team)
 
-        mock.instance.register_mock_response(service, action, mock_response, team_id=team_id)
-        return mock_response.teams
+        mock.instance.register_mock_response(service, action, mock_response, team_ids=[team_id])
+        return mock_response.descendants
 
     def _mock_get_direct_reports(self, profile_id, reports=3):
         service = 'profile'

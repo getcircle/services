@@ -444,12 +444,13 @@ class GetDirectReports(actions.Action):
     def _get_child_team_owner_ids(self, team):
         response = self.organization_client.call_action(
             'get_team_descendants',
-            team_id=team.id,
+            team_ids=[team.id],
             on_error=self.ActionError('ERROR_FETCHING_TEAM_CHILDREN'),
             attributes=['owner_id'],
             depth=1,
         )
-        return [item.owner_id for item in response.result.teams]
+        descendants = response.result.descendants[0]
+        return [item.owner_id for item in descendants.teams]
 
     def run(self, *args, **kwargs):
         parameters = {}
@@ -569,18 +570,17 @@ class GetProfileStats(actions.Action):
         stats_dict = dict((stat['team_id'], stat['profiles']) for stat in stats)
 
         client = service.control.Client('organization', token=self.token)
-        for team_id in team_ids:
-            # XXX should specify "id" as the only attribute
-            response = client.call_action(
-                'get_team_descendants',
-                team_id=team_id,
-                attributes=['id'],
-            )
+        response = client.call_action(
+            'get_team_descendants',
+            team_ids=team_ids,
+            attributes=['id'],
+        )
+        for descendants in response.result.descendants:
             stats = models.Profile.objects.filter(
-                team_id__in=[item.id for item in response.result.teams],
+                team_id__in=[item.id for item in descendants.teams],
             ).values('team_id').annotate(profiles=Count('id'))
             for stat in stats:
-                stats_dict[uuid.UUID(team_id, version=4)] += stat['profiles']
+                stats_dict[uuid.UUID(descendants.parent_team_id, version=4)] += stat['profiles']
 
         return stats_dict
 

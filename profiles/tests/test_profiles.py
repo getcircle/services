@@ -209,14 +209,16 @@ class TestProfiles(TestCase):
         service = 'organization'
         action = 'get_team_descendants'
         mock_response = mock.get_mockable_response(service, action)
+        descendants = mock_response.descendants.add()
+        descendants.parent_team_id = team_id
         for child_id in children_ids:
-            team = mock_response.teams.add()
+            team = descendants.teams.add()
             mocks.mock_team(team, id=child_id)
         mock.instance.register_mock_response(
             service,
             action,
             mock_response,
-            team_id=team_id,
+            team_ids=[team_id],
             attributes=['id'],
         )
 

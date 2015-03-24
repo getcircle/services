@@ -6,6 +6,7 @@ from service import (
     validators,
 )
 import service.control
+from service import metrics
 
 from . import models
 
@@ -189,14 +190,9 @@ class GetTeam(actions.Action, TeamProfileStatsMixin):
 
 class GetTeamDescendants(actions.Action):
 
+    required_fields = ('team_ids',)
     type_validators = {
-        'team_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'team_id': {
-            valid_team: 'DOES_NOT_EXIST',
-        },
+        'team_ids': [validators.is_uuid4_list],
     }
 
     def validate(self, *args, **kwargs):
@@ -214,15 +210,28 @@ class GetTeamDescendants(actions.Action):
             self.attributes = ['*']
 
     def _direct_report_team_query(self):
-        return 'SELECT %s FROM %s WHERE path ~ %%s ORDER BY "name"' % (
+        return 'SELECT %s FROM %s WHERE path ? array[%s] ORDER BY "name"' % (
             ','.join(self.attributes),
             models.Team._meta.db_table,
+            ''.join(self._build_lquery_placeholders()),
         )
 
-    def _build_lquery(self, team_id, depth=None):
-        # get the hex value for the lquery
-        hex_value = uuid.UUID(team_id, version=4).hex
-        return '*.%s.*{1,%s}' % (hex_value, self._get_depth())
+    def _build_lquery_placeholders(self):
+        placeholders = []
+        for index, _ in enumerate(self.request.team_ids):
+            placeholder = '%s::lquery'
+            if index != len(self.request.team_ids) - 1:
+                placeholder += ','
+            placeholders.append(placeholder)
+        return placeholders
+
+    def _build_lqueries(self, team_ids, depth=None):
+        lqueries = []
+        for team_id in team_ids:
+            # get the hex value for the lquery
+            hex_value = uuid.UUID(team_id, version=4).hex
+            lqueries.append('*.%s.*{1,%s}' % (hex_value, self._get_depth()))
+        return lqueries
 
     def _get_depth(self):
         depth = ''
@@ -231,19 +240,40 @@ class GetTeamDescendants(actions.Action):
         return depth
 
     def run(self, *args, **kwargs):
+        metrics.gauge(
+            'service.action.get_team_descendants.request.team_ids.gauge',
+            len(self.request.team_ids),
+        )
         teams = models.Team.objects.raw(
             self._direct_report_team_query(),
-            [self._build_lquery(self.request.team_id)],
+            self._build_lqueries(self.request.team_ids),
         )
 
-        for team in teams:
-            container = self.response.teams.add()
-            parameters = {}
-            if self.request.attributes:
-                parameters['only'] = self.attributes
-            else:
-                parameters['path'] = team.get_path()
-            team.to_protobuf(container, **parameters)
+        response_teams = 0
+        for team_id in self.request.team_ids:
+            container = self.response.descendants.add()
+            container.parent_team_id = team_id
+            hex_value = uuid.UUID(team_id, version=4).hex
+            for team in teams:
+                path_parts = team.path.split('.')
+                if hex_value in path_parts:
+                    should_add = False
+                    remaining = len(path_parts) - (path_parts.index(hex_value) + 1)
+                    if self.request.depth:
+                        should_add = remaining == self.request.depth
+                    else:
+                        should_add = remaining != 0
+
+                    if should_add:
+                        team_container = container.teams.add()
+                        parameters = {}
+                        if self.request.attributes:
+                            parameters['only'] = self.attributes
+                        else:
+                            parameters['path'] = team.get_path()
+                        team.to_protobuf(team_container, **parameters)
+            response_teams += len(container.teams)
+        metrics.gauge( 'service.action.get_team_descendants.response.teams.gauge', response_teams)
 
 
 class GetTeams(actions.Action, TeamProfileStatsMixin):
