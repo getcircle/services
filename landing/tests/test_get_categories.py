@@ -292,7 +292,6 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.skills), 3)
         self.assertEqual(category.content_key, 'name')
         self.assertEqual(category.type, LandingService.Containers.Category.SKILLS)
-        self.assertEqual(category.total_count, 3)
 
     def test_notes_note_category(self):
         profile = self._mock_get_profile()
