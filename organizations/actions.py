@@ -316,6 +316,18 @@ class GetTeams(actions.Action, TeamProfileStatsMixin):
             id__in=[attribute.value for attribute in response.result.attributes],
         )
 
+    def _get_paths_in_bulk(self, teams):
+        path_ids = set()
+        for team in teams:
+            path_ids.update(team.path.split('.'))
+        path_values = models.Team.objects.filter(pk__in=path_ids).values(
+            'id',
+            'name',
+            'owner_id',
+        )
+        # NB: use the hex value of the id as the key since thats what makes up the paths
+        return dict((item['id'].hex, item) for item in path_values)
+
     def run(self, *args, **kwargs):
         if self.request.organization_id:
             teams = self._get_teams_by_organization_id()
@@ -324,13 +336,14 @@ class GetTeams(actions.Action, TeamProfileStatsMixin):
 
         paginator = self.get_paginator(teams)
         page = self.get_page(paginator)
+        path_dict = self._get_paths_in_bulk(page.object_list)
         stats_dict = self._fetch_profile_stats([str(item.id) for item in page.object_list])
         self.paginated_response(
             self.response.teams,
             teams,
             lambda item, container: item.to_protobuf(
                 container.add(),
-                path=item.get_path(),
+                path=item.get_path(path_dict=path_dict),
                 profile_count=stats_dict.get(str(item.id), 0),
             ),
             paginator=paginator,

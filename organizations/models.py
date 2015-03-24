@@ -17,6 +17,10 @@ class Organization(models.UUIDModel, models.TimestampableModel):
 
 class Team(models.UUIDModel, models.TimestampableModel):
 
+    def __init__(self, *args, **kwargs):
+        super(Team, self).__init__(*args, **kwargs)
+        self._path = None
+
     protobuf_include_fields = ('department',)
 
     name = models.CharField(max_length=255)
@@ -24,19 +28,24 @@ class Team(models.UUIDModel, models.TimestampableModel):
     organization = models.ForeignKey(Organization, db_index=True)
     path = LTreeField(null=True, db_index=True)
 
-    # TODO cache the result
-    def get_path(self):
-        path_parts = self.path.split('.')
-        path = Team.objects.filter(pk__in=path_parts).values(
-            'id',
-            'name',
-            'owner_id',
-        )
-        # XXX see if we can have the client handle this for us
-        for item in path:
-            item['id'] = str(item['id'])
-            item['owner_id'] = str(item['owner_id'])
-        return path
+    def get_path(self, path_dict=None):
+        if self._path is None:
+            path_parts = self.path.split('.')
+            if path_dict is None:
+                path = Team.objects.filter(pk__in=path_parts).values(
+                    'id',
+                    'name',
+                    'owner_id',
+                )
+            else:
+                path = filter(None, [path_dict.get(part) for part in path_parts])
+
+            # XXX see if we can have the client handle this for us
+            for item in path:
+                item['id'] = str(item['id'])
+                item['owner_id'] = str(item['owner_id'])
+            self._path = path
+        return self._path
 
     @property
     def department(self):
