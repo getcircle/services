@@ -575,12 +575,15 @@ class GetProfileStats(actions.Action):
             team_ids=team_ids,
             attributes=['id'],
         )
+        filter_ids = set()
         for descendants in response.result.descendants:
-            stats = models.Profile.objects.filter(
-                team_id__in=[item.id for item in descendants.teams],
-            ).values('team_id').annotate(profiles=Count('id'))
-            for stat in stats:
-                stats_dict[uuid.UUID(descendants.parent_team_id, version=4)] += stat['profiles']
+            filter_ids.update([item.id for item in descendants.teams])
+
+        stats = models.Profile.objects.filter(
+            team_id__in=filter_ids,
+        ).values('team_id').annotate(profiles=Count('id'))
+        for stat in stats:
+            stats_dict[uuid.UUID(descendants.parent_team_id, version=4)] += stat['profiles']
 
         return stats_dict
 
