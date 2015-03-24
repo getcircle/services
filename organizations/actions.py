@@ -1,3 +1,4 @@
+from copy import copy
 import uuid
 
 import django.db
@@ -209,9 +210,18 @@ class GetTeamDescendants(actions.Action):
         else:
             self.attributes = ['*']
 
+        self.query_attributes = copy(self.attributes)
+        if '*' not in self.attributes:
+            # NB: We inspect the path to perform bulk lookups so query for that as
+            # well. We don't include it in self.attributes since we only want those
+            # to be the attributes the caller specified
+            if 'path' not in self.query_attributes:
+                self.query_attributes.append('path')
+
+
     def _direct_report_team_query(self):
         return 'SELECT %s FROM %s WHERE path ? array[%s] ORDER BY "name"' % (
-            ','.join(self.attributes),
+            ','.join(self.query_attributes),
             models.Team._meta.db_table,
             ''.join(self._build_lquery_placeholders()),
         )
