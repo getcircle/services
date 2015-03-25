@@ -565,6 +565,10 @@ class TestProfiles(TestCase):
         with self.assertFieldError('organization_id'):
             self.client.call_action('get_upcoming_anniversaries', organization_id='invalid')
 
+    def test_get_upcoming_anniversaries_organization_id_required(self):
+        with self.assertFieldError('organization_id', 'MISSING'):
+            self.client.call_action('get_upcoming_anniversaries')
+
     @freeze_time('2015-01-09')
     def test_get_upcoming_anniversaries(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
@@ -674,6 +678,10 @@ class TestProfiles(TestCase):
     def test_get_upcoming_birthdays_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
             self.client.call_action('get_upcoming_birthdays', organization_id='invalid')
+
+    def test_get_upcoming_birthdays_organization_id_required(self):
+        with self.assertFieldError('organization_id', 'MISSING'):
+            self.client.call_action('get_upcoming_birthdays')
 
     @freeze_time('2015-01-09')
     def test_get_upcoming_birthdays(self):

@@ -1,6 +1,7 @@
 import uuid
 
 import arrow
+from cacheops import cached_as
 from django.core.exceptions import FieldError
 import django.db
 from django.db import connection
@@ -616,6 +617,7 @@ class GetProfileStats(actions.Action):
 
 class GetUpcomingAnniversaries(actions.Action):
 
+    required_fields = ('organization_id',)
     type_validators = {
         'organization_id': [validators.is_uuid4],
     }
@@ -640,17 +642,22 @@ class GetUpcomingAnniversaries(actions.Action):
         ) % (models.Profile._meta.db_table,)
 
     def run(self, *args, **kwargs):
-        profiles = models.Profile.objects.raw(
-            self._build_anniversaries_query(),
-            self._get_parameters_list(),
-        )
-        for profile in profiles:
+
+        @cached_as(models.Profile.objects.filter(organization_id=self.request.organization_id))
+        def _get_profiles():
+            return list(models.Profile.objects.raw(
+                self._build_anniversaries_query(),
+                self._get_parameters_list(),
+            ))
+
+        for profile in _get_profiles():
             container = self.response.profiles.add()
             profile.to_protobuf(container)
 
 
 class GetUpcomingBirthdays(actions.Action):
 
+    required_fields = ('organization_id',)
     type_validators = {
         'organization_id': [validators.is_uuid4],
     }
@@ -673,11 +680,15 @@ class GetUpcomingBirthdays(actions.Action):
         ) % (models.Profile._meta.db_table,)
 
     def run(self, *args, **kwargs):
-        profiles = models.Profile.objects.raw(
-            self._build_birthdays_query(),
-            self._get_parameters_list(),
-        )
-        for profile in profiles:
+
+        @cached_as(models.Profile.objects.filter(organization_id=self.request.organization_id))
+        def _get_profiles():
+            return list(models.Profile.objects.raw(
+                self._build_birthdays_query(),
+                self._get_parameters_list(),
+            ))
+
+        for profile in _get_profiles():
             container = self.response.profiles.add()
             profile.to_protobuf(container)
 
@@ -720,7 +731,6 @@ class GetActiveSkills(actions.Action):
             'profiles_profileskills': models.ProfileSkills._meta.db_table,
         }
 
-
     def _build_count_query(self):
         return 'SELECT COUNT(*) FROM %s' % (self._get_main_query(),)
 
@@ -733,18 +743,31 @@ class GetActiveSkills(actions.Action):
         return cursor.fetchone()[0]
 
     def run(self, *args, **kwargs):
-        count = self._get_count()
+
+        cache_queryset = models.ProfileSkills.objects.filter(
+            skill__organization_id=self.request.organization_id
+        )
+
+        @cached_as(cache_queryset)
+        def _get_count_block():
+            return self._get_count()
+
+        count = _get_count_block()
         offset, limit = self.get_pagination_offset_and_limit(count)
-        # NB: Cast the raw queryset to a list so that it doesn't raise a
-        # TypeError within paginated_response since RawQuerySet has no length
-        # attribute
-        skills = list(models.Skill.objects.raw(
-            self._build_skills_query(offset, limit),
-            [self.request.organization_id],
-        ))
+
+        @cached_as(cache_queryset, extra='%s.%s' % (offset, limit))
+        def _get_skills_block():
+            # NB: Cast the raw queryset to a list so that it doesn't raise a
+            # TypeError within paginated_response since RawQuerySet has no length
+            # attribute
+            return list(models.Skill.objects.raw(
+                self._build_skills_query(offset, limit),
+                [self.request.organization_id],
+            ))
+
         self.paginated_response(
             self.response.skills,
-            skills,
+            _get_skills_block(),
             lambda item, container: item.to_protobuf(container.add()),
             count=count,
         )

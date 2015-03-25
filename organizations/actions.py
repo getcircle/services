@@ -1,6 +1,7 @@
 from copy import copy
 import uuid
 
+from cacheops import cached_as
 import django.db
 from service import (
     actions,
@@ -254,17 +255,23 @@ class GetTeamDescendants(actions.Action):
             'service.action.get_team_descendants.request.team_ids.gauge',
             len(self.request.team_ids),
         )
-        teams = list(models.Team.objects.raw(
-            self._direct_report_team_query(),
-            self._build_lqueries(self.request.team_ids),
-        ))
+
+        # TODO we should be passing organization_id here, make it so we have
+        # easy access to the caller's organization_id and other important
+        # values in all actions
+        @cached_as(models.Team, extra=''.join(self.request.team_ids))
+        def _get_descendants_block():
+            return list(models.Team.objects.raw(
+                self._direct_report_team_query(),
+                self._build_lqueries(self.request.team_ids),
+            ))
 
         response_teams = 0
         for team_id in self.request.team_ids:
             container = self.response.descendants.add()
             container.parent_team_id = team_id
             hex_value = uuid.UUID(team_id, version=4).hex
-            for team in teams:
+            for team in _get_descendants_block():
                 path_parts = team.path.split('.')
                 if hex_value in path_parts:
                     should_add = False
