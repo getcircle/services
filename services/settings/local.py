@@ -20,6 +20,9 @@ DATABASES = {
     }
 }
 
+# NB: Specify 'cacheops' as an installed app only when we define redis
+# connection settings
+INSTALLED_APPS = INSTALLED_APPS + ('cacheops',)
 CACHEOPS_REDIS = {
     'host': 'localhost',
     'port': 6379,

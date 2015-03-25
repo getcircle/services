@@ -44,7 +44,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django_extensions',
 
-    'cacheops',
     'rest_framework',
     'rest_framework.authtoken',
     'timezone_field',
