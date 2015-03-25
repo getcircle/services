@@ -20,4 +20,11 @@ DATABASES = {
     }
 }
 
+CACHEOPS_REDIS = {
+    'host': 'localhost',
+    'port': 6379,
+    'db': 1,
+    'socket_timeout': 3,
+}
+
 METRICS_HANDLER_KWARGS = {'name': 'services.metrics'}

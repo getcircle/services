@@ -44,6 +44,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django_extensions',
 
+    'cacheops',
     'rest_framework',
     'rest_framework.authtoken',
     'timezone_field',
@@ -241,3 +242,17 @@ DATADOG_API_KEY = ''
 
 # Metrics Handler
 METRICS_HANDLER_KWARGS = {}
+
+CACHEOPS_DEFAULTS = {
+    # set default cache to 1 hour
+    'timeout': 60*60,
+}
+
+CACHEOPS = {
+    'notes.*': {'ops': 'all'},
+    'landing.*': {'ops': 'all'},
+    'organizations.*': {'ops': 'all'},
+    'profiles.*': {'ops': 'all'},
+    'resumes.*': {'ops': 'all'},
+    'users.*': {'ops': 'get'},
+}

@@ -38,9 +38,14 @@ django-timezone-field==1.2
 pytz==2014.10
 contextlib2==0.4.0
 dogapi==1.11.0
+funcy==1.4
+redis==2.10.3
 
 # most recent django version
 git+https://git@github.com/django/django.git@1.8c1
+
+# fork of django-cacheops
+git+https://git@github.com/mhahn/django-cacheops.git
 
 # core requirements
 git+https://github.com/circlehq/django-date-extensions.git@0b65a33

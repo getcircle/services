@@ -8,16 +8,24 @@ from service import settings
 settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 100)
 settings.DEFAULT_METRICS_HANDLER = 'service.metrics.datadog.instance'
 
-url = urlparse.urlparse(os.environ['DATABASE_URL'])
+database_url = urlparse.urlparse(os.environ['DATABASE_URL'])
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': url.path[1:],
-        'USER': url.username,
-        'PASSWORD': url.password,
-        'HOST': url.hostname,
-        'PORT': url.port,
+        'NAME': database_url.path[1:],
+        'USER': database_url.username,
+        'PASSWORD': database_url.password,
+        'HOST': database_url.hostname,
+        'PORT': database_url.port,
     }
+}
+
+redis_url = urlparse.urlparse(os.environ['REDIS_URL'])
+CACHEOPS_REDIS = {
+    'host': redis_url.hostname,
+    'port': redis_url.port,
+    'db': redis_url.path[1:],
+    'socket_timeout': os.environ.get('CACHEOPS_REDIS_SOCKET_TIMEOUT', 3),
 }
 
 LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
