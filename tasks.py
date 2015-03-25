@@ -29,7 +29,12 @@ def test(app='', failfast=False, keepdb=False, extra=''):
         test_args.append('--failfast')
     if keepdb:
         test_args.append('-k')
-    execute_with_settings('test %s %s' % (' '.join(test_args), app,), extra=extra, pty=True)
+    execute_with_settings(
+        'test %s %s' % (' '.join(test_args), app,),
+        settings='test',
+        extra=extra,
+        pty=True,
+    )
 
 
 @task

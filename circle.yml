@@ -1,6 +1,6 @@
 machine:
     environment:
-        DJANGO_SETTINGS_MODULE: services.settings.local
+        DJANGO_SETTINGS_MODULE: services.settings.test
 dependencies:
     override:
         - pip install --no-deps -r dev-requirements.txt
