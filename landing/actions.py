@@ -122,24 +122,24 @@ class GetCategories(actions.Action):
             container = hires.profiles.add()
             container.CopyFrom(profile)
 
-    def _get_active_skills_category(self, organization_id):
+    def _get_active_interests_category(self, organization_id):
         response = self.profile_client.call_action(
             'get_active_tags',
             organization_id=organization_id,
         )
         if not response.success:
-            raise Exception('failed ot fetch trending skills')
+            raise Exception('failed ot fetch trending interests')
 
         if not len(response.result.tags):
             return
 
-        skills = self.response.categories.add()
-        skills.title = 'Skills'
-        skills.content_key = 'name'
-        skills.type = LandingService.Containers.Category.SKILLS
-        skills.total_count = response.control.paginator.count
+        interests = self.response.categories.add()
+        interests.title = 'Interests'
+        interests.content_key = 'name'
+        interests.type = LandingService.Containers.Category.INTERESTS
+        interests.total_count = response.control.paginator.count
         for skill in response.result.tags:
-            container = skills.tags.add()
+            container = interests.tags.add()
             container.CopyFrom(skill)
 
     def _get_recent_notes_category(self, profile):
@@ -191,7 +191,7 @@ class GetCategories(actions.Action):
         self._get_recent_hires_category(profile)
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
-        self._get_active_skills_category(profile.organization_id)
+        self._get_active_interests_category(profile.organization_id)
 
 
 class GetOrganizationCategories(GetCategories):
