@@ -432,6 +432,9 @@ class GetTags(actions.Action):
         else:
             parameters['profile'] = self.request.profile_id
 
+        if self.request.HasField('tag_type'):
+            parameters['type'] = self.request.tag_type
+
         tags = models.Tag.objects.filter(**parameters)
         for tag in tags:
             container = self.response.tags.add()
