@@ -1,4 +1,5 @@
 from optparse import make_option
+import os
 
 from onboarding.parsers.exceptions import ParseError
 from services.management.base import (
@@ -26,6 +27,11 @@ class BaseOrganizationParserCommand(BaseCommand):
             default=False,
             help='Run the command with debug logging',
         ),
+        make_option(
+            '--filename',
+            dest='filename',
+            help='Filename to load if it isn\'t the companies name',
+        ),
     )
 
     def handle(self, *args, **options):
@@ -33,7 +39,13 @@ class BaseOrganizationParserCommand(BaseCommand):
             raise NotImplementedError('BaseOrganizationParserCommand must specify "parser_class"')
 
         organization_domain = args[0]
-        filename = args[1]
+        filename = options.get('filename')
+        if not filename:
+            filename = os.path.join(
+                'onboarding',
+                'fixtures',
+                '%s.csv' % (organization_domain.split('.')[0],),
+            )
 
         parser = self.parser_class(
             organization_domain=organization_domain,
