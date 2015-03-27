@@ -24,6 +24,7 @@ from oauth2client.client import (
     verify_id_token,
 )
 from oauth2client.crypt import AppIdentityError
+from protobufs.profile_service_pb2 import ProfileService
 from protobufs.resume_service_pb2 import ResumeService
 from protobufs.user_service_pb2 import UserService
 import requests
@@ -322,15 +323,16 @@ class LinkedIn(BaseProvider):
         internal_skills = []
         for linkedin_skill in linkedin_skills:
             internal_skill = linkedin_skill.get('skill')
+            internal_skill['type'] = ProfileService.SKILL
             if internal_skill:
                 internal_skills.append(internal_skill)
 
         client = service.control.Client('profile', token=self.token._token)
         try:
             client.call_action(
-                'add_skills',
+                'add_tags',
                 profile_id=self.token.profile_id,
-                skills=internal_skills,
+                tags=internal_skills,
             )
         except client.CallActionError:
             pass

@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='ProfileSkills',
+            name='ProfileTags',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
@@ -48,32 +48,33 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Skill',
+            name='Tag',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, serialize=False, primary_key=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('changed', models.DateTimeField(auto_now=True)),
                 ('organization_id', models.UUIDField(db_index=True)),
                 ('name', models.CharField(max_length=64)),
+                ('type', models.SmallIntegerField(choices=[(0, b'SKILL'), (1, b'INTEREST'), (2, b'LANGUAGE'), (3, b'PROJECT')])),
             ],
         ),
         migrations.AlterUniqueTogether(
-            name='skill',
-            unique_together=set([('organization_id', 'name')]),
+            name='tag',
+            unique_together=set([('organization_id', 'name', 'type')]),
         ),
         migrations.AddField(
-            model_name='profileskills',
-            name='skill',
-            field=models.ForeignKey(to='profiles.Skill'),
+            model_name='profiletags',
+            name='tag',
+            field=models.ForeignKey(to='profiles.Tag'),
         ),
         migrations.AddField(
             model_name='profile',
-            name='skills',
-            field=models.ManyToManyField(to='profiles.Skill', through='profiles.ProfileSkills'),
+            name='tags',
+            field=models.ManyToManyField(to='profiles.Tag', through='profiles.ProfileTags'),
         ),
         migrations.AlterUniqueTogether(
-            name='profileskills',
-            unique_together=set([('skill', 'profile')]),
+            name='profiletags',
+            unique_together=set([('tag', 'profile')]),
         ),
         migrations.AlterUniqueTogether(
             name='profile',

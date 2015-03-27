@@ -15,10 +15,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         client = service.control.Client('profile', token='admin-token')
         organization = organization_models.Organization.objects.get(domain=args[0])
-        skills = profile_models.Skill.objects.filter(organization_id=organization.id)
+        skills = profile_models.Tag.objects.filter(
+            organization_id=organization.id,
+            type=ProfileService.SKILL,
+        )
         skill_containers = []
         for skill in skills:
-            container = ProfileService.Containers.Skill()
+            container = ProfileService.Containers.Tag()
             skill.to_protobuf(container)
             skill_containers.append(container)
         profiles = profile_models.Profile.objects.filter(organization_id=organization.id)
@@ -28,4 +31,4 @@ class Command(BaseCommand):
                 skill = random.choice(skill_containers)
                 if skill not in profile_skills:
                     profile_skills.append(skill)
-            client.call_action('add_skills', profile_id=str(profile.id), skills=profile_skills)
+            client.call_action('add_tags', profile_id=str(profile.id), tags=profile_skills)

@@ -124,13 +124,13 @@ class GetCategories(actions.Action):
 
     def _get_active_skills_category(self, organization_id):
         response = self.profile_client.call_action(
-            'get_active_skills',
+            'get_active_tags',
             organization_id=organization_id,
         )
         if not response.success:
             raise Exception('failed ot fetch trending skills')
 
-        if not len(response.result.skills):
+        if not len(response.result.tags):
             return
 
         skills = self.response.categories.add()
@@ -138,8 +138,8 @@ class GetCategories(actions.Action):
         skills.content_key = 'name'
         skills.type = LandingService.Containers.Category.SKILLS
         skills.total_count = response.control.paginator.count
-        for skill in response.result.skills:
-            container = skills.skills.add()
+        for skill in response.result.tags:
+            container = skills.tags.add()
             container.CopyFrom(skill)
 
     def _get_recent_notes_category(self, profile):

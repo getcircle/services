@@ -34,21 +34,22 @@ class ProfileFactory(factory.Factory):
         return model.as_dict(exclude=('created', 'changed', 'items'))
 
     @factory.post_generation
-    def skills(self, create, extracted, **kwargs):
+    def tags(self, create, extracted, **kwargs):
         if not create:
             return
 
         if extracted:
-            # profiles and skills need to have the same organization_id
+            # profiles and tags need to have the same organization_id
             self.organization_id = extracted[0].organization_id
-            for skill in extracted:
-                self.skills.through.objects.create(skill=skill, profile=self)
+            for tag in extracted:
+                self.tags.through.objects.create(tag=tag, profile=self)
 
 
-class SkillFactory(factory.Factory):
+class TagFactory(factory.Factory):
     class Meta:
-        model = models.Skill
-        protobuf = ProfileService.Containers.Skill
+        model = models.Tag
+        protobuf = ProfileService.Containers.Tag
 
     organization_id = factory.FuzzyUUID()
     name = factory.FuzzyText()
+    type = factory.FuzzyChoice(ProfileService.TagType.values())

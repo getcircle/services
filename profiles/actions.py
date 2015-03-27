@@ -9,6 +9,7 @@ from django.db.models import (
     Count,
     Q,
 )
+from protobufs.profile_service_pb2 import ProfileService
 import service.control
 from service import (
     actions,
@@ -29,6 +30,14 @@ def valid_profile(profile_id):
 
 def valid_profile_with_user_id(user_id):
     return models.Profile.objects.filter(user_id=user_id).exists()
+
+
+def valid_tag(tag):
+    return tag.HasField('name') and tag.HasField('type')
+
+
+def valid_tag_list(tag_list):
+    return all(map(valid_tag, tag_list))
 
 
 def get_values_from_date_range(range_key, value_key, start, end):
@@ -152,7 +161,7 @@ class GetProfiles(actions.Action):
     type_validators = {
         'team_id': [validators.is_uuid4],
         'organization_id': [validators.is_uuid4],
-        'skill_id': [validators.is_uuid4],
+        'tag_id': [validators.is_uuid4],
         'address_id': [validators.is_uuid4],
         'ids': [validators.is_uuid4_list],
         'location_id': [validators.is_uuid4],
@@ -161,14 +170,14 @@ class GetProfiles(actions.Action):
     def validate(self, *args, **kwargs):
         super(GetProfiles, self).validate(*args, **kwargs)
         if not self.is_error():
-            if self.request.HasField('skill_id') and not self.request.HasField('organization_id'):
+            if self.request.HasField('tag_id') and not self.request.HasField('organization_id'):
                 raise self.ActionFieldError('organization_id', 'REQUIRED')
 
     def _populate_profiles_with_basic_keys(self):
         parameters = {}
-        if self.request.skill_id:
+        if self.request.tag_id:
             parameters['organization_id'] = self.request.organization_id
-            parameters['skills__id'] = self.request.skill_id
+            parameters['tags__id'] = self.request.tag_id
         elif self.request.organization_id:
             parameters['organization_id'] = self.request.organization_id
         elif self.request.address_id:
@@ -263,7 +272,10 @@ class GetExtendedProfile(GetProfile):
         return models.Profile.objects.get(user_id=user_id)
 
     def _get_skills(self):
-        return models.Skill.objects.filter(profile=self.request.profile_id)
+        return models.Tag.objects.filter(
+            profile=self.request.profile_id,
+            type=ProfileService.SKILL,
+        )
 
     def _fetch_notes(self):
         # XXX error if we don't have profile_id?
@@ -323,7 +335,7 @@ class GetExtendedProfile(GetProfile):
 
         skills = self._get_skills()
         for skill in skills:
-            container = self.response.skills.add()
+            container = self.response.tags.add()
             skill.to_protobuf(container)
 
         notes = self._fetch_notes()
@@ -332,34 +344,35 @@ class GetExtendedProfile(GetProfile):
             container.CopyFrom(note)
 
 
-class CreateSkills(actions.Action):
+class CreateTags(actions.Action):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
+        'tags': [valid_tag_list],
     }
 
-    def _create_skills(self, organization_id, skills):
-        # dedupe the skills
-        skills = dict((skill.name, skill) for skill in skills).values()
-        objects = [models.Skill.objects.from_protobuf(
-            skill,
+    def _create_tags(self, organization_id, tags):
+        # dedupe the tags
+        tags = dict((tag.name, tag) for tag in tags).values()
+        objects = [models.Tag.objects.from_protobuf(
+            tag,
             commit=False,
             organization_id=organization_id,
-        ) for skill in skills]
-        models.Skill.objects.bulk_create(objects)
-        return models.Skill.objects.filter(
-            name__in=[skill.name for skill in skills],
+        ) for tag in tags]
+        models.Tag.objects.bulk_create(objects)
+        return models.Tag.objects.filter(
+            name__in=[tag.name for tag in tags],
             organization_id=organization_id,
         )
 
     def run(self, *args, **kwargs):
-        skills = self._create_skills(self.request.organization_id, self.request.skills)
-        for skill in skills:
-            container = self.response.skills.add()
-            skill.to_protobuf(container)
+        tags = self._create_tags(self.request.organization_id, self.request.tags)
+        for tag in tags:
+            container = self.response.tags.add()
+            tag.to_protobuf(container)
 
 
-class AddSkills(CreateSkills):
+class AddTags(CreateTags):
 
     type_validators = {
         'profile_id': [validators.is_uuid4],
@@ -371,39 +384,39 @@ class AddSkills(CreateSkills):
         },
     }
 
-    def _dedupe_skills(self, skill_ids):
-        # NOTE: This is subject to a race condition, but since we only have 1
-        # interface to add skills we're not going to worry about this for now.
-        through_model = models.Profile.skills.through
-        current_skill_ids = map(str, through_model.objects.filter(
+    def _dedupe_tags(self, tag_ids):
+        # NOTE: this is subject to a race condition, but since we only have 1
+        # interface to add tags we're not going to worry about this for now.
+        through_model = models.Profile.tags.through
+        current_tag_ids = map(str, through_model.objects.filter(
             profile_id=self.request.profile_id,
-        ).values_list('skill_id', flat=True))
-        return list(set(skill_ids) - set(current_skill_ids))
+        ).values_list('tag_id', flat=True))
+        return list(set(tag_ids) - set(current_tag_ids))
 
-    def _add_skills(self, skills):
-        skill_ids = [skill.id for skill in skills]
-        deduped_skill_ids = self._dedupe_skills(skill_ids)
-        through_model = models.Profile.skills.through
+    def _add_tags(self, tags):
+        tag_ids = [tag.id for tag in tags]
+        deduped_tag_ids = self._dedupe_tags(tag_ids)
+        through_model = models.Profile.tags.through
         objects = [through_model(
             profile_id=self.request.profile_id,
-            skill_id=skill_id,
-        ) for skill_id in deduped_skill_ids]
+            tag_id=tag_id,
+        ) for tag_id in deduped_tag_ids]
         return through_model.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
-        skills_to_create = [skill for skill in self.request.skills if not skill.id]
-        skills_to_add = [skill for skill in self.request.skills if skill.id]
-        if skills_to_create:
+        tags_to_create = [tag for tag in self.request.tags if not tag.id]
+        tags_to_add = [tag for tag in self.request.tags if tag.id]
+        if tags_to_create:
             organization_id = models.Profile.objects.get(
                 pk=self.request.profile_id
             ).organization_id
-            skills_to_add.extend(self._create_skills(organization_id, skills_to_create))
+            tags_to_add.extend(self._create_tags(organization_id, tags_to_create))
 
-        if skills_to_add:
-            self._add_skills(skills_to_add)
+        if tags_to_add:
+            self._add_tags(tags_to_add)
 
 
-class GetSkills(actions.Action):
+class GetTags(actions.Action):
 
     # XXX should we have field_validators for whether or not organization and profile exist?
 
@@ -419,10 +432,10 @@ class GetSkills(actions.Action):
         else:
             parameters['profile'] = self.request.profile_id
 
-        skills = models.Skill.objects.filter(**parameters)
-        for skill in skills:
-            container = self.response.skills.add()
-            skill.to_protobuf(container)
+        tags = models.Tag.objects.filter(**parameters)
+        for tag in tags:
+            container = self.response.tags.add()
+            tag.to_protobuf(container)
 
 
 class GetDirectReports(actions.Action):
@@ -710,7 +723,7 @@ class GetRecentHires(actions.Action):
             profile.to_protobuf(container)
 
 
-class GetActiveSkills(actions.Action):
+class GetActiveTags(actions.Action):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
@@ -718,23 +731,23 @@ class GetActiveSkills(actions.Action):
 
     def _get_main_query(self):
         return (
-            '"%(profiles_skill)s" where "%(profiles_skill)s"."id" in ('
+            '"%(profiles_tag)s" where "%(profiles_tag)s"."id" in ('
             'SELECT DISTINCT id FROM ('
-            'SELECT "%(profiles_skill)s"."id" FROM "%(profiles_skill)s" INNER JOIN '
-            '"%(profiles_profileskills)s" ON ('
-            '"%(profiles_skill)s"."id" = "%(profiles_profileskills)s"."skill_id")'
-            ' WHERE ("%(profiles_profileskills)s"."skill_id" IS NOT NULL '
-            'AND "%(profiles_skill)s"."organization_id" = %%s) ORDER BY'
-            ' "%(profiles_profileskills)s"."created" DESC) as nested_query)'
+            'SELECT "%(profiles_tag)s"."id" FROM "%(profiles_tag)s" INNER JOIN '
+            '"%(profiles_profiletags)s" ON ('
+            '"%(profiles_tag)s"."id" = "%(profiles_profiletags)s"."tag_id")'
+            ' WHERE ("%(profiles_profiletags)s"."tag_id" IS NOT NULL '
+            'AND "%(profiles_tag)s"."organization_id" = %%s) ORDER BY'
+            ' "%(profiles_profiletags)s"."created" DESC) as nested_query)'
         ) % {
-            'profiles_skill': models.Skill._meta.db_table,
-            'profiles_profileskills': models.ProfileSkills._meta.db_table,
+            'profiles_tag': models.Tag._meta.db_table,
+            'profiles_profiletags': models.ProfileTags._meta.db_table,
         }
 
     def _build_count_query(self):
         return 'SELECT COUNT(*) FROM %s' % (self._get_main_query(),)
 
-    def _build_skills_query(self, offset, limit):
+    def _build_tags_query(self, offset, limit):
         return 'SELECT * FROM %s OFFSET %s LIMIT %s' % (self._get_main_query(), offset, limit)
 
     def _get_count(self):
@@ -744,8 +757,8 @@ class GetActiveSkills(actions.Action):
 
     def run(self, *args, **kwargs):
 
-        cache_queryset = models.ProfileSkills.objects.filter(
-            skill__organization_id=self.request.organization_id
+        cache_queryset = models.ProfileTags.objects.filter(
+            tag__organization_id=self.request.organization_id
         )
 
         @cached_as(cache_queryset)
@@ -756,18 +769,18 @@ class GetActiveSkills(actions.Action):
         offset, limit = self.get_pagination_offset_and_limit(count)
 
         @cached_as(cache_queryset, extra='%s.%s' % (offset, limit))
-        def _get_skills_block():
+        def _get_tags_block():
             # NB: Cast the raw queryset to a list so that it doesn't raise a
             # TypeError within paginated_response since RawQuerySet has no length
             # attribute
-            return list(models.Skill.objects.raw(
-                self._build_skills_query(offset, limit),
+            return list(models.Tag.objects.raw(
+                self._build_tags_query(offset, limit),
                 [self.request.organization_id],
             ))
 
         self.paginated_response(
-            self.response.skills,
-            _get_skills_block(),
+            self.response.tags,
+            _get_tags_block(),
             lambda item, container: item.to_protobuf(container.add()),
             count=count,
         )

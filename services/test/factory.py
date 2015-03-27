@@ -49,3 +49,25 @@ class Factory(DjangoModelFactory):
         container = cls._meta.protobuf()
         model.to_protobuf(container)
         return container
+
+    @classmethod
+    def create_protobufs(cls, *args, **kwargs):
+        cls.verify_has_protobuf()
+        models = cls.create_batch(*args, **kwargs)
+        containers = []
+        for model in models:
+            container = cls._meta.protobuf()
+            model.to_protobuf(container)
+            containers.append(container)
+        return containers
+
+    @classmethod
+    def build_protobufs(cls, *args, **kwargs):
+        cls.verify_has_protobuf()
+        models = cls.build_batch(*args, **kwargs)
+        containers = []
+        for model in models:
+            container = cls._meta.protobuf()
+            model.to_protobuf(container)
+            containers.append(container)
+        return containers

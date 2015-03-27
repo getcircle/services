@@ -148,30 +148,30 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 1)
         self._verify_containers(profile, response.result.profiles[0])
 
-    def test_get_profiles_invalid_skill_id(self):
-        with self.assertFieldError('skill_id'):
-            self.client.call_action('get_profiles', skill_id='invalid')
+    def test_get_profiles_invalid_tag_id(self):
+        with self.assertFieldError('tag_id'):
+            self.client.call_action('get_profiles', tag_id='invalid')
 
-    def test_get_profiles_skills_organization_id_required(self):
-        skill = factories.SkillFactory.create()
-        factories.ProfileFactory.create_batch(size=2, skills=[skill])
+    def test_get_profiles_tags_organization_id_required(self):
+        skill = factories.TagFactory.create(type=ProfileService.SKILL)
+        factories.ProfileFactory.create_batch(size=2, tags=[skill])
         with self.assertFieldError('organization_id', 'REQUIRED'):
             self.client.call_action(
                 'get_profiles',
-                skill_id=str(skill.id),
+                tag_id=str(skill.id),
             )
 
     def test_get_profiles_skills(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
-        skill = factories.SkillFactory.create(organization_id=organization_id)
+        skill = factories.TagFactory.create(organization_id=organization_id)
         factories.ProfileFactory.create_batch(
             size=4,
-            skills=[skill],
+            tags=[skill],
             organization_id=organization_id,
         )
         response = self.client.call_action(
             'get_profiles',
-            skill_id=str(skill.id),
+            tag_id=str(skill.id),
             organization_id=organization_id,
         )
         self.assertEqual(len(response.result.profiles), 4)
@@ -785,27 +785,35 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
 
-    def test_get_active_skills_invalid_organization_id(self):
+    def test_get_active_tags_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
-            self.client.call_action('get_active_skills', organization_id='invalid')
+            self.client.call_action(
+                'get_active_tags',
+                organization_id='invalid',
+                tag_type=ProfileService.SKILL,
+            )
 
-    def test_get_active_skills(self):
+    def test_get_active_tags(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()
-        skills = factories.SkillFactory.create_batch(size=3, organization_id=organization_id)
+        skills = factories.TagFactory.create_batch(
+            size=3,
+            organization_id=organization_id,
+            type=ProfileService.SKILL,
+        )
         profile = factories.ProfileFactory.create(
-            skills=[skills[1]],
+            tags=[skills[1]],
             organization_id=organization_id,
         )
         # create a profile in another organization
-        factories.ProfileFactory.create(skills=[factories.SkillFactory.create()])
+        factories.ProfileFactory.create(tags=[factories.TagFactory.create()])
         # add duplicate
-        factories.ProfileFactory.create(skills=[skills[1]])
+        factories.ProfileFactory.create(tags=[skills[1]])
         response = self.client.call_action(
-            'get_active_skills',
+            'get_active_tags',
             organization_id=str(profile.organization_id),
         )
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.skills), 1)
+        self.assertEqual(len(response.result.tags), 1)
 
     def test_get_profiles_address_id_invalid(self):
         with self.assertFieldError('address_id'):

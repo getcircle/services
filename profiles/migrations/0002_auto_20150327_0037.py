@@ -13,9 +13,9 @@ class Migration(migrations.Migration):
 
     operations = [
         AddRule(
-            'profiles_skill_on_duplicate_ignore',
-            'profiles_skill',
+            'profiles_tag_on_duplicate_ignore',
+            'profiles_tag',
             'INSERT',
-            'WHERE EXISTS (SELECT 1 FROM profiles_skill WHERE (name, organization_id) = (NEW.name, NEW.organization_id)) DO INSTEAD NOTHING',
+            'WHERE EXISTS (SELECT 1 FROM profiles_tag WHERE (name, organization_id, type) = (NEW.name, NEW.organization_id, NEW.type)) DO INSTEAD NOTHING',
         )
     ]

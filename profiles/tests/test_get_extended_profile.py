@@ -1,4 +1,5 @@
 import uuid
+from protobufs.profile_service_pb2 import ProfileService
 import service.control
 import service.settings
 from service.transports import (
@@ -149,8 +150,8 @@ class TestGetExtendedProfile(TestCase):
 
     def test_get_extended_profile(self):
         manager = factories.ProfileFactory.create_protobuf()
-        skills = factories.SkillFactory.create_batch(size=2)
-        profile = factories.ProfileFactory.create_protobuf(skills=skills)
+        skills = factories.TagFactory.create_batch(size=2, type=ProfileService.SKILL)
+        profile = factories.ProfileFactory.create_protobuf(tags=skills)
         location = self._mock_get_location(profile)
         team = self._mock_get_team(profile, owner_id=manager.user_id)
         notes = self._mock_get_notes(
@@ -170,7 +171,7 @@ class TestGetExtendedProfile(TestCase):
         self._verify_containers(location, response.result.location)
         self._verify_containers(team, response.result.team)
         self._verify_containers(profile, response.result.profile)
-        self.assertEqual(len(skills), len(response.result.skills))
+        self.assertEqual(len(skills), len(response.result.tags))
         self.assertEqual(len(notes), len(response.result.notes))
         self.assertEqual(len(direct_reports), len(response.result.direct_reports))
         self.assertEqual(len(self.identities), len(response.result.identities))

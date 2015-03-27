@@ -1,16 +1,23 @@
 from django.contrib.postgres.fields import ArrayField
 from phonenumber_field.modelfields import PhoneNumberField
+from protobufs.profile_service_pb2 import ProfileService
 
 from common.db import models
 
 
-class Skill(models.UUIDModel, models.TimestampableModel):
+class Tag(models.UUIDModel, models.TimestampableModel):
+
+    as_dict_value_transforms = {'type': int}
 
     organization_id = models.UUIDField(db_index=True)
     name = models.CharField(max_length=64)
+    type = models.SmallIntegerField(
+        # NB: protobuf "items" is the opposite order djagno requires
+        choices=[(x[1], x[0]) for x in ProfileService.TagType.items()],
+    )
 
     class Meta:
-        unique_together = ('organization_id', 'name')
+        unique_together = ('organization_id', 'name', 'type')
 
 
 class Profile(models.UUIDModel, models.TimestampableModel):
@@ -32,7 +39,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     birth_date = models.DateField()
     hire_date = models.DateField()
     verified = models.BooleanField(default=False)
-    skills = models.ManyToManyField(Skill, through='ProfileSkills')
+    tags = models.ManyToManyField(Tag, through='ProfileTags')
     items = ArrayField(
         ArrayField(models.CharField(max_length=256, null=True), size=2),
         null=True,
@@ -62,10 +69,10 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         unique_together = ('organization_id', 'user_id')
 
 
-class ProfileSkills(models.TimestampableModel):
+class ProfileTags(models.TimestampableModel):
 
-    skill = models.ForeignKey(Skill)
+    tag = models.ForeignKey(Tag)
     profile = models.ForeignKey(Profile)
 
     class Meta:
-        unique_together = ('skill', 'profile')
+        unique_together = ('tag', 'profile')

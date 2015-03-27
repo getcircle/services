@@ -4,6 +4,7 @@ import urlparse
 from django.conf import settings
 from linkedin import linkedin
 from mock import patch
+from protobufs.profile_service_pb2 import ProfileService
 from protobufs.user_service_pb2 import UserService
 import service.control
 from service.transports import mock
@@ -99,6 +100,7 @@ class TestAuthorization(TestCase):
     @patch.object(providers.LinkedIn, '_get_access_token')
     def test_complete_authorization_with_user(self, mocked_get_access_token, mocked_linkedin):
         mocked_get_access_token.return_value = (fuzzy.FuzzyUUID().fuzz(), 5184000)
+        # NB: Below is a sample response from LI api
         mocked_linkedin().get_profile.return_value = {
             'formattedName': 'Michael Hahn',
             'emailAddress': 'mwhahn@gmail.com',
@@ -114,13 +116,16 @@ class TestAuthorization(TestCase):
         self.client.token = mocks.mock_token(user_id=user.id)
         parsed_token = parse_token(self.client.token)
         with self.default_mock_transport(self.client) as mock:
-            mock_response = mock.get_mockable_response('profile', 'add_skills')
+            mock_response = mock.get_mockable_response('profile', 'add_tags')
             mock.instance.register_mock_response(
                 'profile',
-                'add_skills',
+                'add_tags',
                 mock_response,
                 profile_id=parsed_token.profile_id,
-                skills=[{'name': 'Python'}, {'name': 'MySQL'}],
+                tags=[
+                    {'name': 'Python', 'type': ProfileService.SKILL},
+                    {'name': 'MySQL', 'type': ProfileService.SKILL},
+                ],
             )
             response = self.client.call_action(
                 'complete_authorization',
