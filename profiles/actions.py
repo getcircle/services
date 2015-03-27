@@ -733,6 +733,9 @@ class GetActiveTags(actions.Action):
     }
 
     def _get_main_query(self):
+        tag_type_condition = ''
+        if self.request.HasField('tag_type'):
+            tag_type_condition = 'AND "%s"."type" = %%s' % (models.Tag._meta.db_table,)
         return (
             '"%(profiles_tag)s" where "%(profiles_tag)s"."id" in ('
             'SELECT DISTINCT id FROM ('
@@ -740,11 +743,12 @@ class GetActiveTags(actions.Action):
             '"%(profiles_profiletags)s" ON ('
             '"%(profiles_tag)s"."id" = "%(profiles_profiletags)s"."tag_id")'
             ' WHERE ("%(profiles_profiletags)s"."tag_id" IS NOT NULL '
-            'AND "%(profiles_tag)s"."organization_id" = %%s) ORDER BY'
+            'AND "%(profiles_tag)s"."organization_id" = %%s) %(tag_type_condition)s ORDER BY'
             ' "%(profiles_profiletags)s"."created" DESC) as nested_query)'
         ) % {
             'profiles_tag': models.Tag._meta.db_table,
             'profiles_profiletags': models.ProfileTags._meta.db_table,
+            'tag_type_condition': tag_type_condition,
         }
 
     def _build_count_query(self):
@@ -753,20 +757,23 @@ class GetActiveTags(actions.Action):
     def _build_tags_query(self, offset, limit):
         return 'SELECT * FROM %s OFFSET %s LIMIT %s' % (self._get_main_query(), offset, limit)
 
-    def _get_count(self):
+    def _get_count(self, params):
         cursor = connection.cursor()
-        cursor.execute(self._build_count_query(), [self.request.organization_id])
+        cursor.execute(self._build_count_query(), params)
         return cursor.fetchone()[0]
 
     def run(self, *args, **kwargs):
-
+        main_params = [self.request.organization_id]
         cache_queryset = models.ProfileTags.objects.filter(
             tag__organization_id=self.request.organization_id
         )
+        if self.request.HasField('tag_type'):
+            main_params.append(self.request.tag_type)
+            cache_queryset = cache_queryset.filter(tag__type=self.request.tag_type)
 
         @cached_as(cache_queryset)
         def _get_count_block():
-            return self._get_count()
+            return self._get_count(main_params)
 
         count = _get_count_block()
         offset, limit = self.get_pagination_offset_and_limit(count)
@@ -776,10 +783,7 @@ class GetActiveTags(actions.Action):
             # NB: Cast the raw queryset to a list so that it doesn't raise a
             # TypeError within paginated_response since RawQuerySet has no length
             # attribute
-            return list(models.Tag.objects.raw(
-                self._build_tags_query(offset, limit),
-                [self.request.organization_id],
-            ))
+            return list(models.Tag.objects.raw(self._build_tags_query(offset, limit), main_params))
 
         self.paginated_response(
             self.response.tags,

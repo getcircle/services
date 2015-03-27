@@ -5,6 +5,7 @@ from service import (
 import service.control
 
 from protobufs.landing_service_pb2 import LandingService
+from protobufs.profile_service_pb2 import ProfileService
 
 
 class GetCategories(actions.Action):
@@ -126,6 +127,7 @@ class GetCategories(actions.Action):
         response = self.profile_client.call_action(
             'get_active_tags',
             organization_id=organization_id,
+            tag_type=ProfileService.INTEREST,
         )
         if not response.success:
             raise Exception('failed ot fetch trending interests')

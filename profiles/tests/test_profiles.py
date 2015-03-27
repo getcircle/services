@@ -800,8 +800,14 @@ class TestProfiles(TestCase):
             organization_id=organization_id,
             type=ProfileService.SKILL,
         )
+        # create interests that SHOULD be included
+        interests = factories.TagFactory.create_batch(
+            size=3,
+            organization_id=organization_id,
+            type=ProfileService.INTEREST,
+        )
         profile = factories.ProfileFactory.create(
-            tags=[skills[1]],
+            tags=[skills[1], interests[1]],
             organization_id=organization_id,
         )
         # create a profile in another organization
@@ -811,6 +817,37 @@ class TestProfiles(TestCase):
         response = self.client.call_action(
             'get_active_tags',
             organization_id=str(profile.organization_id),
+        )
+        self.assertTrue(response.success)
+        # since we didn't specify tag_type we should get back all active tags
+        # for the organization
+        self.assertEqual(len(response.result.tags), 2)
+
+    def test_get_active_tags_skills(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        skills = factories.TagFactory.create_batch(
+            size=3,
+            organization_id=organization_id,
+            type=ProfileService.SKILL,
+        )
+        # create interests that shouldn't be included
+        interests = factories.TagFactory.create_batch(
+            size=3,
+            organization_id=organization_id,
+            type=ProfileService.INTEREST,
+        )
+        profile = factories.ProfileFactory.create(
+            tags=[skills[1], interests[1]],
+            organization_id=organization_id,
+        )
+        # create a profile in another organization
+        factories.ProfileFactory.create(tags=[factories.TagFactory.create()])
+        # add duplicate
+        factories.ProfileFactory.create(tags=[skills[1]])
+        response = self.client.call_action(
+            'get_active_tags',
+            organization_id=str(profile.organization_id),
+            tag_type=ProfileService.SKILL,
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.tags), 1)
