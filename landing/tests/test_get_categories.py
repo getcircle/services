@@ -5,10 +5,10 @@ from service.transports import (
     mock,
 )
 
+from protobufs.profile_service_pb2 import ProfileService
 from protobufs.landing_service_pb2 import LandingService
 
 from services.test import (
-    fuzzy,
     mocks,
     TestCase,
 )
@@ -123,6 +123,7 @@ class TestGetCategories(TestCase):
             action,
             mock_response,
             organization_id=organization_id,
+            tag_type=ProfileService.INTEREST,
         )
 
     def _mock_get_notes(self, profile_id, notes=3):
