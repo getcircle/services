@@ -25,4 +25,5 @@ class Server(service.control.Server):
         'complete_authorization': actions.CompleteAuthorization,
         'get_identities': actions.GetIdentities,
         'record_device': actions.RecordDevice,
+        'request_access': actions.RequestAccess,
     }

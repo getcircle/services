@@ -368,3 +368,24 @@ class RecordDevice(actions.Action):
             device = models.Device.objects.from_protobuf(self.request.device)
 
         device.to_protobuf(self.response.device)
+
+
+class RequestAccess(actions.Action):
+
+    required_fields = ('user_id',)
+
+    type_validators = {
+        'user_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'user_id': {
+            valid_user: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        access_request, _ = models.AccessRequest.objects.get_or_create(
+            user_id=self.request.user_id,
+        )
+        access_request.to_protobuf(self.response.access_request)
