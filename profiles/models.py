@@ -32,6 +32,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     title = models.CharField(max_length=255)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
+    nickname = models.CharField(max_length=64, null=True)
     cell_phone = PhoneNumberField(null=True)
     work_phone = PhoneNumberField(null=True)
     image_url = models.URLField(max_length=256, null=True)
