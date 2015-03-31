@@ -336,3 +336,35 @@ class GetIdentities(actions.Action):
             identities,
             lambda item, container: item.to_protobuf(container.add()),
         )
+
+
+class RecordDevice(actions.Action):
+
+    required_fields = (
+        'device.user_id',
+        'device.notification_token',
+        'device.platform',
+        'device.os_version',
+        'device.device_uuid',
+        'device.app_version',
+    )
+
+    type_validators = {
+        'device.user_id': [validators.is_uuid4],
+    }
+
+    field_validators = {
+        'device.user_id': {
+            valid_user: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            device = models.Device.objects.get(device_uuid=self.request.device.device_uuid)
+            device.update_from_protobuf(self.request.device)
+            device.save()
+        except models.Device.DoesNotExist:
+            device = models.Device.objects.from_protobuf(self.request.device)
+
+        device.to_protobuf(self.response.device)

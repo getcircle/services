@@ -116,3 +116,13 @@ class Identity(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = (('user', 'provider'), ('provider', 'provider_uid'))
+
+
+class Device(models.UUIDModel, models.TimestampableModel):
+
+    user = models.ForeignKey(User)
+    notification_token = models.CharField(max_length=255)
+    platform = models.CharField(max_length=255)
+    os_version = models.CharField(max_length=255)
+    app_version = models.CharField(max_length=255)
+    device_uuid = models.CharField(max_length=255, db_index=True)

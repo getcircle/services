@@ -45,3 +45,16 @@ class IdentityFactory(factory.Factory):
     access_token = fuzzy.FuzzyUUID()
     provider_uid = fuzzy.FuzzyUUID()
     expires_at = fuzzy.FuzzyTimestamp()
+
+
+class DeviceFactory(factory.Factory):
+    class Meta:
+        model = models.Device
+        protobuf = UserService.Containers.Device
+
+    user = factory.SubFactory(UserFactory)
+    notification_token = fuzzy.FuzzyUUID()
+    platform = fuzzy.FuzzyText()
+    os_version = fuzzy.FuzzyText()
+    app_version = fuzzy.FuzzyText()
+    device_uuid = fuzzy.FuzzyUUID()
