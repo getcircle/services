@@ -307,8 +307,6 @@ class TestProfiles(TestCase):
 
         profile.first_name = 'Michael'
         profile.last_name = 'Hahn'
-        profile.email = 'mwhahn@gmail.com'
-        profile.cell_phone = '+19492931122'
         profile.title = 'Engineer'
 
         # this has no effect, this just makes validating the container easier

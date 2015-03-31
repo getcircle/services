@@ -1,6 +1,7 @@
 from csv import DictReader
 
 from django.utils.encoding import smart_text
+from protobufs.profile_service_pb2 import ProfileService
 import service.control
 
 from services.utils import get_timezone_for_location
@@ -45,12 +46,15 @@ class Row(object):
     profile_fields = (
         'first_name',
         'last_name',
-        'email',
         'image_url',
         'title',
-        'cell_phone',
         'birth_date',
         'hire_date',
+    )
+
+    contact_method_fields = (
+        'email',
+        'cell_phone',
     )
 
     address_fields = (
@@ -92,6 +96,19 @@ class Row(object):
         profile = {}
         for key in self.profile_fields:
             profile[key] = smart_text(self.data[key])
+
+        contact_methods = []
+        for key in self.contact_method_fields:
+            contact_method = {'value': self.data[key]}
+            if key == 'email':
+                contact_method['label'] = 'Work Email'
+                contact_method['type'] = ProfileService.EMAIL
+            else:
+                contact_method['label'] = 'Cell Phone'
+                contact_method['type'] = ProfileService.CELL_PHONE
+            contact_methods.append(contact_method)
+
+        profile['contact_methods'] = contact_methods
         return profile
 
     def is_team_owner(self):

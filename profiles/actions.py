@@ -149,7 +149,7 @@ class GetProfile(actions.Action):
         else:
             parameters['user_id'] = self.request.user_id
 
-        return models.Profile.objects.get(**parameters)
+        return models.Profile.objects.prefetch_related('contactmethod_set').get(**parameters)
 
     def run(self, *args, **kwargs):
         profile = self._get_profile()
@@ -189,7 +189,10 @@ class GetProfiles(actions.Action):
         else:
             raise self.ActionError('missing parameters')
 
-        profiles = models.Profile.objects.filter(**parameters).order_by('first_name', 'last_name')
+        profiles = models.Profile.objects.filter(**parameters).order_by(
+            'first_name',
+            'last_name',
+        ).prefetch_related('contactmethod_set')
         self.paginated_response(
             self.response.profiles,
             profiles,
@@ -216,7 +219,7 @@ class GetProfiles(actions.Action):
 
         team_profiles = models.Profile.objects.filter(team_id=self.request.team_id).exclude(
             id__in=[profile.id for profile in profiles],
-        )
+        ).prefetch_related('contactmethod_set')
         profiles.extend(team_profiles)
         profiles = sorted(profiles, key=lambda x: (x.first_name.lower(), x.last_name.lower()))
         for profile in profiles:
@@ -269,7 +272,7 @@ class GetExtendedProfile(GetProfile):
                 on_error=self.ActionError('ERROR_FETCHING_MANAGER_TEAM'),
             )
             user_id = response.result.team.owner_id
-        return models.Profile.objects.get(user_id=user_id)
+        return models.Profile.objects.prefetch_related('contactmethod_set').get(user_id=user_id)
 
     def _get_skills(self):
         return models.Tag.objects.filter(
@@ -498,7 +501,10 @@ class GetDirectReports(actions.Action):
                     'case_insensitive_first_name': 'lower(first_name)',
                     'case_insensitive_last_name': 'lower(last_name)',
                 }
-            ).order_by('case_insensitive_first_name', 'case_insensitive_last_name')
+            ).order_by(
+                'case_insensitive_first_name',
+                'case_insensitive_last_name',
+            ).prefetch_related('contactmethod_set')
             for profile in profiles:
                 container = self.response.profiles.add()
                 profile.to_protobuf(container)
@@ -551,7 +557,10 @@ class GetPeers(actions.Action):
                     'case_insensitive_first_name': 'lower(first_name)',
                     'case_insensitive_last_name': 'lower(last_name)',
                 }
-            ).order_by('case_insensitive_first_name', 'case_insensitive_last_name')
+            ).order_by(
+                'case_insensitive_first_name',
+                'case_insensitive_last_name',
+            ).prefetch_related('contactmethod_set')
             for item in profiles:
                 if item.pk == profile.pk:
                     continue
@@ -717,10 +726,11 @@ class GetRecentHires(actions.Action):
 
     def run(self, *args, **kwargs):
         now = arrow.utcnow()
+        # XXX sort by hire_date
         profiles = models.Profile.objects.filter(
             organization_id=self.request.organization_id,
             hire_date__gte=now.replace(days=-7).date,
-        )
+        ).prefetch_related('contactmethod_set')
         for profile in profiles:
             container = self.response.profiles.add()
             profile.to_protobuf(container)

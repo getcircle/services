@@ -238,3 +238,15 @@ def mock_location(container=None, **overrides):
         fuzzy.FuzzyText: ['name'],
     }
     return _mock_container(container, mock_dict, **defaults)
+
+
+def mock_contact_method(container=None, **overrides):
+    if container is None:
+        container = ProfileService.Containers.ContactMethod()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id'],
+        fuzzy.FuzzyChoice(ProfileService.ContactMethodType.values()): ['type'],
+        fuzzy.FuzzyText: ['label', 'value'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
