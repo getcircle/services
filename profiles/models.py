@@ -30,6 +30,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     location_id = models.UUIDField(null=True, db_index=True)
     team_id = models.UUIDField(db_index=True)
     title = models.CharField(max_length=255)
+    email = models.EmailField()
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     nickname = models.CharField(max_length=64, null=True)

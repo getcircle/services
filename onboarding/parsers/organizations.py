@@ -50,10 +50,10 @@ class Row(object):
         'title',
         'birth_date',
         'hire_date',
+        'email',
     )
 
     contact_method_fields = (
-        'email',
         'cell_phone',
     )
 
@@ -100,12 +100,8 @@ class Row(object):
         contact_methods = []
         for key in self.contact_method_fields:
             contact_method = {'value': smart_text(self.data[key])}
-            if key == 'email':
-                contact_method['label'] = 'Work Email'
-                contact_method['type'] = ProfileService.EMAIL
-            else:
-                contact_method['label'] = 'Cell Phone'
-                contact_method['type'] = ProfileService.CELL_PHONE
+            contact_method['label'] = 'Cell Phone'
+            contact_method['type'] = ProfileService.CELL_PHONE
             contact_methods.append(contact_method)
 
         profile['contact_methods'] = contact_methods
