@@ -59,3 +59,23 @@ class TestProfileContactMethods(TestCase):
             ).count(),
             2,
         )
+
+    def test_delete_contact_methods(self):
+        # create contact methods for separate profile
+        factories.ProfileFactory.create_protobuf(
+            contact_methods=[mocks.mock_contact_method(id=None) for _ in range(5)],
+        )
+        contact_methods = [mocks.mock_contact_method(id=None) for _ in range(3)]
+        profile = factories.ProfileFactory.create_protobuf(contact_methods=contact_methods)
+        # remove one of the contact methods
+        removed_contact_method = profile.contact_methods[2]
+        preserved_contact_methods = list(profile.contact_methods[:2])
+        profile.ClearField('contact_methods')
+        profile.contact_methods.extend(preserved_contact_methods)
+
+        response = self.client.call_action('update_profile', profile=profile)
+        self.assertEqual(len(response.result.profile.contact_methods), 2)
+        self.assertEqual(models.ContactMethod.objects.all().count(), 7)
+        self.assertFalse(
+            models.ContactMethod.objects.filter(id=removed_contact_method.id).exists(),
+        )

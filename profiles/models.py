@@ -82,6 +82,16 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     def _update_contact_methods(self, methods):
         with django.db.transaction.atomic():
+            existing_ids = map(str, self.contactmethod_set.all().values_list('id', flat=True))
+            new_ids = filter(None, [method.id for method in methods])
+            to_delete = []
+            for method_id in existing_ids:
+                if method_id not in new_ids:
+                    to_delete.append(method_id)
+
+            if to_delete:
+                self.contactmethod_set.filter(id__in=to_delete).delete()
+
             for container in methods:
                 if container.id:
                     contact_method = ContactMethod.objects.get(
