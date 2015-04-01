@@ -87,9 +87,29 @@ class BulkCreateProfiles(actions.Action):
 
     def run(self, *args, **kwargs):
         profiles = self.bulk_create_profiles(self.request.profiles)
+        contact_methods = []
+        for index, profile in enumerate(profiles):
+            profile_container = self.request.profiles[index]
+            for container in profile_container.contact_methods:
+                contact_method = models.ContactMethod.objects.from_protobuf(
+                    container,
+                    profile_id=profile.id,
+                    commit=False,
+                )
+                contact_methods.append(contact_method)
+
+        contact_methods = models.ContactMethod.objects.bulk_create(contact_methods)
+        profile_id_to_contact_methods = {}
+        for contact_method in contact_methods:
+            profile_id_to_contact_methods.setdefault(contact_method.profile_id, []).append(
+                contact_method,
+            )
         for profile in profiles:
             container = self.response.profiles.add()
-            profile.to_protobuf(container)
+            profile.to_protobuf(
+                container,
+                contact_methods=profile_id_to_contact_methods.get(profile.id),
+            )
 
 
 class UpdateProfile(actions.Action):

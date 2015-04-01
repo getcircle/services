@@ -99,7 +99,7 @@ class Row(object):
 
         contact_methods = []
         for key in self.contact_method_fields:
-            contact_method = {'value': self.data[key]}
+            contact_method = {'value': smart_text(self.data[key])}
             if key == 'email':
                 contact_method['label'] = 'Work Email'
                 contact_method['type'] = ProfileService.EMAIL
