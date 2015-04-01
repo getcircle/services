@@ -36,7 +36,7 @@ class TestUserDevices(TestCase):
             self.client.call_action('record_device', device=device)
 
         self.assertIn('FIELD_ERROR', expected.exception.response.errors)
-        self.assertEqual(len(expected.exception.response.error_details), 6)
+        self.assertEqual(len(expected.exception.response.error_details), 5)
 
     def test_record_device(self):
         user = factories.UserFactory.create()

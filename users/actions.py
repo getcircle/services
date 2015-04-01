@@ -342,7 +342,6 @@ class RecordDevice(actions.Action):
 
     required_fields = (
         'device.user_id',
-        'device.notification_token',
         'device.platform',
         'device.os_version',
         'device.device_uuid',

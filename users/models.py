@@ -121,7 +121,7 @@ class Identity(models.UUIDModel, models.TimestampableModel):
 class Device(models.UUIDModel, models.TimestampableModel):
 
     user = models.ForeignKey(User)
-    notification_token = models.CharField(max_length=255)
+    notification_token = models.CharField(max_length=255, null=True)
     platform = models.CharField(max_length=255)
     os_version = models.CharField(max_length=255)
     app_version = models.CharField(max_length=255)
