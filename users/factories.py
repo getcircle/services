@@ -58,3 +58,4 @@ class DeviceFactory(factory.Factory):
     os_version = fuzzy.FuzzyText()
     app_version = fuzzy.FuzzyText()
     device_uuid = fuzzy.FuzzyUUID()
+    language_preference = 'en'

@@ -126,6 +126,7 @@ class Device(models.UUIDModel, models.TimestampableModel):
     os_version = models.CharField(max_length=255)
     app_version = models.CharField(max_length=255)
     device_uuid = models.CharField(max_length=255, db_index=True)
+    language_preference = models.CharField(max_length=16)
 
 
 class AccessRequest(models.UUIDModel, models.TimestampableModel):
