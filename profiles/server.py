@@ -15,6 +15,7 @@ class Server(service.control.Server):
         'get_extended_profile': actions.GetExtendedProfile,
         'create_tags': actions.CreateTags,
         'add_tags': actions.AddTags,
+        'remove_tags': actions.RemoveTags,
         'get_tags': actions.GetTags,
         'get_direct_reports': actions.GetDirectReports,
         'get_peers': actions.GetPeers,

@@ -439,6 +439,21 @@ class AddTags(CreateTags):
             self._add_tags(tags_to_add)
 
 
+class RemoveTags(actions.Action):
+
+    required_fields = ('profile_id', 'tags')
+
+    type_validators = {
+        'profile_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        models.ProfileTags.objects.filter(
+            profile_id=self.request.profile_id,
+            tag_id__in=set([tag.id for tag in self.request.tags]),
+        ).delete()
+
+
 class GetTags(actions.Action):
 
     # XXX should we have field_validators for whether or not organization and profile exist?

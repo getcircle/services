@@ -6,7 +6,10 @@ from services.test import (
     TestCase,
 )
 
-from .. import factories
+from .. import (
+    factories,
+    models,
+)
 
 
 class TestProfileTags(TestCase):
@@ -198,3 +201,32 @@ class TestProfileTags(TestCase):
 
         response = self.client.call_action('get_tags', profile_id=str(profile.id))
         self.assertEqual(len(response.result.tags), 1)
+
+    def test_remove_tags_invalid_profile_id(self):
+        with self.assertFieldError('profile_id'):
+            self.client.call_action(
+                'remove_tags',
+                profile_id='invalid',
+                tags=[factories.TagFactory.create_protobuf()],
+            )
+
+    def test_remove_tags_profile_id_required(self):
+        with self.assertFieldError('profile_id', 'MISSING'):
+            self.client.call_action(
+                'remove_tags',
+                tags=[factories.TagFactory.create_protobuf()],
+            )
+
+    def test_remove_tags(self):
+        tags = factories.TagFactory.create_batch(size=4, organization_id=self.organization.id)
+        profile = factories.ProfileFactory.create_protobuf(tags=tags)
+        self.client.call_action(
+            'remove_tags',
+            profile_id=profile.id,
+            tags=[factories.TagFactory.to_protobuf(tag) for tag in tags[:2]],
+        )
+        self.assertEqual(models.ProfileTags.objects.filter(profile_id=profile.id).count(), 2)
+
+    def test_remove_tags_tags_required(self):
+        with self.assertFieldError('tags', 'MISSING'):
+            self.client.call_action('remove_tags', profile_id=fuzzy.FuzzyUUID().fuzz())
