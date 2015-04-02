@@ -325,15 +325,21 @@ class CompleteAuthorization(actions.Action):
 
 class DeleteIdentity(actions.Action):
 
-    required_fields = ('id', 'user_id')
+    required_fields = (
+        'identity.id',
+        'identity.user_id',
+    )
 
     type_validators = {
-        'id': [validators.is_uuid4],
-        'user_id': [validators.is_uuid4],
+        'identity.id': [validators.is_uuid4],
+        'identity.user_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
-        models.Identity.objects.filter(id=self.request.id).delete()
+        models.Identity.objects.filter(
+            id=self.request.identity.id,
+            user_id=self.request.identity.user_id,
+        ).delete()
 
 
 class GetIdentities(actions.Action):

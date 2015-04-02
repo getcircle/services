@@ -30,35 +30,37 @@ class TestIdentities(TestCase):
         self.assertEqual(len(response.result.identities), 2)
 
     def test_delete_identity_invalid_user_id(self):
-        with self.assertFieldError('user_id'):
-            self.client.call_action(
-                'delete_identity',
-                id=fuzzy.FuzzyUUID().fuzz(),
-                user_id='invalid',
-            )
+        with self.assertFieldError('identity.user_id'):
+            container = factories.IdentityFactory.build_protobuf()
+            container.user_id = 'invalid'
+            self.client.call_action('delete_identity', identity=container)
 
     def test_delete_identity_invalid_id(self):
-        with self.assertFieldError('id'):
+        with self.assertFieldError('identity.id'):
             self.client.call_action(
                 'delete_identity',
-                id='invalid',
-                user_id=fuzzy.FuzzyUUID().fuzz(),
+                identity=factories.IdentityFactory.build_protobuf(id='invalid'),
             )
 
     def test_delete_identity_id_required(self):
-        with self.assertFieldError('id', 'MISSING'):
+        with self.assertFieldError('identity.id', 'MISSING'):
             self.client.call_action(
                 'delete_identity',
-                user_id=fuzzy.FuzzyUUID().fuzz(),
+                identity=factories.IdentityFactory.build_protobuf(id=None),
             )
+
+    def test_delete_identity_user_id_required(self):
+        with self.assertFieldError('identity.user_id', 'MISSING'):
+            container = factories.IdentityFactory.build_protobuf()
+            container.ClearField('user_id')
+            self.client.call_action('delete_identity', identity=container)
 
     def test_delete_identity(self):
         user = factories.UserFactory.create()
-        identity = factories.IdentityFactory.create(user=user, provider=UserService.LINKEDIN)
-        factories.IdentityFactory.create(user=user, provider=UserService.GOOGLE)
-        self.client.call_action(
-            'delete_identity',
-            id=str(identity.id),
-            user_id=str(user.id),
+        identity = factories.IdentityFactory.create_protobuf(
+            user=user,
+            provider=UserService.LINKEDIN,
         )
+        factories.IdentityFactory.create(user=user, provider=UserService.GOOGLE)
+        self.client.call_action('delete_identity', identity=identity)
         self.assertEqual(models.Identity.objects.filter(user_id=user.id).count(), 1)
