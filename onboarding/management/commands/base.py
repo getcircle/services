@@ -10,6 +10,7 @@ from services.management.base import (
 
 class BaseOrganizationParserCommand(BaseCommand):
     parser_class = None
+    parser_kwargs = None
     args = '<organization domain> <filename>'
     help = 'Loads the onboarding file into the organization'
     option_list = BaseCommand.option_list + (
@@ -34,6 +35,11 @@ class BaseOrganizationParserCommand(BaseCommand):
         ),
     )
 
+    def __init__(self, *args, **kwargs):
+        if self.parser_kwargs is None:
+            self.parser_kwargs = {}
+        super(BaseOrganizationParserCommand, self).__init__(*args, **kwargs)
+
     def handle(self, *args, **options):
         if self.parser_class is None:
             raise NotImplementedError('BaseOrganizationParserCommand must specify "parser_class"')
@@ -54,7 +60,6 @@ class BaseOrganizationParserCommand(BaseCommand):
             verbose=options['verbose'],
         )
         try:
-            parser.parse(commit=options['commit'])
+            parser.parse(commit=options['commit'], **self.parser_kwargs)
         except ParseError as e:
             raise CommandError('Error parsing file: %s' % (e.args[0],))
-
