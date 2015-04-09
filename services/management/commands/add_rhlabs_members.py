@@ -13,8 +13,9 @@ class Command(BaseCommand):
     args = '<organization_domain> <emails>'
     option_list = BaseCommand.option_list + (
         make_option(
-            '--prevent',
-            dest='prevent',
+            '--lock',
+            action='append',
+            dest='lock',
             help='An email address we want to make sure we\'re not overriding',
         ),
     )
@@ -22,14 +23,18 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         organization = organization_models.Organization.objects.get(domain=args[0])
         emails = args[1:]
-        prevent_user = options.get('prevent')
-        if prevent_user:
-            prevent_user = user_models.User.objects.get(primary_email=options['prevent'])
+        locked_users = options.get('lock')
+        if locked_users:
+            locked_users = user_models.User.objects.filter(primary_email__in=locked_users)
 
         queryset = organization_models.Team.objects.filter(organization_id=organization.id)
-        if prevent_user:
-            print 'preventing user: %s' % (prevent_user.email,)
-            queryset = queryset.exclude(owner_id=prevent_user.id)
+        if locked_users:
+            print 'locking users: %s' % (
+                ', '.join([locked_user.primary_email for locked_user in locked_users]),
+            )
+            queryset = queryset.exclude(
+                owner_id__in=[locked_user.id for locked_user in locked_users]
+            )
 
         # NB: Don't include the CEO
         teams = queryset.order_by('path')[1:len(emails) + 1]
