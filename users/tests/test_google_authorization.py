@@ -9,7 +9,7 @@ from oauth2client.client import (
     FlowExchangeError,
 )
 from oauth2client.crypt import AppIdentityError
-from protobufs.user_service_pb2 import UserService
+from protobufs.services.user.containers import identity_pb2
 import service.control
 
 from services.test import (
@@ -55,13 +55,13 @@ class TestGoogleAuthorization(TestCase):
         mocked_verify_id_token.return_value = self.id_token
         response = self.client.call_action(
             'complete_authorization',
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
             oauth_sdk_details={
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
         )
-        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
@@ -82,7 +82,7 @@ class TestGoogleAuthorization(TestCase):
         identity = factories.IdentityFactory.create(
             user=user,
             provider_uid=self.id_token['sub'],
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
         )
         mocked_get_access_token.return_value = AccessTokenInfo(
             access_token=identity.access_token,
@@ -90,13 +90,13 @@ class TestGoogleAuthorization(TestCase):
         )
         response = self.client.call_action(
             'complete_authorization',
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
             oauth_sdk_details={
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
         )
-        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.email, identity.email)
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
@@ -118,7 +118,7 @@ class TestGoogleAuthorization(TestCase):
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'complete_authorization',
-                provider=UserService.GOOGLE,
+                provider=identity_pb2.IdentityV1.GOOGLE,
                 oauth_sdk_details={
                     'code': 'some-code',
                     'id_token': 'id-token',
@@ -142,7 +142,7 @@ class TestGoogleAuthorization(TestCase):
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'complete_authorization',
-                provider=UserService.GOOGLE,
+                provider=identity_pb2.IdentityV1.GOOGLE,
                 oauth_sdk_details={
                     'code': 'some-code',
                     'id_token': 'id-token',
@@ -166,18 +166,18 @@ class TestGoogleAuthorization(TestCase):
         identity = factories.IdentityFactory.create(
             user=user,
             provider_uid=self.id_token['sub'],
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
             expires_at=arrow.utcnow().replace(days=-2).timestamp,
         )
         response = self.client.call_action(
             'complete_authorization',
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
             oauth_sdk_details={
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
         )
-        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.email, identity.email)
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
@@ -196,7 +196,7 @@ class TestGoogleAuthorization(TestCase):
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'complete_authorization',
-                provider=UserService.GOOGLE,
+                provider=identity_pb2.IdentityV1.GOOGLE,
                 oauth_sdk_details={
                     'code': 'some-code',
                     'id_token': 'id-token',
@@ -227,12 +227,12 @@ class TestGoogleAuthorization(TestCase):
         factories.IdentityFactory.create(
             user=user,
             provider_uid=self.id_token['sub'],
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
         )
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'complete_authorization',
-                provider=UserService.GOOGLE,
+                provider=identity_pb2.IdentityV1.GOOGLE,
                 oauth_sdk_details={
                     'code': 'some-code',
                     'id_token': 'id-token',
@@ -267,7 +267,7 @@ class TestGoogleAuthorization(TestCase):
         identity = factories.IdentityFactory.create(
             user=user,
             provider_uid=self.id_token['sub'],
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
         )
         mocked_get_access_token.return_value = AccessTokenInfo(
             access_token=identity.access_token,
@@ -275,13 +275,13 @@ class TestGoogleAuthorization(TestCase):
         )
         response = self.client.call_action(
             'complete_authorization',
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
             oauth_sdk_details={
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
         )
-        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.email, identity.email)
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
@@ -308,12 +308,12 @@ class TestGoogleAuthorization(TestCase):
         )
         response = self.client.call_action(
             'complete_authorization',
-            provider=UserService.GOOGLE,
+            provider=identity_pb2.IdentityV1.GOOGLE,
             oauth_sdk_details={
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
         )
-        self.assertEqual(response.result.identity.provider, UserService.GOOGLE)
+        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)

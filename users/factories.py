@@ -1,4 +1,9 @@
-from protobufs.user_service_pb2 import UserService
+from protobufs.services.user.containers import (
+    user_pb2,
+    identity_pb2,
+    device_pb2,
+)
+
 
 from services.test import (
     factory,
@@ -11,7 +16,7 @@ from . import models
 class UserFactory(factory.Factory):
     class Meta:
         model = models.User
-        protobuf = UserService.Containers.User
+        protobuf = user_pb2.UserV1
 
     primary_email = fuzzy.FuzzyText(suffix='@example.com')
     phone_number = factory.Sequence(lambda n: '+1949293%04d' % (n,))
@@ -36,9 +41,9 @@ class TOTPTokenFactory(factory.Factory):
 class IdentityFactory(factory.Factory):
     class Meta:
         model = models.Identity
-        protobuf = UserService.Containers.Identity
+        protobuf = identity_pb2.IdentityV1
 
-    provider = UserService.LINKEDIN
+    provider = identity_pb2.IdentityV1.LINKEDIN
     user = factory.SubFactory(UserFactory)
     full_name = fuzzy.FuzzyText()
     email = fuzzy.FuzzyText(suffix='@example.com')
@@ -50,7 +55,7 @@ class IdentityFactory(factory.Factory):
 class DeviceFactory(factory.Factory):
     class Meta:
         model = models.Device
-        protobuf = UserService.Containers.Device
+        protobuf = device_pb2.DeviceV1
 
     user = factory.SubFactory(UserFactory)
     notification_token = fuzzy.FuzzyUUID()

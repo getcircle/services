@@ -1,4 +1,4 @@
-from protobufs.user_service_pb2 import UserService
+from protobufs.services.user.containers import identity_pb2
 import service.control
 
 from . import models
@@ -12,7 +12,7 @@ class GoogleAuthenticationBackend(object):
             try:
                 response = client.call_action(
                     'complete_authorization',
-                    provider=UserService.GOOGLE,
+                    provider=identity_pb2.IdentityV1.GOOGLE,
                     oauth_sdk_details={
                         'code': code,
                         'id_token': id_token,

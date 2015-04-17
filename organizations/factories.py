@@ -1,4 +1,9 @@
-from protobufs.organization_service_pb2 import OrganizationService
+from protobufs.services.organization.containers import (
+    address_pb2,
+    location_pb2,
+    organization_pb2,
+    team_pb2,
+)
 
 from services.test import factory
 
@@ -8,7 +13,7 @@ from . import models
 class OrganizationFactory(factory.Factory):
     class Meta:
         model = models.Organization
-        protobuf = OrganizationService.Containers.Organization
+        protobuf = organization_pb2.OrganizationV1
 
     name = factory.FuzzyText()
     domain = factory.FuzzyText(suffix='.com')
@@ -18,7 +23,7 @@ class OrganizationFactory(factory.Factory):
 class TeamFactory(factory.Factory):
     class Meta:
         model = models.Team
-        protobuf = OrganizationService.Containers.Team
+        protobuf = team_pb2.TeamV1
 
     name = factory.FuzzyText()
     owner_id = factory.FuzzyUUID()
@@ -29,7 +34,7 @@ class TeamFactory(factory.Factory):
 class AddressFactory(factory.Factory):
     class Meta:
         model = models.Address
-        protobuf = OrganizationService.Containers.Address
+        protobuf = address_pb2.AddressV1
 
     organization = factory.SubFactory(OrganizationFactory)
     name = factory.FuzzyText()
@@ -52,7 +57,7 @@ class AddressFactory(factory.Factory):
 class LocationFactory(factory.Factory):
     class Meta:
         model = models.Location
-        protobuf = OrganizationService.Containers.Location
+        protobuf = location_pb2.LocationV1
 
     name = factory.FuzzyText()
     address = factory.SubFactory(AddressFactory)

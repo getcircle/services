@@ -1,7 +1,7 @@
 from csv import DictReader
 
 from django.utils.encoding import smart_text
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.profile.containers import contact_method_pb2
 import service.control
 
 from services.utils import get_timezone_for_location
@@ -101,7 +101,7 @@ class Row(object):
         for key in self.contact_method_fields:
             contact_method = {'value': smart_text(self.data[key])}
             contact_method['label'] = 'Cell Phone'
-            contact_method['type'] = ProfileService.CELL_PHONE
+            contact_method['type'] = contact_method_pb2.ContactMethodV1.CELL_PHONE
             contact_methods.append(contact_method)
 
         profile['contact_methods'] = contact_methods

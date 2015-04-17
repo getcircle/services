@@ -219,7 +219,6 @@ class GetTeamDescendants(actions.Action):
             if 'path' not in self.query_attributes:
                 self.query_attributes.append('path')
 
-
     def _direct_report_team_query(self):
         return 'SELECT %s FROM %s WHERE path ? array[%s] ORDER BY "name"' % (
             ','.join(self.query_attributes),

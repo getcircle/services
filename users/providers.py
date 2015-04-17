@@ -24,9 +24,9 @@ from oauth2client.client import (
     verify_id_token,
 )
 from oauth2client.crypt import AppIdentityError
-from protobufs.profile_service_pb2 import ProfileService
-from protobufs.resume_service_pb2 import ResumeService
-from protobufs.user_service_pb2 import UserService
+from protobufs.services.profile.containers import tag_pb2
+from protobufs.services.resume.containers import resume_pb2
+from protobufs.services.user.containers import identity_pb2
 import requests
 import service.control
 from service import actions
@@ -121,7 +121,7 @@ class BaseProvider(object):
 
 class LinkedIn(BaseProvider):
 
-    type = UserService.LINKEDIN
+    type = identity_pb2.IdentityV1.LINKEDIN
     profile_selectors = (
         'id',
         'first-name',
@@ -245,7 +245,7 @@ class LinkedIn(BaseProvider):
         educations = data.get('educations', {}).get('values', [])
         containers = []
         for education in educations:
-            container = ResumeService.Containers.Education()
+            container = resume_pb2.EducationV1()
             container.user_id = str(user.id)
             end_date = education.get('endDate')
             if end_date:
@@ -287,7 +287,7 @@ class LinkedIn(BaseProvider):
 
         containers = []
         for position in positions:
-            container = ResumeService.Containers.Position()
+            container = resume_pb2.PositionV1()
             container.user_id = str(user.id)
             end_date = position.get('endDate')
             if end_date:
@@ -323,7 +323,7 @@ class LinkedIn(BaseProvider):
         internal_skills = []
         for linkedin_skill in linkedin_skills:
             internal_skill = linkedin_skill.get('skill')
-            internal_skill['type'] = ProfileService.SKILL
+            internal_skill['type'] = tag_pb2.TagV1.SKILL
             if internal_skill:
                 internal_skills.append(internal_skill)
 
@@ -353,7 +353,7 @@ class LinkedIn(BaseProvider):
 
 class Google(BaseProvider):
 
-    type = UserService.GOOGLE
+    type = identity_pb2.IdentityV1.GOOGLE
     csrf_exempt = True
 
     exception_to_error_map = {

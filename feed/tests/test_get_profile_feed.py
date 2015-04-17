@@ -5,8 +5,8 @@ from service.transports import (
     mock,
 )
 
-from protobufs.profile_service_pb2 import ProfileService
-from protobufs.landing_service_pb2 import LandingService
+from protobufs.services.feed.containers import category_pb2
+from protobufs.services.profile.containers import tag_pb2
 
 from services.test import (
     mocks,
@@ -18,7 +18,7 @@ class TestGetCategories(TestCase):
 
     def setUp(self):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
-        self.client = service.control.Client('landing', token='test-token')
+        self.client = service.control.Client('feed', token='test-token')
         self.client.set_transport(local.instance)
 
     def tearDown(self):
@@ -123,7 +123,7 @@ class TestGetCategories(TestCase):
             action,
             mock_response,
             organization_id=organization_id,
-            tag_type=ProfileService.INTEREST,
+            tag_type=tag_pb2.TagV1.INTEREST,
         )
 
     def _mock_get_notes(self, profile_id, notes=3):
@@ -161,7 +161,7 @@ class TestGetCategories(TestCase):
 
     def test_profile_category_invalid_profile_id(self):
         with self.assertFieldError('profile_id'):
-            self.client.call_action('get_categories', profile_id='invalid')
+            self.client.call_action('get_profile_feed', profile_id='invalid')
 
     def test_peers_profile_category(self):
         profile = self._mock_get_profile()
@@ -174,7 +174,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
-        response = self.client.call_action('get_categories', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -194,7 +194,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
-        response = self.client.call_action('get_categories', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -202,7 +202,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Direct Reports')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'title')
-        self.assertEqual(category.type, LandingService.Containers.Category.DIRECT_REPORTS)
+        self.assertEqual(category.type, category_pb2.CategoryV1.DIRECT_REPORTS)
         self.assertEqual(category.total_count, 3)
 
     def test_anniversaries_profile_category(self):
@@ -216,7 +216,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
-        response = self.client.call_action('get_categories', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -224,7 +224,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Work Anniversaries')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
-        self.assertEqual(category.type, LandingService.Containers.Category.ANNIVERSARIES)
+        self.assertEqual(category.type, category_pb2.CategoryV1.ANNIVERSARIES)
         self.assertEqual(category.total_count, 3)
 
     def test_birthdays_profile_category(self):
@@ -238,7 +238,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
-        response = self.client.call_action('get_categories', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -246,7 +246,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Birthdays')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'birth_date')
-        self.assertEqual(category.type, LandingService.Containers.Category.BIRTHDAYS)
+        self.assertEqual(category.type, category_pb2.CategoryV1.BIRTHDAYS)
         self.assertEqual(category.total_count, 3)
 
     def test_recent_hires_profile_category(self):
@@ -260,7 +260,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
-        response = self.client.call_action('get_categories', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -268,7 +268,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'New Hires')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
-        self.assertEqual(category.type, LandingService.Containers.Category.NEW_HIRES)
+        self.assertEqual(category.type, category_pb2.CategoryV1.NEW_HIRES)
         self.assertEqual(category.total_count, 3)
 
     def test_trending_tags_tag_category(self):
@@ -283,7 +283,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags(profile.organization_id)
         self._mock_get_notes(profile.id, notes=0)
 
-        response = self.client.call_action('get_categories', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -291,7 +291,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Interests')
         self.assertEqual(len(category.tags), 3)
         self.assertEqual(category.content_key, 'name')
-        self.assertEqual(category.type, LandingService.Containers.Category.INTERESTS)
+        self.assertEqual(category.type, category_pb2.CategoryV1.INTERESTS)
 
     def test_notes_note_category(self):
         profile = self._mock_get_profile()
@@ -305,7 +305,7 @@ class TestGetCategories(TestCase):
         notes = self._mock_get_notes(profile.id)
         self._mock_get_profiles([note.for_profile_id for note in notes])
 
-        response = self.client.call_action('get_categories', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -313,5 +313,5 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Notes')
         self.assertEqual(len(category.notes), 3)
         self.assertEqual(category.content_key, 'changed')
-        self.assertEqual(category.type, LandingService.Containers.Category.NOTES)
+        self.assertEqual(category.type, category_pb2.CategoryV1.NOTES)
         self.assertEqual(category.total_count, 3)

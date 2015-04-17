@@ -4,18 +4,18 @@ from service import (
 )
 import service.control
 
-from protobufs.landing_service_pb2 import LandingService
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.feed.containers import category_pb2
+from protobufs.services.profile.containers import tag_pb2
 
 
-class GetCategories(actions.Action):
+class GetProfileFeed(actions.Action):
 
     type_validators = {
         'profile_id': [validators.is_uuid4],
     }
 
     def __init__(self, *args, **kwargs):
-        super(GetCategories, self).__init__(*args, **kwargs)
+        super(GetProfileFeed, self).__init__(*args, **kwargs)
         self.profile_client = service.control.Client('profile', token=self.token)
         self.organization_client = service.control.Client('organization', token=self.token)
         self.note_client = service.control.Client('note', token=self.token)
@@ -32,7 +32,7 @@ class GetCategories(actions.Action):
         peers = self.response.categories.add()
         peers.title = 'Peers'
         peers.content_key = 'title'
-        peers.type = LandingService.Containers.Category.PEERS
+        peers.type = category_pb2.CategoryV1.PEERS
         peers.total_count = len(response.result.profiles)
         for profile in response.result.profiles:
             container = peers.profiles.add()
@@ -53,7 +53,7 @@ class GetCategories(actions.Action):
         reports = self.response.categories.add()
         reports.title = 'Direct Reports'
         reports.content_key = 'title'
-        reports.type = LandingService.Containers.Category.DIRECT_REPORTS
+        reports.type = category_pb2.CategoryV1.DIRECT_REPORTS
         reports.total_count = len(response.result.profiles)
         for profile in response.result.profiles:
             container = reports.profiles.add()
@@ -73,7 +73,7 @@ class GetCategories(actions.Action):
         anniversaries = self.response.categories.add()
         anniversaries.title = 'Work Anniversaries'
         anniversaries.content_key = 'hire_date'
-        anniversaries.type = LandingService.Containers.Category.ANNIVERSARIES
+        anniversaries.type = category_pb2.CategoryV1.ANNIVERSARIES
         anniversaries.total_count = len(response.result.profiles)
         # TODO fix this logic in the client
         #for profile in response.result.profiles[:3]:
@@ -95,7 +95,7 @@ class GetCategories(actions.Action):
         birthdays = self.response.categories.add()
         birthdays.title = 'Birthdays'
         birthdays.content_key = 'birth_date'
-        birthdays.type = LandingService.Containers.Category.BIRTHDAYS
+        birthdays.type = category_pb2.CategoryV1.BIRTHDAYS
         birthdays.total_count = len(response.result.profiles)
         #for profile in response.result.profiles[:3]:
         for profile in response.result.profiles:
@@ -116,7 +116,7 @@ class GetCategories(actions.Action):
         hires = self.response.categories.add()
         hires.title = 'New Hires'
         hires.content_key = 'hire_date'
-        hires.type = LandingService.Containers.Category.NEW_HIRES
+        hires.type = category_pb2.CategoryV1.NEW_HIRES
         hires.total_count = len(response.result.profiles)
         #for profile in response.result.profiles[:3]:
         for profile in response.result.profiles:
@@ -127,7 +127,7 @@ class GetCategories(actions.Action):
         response = self.profile_client.call_action(
             'get_active_tags',
             organization_id=organization_id,
-            tag_type=ProfileService.INTEREST,
+            tag_type=tag_pb2.TagV1.INTEREST,
         )
         if not response.success:
             raise Exception('failed ot fetch trending interests')
@@ -138,7 +138,7 @@ class GetCategories(actions.Action):
         interests = self.response.categories.add()
         interests.title = 'Interests'
         interests.content_key = 'name'
-        interests.type = LandingService.Containers.Category.INTERESTS
+        interests.type = category_pb2.CategoryV1.INTERESTS
         interests.total_count = response.control.paginator.count
         for skill in response.result.tags:
             container = interests.tags.add()
@@ -168,7 +168,7 @@ class GetCategories(actions.Action):
         category = self.response.categories.add()
         category.title = 'Notes'
         category.content_key = 'changed'
-        category.type = LandingService.Containers.Category.NOTES
+        category.type = category_pb2.CategoryV1.NOTES
         category.total_count = len(notes)
         for note in notes:
             note_container = category.notes.add()
@@ -196,14 +196,14 @@ class GetCategories(actions.Action):
         self._get_active_interests_category(profile.organization_id)
 
 
-class GetOrganizationCategories(GetCategories):
+class GetOrganizationFeed(GetProfileFeed):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
     }
 
     def __init__(self, *args, **kwargs):
-        super(GetOrganizationCategories, self).__init__(*args, **kwargs)
+        super(GetOrganizationFeed, self).__init__(*args, **kwargs)
         self.organization_client = service.control.Client('organization', token=self.token)
         self.profile_client = service.control.Client('profile', token=self.token)
 
@@ -235,7 +235,7 @@ class GetOrganizationCategories(GetCategories):
         category = self.response.categories.add()
         category.title = 'Executives'
         category.content_key = 'name'
-        category.type = LandingService.Containers.Category.EXECUTIVES
+        category.type = category_pb2.CategoryV1.EXECUTIVES
         category.total_count = len(executives)
         for profile in executives:
             container = category.profiles.add()
@@ -261,7 +261,7 @@ class GetOrganizationCategories(GetCategories):
         category = self.response.categories.add()
         category.title = 'Departments'
         category.content_key = 'name'
-        category.type = LandingService.Containers.Category.DEPARTMENTS
+        category.type = category_pb2.CategoryV1.DEPARTMENTS
         category.total_count = len(departments)
         for department in departments:
             container = category.teams.add()
@@ -282,7 +282,7 @@ class GetOrganizationCategories(GetCategories):
         locations = self.response.categories.add()
         locations.title = 'Locations'
         locations.content_key = 'address_1'
-        locations.type = LandingService.Containers.Category.LOCATIONS
+        locations.type = category_pb2.CategoryV1.LOCATIONS
         locations.total_count = len(items)
         for location in items:
             container = locations.locations.add()

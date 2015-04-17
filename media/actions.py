@@ -4,8 +4,8 @@ import uuid
 
 import arrow
 from django.conf import settings
-from protobufs.media_service_pb2 import MediaService
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.media.containers import media_pb2
+from protobufs.services.profile.containers import profile_pb2
 from service import (
     actions,
     validators,
@@ -46,8 +46,8 @@ class StartImageUpload(actions.Action):
         return hashlib.md5(arrow.utcnow().isoformat() + ':' + key).hexdigest()
 
     def _build_media_key(self):
-        media_object = self.request.media_object
-        if media_object == MediaService.PROFILE:
+        media_type = self.request.media_type
+        if media_type == media_pb2.PROFILE:
             return 'profiles/%s' % (
                 self._get_image_identifier(uuid.UUID(self.request.media_key, version=4).hex),
             )
@@ -55,7 +55,7 @@ class StartImageUpload(actions.Action):
     def validate(self, *args, **kwargs):
         super(StartImageUpload, self).validate(*args, **kwargs)
         if not self.is_error():
-            if self.request.media_object == MediaService.PROFILE:
+            if self.request.media_type == media_pb2.PROFILE:
                 self._validate_profile_id(self.request.media_key)
 
     def run(self, *args, **kwargs):
@@ -111,7 +111,7 @@ class CompleteImageUpload(StartImageUpload):
         old_image_url = response.result.profile.image_url
         # update the profile with the new image and delete the previous image
         # (we only do this if the update succeeds)
-        updated_profile = ProfileService.Containers.Profile()
+        updated_profile = profile_pb2.ProfileV1()
         updated_profile.CopyFrom(response.result.profile)
         updated_profile.image_url = self.response.media_url
         # XXX should we rollback the image upload if we fail to retrieve the profile?
@@ -127,7 +127,7 @@ class CompleteImageUpload(StartImageUpload):
             self.bucket.delete_key(key_name)
 
     def _delete_previous_image(self):
-        if self.request.media_object == MediaService.PROFILE:
+        if self.request.media_type == media_pb2.PROFILE:
             self._delete_previous_profile_image()
 
     def run(self, *args, **kwargs):

@@ -9,7 +9,7 @@ from django.db.models import (
     Count,
     Q,
 )
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.profile.containers import tag_pb2
 import service.control
 from service import (
     actions,
@@ -297,7 +297,7 @@ class GetExtendedProfile(GetProfile):
     def _get_skills(self):
         return models.Tag.objects.filter(
             profile=self.request.profile_id,
-            type=ProfileService.SKILL,
+            type=tag_pb2.TagV1.SKILL,
         )
 
     def _fetch_notes(self):

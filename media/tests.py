@@ -6,7 +6,7 @@ from mock import (
     patch,
     PropertyMock,
 )
-from protobufs.media_service_pb2 import MediaService
+from protobufs.services.media.containers import media_pb2
 import service.control
 import service.settings
 from service.transports import (
@@ -71,7 +71,7 @@ class TestMediaService(TestCase):
         with self.assertFieldError('media_key'):
             self.client.call_action(
                 'start_image_upload',
-                media_object=MediaService.PROFILE,
+                media_type=media_pb2.PROFILE,
                 media_key='invalid',
             )
 
@@ -90,7 +90,7 @@ class TestMediaService(TestCase):
         with self.assertFieldError('media_key', 'DOES_NOT_EXIST'):
             self.client.call_action(
                 'start_image_upload',
-                media_object=MediaService.PROFILE,
+                media_type=media_pb2.PROFILE,
                 media_key=profile_id,
             )
 
@@ -105,7 +105,7 @@ class TestMediaService(TestCase):
 
         response = self.client.call_action(
             'start_image_upload',
-            media_object=MediaService.PROFILE,
+            media_type=media_pb2.PROFILE,
             media_key=profile_id,
         )
         self.assertTrue(response.success)
@@ -116,7 +116,7 @@ class TestMediaService(TestCase):
         with self.assertFieldError('media_key'):
             self.client.call_action(
                 'complete_image_upload',
-                media_object=MediaService.PROFILE,
+                media_type=media_pb2.PROFILE,
                 media_key='invalid',
                 upload_id='fake',
             )
@@ -136,7 +136,7 @@ class TestMediaService(TestCase):
         with self.assertFieldError('media_key', 'DOES_NOT_EXIST'):
             self.client.call_action(
                 'complete_image_upload',
-                media_object=MediaService.PROFILE,
+                media_type=media_pb2.PROFILE,
                 media_key=profile_id,
                 upload_id='fake',
             )
@@ -165,7 +165,7 @@ class TestMediaService(TestCase):
 
         response = self.client.call_action(
             'complete_image_upload',
-            media_object=MediaService.PROFILE,
+            media_type=media_pb2.PROFILE,
             media_key=profile_id,
             upload_key='profiles/%s' % (profile_id,),
             upload_id=fuzzy.FuzzyUUID().fuzz(),
@@ -187,7 +187,7 @@ class TestMediaService(TestCase):
 
         response = self.client.call_action(
             'complete_image_upload',
-            media_object=MediaService.PROFILE,
+            media_type=media_pb2.PROFILE,
             media_key=profile_id,
             upload_key='profiles/%s' % (profile_id,),
             upload_id=fuzzy.FuzzyUUID().fuzz()

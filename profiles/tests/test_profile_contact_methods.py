@@ -1,4 +1,4 @@
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.profile.containers import contact_method_pb2
 import service.control
 
 from services.test import (
@@ -29,33 +29,36 @@ class TestProfileContactMethods(TestCase):
     def test_update_contact_methods(self):
         contact_methods = []
         for _ in range(2):
-            container = mocks.mock_contact_method(id=None, type=ProfileService.EMAIL)
+            container = mocks.mock_contact_method(
+                id=None,
+                type=contact_method_pb2.ContactMethodV1.EMAIL,
+            )
             contact_methods.append(container)
         profile = factories.ProfileFactory.create_protobuf(contact_methods=contact_methods)
         self.assertEqual(
             models.ContactMethod.objects.filter(
                 profile_id=profile.id,
-                type=ProfileService.EMAIL,
+                type=contact_method_pb2.ContactMethodV1.EMAIL,
             ).count(),
             2,
         )
         for method in profile.contact_methods:
-            method.type = ProfileService.SLACK
+            method.type = contact_method_pb2.ContactMethodV1.SLACK
 
         response = self.client.call_action('update_profile', profile=profile)
         for method in response.result.profile.contact_methods:
-            self.assertEqual(method.type, ProfileService.SLACK)
+            self.assertEqual(method.type, contact_method_pb2.ContactMethodV1.SLACK)
 
         self.assertFalse(
             models.ContactMethod.objects.filter(
                 profile_id=profile.id,
-                type=ProfileService.EMAIL,
+                type=contact_method_pb2.ContactMethodV1.EMAIL,
             ).exists()
         )
         self.assertEqual(
             models.ContactMethod.objects.filter(
                 profile_id=profile.id,
-                type=ProfileService.SLACK,
+                type=contact_method_pb2.ContactMethodV1.SLACK,
             ).count(),
             2,
         )

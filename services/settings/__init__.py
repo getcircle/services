@@ -51,7 +51,7 @@ INSTALLED_APPS = (
     'services',
 
     'appreciation',
-    'landing',
+    'feed',
     'media',
     'notes',
     'oauth2',
@@ -101,7 +101,7 @@ STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
     'appreciation.server.Server',
-    'landing.server.Server',
+    'feed.server.Server',
     'media.server.Server',
     'notes.server.Server',
     'organizations.server.Server',
@@ -250,7 +250,7 @@ CACHEOPS_DEFAULTS = {
 
 CACHEOPS = {
     'notes.*': {'ops': 'all'},
-    'landing.*': {'ops': 'all'},
+    'feed.*': {'ops': 'all'},
     'organizations.*': {'ops': 'all'},
     'profiles.*': {'ops': 'all'},
     'resumes.*': {'ops': 'all'},

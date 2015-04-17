@@ -1,6 +1,6 @@
 import service.control
 import service.settings
-from protobufs.landing_service_pb2 import LandingService
+from protobufs.services.feed.containers import category_pb2
 from service.transports import (
     local,
     mock,
@@ -16,7 +16,7 @@ class TestGetExtendedOrganization(TestCase):
     def setUp(self):
         super(TestGetExtendedOrganization, self).setUp()
         service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
-        self.client = service.control.Client('landing', token='test-token')
+        self.client = service.control.Client('feed', token='test-token')
         self.client.set_transport(local.instance)
 
     def tearDown(self):
@@ -104,11 +104,11 @@ class TestGetExtendedOrganization(TestCase):
         mock.instance.register_mock_response(service, action, mock_response, user_id=user_id)
         return mock_response.profile
 
-    def test_get_organization_categories_invalid_organization_id(self):
+    def test_get_organization_feed_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
-            self.client.call_action('get_organization_categories', organization_id='invalid')
+            self.client.call_action('get_organization_feed', organization_id='invalid')
 
-    def test_get_organization_categories(self):
+    def test_get_organization_feed(self):
         organization = self._mock_get_organization()
         locations = self._mock_get_locations(organization.id)
         top_level_team = self._mock_get_top_level_team(organization.id)
@@ -117,22 +117,22 @@ class TestGetExtendedOrganization(TestCase):
         self._mock_get_direct_reports(owner.id)
 
         response = self.client.call_action(
-            'get_organization_categories',
+            'get_organization_feed',
             organization_id=organization.id,
         )
         self.assertTrue(response.success)
 
         category_dict = dict((res.type, res) for res in response.result.categories)
 
-        location_category = category_dict[LandingService.Containers.Category.LOCATIONS]
+        location_category = category_dict[category_pb2.CategoryV1.LOCATIONS]
         self.assertEqual(len(location_category.locations), len(locations))
 
-        executives = category_dict[LandingService.Containers.Category.EXECUTIVES]
+        executives = category_dict[category_pb2.CategoryV1.EXECUTIVES]
         # equal to 4 because we include the owner (the rest are just direct reports)
         self.assertEqual(len(executives.profiles), 4)
         self._verify_containers(owner, executives.profiles[0])
 
-        departments = category_dict[LandingService.Containers.Category.DEPARTMENTS]
+        departments = category_dict[category_pb2.CategoryV1.DEPARTMENTS]
         # top level team should be the first "department" listed
         self._verify_containers(top_level_team, departments.teams[0])
         # equal to 6 because we include the top level team

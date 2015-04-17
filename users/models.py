@@ -4,7 +4,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
 )
 from phonenumber_field.modelfields import PhoneNumberField
-from protobufs.user_service_pb2 import UserService
+from protobufs.services.user.containers import identity_pb2
 import pyotp
 
 
@@ -96,8 +96,9 @@ class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
 class Identity(models.UUIDModel, models.TimestampableModel):
 
+    # TODO: We should be using identity_pb2.ProviderV1.items() and reversing the tuples within the list
     providers = (
-        (UserService.LINKEDIN, 'LinkedIn'),
+        (identity_pb2.IdentityV1.LINKEDIN, 'LinkedIn'),
     )
 
     user = models.ForeignKey(User)

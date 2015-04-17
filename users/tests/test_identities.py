@@ -1,10 +1,7 @@
-from protobufs.user_service_pb2 import UserService
+from protobufs.services.user.containers import identity_pb2
 import service.control
 
-from services.test import (
-    fuzzy,
-    TestCase,
-)
+from services.test import TestCase
 
 from .. import (
     factories,
@@ -24,8 +21,8 @@ class TestIdentities(TestCase):
 
     def test_get_identities(self):
         user = factories.UserFactory.create()
-        factories.IdentityFactory.create(user=user, provider=UserService.LINKEDIN)
-        factories.IdentityFactory.create(user=user, provider=UserService.GOOGLE)
+        factories.IdentityFactory.create(user=user, provider=identity_pb2.IdentityV1.LINKEDIN)
+        factories.IdentityFactory.create(user=user, provider=identity_pb2.IdentityV1.GOOGLE)
         response = self.client.call_action('get_identities', user_id=str(user.id))
         self.assertEqual(len(response.result.identities), 2)
 
@@ -59,8 +56,8 @@ class TestIdentities(TestCase):
         user = factories.UserFactory.create()
         identity = factories.IdentityFactory.create_protobuf(
             user=user,
-            provider=UserService.LINKEDIN,
+            provider=identity_pb2.IdentityV1.LINKEDIN,
         )
-        factories.IdentityFactory.create(user=user, provider=UserService.GOOGLE)
+        factories.IdentityFactory.create(user=user, provider=identity_pb2.IdentityV1.GOOGLE)
         self.client.call_action('delete_identity', identity=identity)
         self.assertEqual(models.Identity.objects.filter(user_id=user.id).count(), 1)
