@@ -1,10 +1,7 @@
 import datetime
 
 from freezegun import freeze_time
-from protobufs.services.profile.containers import (
-    profile_pb2,
-    tag_pb2,
-)
+from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 
 from services.test import (
@@ -156,7 +153,7 @@ class TestProfiles(TestCase):
             self.client.call_action('get_profiles', tag_id='invalid')
 
     def test_get_profiles_tags_organization_id_required(self):
-        skill = factories.TagFactory.create(type=tag_pb2.TagV1.SKILL)
+        skill = factories.TagFactory.create(type=profile_containers.TagV1.SKILL)
         factories.ProfileFactory.create_batch(size=2, tags=[skill])
         with self.assertFieldError('organization_id', 'REQUIRED'):
             self.client.call_action(
@@ -305,7 +302,7 @@ class TestProfiles(TestCase):
 
     def test_update_profile(self):
         original = factories.ProfileFactory.create_protobuf()
-        profile = profile_pb2.ProfileV1()
+        profile = profile_containers.ProfileV1()
         profile.CopyFrom(original)
 
         profile.first_name = 'Michael'
@@ -791,7 +788,7 @@ class TestProfiles(TestCase):
             self.client.call_action(
                 'get_active_tags',
                 organization_id='invalid',
-                tag_type=tag_pb2.TagV1.SKILL,
+                tag_type=profile_containers.TagV1.SKILL,
             )
 
     def test_get_active_tags(self):
@@ -799,13 +796,13 @@ class TestProfiles(TestCase):
         skills = factories.TagFactory.create_batch(
             size=3,
             organization_id=organization_id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         # create interests that SHOULD be included
         interests = factories.TagFactory.create_batch(
             size=3,
             organization_id=organization_id,
-            type=tag_pb2.TagV1.INTEREST,
+            type=profile_containers.TagV1.INTEREST,
         )
         profile = factories.ProfileFactory.create(
             tags=[skills[1], interests[1]],
@@ -829,13 +826,13 @@ class TestProfiles(TestCase):
         skills = factories.TagFactory.create_batch(
             size=3,
             organization_id=organization_id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         # create interests that shouldn't be included
         interests = factories.TagFactory.create_batch(
             size=3,
             organization_id=organization_id,
-            type=tag_pb2.TagV1.INTEREST,
+            type=profile_containers.TagV1.INTEREST,
         )
         profile = factories.ProfileFactory.create(
             tags=[skills[1], interests[1]],
@@ -848,7 +845,7 @@ class TestProfiles(TestCase):
         response = self.client.call_action(
             'get_active_tags',
             organization_id=str(profile.organization_id),
-            tag_type=tag_pb2.TagV1.SKILL,
+            tag_type=profile_containers.TagV1.SKILL,
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.tags), 1)

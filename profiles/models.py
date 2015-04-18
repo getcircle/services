@@ -1,7 +1,6 @@
 from django.contrib.postgres.fields import ArrayField
 import django.db
-from protobufs.services.profile.containers import contact_method_pb2
-from protobufs.services.profile.containers import tag_pb2
+from protobufs.services.profile import containers_pb2 as profile_containers
 
 from common.db import models
 
@@ -14,7 +13,7 @@ class Tag(models.UUIDModel, models.TimestampableModel):
     name = models.CharField(max_length=64)
     type = models.SmallIntegerField(
         # NB: protobuf "items" is the opposite order djagno requires
-        choices=[(x[1], x[0]) for x in tag_pb2.TagV1.TagTypeV1.items()],
+        choices=[(x[1], x[0]) for x in profile_containers.TagV1.TagTypeV1.items()],
     )
 
     class Meta:
@@ -132,7 +131,7 @@ class ContactMethod(models.UUIDModel, models.TimestampableModel):
     type = models.SmallIntegerField(
         # NB: protobuf "items" is the opposite order djagno requires
         choices=[
-            (x[1], x[0]) for x in contact_method_pb2.ContactMethodV1.ContactMethodTypeV1.items()
+            (x[1], x[0]) for x in profile_containers.ContactMethodV1.ContactMethodTypeV1.items()
         ],
     )
 

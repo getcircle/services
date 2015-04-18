@@ -6,20 +6,11 @@ from service.transports import local
 from . import fuzzy
 from .. import token
 
-from protobufs.services.note.containers import note_pb2
-from protobufs.services.organization.containers import (
-    address_pb2,
-    location_pb2,
-    organization_pb2,
-    team_pb2,
-)
-from protobufs.services.profile.containers import (
-    contact_method_pb2,
-    profile_pb2,
-    tag_pb2,
-)
-from protobufs.services.resume.containers import resume_pb2
-from protobufs.services.user.containers import identity_pb2
+from protobufs.services.note import containers_pb2 as note_containers
+from protobufs.services.organization import containers_pb2 as organization_containers
+from protobufs.services.profile import containers_pb2 as profile_containers
+from protobufs.services.resume import containers_pb2 as resume_containers
+from protobufs.services.user import containers_pb2 as user_containers
 
 
 @contextmanager
@@ -90,7 +81,7 @@ def mock_token(**values):
 
 def mock_address(container=None, **overrides):
     if container is None:
-        container = address_pb2.AddressV1()
+        container = organization_containers.AddressV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id'],
@@ -106,7 +97,7 @@ def mock_address(container=None, **overrides):
 
 def mock_team_path_part(container=None, **overrides):
     if container is None:
-        container = team_pb2.PathPartV1()
+        container = organization_containers.PathPartV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'owner_id'],
@@ -117,7 +108,7 @@ def mock_team_path_part(container=None, **overrides):
 
 def mock_team(container=None, **overrides):
     if container is None:
-        container = team_pb2.TeamV1()
+        container = organization_containers.TeamV1()
 
     team_id = overrides.pop('id', fuzzy.FuzzyUUID().fuzz())
     mock_dict = {
@@ -136,7 +127,7 @@ def mock_team(container=None, **overrides):
 
 def mock_organization(container=None, **overrides):
     if container is None:
-        container = organization_pb2.OrganizationV1()
+        container = organization_containers.OrganizationV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],
@@ -148,7 +139,7 @@ def mock_organization(container=None, **overrides):
 
 def mock_profile(container=None, **overrides):
     if container is None:
-        container = profile_pb2.ProfileV1()
+        container = profile_containers.ProfileV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id', 'user_id', 'address_id', 'team_id'],
@@ -160,19 +151,19 @@ def mock_profile(container=None, **overrides):
 
 def mock_tag(container=None, **overrides):
     if container is None:
-        container = tag_pb2.TagV1()
+        container = profile_containers.TagV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],
         fuzzy.FuzzyText: ['name'],
-        fuzzy.FuzzyChoice(tag_pb2.TagV1.TagTypeV1.values()): ['type'],
+        fuzzy.FuzzyChoice(profile_containers.TagV1.TagTypeV1.values()): ['type'],
     }
     return _mock_container(container, mock_dict, **overrides)
 
 
 def mock_note(container=None, **overrides):
     if container is None:
-        container = note_pb2.NoteV1()
+        container = note_containers.NoteV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'for_profile_id', 'owner_profile_id'],
@@ -183,10 +174,10 @@ def mock_note(container=None, **overrides):
 
 def mock_identity(container=None, **overrides):
     if container is None:
-        container = identity_pb2.IdentityV1()
+        container = user_containers.IdentityV1()
 
     defaults = {
-        'provider': identity_pb2.IdentityV1.LINKEDIN,
+        'provider': user_containers.IdentityV1.LINKEDIN,
         'expires_at': str(arrow.utcnow().timestamp),
     }
     defaults.update(overrides)
@@ -201,7 +192,7 @@ def mock_identity(container=None, **overrides):
 
 def mock_company(container=None, **overrides):
     if container is None:
-        container = resume_pb2.CompanyV1()
+        container = resume_containers.CompanyV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'linkedin_id'],
@@ -212,7 +203,7 @@ def mock_company(container=None, **overrides):
 
 def mock_education(container=None, **overrides):
     if container is None:
-        container = resume_pb2.EducationV1()
+        container = resume_containers.EducationV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'user_id'],
@@ -223,7 +214,7 @@ def mock_education(container=None, **overrides):
 
 def mock_position(container=None, **overrides):
     if container is None:
-        container = resume_pb2.PositionV1()
+        container = resume_containers.PositionV1()
 
     defaults = {'company': mock_company()}
     defaults.update(overrides)
@@ -237,7 +228,7 @@ def mock_position(container=None, **overrides):
 
 def mock_location(container=None, **overrides):
     if container is None:
-        container = location_pb2.LocationV1()
+        container = organization_containers.LocationV1()
 
     defaults = {'address': mock_address()}
     defaults.update(overrides)
@@ -251,11 +242,11 @@ def mock_location(container=None, **overrides):
 
 def mock_contact_method(container=None, **overrides):
     if container is None:
-        container = contact_method_pb2.ContactMethodV1()
+        container = profile_containers.ContactMethodV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],
-        fuzzy.FuzzyChoice(contact_method_pb2.ContactMethodV1.ContactMethodTypeV1.values()): [
+        fuzzy.FuzzyChoice(profile_containers.ContactMethodV1.ContactMethodTypeV1.values()): [
             'type'
         ],
         fuzzy.FuzzyText: ['label', 'value'],

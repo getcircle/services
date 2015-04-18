@@ -1,4 +1,4 @@
-from protobufs.services.profile.containers import tag_pb2
+from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 
 from services.test import (
@@ -50,7 +50,7 @@ class TestProfileTags(TestCase):
         tags = factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         for tag in tags:
             tag.ClearField('id')
@@ -60,7 +60,7 @@ class TestProfileTags(TestCase):
             size=2,
             name='deduping',
             id=None,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         ))
         response = self.client.call_action(
             'create_tags',
@@ -89,7 +89,7 @@ class TestProfileTags(TestCase):
         factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         response = self.client.call_action('get_tags', organization_id=self.organization.id)
         self.assertTrue(response.success)
@@ -99,18 +99,18 @@ class TestProfileTags(TestCase):
         factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         # create interests which shouldn't be returned
         factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.INTEREST,
+            type=profile_containers.TagV1.INTEREST,
         )
         response = self.client.call_action(
             'get_tags',
             organization_id=self.organization.id,
-            tag_type=tag_pb2.TagV1.SKILL,
+            tag_type=profile_containers.TagV1.SKILL,
         )
         self.assertEqual(len(response.result.tags), 4)
 
@@ -118,18 +118,18 @@ class TestProfileTags(TestCase):
         factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.INTEREST,
+            type=profile_containers.TagV1.INTEREST,
         )
         # create skills which shouldn't be returned
         factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         response = self.client.call_action(
             'get_tags',
             organization_id=self.organization.id,
-            tag_type=tag_pb2.TagV1.INTEREST,
+            tag_type=profile_containers.TagV1.INTEREST,
         )
         self.assertEqual(len(response.result.tags), 4)
 
@@ -153,7 +153,7 @@ class TestProfileTags(TestCase):
         tags = factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         response = self.client.call_action(
             'add_tags',
@@ -169,7 +169,7 @@ class TestProfileTags(TestCase):
         tags = factories.TagFactory.create_protobufs(
             size=4,
             organization_id=self.organization.id,
-            type=tag_pb2.TagV1.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         response = self.client.call_action('add_tags', profile_id=self.profile.id, tags=tags)
 
@@ -178,7 +178,7 @@ class TestProfileTags(TestCase):
         self.assertEqual(len(tags), len(response.result.tags))
 
     def test_add_skills_duplicate_noop(self):
-        tag = factories.TagFactory.create(type=tag_pb2.TagV1.SKILL)
+        tag = factories.TagFactory.create(type=profile_containers.TagV1.SKILL)
         profile = factories.ProfileFactory.create(tags=[tag])
         response = self.client.call_action(
             'add_tags',
@@ -196,7 +196,7 @@ class TestProfileTags(TestCase):
         self.client.call_action(
             'add_tags',
             profile_id=str(profile.id),
-            tags=[factories.TagFactory.build_protobuf(id=None, type=tag_pb2.TagV1.SKILL)],
+            tags=[factories.TagFactory.build_protobuf(id=None, type=profile_containers.TagV1.SKILL)],
         )
 
         response = self.client.call_action('get_tags', profile_id=str(profile.id))

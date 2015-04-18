@@ -1,8 +1,5 @@
 import datetime
-from protobufs.services.profile.containers import (
-    profile_pb2,
-    tag_pb2,
-)
+from protobufs.services.profile import containers_pb2 as profile_containers
 
 from services.test import factory
 
@@ -12,7 +9,7 @@ from . import models
 class ProfileFactory(factory.Factory):
     class Meta:
         model = models.Profile
-        protobuf = profile_pb2.ProfileV1
+        protobuf = profile_containers.ProfileV1
 
     organization_id = factory.FuzzyUUID()
     user_id = factory.FuzzyUUID()
@@ -57,8 +54,8 @@ class ProfileFactory(factory.Factory):
 class TagFactory(factory.Factory):
     class Meta:
         model = models.Tag
-        protobuf = tag_pb2.TagV1
+        protobuf = profile_containers.TagV1
 
     organization_id = factory.FuzzyUUID()
     name = factory.FuzzyText()
-    type = factory.FuzzyChoice(tag_pb2.TagV1.TagTypeV1.values())
+    type = factory.FuzzyChoice(profile_containers.TagV1.TagTypeV1.values())

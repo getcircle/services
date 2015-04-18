@@ -1,5 +1,5 @@
 from django_date_extensions.fields import ApproximateDate
-from protobufs.services.resume.containers import resume_pb2
+from protobufs.services.resume import containers_pb2 as resume_containers
 
 from services.test import factory
 
@@ -9,7 +9,7 @@ from . import models
 class CompanyFactory(factory.Factory):
     class Meta:
         model = models.Company
-        protobuf = resume_pb2.CompanyV1
+        protobuf = resume_containers.CompanyV1
 
     name = factory.FuzzyText()
     linkedin_id = factory.FuzzyUUID()
@@ -18,7 +18,7 @@ class CompanyFactory(factory.Factory):
 class EducationFactory(factory.Factory):
     class Meta:
         model = models.Education
-        protobuf = resume_pb2.EducationV1
+        protobuf = resume_containers.EducationV1
 
     user_id = factory.FuzzyUUID()
     school_name = factory.FuzzyText()
@@ -30,7 +30,7 @@ class EducationFactory(factory.Factory):
 class PositionFactory(factory.Factory):
     class Meta:
         model = models.Position
-        protobuf = resume_pb2.PositionV1
+        protobuf = resume_containers.PositionV1
 
     user_id = factory.FuzzyUUID()
     title = factory.FuzzyText()

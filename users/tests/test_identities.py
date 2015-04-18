@@ -1,4 +1,4 @@
-from protobufs.services.user.containers import identity_pb2
+from protobufs.services.user import containers_pb2 as user_containers
 import service.control
 
 from services.test import TestCase
@@ -21,8 +21,8 @@ class TestIdentities(TestCase):
 
     def test_get_identities(self):
         user = factories.UserFactory.create()
-        factories.IdentityFactory.create(user=user, provider=identity_pb2.IdentityV1.LINKEDIN)
-        factories.IdentityFactory.create(user=user, provider=identity_pb2.IdentityV1.GOOGLE)
+        factories.IdentityFactory.create(user=user, provider=user_containers.IdentityV1.LINKEDIN)
+        factories.IdentityFactory.create(user=user, provider=user_containers.IdentityV1.GOOGLE)
         response = self.client.call_action('get_identities', user_id=str(user.id))
         self.assertEqual(len(response.result.identities), 2)
 
@@ -56,8 +56,8 @@ class TestIdentities(TestCase):
         user = factories.UserFactory.create()
         identity = factories.IdentityFactory.create_protobuf(
             user=user,
-            provider=identity_pb2.IdentityV1.LINKEDIN,
+            provider=user_containers.IdentityV1.LINKEDIN,
         )
-        factories.IdentityFactory.create(user=user, provider=identity_pb2.IdentityV1.GOOGLE)
+        factories.IdentityFactory.create(user=user, provider=user_containers.IdentityV1.GOOGLE)
         self.client.call_action('delete_identity', identity=identity)
         self.assertEqual(models.Identity.objects.filter(user_id=user.id).count(), 1)

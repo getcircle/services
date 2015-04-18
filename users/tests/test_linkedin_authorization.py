@@ -4,8 +4,8 @@ import urlparse
 from django.conf import settings
 from linkedin import linkedin
 from mock import patch
-from protobufs.services.profile.containers import tag_pb2
-from protobufs.services.user.containers import identity_pb2
+from protobufs.services.profile import containers_pb2 as profile_containers
+from protobufs.services.user import containers_pb2 as user_containers
 import service.control
 from service.transports import mock
 
@@ -69,7 +69,7 @@ class TestAuthorization(TestCase):
     def test_get_authorization_instructions_linkedin(self):
         response = self.client.call_action(
             'get_authorization_instructions',
-            provider=identity_pb2.IdentityV1.LINKEDIN,
+            provider=user_containers.IdentityV1.LINKEDIN,
         )
         self.assertTrue(response.success)
         self.assertTrue(response.result.authorization_url)
@@ -82,14 +82,14 @@ class TestAuthorization(TestCase):
         self.assertEqual(params['client_id'], settings.LINKEDIN_CLIENT_ID)
 
         state = params['state']
-        payload = providers.parse_state_token(identity_pb2.IdentityV1.LINKEDIN, state)
+        payload = providers.parse_state_token(user_containers.IdentityV1.LINKEDIN, state)
         self.assertTrue(payload['csrftoken'])
 
     def test_complete_authorization_state_tampered(self):
         with self.assertFieldError('oauth2_details.state'):
             self.client.call_action(
                 'complete_authorization',
-                provider=identity_pb2.IdentityV1.LINKEDIN,
+                provider=user_containers.IdentityV1.LINKEDIN,
                 oauth2_details={
                     'code': 'some-code',
                     'state': 'invalid',
@@ -123,29 +123,29 @@ class TestAuthorization(TestCase):
                 mock_response,
                 profile_id=parsed_token.profile_id,
                 tags=[
-                    {'name': 'Python', 'type': tag_pb2.TagV1.SKILL},
-                    {'name': 'MySQL', 'type': tag_pb2.TagV1.SKILL},
+                    {'name': 'Python', 'type': profile_containers.TagV1.SKILL},
+                    {'name': 'MySQL', 'type': profile_containers.TagV1.SKILL},
                 ],
             )
             response = self.client.call_action(
                 'complete_authorization',
-                provider=identity_pb2.IdentityV1.LINKEDIN,
+                provider=user_containers.IdentityV1.LINKEDIN,
                 oauth2_details={
                     'code': 'some-code',
-                    'state': providers.get_state_token(identity_pb2.IdentityV1.LINKEDIN, {}),
+                    'state': providers.get_state_token(user_containers.IdentityV1.LINKEDIN, {}),
                 },
             )
-        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.LINKEDIN)
+        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.LINKEDIN)
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.user.primary_email, user.primary_email)
 
     def test_valid_state_token_quoted_characters(self):
         expected = {'token': mocks.mock_token()}
-        token = providers.get_state_token(identity_pb2.IdentityV1.LINKEDIN, expected)
+        token = providers.get_state_token(user_containers.IdentityV1.LINKEDIN, expected)
         # force encoding of periods
         token.replace('.', '%2E')
-        payload = providers.parse_state_token(identity_pb2.IdentityV1.LINKEDIN, token)
+        payload = providers.parse_state_token(user_containers.IdentityV1.LINKEDIN, token)
         self.assertEqual(payload['token'], expected['token'])
 
     @patch('users.providers.linkedin.LinkedInApplication')
@@ -160,10 +160,10 @@ class TestAuthorization(TestCase):
         with self.assertRaises(self.client.CallActionError) as expected:
             self.client.call_action(
                 'complete_authorization',
-                provider=identity_pb2.IdentityV1.LINKEDIN,
+                provider=user_containers.IdentityV1.LINKEDIN,
                 oauth2_details={
                     'code': 'some-code',
-                    'state': providers.get_state_token(identity_pb2.IdentityV1.LINKEDIN, {}),
+                    'state': providers.get_state_token(user_containers.IdentityV1.LINKEDIN, {}),
                 },
             )
 
@@ -181,13 +181,13 @@ class TestAuthorization(TestCase):
         }
         response = self.client.call_action(
             'complete_authorization',
-            provider=identity_pb2.IdentityV1.LINKEDIN,
+            provider=user_containers.IdentityV1.LINKEDIN,
             oauth2_details={
                 'code': 'some-code',
-                'state': providers.get_state_token(identity_pb2.IdentityV1.LINKEDIN, {}),
+                'state': providers.get_state_token(user_containers.IdentityV1.LINKEDIN, {}),
             },
         )
-        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.LINKEDIN)
+        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.LINKEDIN)
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
@@ -213,13 +213,13 @@ class TestAuthorization(TestCase):
         self.client.token = mocks.mock_token(user_id=identity.user_id)
         response = self.client.call_action(
             'complete_authorization',
-            provider=identity_pb2.IdentityV1.LINKEDIN,
+            provider=user_containers.IdentityV1.LINKEDIN,
             oauth2_details={
                 'code': 'some-code',
-                'state': providers.get_state_token(identity_pb2.IdentityV1.LINKEDIN, {}),
+                'state': providers.get_state_token(user_containers.IdentityV1.LINKEDIN, {}),
             },
         )
-        self.assertEqual(response.result.identity.provider, identity_pb2.IdentityV1.LINKEDIN)
+        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.LINKEDIN)
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertNotEqual(response.result.identity.access_token, 'old')

@@ -1,5 +1,5 @@
 import uuid
-from protobufs.services.profile.containers import tag_pb2
+from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 import service.settings
 from service.transports import (
@@ -150,7 +150,7 @@ class TestGetExtendedProfile(TestCase):
 
     def test_get_extended_profile(self):
         manager = factories.ProfileFactory.create_protobuf()
-        skills = factories.TagFactory.create_batch(size=2, type=tag_pb2.TagV1.SKILL)
+        skills = factories.TagFactory.create_batch(size=2, type=profile_containers.TagV1.SKILL)
         profile = factories.ProfileFactory.create_protobuf(tags=skills)
         location = self._mock_get_location(profile)
         team = self._mock_get_team(profile, owner_id=manager.user_id)

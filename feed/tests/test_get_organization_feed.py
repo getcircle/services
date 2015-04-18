@@ -1,6 +1,6 @@
 import service.control
 import service.settings
-from protobufs.services.feed.containers import category_pb2
+from protobufs.services.feed import containers_pb2 as feed_containers
 from service.transports import (
     local,
     mock,
@@ -124,15 +124,15 @@ class TestGetExtendedOrganization(TestCase):
 
         category_dict = dict((res.type, res) for res in response.result.categories)
 
-        location_category = category_dict[category_pb2.CategoryV1.LOCATIONS]
+        location_category = category_dict[feed_containers.CategoryV1.LOCATIONS]
         self.assertEqual(len(location_category.locations), len(locations))
 
-        executives = category_dict[category_pb2.CategoryV1.EXECUTIVES]
+        executives = category_dict[feed_containers.CategoryV1.EXECUTIVES]
         # equal to 4 because we include the owner (the rest are just direct reports)
         self.assertEqual(len(executives.profiles), 4)
         self._verify_containers(owner, executives.profiles[0])
 
-        departments = category_dict[category_pb2.CategoryV1.DEPARTMENTS]
+        departments = category_dict[feed_containers.CategoryV1.DEPARTMENTS]
         # top level team should be the first "department" listed
         self._verify_containers(top_level_team, departments.teams[0])
         # equal to 6 because we include the top level team

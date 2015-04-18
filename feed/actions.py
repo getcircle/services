@@ -4,8 +4,8 @@ from service import (
 )
 import service.control
 
-from protobufs.services.feed.containers import category_pb2
-from protobufs.services.profile.containers import tag_pb2
+from protobufs.services.feed import containers_pb2 as feed_containers
+from protobufs.services.profile import containers_pb2 as profile_containers
 
 
 class GetProfileFeed(actions.Action):
@@ -32,7 +32,7 @@ class GetProfileFeed(actions.Action):
         peers = self.response.categories.add()
         peers.title = 'Peers'
         peers.content_key = 'title'
-        peers.type = category_pb2.CategoryV1.PEERS
+        peers.type = feed_containers.CategoryV1.PEERS
         peers.total_count = len(response.result.profiles)
         for profile in response.result.profiles:
             container = peers.profiles.add()
@@ -53,7 +53,7 @@ class GetProfileFeed(actions.Action):
         reports = self.response.categories.add()
         reports.title = 'Direct Reports'
         reports.content_key = 'title'
-        reports.type = category_pb2.CategoryV1.DIRECT_REPORTS
+        reports.type = feed_containers.CategoryV1.DIRECT_REPORTS
         reports.total_count = len(response.result.profiles)
         for profile in response.result.profiles:
             container = reports.profiles.add()
@@ -73,7 +73,7 @@ class GetProfileFeed(actions.Action):
         anniversaries = self.response.categories.add()
         anniversaries.title = 'Work Anniversaries'
         anniversaries.content_key = 'hire_date'
-        anniversaries.type = category_pb2.CategoryV1.ANNIVERSARIES
+        anniversaries.type = feed_containers.CategoryV1.ANNIVERSARIES
         anniversaries.total_count = len(response.result.profiles)
         # TODO fix this logic in the client
         #for profile in response.result.profiles[:3]:
@@ -95,7 +95,7 @@ class GetProfileFeed(actions.Action):
         birthdays = self.response.categories.add()
         birthdays.title = 'Birthdays'
         birthdays.content_key = 'birth_date'
-        birthdays.type = category_pb2.CategoryV1.BIRTHDAYS
+        birthdays.type = feed_containers.CategoryV1.BIRTHDAYS
         birthdays.total_count = len(response.result.profiles)
         #for profile in response.result.profiles[:3]:
         for profile in response.result.profiles:
@@ -116,7 +116,7 @@ class GetProfileFeed(actions.Action):
         hires = self.response.categories.add()
         hires.title = 'New Hires'
         hires.content_key = 'hire_date'
-        hires.type = category_pb2.CategoryV1.NEW_HIRES
+        hires.type = feed_containers.CategoryV1.NEW_HIRES
         hires.total_count = len(response.result.profiles)
         #for profile in response.result.profiles[:3]:
         for profile in response.result.profiles:
@@ -127,7 +127,7 @@ class GetProfileFeed(actions.Action):
         response = self.profile_client.call_action(
             'get_active_tags',
             organization_id=organization_id,
-            tag_type=tag_pb2.TagV1.INTEREST,
+            tag_type=profile_containers.TagV1.INTEREST,
         )
         if not response.success:
             raise Exception('failed ot fetch trending interests')
@@ -138,7 +138,7 @@ class GetProfileFeed(actions.Action):
         interests = self.response.categories.add()
         interests.title = 'Interests'
         interests.content_key = 'name'
-        interests.type = category_pb2.CategoryV1.INTERESTS
+        interests.type = feed_containers.CategoryV1.INTERESTS
         interests.total_count = response.control.paginator.count
         for skill in response.result.tags:
             container = interests.tags.add()
@@ -168,7 +168,7 @@ class GetProfileFeed(actions.Action):
         category = self.response.categories.add()
         category.title = 'Notes'
         category.content_key = 'changed'
-        category.type = category_pb2.CategoryV1.NOTES
+        category.type = feed_containers.CategoryV1.NOTES
         category.total_count = len(notes)
         for note in notes:
             note_container = category.notes.add()
@@ -235,7 +235,7 @@ class GetOrganizationFeed(GetProfileFeed):
         category = self.response.categories.add()
         category.title = 'Executives'
         category.content_key = 'name'
-        category.type = category_pb2.CategoryV1.EXECUTIVES
+        category.type = feed_containers.CategoryV1.EXECUTIVES
         category.total_count = len(executives)
         for profile in executives:
             container = category.profiles.add()
@@ -261,7 +261,7 @@ class GetOrganizationFeed(GetProfileFeed):
         category = self.response.categories.add()
         category.title = 'Departments'
         category.content_key = 'name'
-        category.type = category_pb2.CategoryV1.DEPARTMENTS
+        category.type = feed_containers.CategoryV1.DEPARTMENTS
         category.total_count = len(departments)
         for department in departments:
             container = category.teams.add()
@@ -282,7 +282,7 @@ class GetOrganizationFeed(GetProfileFeed):
         locations = self.response.categories.add()
         locations.title = 'Locations'
         locations.content_key = 'address_1'
-        locations.type = category_pb2.CategoryV1.LOCATIONS
+        locations.type = feed_containers.CategoryV1.LOCATIONS
         locations.total_count = len(items)
         for location in items:
             container = locations.locations.add()

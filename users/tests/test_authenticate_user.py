@@ -1,10 +1,7 @@
 import service.control
 from mock import patch
 from protobufs.services.user.actions import authenticate_user_pb2
-from protobufs.services.user.containers import (
-    identity_pb2,
-    user_pb2,
-)
+from protobufs.services.user import containers_pb2 as user_containers
 from services.test import TestCase
 from services.token import parse_token
 
@@ -85,7 +82,7 @@ class TestUsersAuthentication(TestCase):
         mocked_verify_id_token.return_value = self.id_token
         user = factories.UserFactory.create()
         factories.IdentityFactory.create(
-            provider=identity_pb2.IdentityV1.GOOGLE,
+            provider=user_containers.IdentityV1.GOOGLE,
             provider_uid=self.id_token['sub'],
             user=user,
         )
@@ -100,7 +97,7 @@ class TestUsersAuthentication(TestCase):
         self.assertFalse(response.result.new_user)
         self._verify_containers(
             response.result.user,
-            user.to_protobuf(user_pb2.UserV1()),
+            user.to_protobuf(user_containers.UserV1()),
         )
 
     @patch.object(providers.OAuth2Credentials, '_refresh')

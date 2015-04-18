@@ -5,7 +5,7 @@ import uuid
 import arrow
 from django.conf import settings
 from protobufs.services.media.containers import media_pb2
-from protobufs.services.profile.containers import profile_pb2
+from protobufs.services.profile import containers_pb2 as profile_containers
 from service import (
     actions,
     validators,
@@ -111,7 +111,7 @@ class CompleteImageUpload(StartImageUpload):
         old_image_url = response.result.profile.image_url
         # update the profile with the new image and delete the previous image
         # (we only do this if the update succeeds)
-        updated_profile = profile_pb2.ProfileV1()
+        updated_profile = profile_containers.ProfileV1()
         updated_profile.CopyFrom(response.result.profile)
         updated_profile.image_url = self.response.media_url
         # XXX should we rollback the image upload if we fail to retrieve the profile?

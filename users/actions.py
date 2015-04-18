@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import authenticate
 import django.db
-from protobufs.services.user.containers import identity_pb2
+from protobufs.services.user import containers_pb2 as user_containers
 import pyotp
 from rest_framework.authtoken.models import Token
 from twilio.rest import TwilioRestClient
@@ -250,7 +250,7 @@ class VerifyVerificationCode(actions.Action):
 class GetAuthorizationInstructions(actions.Action):
 
     def run(self, *args, **kwargs):
-        if self.request.provider == identity_pb2.IdentityV1.LINKEDIN:
+        if self.request.provider == user_containers.IdentityV1.LINKEDIN:
             self.response.authorization_url = providers.LinkedIn.get_authorization_url(
                 token=self.token,
             )
@@ -260,9 +260,9 @@ class CompleteAuthorization(actions.Action):
 
     def _get_provider_class(self):
         provider_class = None
-        if self.request.provider == identity_pb2.IdentityV1.LINKEDIN:
+        if self.request.provider == user_containers.IdentityV1.LINKEDIN:
             provider_class = providers.LinkedIn
-        elif self.request.provider == identity_pb2.IdentityV1.GOOGLE:
+        elif self.request.provider == user_containers.IdentityV1.GOOGLE:
             provider_class = providers.Google
 
         if provider_class is None:

@@ -1,4 +1,4 @@
-from protobufs.services.resume.containers import resume_pb2
+from protobufs.services.resume import containers_pb2 as resume_containers
 import service.control
 
 from services.test import (
@@ -43,7 +43,7 @@ class TestResumes(TestCase):
 
     def test_bulk_create_educations_duplicates(self):
         education = factories.EducationFactory.create_protobuf()
-        duplicate_education = resume_pb2.EducationV1()
+        duplicate_education = resume_containers.EducationV1()
         duplicate_education.CopyFrom(education)
         duplicate_education.ClearField('id')
         duplicate_same_request = mocks.mock_education(id=None)
@@ -88,7 +88,7 @@ class TestResumes(TestCase):
         position = factories.PositionFactory.build()
         position.company_id = company.id
         position.save()
-        duplicate_position = resume_pb2.PositionV1()
+        duplicate_position = resume_containers.PositionV1()
         position.to_protobuf(duplicate_position)
         duplicate_position.ClearField('id')
         duplicate_position.company.CopyFrom(company)
@@ -120,7 +120,7 @@ class TestResumes(TestCase):
 
     def test_create_company_duplicate(self):
         company = factories.CompanyFactory.create_protobuf()
-        duplicate_company = resume_pb2.CompanyV1()
+        duplicate_company = resume_containers.CompanyV1()
         duplicate_company.CopyFrom(company)
         duplicate_company.ClearField('id')
         response = self.client.call_action('create_company', company=duplicate_company)
@@ -150,7 +150,7 @@ class TestResumes(TestCase):
 
     def test_bulk_create_companies_duplicates(self):
         company = factories.CompanyFactory.create_protobuf()
-        duplicate_company = resume_pb2.CompanyV1()
+        duplicate_company = resume_containers.CompanyV1()
         duplicate_company.CopyFrom(company)
         duplicate_company.ClearField('id')
 
