@@ -7,6 +7,7 @@ from common.db import models
 
 class Tag(models.UUIDModel, models.TimestampableModel):
 
+    model_to_protobuf_mapping = {'type': 'tag_type'}
     as_dict_value_transforms = {'type': int}
 
     organization_id = models.UUIDField(db_index=True)
@@ -123,6 +124,7 @@ class ProfileTags(models.TimestampableModel):
 
 class ContactMethod(models.UUIDModel, models.TimestampableModel):
 
+    model_to_protobuf_mapping = {'type': 'contact_method_type'}
     as_dict_value_transforms = {'type': int}
 
     profile = models.ForeignKey(Profile)

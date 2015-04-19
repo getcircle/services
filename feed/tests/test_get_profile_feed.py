@@ -202,7 +202,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Direct Reports')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'title')
-        self.assertEqual(category.type, feed_containers.CategoryV1.DIRECT_REPORTS)
+        self.assertEqual(category.category_type, feed_containers.CategoryV1.DIRECT_REPORTS)
         self.assertEqual(category.total_count, 3)
 
     def test_anniversaries_profile_category(self):
@@ -224,7 +224,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Work Anniversaries')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
-        self.assertEqual(category.type, feed_containers.CategoryV1.ANNIVERSARIES)
+        self.assertEqual(category.category_type, feed_containers.CategoryV1.ANNIVERSARIES)
         self.assertEqual(category.total_count, 3)
 
     def test_birthdays_profile_category(self):
@@ -246,7 +246,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Birthdays')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'birth_date')
-        self.assertEqual(category.type, feed_containers.CategoryV1.BIRTHDAYS)
+        self.assertEqual(category.category_type, feed_containers.CategoryV1.BIRTHDAYS)
         self.assertEqual(category.total_count, 3)
 
     def test_recent_hires_profile_category(self):
@@ -268,7 +268,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'New Hires')
         self.assertEqual(len(category.profiles), 3)
         self.assertEqual(category.content_key, 'hire_date')
-        self.assertEqual(category.type, feed_containers.CategoryV1.NEW_HIRES)
+        self.assertEqual(category.category_type, feed_containers.CategoryV1.NEW_HIRES)
         self.assertEqual(category.total_count, 3)
 
     def test_trending_tags_tag_category(self):
@@ -291,7 +291,7 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Interests')
         self.assertEqual(len(category.tags), 3)
         self.assertEqual(category.content_key, 'name')
-        self.assertEqual(category.type, feed_containers.CategoryV1.INTERESTS)
+        self.assertEqual(category.category_type, feed_containers.CategoryV1.INTERESTS)
 
     def test_notes_note_category(self):
         profile = self._mock_get_profile()
@@ -313,5 +313,5 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.title, 'Notes')
         self.assertEqual(len(category.notes), 3)
         self.assertEqual(category.content_key, 'changed')
-        self.assertEqual(category.type, feed_containers.CategoryV1.NOTES)
+        self.assertEqual(category.category_type, feed_containers.CategoryV1.NOTES)
         self.assertEqual(category.total_count, 3)

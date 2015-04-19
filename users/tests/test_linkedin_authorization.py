@@ -123,8 +123,8 @@ class TestAuthorization(TestCase):
                 mock_response,
                 profile_id=parsed_token.profile_id,
                 tags=[
-                    {'name': 'Python', 'type': profile_containers.TagV1.SKILL},
-                    {'name': 'MySQL', 'type': profile_containers.TagV1.SKILL},
+                    {'name': 'Python', 'tag_type': profile_containers.TagV1.SKILL},
+                    {'name': 'MySQL', 'tag_type': profile_containers.TagV1.SKILL},
                 ],
             )
             response = self.client.call_action(

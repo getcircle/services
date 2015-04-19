@@ -33,7 +33,7 @@ def valid_profile_with_user_id(user_id):
 
 
 def valid_tag(tag):
-    return tag.HasField('name') and tag.HasField('type')
+    return tag.HasField('name') and tag.HasField('tag_type')
 
 
 def valid_tag_list(tag_list):

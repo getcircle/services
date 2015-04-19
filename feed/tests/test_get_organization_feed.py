@@ -122,7 +122,7 @@ class TestGetExtendedOrganization(TestCase):
         )
         self.assertTrue(response.success)
 
-        category_dict = dict((res.type, res) for res in response.result.categories)
+        category_dict = dict((res.category_type, res) for res in response.result.categories)
 
         location_category = category_dict[feed_containers.CategoryV1.LOCATIONS]
         self.assertEqual(len(location_category.locations), len(locations))

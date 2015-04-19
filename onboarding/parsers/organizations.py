@@ -101,7 +101,7 @@ class Row(object):
         for key in self.contact_method_fields:
             contact_method = {'value': smart_text(self.data[key])}
             contact_method['label'] = 'Cell Phone'
-            contact_method['type'] = profile_containers.ContactMethodV1.CELL_PHONE
+            contact_method['contact_method_type'] = profile_containers.ContactMethodV1.CELL_PHONE
             contact_methods.append(contact_method)
 
         profile['contact_methods'] = contact_methods

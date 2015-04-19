@@ -156,7 +156,7 @@ def mock_tag(container=None, **overrides):
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],
         fuzzy.FuzzyText: ['name'],
-        fuzzy.FuzzyChoice(profile_containers.TagV1.TagTypeV1.values()): ['type'],
+        fuzzy.FuzzyChoice(profile_containers.TagV1.TagTypeV1.values()): ['tag_type'],
     }
     return _mock_container(container, mock_dict, **overrides)
 
@@ -247,7 +247,7 @@ def mock_contact_method(container=None, **overrides):
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],
         fuzzy.FuzzyChoice(profile_containers.ContactMethodV1.ContactMethodTypeV1.values()): [
-            'type'
+            'contact_method_type'
         ],
         fuzzy.FuzzyText: ['label', 'value'],
     }

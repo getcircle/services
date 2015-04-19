@@ -31,7 +31,7 @@ class TestProfileContactMethods(TestCase):
         for _ in range(2):
             container = mocks.mock_contact_method(
                 id=None,
-                type=profile_containers.ContactMethodV1.EMAIL,
+                contact_method_type=profile_containers.ContactMethodV1.EMAIL,
             )
             contact_methods.append(container)
         profile = factories.ProfileFactory.create_protobuf(contact_methods=contact_methods)
@@ -43,11 +43,11 @@ class TestProfileContactMethods(TestCase):
             2,
         )
         for method in profile.contact_methods:
-            method.type = profile_containers.ContactMethodV1.SLACK
+            method.contact_method_type = profile_containers.ContactMethodV1.SLACK
 
         response = self.client.call_action('update_profile', profile=profile)
         for method in response.result.profile.contact_methods:
-            self.assertEqual(method.type, profile_containers.ContactMethodV1.SLACK)
+            self.assertEqual(method.contact_method_type, profile_containers.ContactMethodV1.SLACK)
 
         self.assertFalse(
             models.ContactMethod.objects.filter(

@@ -323,7 +323,7 @@ class LinkedIn(BaseProvider):
         internal_skills = []
         for linkedin_skill in linkedin_skills:
             internal_skill = linkedin_skill.get('skill')
-            internal_skill['type'] = profile_containers.TagV1.SKILL
+            internal_skill['tag_type'] = profile_containers.TagV1.SKILL
             if internal_skill:
                 internal_skills.append(internal_skill)
 

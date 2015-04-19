@@ -17,7 +17,7 @@ class Parser(OrganizationParser):
             reader = DictReader(csvfile)
             for row in reader:
                 tag = ProfileService.Containers.Tag()
-                tag.type = tag_type
+                tag.tag_type = tag_type
                 tag.name = row['name']
                 self.debug_log('adding tag: %s' % (protobuf_to_dict(tag),))
                 tags.add(tag.SerializeToString())
