@@ -2,7 +2,7 @@ import urllib
 
 from django.views.generic.base import TemplateView
 from django.shortcuts import redirect
-from protobufs.user_service_pb2 import UserService
+from protobufs.services.user import containers_pb2 as user_containers
 from rest_framework.views import APIView
 import service.control
 
@@ -22,7 +22,7 @@ class OAuth2LinkedIn(APIView):
         try:
             response = client.call_action(
                 'complete_authorization',
-                provider=UserService.LINKEDIN,
+                provider=user_containers.IdentityV1.LINKEDIN,
                 oauth2_details={'code': code, 'state': state},
             )
         except client.CallActionError as e:
