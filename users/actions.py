@@ -36,8 +36,10 @@ def valid_user(value):
 
 
 def get_totp_code(token):
-    totp = pyotp.TOTP(token, interval=settings.USER_SERVICE_TOTP_INTERVAL)
-    return str(totp.now())
+    totp_code = str(pyotp.TOTP(token, interval=settings.USER_SERVICE_TOTP_INTERVAL).now())
+    if len(totp_code) < 6:
+        totp_code = '0%s' % (totp_code,)
+    return totp_code
 
 
 class CreateUser(actions.Action):
