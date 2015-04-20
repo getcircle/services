@@ -15,26 +15,47 @@ class OAuth2LinkedIn(APIView):
             error = error.GET.get('error_description', 'invalid_request')
 
         params = {'error': error}
-        return redirect('/oauth2/linkedin/error/?%s' % (urllib.urlencode(params),))
+        return redirect('/oauth2/%s/error/?%s' % (
+            self.provider_name,
+            urllib.urlencode(params),
+        ))
 
     def _complete_authorization(self, code, state):
         client = service.control.Client('user')
         try:
             response = client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.LINKEDIN,
+                provider=self.provider_value,
                 oauth2_details={'code': code, 'state': state},
             )
         except client.CallActionError as e:
             return self._handle_error(', '.join(e.response.errors))
 
         parameters = {
-            'user': response.result.user.SerializeToString(),
-            'identity': response.result.identity.SerializeToString(),
+            'user': urllib.base64.b64encode(response.result.user.SerializeToString()),
+            'identity': urllib.base64.b64encode(response.result.identity.SerializeToString()),
+            'oauth_sdk_details': urllib.base64.b64encode(
+                response.result.oauth_sdk_details.SerializeToString()
+            ),
         }
-        return redirect('/oauth2/linkedin/success/?%s' % (urllib.urlencode(parameters),))
+        return redirect('/oauth2/%s/success/?%s' % (
+            self.provider_name,
+            urllib.urlencode(parameters),
+        ))
+
+    def _parse_provider(self):
+        self.provider_name = self.kwargs['provider']
+        provider_map = dict(
+            map(lambda x: (x[0].lower(), x[1]), user_containers.IdentityV1.ProviderV1.items())
+        )
+        self.provider_value = provider_map[self.provider_name]
 
     def get(self, request, *args, **kwargs):
+        try:
+            self._parse_provider()
+        except KeyError:
+            return self._handle_error('invalid provider')
+
         try:
             code = request.GET['code']
             state = request.GET['state']

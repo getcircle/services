@@ -1,4 +1,7 @@
+import urlparse
+
 import arrow
+from django.conf import settings
 from mock import (
     MagicMock,
     patch,
@@ -22,6 +25,7 @@ from .. import (
     factories,
     providers,
 )
+from ..providers import google as google_provider
 
 
 class TestGoogleAuthorization(TestCase):
@@ -41,9 +45,28 @@ class TestGoogleAuthorization(TestCase):
             'sub': '100900090880587164138',
         }
 
-    @patch('users.providers.verify_id_token')
+    def test_get_authorization_instructions_google(self):
+        response = self.client.call_action(
+            'get_authorization_instructions',
+            provider=user_containers.IdentityV1.GOOGLE,
+            login_hint='mwhahn@gmail.com',
+        )
+
+        url = urlparse.urlparse(response.result.authorization_url)
+        params = dict(urlparse.parse_qsl(url.query))
+        self.assertEqual(params['response_type'], 'code')
+        self.assertEqual(params['client_id'], settings.GOOGLE_CLIENT_ID)
+        self.assertEqual(params['redirect_uri'], settings.GOOGLE_REDIRECT_URI)
+        self.assertEqual(params['scope'], settings.GOOGLE_SCOPE.strip())
+        self.assertEqual(params['access_type'], 'offline')
+        self.assertEqual(params['login_hint'], 'mwhahn@gmail.com')
+        state = params['state']
+        payload = providers.parse_state_token(user_containers.IdentityV1.GOOGLE, state)
+        self.assertTrue(payload['csrftoken'])
+
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
-    @patch('users.providers.credentials_from_code')
+    @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_no_user(
             self,
             mocked_credentials_from_code,
@@ -67,8 +90,33 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
         self.assertTrue(response.result.new_user)
 
-    @patch.object(providers.OAuth2Credentials, 'get_access_token')
-    @patch('users.providers.verify_id_token')
+    @patch.object(providers.Google, '_get_profile')
+    @patch('users.providers.google.credentials_from_code')
+    def test_complete_authorization_no_user_oauth2_details(
+            self,
+            mocked_credentials_from_code,
+            mocked_get_profile,
+        ):
+        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
+        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=user_containers.IdentityV1.GOOGLE,
+            oauth2_details={
+                'code': 'some-code',
+                'state': 'some-state',
+            },
+        )
+        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
+        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
+        self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
+        self.assertEqual(response.result.identity.user_id, response.result.user.id)
+        self.assertTrue(response.result.new_user)
+        self.assertEqual(response.result.oauth_sdk_details.code, 'some-code')
+        self.assertEqual(response.result.oauth_sdk_details.id_token, str(self.id_token))
+
+    @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
     def test_complete_authorization_user_exists(
             self,
@@ -103,9 +151,9 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.access_token, identity.access_token)
         self.assertFalse(response.result.new_user)
 
-    @patch('users.providers.verify_id_token')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
-    @patch('users.providers.credentials_from_code')
+    @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_flow_exchange_error(
             self,
             mocked_credentials_from_code,
@@ -127,9 +175,9 @@ class TestGoogleAuthorization(TestCase):
 
         self.assertIn('PROVIDER_API_ERROR', expected.exception.response.errors)
 
-    @patch('users.providers.verify_id_token')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
-    @patch('users.providers.credentials_from_code')
+    @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_incomplete_profile(
             self,
             mocked_credentials_from_code,
@@ -151,8 +199,8 @@ class TestGoogleAuthorization(TestCase):
 
         self.assertIn('PROVIDER_PROFILE_FIELD_MISSING', expected.exception.response.errors)
 
-    @patch.object(providers.OAuth2Credentials, '_refresh')
-    @patch('users.providers.verify_id_token')
+    @patch.object(google_provider.OAuth2Credentials, '_refresh')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
     def test_complete_authorization_expired_access_token(
             self,
@@ -184,7 +232,7 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.access_token, identity.access_token)
         self.assertEqual(mocked_refresh.call_count, 1)
 
-    @patch('users.providers.verify_id_token')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
     def test_complete_authorization_verify_id_token_error(
             self,
@@ -208,8 +256,8 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(field_error.key, 'oauth_sdk_details.id_token')
         self.assertEqual(field_error.detail, 'INVALID')
 
-    @patch.object(providers.OAuth2Credentials, 'get_access_token')
-    @patch('users.providers.verify_id_token')
+    @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
     @patch.object(providers.Google, '_get_credentials_from_code')
     def test_complete_authorization_expired_access_tokens(
@@ -242,9 +290,9 @@ class TestGoogleAuthorization(TestCase):
         self.assertIn('TOKEN_EXPIRED', expected.exception.response.errors)
 
     @patch.object(providers.Google, '_get_credentials_from_code')
-    @patch.object(providers.OAuth2Credentials, 'refresh')
-    @patch.object(providers.OAuth2Credentials, 'get_access_token')
-    @patch('users.providers.verify_id_token')
+    @patch.object(google_provider.OAuth2Credentials, 'refresh')
+    @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
     def test_complete_authorization_token_revoked(
             self,
@@ -287,10 +335,10 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
         self.assertEqual(mocked_get_credentials_from_code.call_count, 1)
 
-    @patch.object(providers.OAuth2Credentials, 'get_access_token')
-    @patch('users.providers.verify_id_token')
+    @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
-    @patch('users.providers.credentials_from_code')
+    @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_user_exists_no_identity(
             self,
             mocked_credentials_from_code,

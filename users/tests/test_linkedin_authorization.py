@@ -96,7 +96,7 @@ class TestAuthorization(TestCase):
                 },
             )
 
-    @patch('users.providers.linkedin.LinkedInApplication')
+    @patch('users.providers.linkedin.linkedin.LinkedInApplication')
     @patch.object(providers.LinkedIn, '_get_access_token')
     def test_complete_authorization_with_user(self, mocked_get_access_token, mocked_linkedin):
         mocked_get_access_token.return_value = (fuzzy.FuzzyUUID().fuzz(), 5184000)
@@ -148,7 +148,7 @@ class TestAuthorization(TestCase):
         payload = providers.parse_state_token(user_containers.IdentityV1.LINKEDIN, token)
         self.assertEqual(payload['token'], expected['token'])
 
-    @patch('users.providers.linkedin.LinkedInApplication')
+    @patch('users.providers.linkedin.linkedin.LinkedInApplication')
     @patch.object(providers.LinkedIn, '_get_access_token')
     def test_complete_authorization_linkedin_api_error(
             self,
@@ -170,7 +170,7 @@ class TestAuthorization(TestCase):
         response = expected.exception.response
         self.assertIn('PROVIDER_API_ERROR', response.errors)
 
-    @patch('users.providers.linkedin.LinkedInApplication')
+    @patch('users.providers.linkedin.linkedin.LinkedInApplication')
     @patch.object(providers.LinkedIn, '_get_access_token')
     def test_complete_authorization_no_user(self, mocked_get_access_token, mocked_linkedin):
         mocked_get_access_token.return_value = (fuzzy.FuzzyUUID().fuzz(), 5184000)
@@ -192,7 +192,7 @@ class TestAuthorization(TestCase):
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
 
-    @patch('users.providers.linkedin.LinkedInApplication')
+    @patch('users.providers.linkedin.linkedin.LinkedInApplication')
     @patch.object(providers.LinkedIn, '_get_access_token')
     def test_complete_authorization_identity_exists(
             self,

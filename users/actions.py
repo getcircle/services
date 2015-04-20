@@ -253,8 +253,13 @@ class GetAuthorizationInstructions(actions.Action):
 
     def run(self, *args, **kwargs):
         if self.request.provider == user_containers.IdentityV1.LINKEDIN:
-            self.response.authorization_url = providers.LinkedIn.get_authorization_url(
+            self.response.authorization_url = providers.linkedin.Provider.get_authorization_url(
                 token=self.token,
+            )
+        elif self.request.provider == user_containers.IdentityV1.GOOGLE:
+            self.response.authorization_url = providers.google.Provider.get_authorization_url(
+                token=self.token,
+                login_hint=self.request.login_hint,
             )
 
 
@@ -316,7 +321,7 @@ class CompleteAuthorization(actions.Action):
             token = parse_token(token)
 
         provider = self.provider_class(token)
-        identity = provider.complete_authorization(self.request)
+        identity = provider.complete_authorization(self.request, self.response)
         user = self._get_or_create_user(identity, token)
         identity.user_id = user.id
         identity.save()

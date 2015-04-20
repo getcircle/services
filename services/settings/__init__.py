@@ -226,10 +226,20 @@ LINKEDIN_CLIENT_SECRET = 'vZsCybgJMvZ0rPEj'
 LINKEDIN_REDIRECT_URI = 'http://localhost:8000/oauth2/linkedin/'
 LINKEDIN_SCOPE = 'r_fullprofile r_emailaddress r_contactinfo'
 
+# Sign In With Google
+GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/auth'
+GOOGLE_ACCESS_TOKEN_URL = 'https://www.googleapis.com/oauth2/v3/token'
 GOOGLE_CLIENT_ID = '1077014421904-1a697ks3qvtt6975qfqhmed8529en8s2.apps.googleusercontent.com'
 GOOGLE_CLIENT_SECRET = 'lIjknz85LXHAQGMWM7A8QtPx'
-GOOGLE_SCOPE = 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/plus.profile.emails.read'
+GOOGLE_SCOPE = (
+    'https://www.googleapis.com/auth/plus.login '
+    'https://www.googleapis.com/auth/plus.profile.emails.read '
+    'https://www.google.com/m8/feeds '
+)
+GOOGLE_REDIRECT_URI = 'http://localhost:8000/oauth2/google/'
 GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
+
+# Google Maps API
 GOOGLE_USER_AGENT = 'circlehq-v1.0'
 GOOGLE_API_KEY = 'AIzaSyAM0Kl2eU_nyo4OnL529-TEocozCiE_HY8'
 GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'

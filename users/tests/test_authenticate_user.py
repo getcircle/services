@@ -10,6 +10,7 @@ from .. import (
     factories,
     providers,
 )
+from ..providers import google as google_provider
 
 
 class TestUsersAuthentication(TestCase):
@@ -65,10 +66,10 @@ class TestUsersAuthentication(TestCase):
         self.assertTrue(token.auth_token)
         self.assertTrue(token.user_id)
 
-    @patch.object(providers.OAuth2Credentials, '_refresh')
-    @patch('users.providers.verify_id_token')
+    @patch.object(google_provider.OAuth2Credentials, '_refresh')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
-    @patch('users.providers.credentials_from_code')
+    @patch('users.providers.google.credentials_from_code')
     def test_authenticate_user_google_user_exists(
             self,
             mocked_credentials_from_code,
@@ -100,10 +101,10 @@ class TestUsersAuthentication(TestCase):
             user.to_protobuf(user_containers.UserV1()),
         )
 
-    @patch.object(providers.OAuth2Credentials, '_refresh')
-    @patch('users.providers.verify_id_token')
+    @patch.object(google_provider.OAuth2Credentials, '_refresh')
+    @patch('users.providers.google.verify_id_token')
     @patch.object(providers.Google, '_get_profile')
-    @patch('users.providers.credentials_from_code')
+    @patch('users.providers.google.credentials_from_code')
     def test_authenticate_user_google_new_user(
             self,
             mocked_credentials_from_code,

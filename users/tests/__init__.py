@@ -10,6 +10,12 @@ class MockCredentials(object):
         self.token_expiry = arrow.utcnow()
         self.access_token = fuzzy.FuzzyUUID().fuzz()
         self.refresh_token = fuzzy.FuzzyUUID().fuzz()
+        self.refresh_error = False
+        self.token_response = {'id_token': str(id_token)}
 
     def get_access_token(self):
         return AccessTokenInfo(access_token=self.access_token, expires_in=self.token_expiry)
+
+    def refresh(self, *args, **kwargs):
+        if self.refresh_error:
+            raise self.refresh_error
