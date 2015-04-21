@@ -123,26 +123,35 @@ class GetProfileFeed(actions.Action):
             container = hires.profiles.add()
             container.CopyFrom(profile)
 
-    def _get_active_interests_category(self, organization_id):
+    def _get_active_skills_or_interests_category(self, organization_id):
+        title = 'Skills'
+        category_type = feed_containers.CategoryV1.SKILLS
+        # See if we have skills to show first
         response = self.profile_client.call_action(
             'get_active_tags',
             organization_id=organization_id,
-            tag_type=profile_containers.TagV1.INTEREST,
+            tag_type=profile_containers.TagV1.SKILL,
         )
-        if not response.success:
-            raise Exception('failed ot fetch trending interests')
-
         if not len(response.result.tags):
-            return
+            # Show interests if we don't have skills
+            response = self.profile_client.call_action(
+                'get_active_tags',
+                organization_id=organization_id,
+                tag_type=profile_containers.TagV1.INTEREST,
+            )
+            if not len(response.result.tags):
+                return
+            title = 'Interests'
+            category_type = feed_containers.CategoryV1.INTERESTS
 
-        interests = self.response.categories.add()
-        interests.title = 'Interests'
-        interests.content_key = 'name'
-        interests.category_type = feed_containers.CategoryV1.INTERESTS
-        interests.total_count = response.control.paginator.count
-        for skill in response.result.tags:
-            container = interests.tags.add()
-            container.CopyFrom(skill)
+        tags = self.response.categories.add()
+        tags.title = title
+        tags.category_type = category_type
+        tags.content_key = 'name'
+        tags.total_count = response.control.paginator.count
+        for tag in response.result.tags:
+            container = tags.tags.add()
+            container.CopyFrom(tag)
 
     def _get_recent_notes_category(self, profile):
         response = self.note_client.call_action(
@@ -193,7 +202,7 @@ class GetProfileFeed(actions.Action):
         self._get_recent_hires_category(profile)
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
-        self._get_active_interests_category(profile.organization_id)
+        self._get_active_skills_or_interests_category(profile.organization_id)
 
 
 class GetOrganizationFeed(GetProfileFeed):

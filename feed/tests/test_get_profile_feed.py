@@ -109,7 +109,7 @@ class TestGetCategories(TestCase):
             organization_id=organization_id,
         )
 
-    def _mock_get_active_tags(self, organization_id, tags=3):
+    def _mock_get_active_tags(self, organization_id, tag_type, tags=3):
         service = 'profile'
         action = 'get_active_tags'
 
@@ -123,8 +123,14 @@ class TestGetCategories(TestCase):
             action,
             mock_response,
             organization_id=organization_id,
-            tag_type=profile_containers.TagV1.INTEREST,
+            tag_type=tag_type,
         )
+
+    def _mock_get_active_tags_skills(self, organization_id, tags=3):
+        self._mock_get_active_tags(organization_id, profile_containers.TagV1.SKILL, tags=tags)
+
+    def _mock_get_active_tags_interests(self, organization_id, tags=3):
+        self._mock_get_active_tags(organization_id, profile_containers.TagV1.INTEREST, tags=tags)
 
     def _mock_get_notes(self, profile_id, notes=3):
         service = 'note'
@@ -171,7 +177,8 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
@@ -191,7 +198,8 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
@@ -213,7 +221,9 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
@@ -235,7 +245,8 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
@@ -257,7 +268,8 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
@@ -271,7 +283,8 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.category_type, feed_containers.CategoryV1.NEW_HIRES)
         self.assertEqual(category.total_count, 3)
 
-    def test_trending_tags_tag_category(self):
+    def test_trending_tags_tag_category_interests(self):
+        """Verify that trending interests show if we don't have active skills"""
         profile = self._mock_get_profile()
         # TODO we should have the mock transport return an error that the mock wasn't registred
         self._mock_get_peers(profile.id, peers=0)
@@ -280,7 +293,8 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id)
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id)
         self._mock_get_notes(profile.id, notes=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
@@ -293,6 +307,29 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.content_key, 'name')
         self.assertEqual(category.category_type, feed_containers.CategoryV1.INTERESTS)
 
+    def test_trending_tags_tag_category_skills(self):
+        """Verify that trending skills instead of interests if we have them"""
+        profile = self._mock_get_profile()
+        self._mock_get_peers(profile.id, peers=0)
+        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(profile.organization_id)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
+
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.categories), 1)
+
+        category = response.result.categories[0]
+        self.assertEqual(category.title, 'Skills')
+        self.assertEqual(len(category.tags), 3)
+        self.assertEqual(category.content_key, 'name')
+        self.assertEqual(category.category_type, feed_containers.CategoryV1.SKILLS)
+
     def test_notes_note_category(self):
         profile = self._mock_get_profile()
         self._mock_get_peers(profile.id, peers=0)
@@ -301,7 +338,8 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags(profile.organization_id, tags=0)
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         notes = self._mock_get_notes(profile.id)
         self._mock_get_profiles([note.for_profile_id for note in notes])
 
