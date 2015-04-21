@@ -38,8 +38,11 @@ def test(app='', failfast=False, keepdb=False, extra=''):
 
 
 @task
-def qt(app, extra=''):
+def qt(app, extra='', infer=False):
     """Trigger a test run, defaulting to keep database and fail fast"""
+    if infer and app.endswith('.py'):
+        app = app.rsplit('.', 1)[0].replace('/', '.')
+
     test(app, failfast=True, keepdb=True, extra=extra)
 
 
