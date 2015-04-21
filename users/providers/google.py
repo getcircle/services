@@ -193,7 +193,7 @@ class Provider(base.BaseProvider):
     def revoke(cls, identity):
         response = requests.get(
             settings.GOOGLE_REVOKE_TOKEN_URL,
-            parameters={'token': identity.access_token},
+            params={'token': identity.access_token},
         )
         if not response.ok:
             raise base.ProviderAPIError(response)
