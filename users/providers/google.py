@@ -15,6 +15,7 @@ from oauth2client.client import (
 from oauth2client.crypt import AppIdentityError
 from protobufs.services.user import containers_pb2 as user_containers
 import requests
+from rest_framework.authtoken.models import Token
 from service import actions
 
 from . import base

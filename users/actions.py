@@ -178,6 +178,17 @@ class AuthenticateUser(actions.Action):
         user.to_protobuf(self.response.user)
 
 
+class Logout(actions.Action):
+
+    def run(self, *args, **kwargs):
+        token = parse_token(self.token)
+        # delete the user's auth token, failing silently if it doesn't exist
+        try:
+            Token.objects.get(user_id=token.user_id).delete()
+        except Token.DoesNotExist:
+            pass
+
+
 class SendVerificationCode(actions.Action):
 
     type_validators = {
