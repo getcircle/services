@@ -369,8 +369,8 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
 
-    @patch.object(providers.Google, 'revoke')
-    def test_google_revoke(self, patched_google):
+    @patch('users.providers.google.requests')
+    def test_google_revoke(self, patched_requests):
         user = factories.UserFactory.create()
         identity = factories.IdentityFactory.create_protobuf(
             user=user,
@@ -380,7 +380,6 @@ class TestGoogleAuthorization(TestCase):
         token = Token.objects.create(user=user)
         client = service.control.Client('user', token=mocks.mock_token(user_id=user.id))
         client.call_action('delete_identity', identity=identity)
-        self.assertEqual(patched_google.call_count, 1)
 
         with self.assertRaises(models.User.DoesNotExist):
             models.User.objects.get(id=identity.id)

@@ -15,7 +15,7 @@ from oauth2client.client import (
 from oauth2client.crypt import AppIdentityError
 from protobufs.services.user import containers_pb2 as user_containers
 import requests
-from rest_framework.authtoken.models import Token
+import service.control
 from service import actions
 
 from . import base
@@ -190,11 +190,14 @@ class Provider(base.BaseProvider):
             urllib.urlencode(parameters),
         )
 
-    @classmethod
-    def revoke(cls, identity):
+    def revoke(self, identity):
         response = requests.get(
             settings.GOOGLE_REVOKE_TOKEN_URL,
             params={'token': identity.access_token},
         )
         if not response.ok:
             raise base.ProviderAPIError(response)
+
+        # NB: Since google is our primary form of auth, ensure the user is logged out
+        client = service.control.Client('user', token=self.token)
+        client.call_action('logout')
