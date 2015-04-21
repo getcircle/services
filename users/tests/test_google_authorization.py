@@ -17,12 +17,14 @@ import service.control
 
 from services.test import (
     fuzzy,
+    mocks,
     TestCase,
 )
 
 from . import MockCredentials
 from .. import (
     factories,
+    models,
     providers,
 )
 from ..providers import google as google_provider
@@ -365,3 +367,33 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
+
+    @patch.object(providers.Google, 'revoke')
+    def test_google_revoke(self, patched_google):
+        user = factories.UserFactory.create()
+        identity = factories.IdentityFactory.create_protobuf(
+            user=user,
+            provider_uid=self.id_token['sub'],
+            provider=user_containers.IdentityV1.GOOGLE,
+        )
+        client = service.control.Client('user', token=mocks.mock_token(user_id=user.id))
+        client.call_action('delete_identity', identity=identity)
+        self.assertEqual(patched_google.call_count, 1)
+
+        with self.assertRaises(models.User.DoesNotExist):
+            models.User.objects.get(id=identity.id)
+
+    @patch('users.providers.google.requests')
+    def test_google_revoke_provider_api_error(self, patched_requests):
+        type(patched_requests.get()).ok = False
+        type(patched_requests.get()).reason = 'Failure'
+        user = factories.UserFactory.create()
+        identity = factories.IdentityFactory.create_protobuf(
+            user=user,
+            provider_uid=self.id_token['sub'],
+            provider=user_containers.IdentityV1.GOOGLE,
+        )
+        client = service.control.Client('user', token=mocks.mock_token(user_id=user.id))
+        with self.assertRaisesCallActionError() as expected:
+            client.call_action('delete_identity', identity=identity)
+        self.assertIn('PROVIDER_API_ERROR', expected.exception.response.errors)

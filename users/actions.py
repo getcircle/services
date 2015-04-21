@@ -342,10 +342,19 @@ class DeleteIdentity(actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        models.Identity.objects.filter(
+        identity = models.Identity.objects.get_or_none(
             id=self.request.identity.id,
-            user_id=self.request.identity.user_id,
-        ).delete()
+        )
+        if identity:
+            if identity.provider == user_containers.IdentityV1.GOOGLE:
+                try:
+                    providers.Google.revoke(identity)
+                except providers.ProviderAPIError as e:
+                    raise self.ActionError(
+                        'PROVIDER_API_ERROR',
+                        ('PROVIDER_API_ERROR', getattr(e.response, 'reason', 'Failure')),
+                    )
+            identity.delete()
 
 
 class GetIdentities(actions.Action):

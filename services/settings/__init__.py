@@ -229,6 +229,7 @@ LINKEDIN_SCOPE = 'r_fullprofile r_emailaddress r_contactinfo'
 # Sign In With Google
 GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/auth'
 GOOGLE_ACCESS_TOKEN_URL = 'https://www.googleapis.com/oauth2/v3/token'
+GOOGLE_REVOKE_TOKEN_URL = 'https://accounts.google.com/o/oauth2/revoke'
 GOOGLE_CLIENT_ID = '1077014421904-1a697ks3qvtt6975qfqhmed8529en8s2.apps.googleusercontent.com'
 GOOGLE_CLIENT_SECRET = 'lIjknz85LXHAQGMWM7A8QtPx'
 GOOGLE_SCOPE = (

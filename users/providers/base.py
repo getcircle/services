@@ -52,6 +52,10 @@ class ExchangeError(Exception):
         super(ExchangeError, self).__init__(*args, **kwargs)
 
 
+class ProviderAPIError(ExchangeError):
+    """Exception raised when a provider API call fails"""
+
+
 class MissingRequiredProfileFieldError(Exception):
     """Exception raised when a required profile field is missing"""
 
