@@ -59,6 +59,7 @@ INSTALLED_APPS = (
     'organizations',
     'profiles',
     'resumes',
+    'sync',
     'users',
 )
 
@@ -107,6 +108,7 @@ LOCALIZED_SERVICES = [
     'organizations.server.Server',
     'profiles.server.Server',
     'resumes.server.Server',
+    'sync.server.Server',
     'users.server.Server',
 ]
 
