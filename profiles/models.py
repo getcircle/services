@@ -3,6 +3,7 @@ import django.db
 from protobufs.services.profile import containers_pb2 as profile_containers
 
 from common.db import models
+from common import utils
 
 
 class Tag(models.UUIDModel, models.TimestampableModel):
@@ -13,8 +14,7 @@ class Tag(models.UUIDModel, models.TimestampableModel):
     organization_id = models.UUIDField(db_index=True)
     name = models.CharField(max_length=64)
     type = models.SmallIntegerField(
-        # NB: protobuf "items" is the opposite order djagno requires
-        choices=[(x[1], x[0]) for x in profile_containers.TagV1.TagTypeV1.items()],
+        choices=utils.model_choices_from_protobuf_enum(profile_containers.TagV1.TagTypeV1),
     )
 
     class Meta:
@@ -131,10 +131,9 @@ class ContactMethod(models.UUIDModel, models.TimestampableModel):
     label = models.CharField(max_length=64)
     value = models.CharField(max_length=64)
     type = models.SmallIntegerField(
-        # NB: protobuf "items" is the opposite order djagno requires
-        choices=[
-            (x[1], x[0]) for x in profile_containers.ContactMethodV1.ContactMethodTypeV1.items()
-        ],
+        choices=utils.model_choices_from_protobuf_enum(
+            profile_containers.ContactMethodV1.ContactMethodTypeV1
+        ),
     )
 
     class Meta:
