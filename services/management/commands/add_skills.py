@@ -2,7 +2,7 @@ import random
 import service.control
 from services.management.base import BaseCommand
 
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.profile import containers_pb2 as profile_containers
 
 from organizations import models as organization_models
 from profiles import models as profile_models
@@ -17,11 +17,11 @@ class Command(BaseCommand):
         organization = organization_models.Organization.objects.get(domain=args[0])
         skills = profile_models.Tag.objects.filter(
             organization_id=organization.id,
-            type=ProfileService.SKILL,
+            type=profile_containers.TagV1.SKILL,
         )
         skill_containers = []
         for skill in skills:
-            container = ProfileService.Containers.Tag()
+            container = profile_containers.TagV1()
             skill.to_protobuf(container)
             skill_containers.append(container)
         profiles = profile_models.Profile.objects.filter(organization_id=organization.id)
