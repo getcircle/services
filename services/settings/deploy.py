@@ -22,14 +22,14 @@ DATABASES = {
 
 # NB: Specify 'cacheops' as an installed app only when we define redis
 # connection settings
-#INSTALLED_APPS = INSTALLED_APPS + ('cacheops',)
-#redis_url = urlparse.urlparse(os.environ['REDIS_URL'])
-#CACHEOPS_REDIS = {
-#    'host': redis_url.hostname,
-#    'port': redis_url.port,
-#    'db': redis_url.path[1:],
-#    'socket_timeout': os.environ.get('CACHEOPS_REDIS_SOCKET_TIMEOUT', 3),
-#}
+INSTALLED_APPS = INSTALLED_APPS + ('cacheops',)
+redis_url = urlparse.urlparse(os.environ['REDIS_URL'])
+CACHEOPS_REDIS = {
+    'host': redis_url.hostname,
+    'port': redis_url.port,
+    'db': redis_url.path[1:],
+    'socket_timeout': os.environ.get('CACHEOPS_REDIS_SOCKET_TIMEOUT', 3),
+}
 
 LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
