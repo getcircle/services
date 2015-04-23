@@ -1,7 +1,7 @@
 from optparse import make_option
 
 from onboarding.parsers.tags import Parser
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.profile import containers_pb2 as profile_containers
 from services.management.base import CommandError
 
 from .base import BaseOrganizationParserCommand
@@ -21,7 +21,7 @@ class Command(BaseOrganizationParserCommand):
 
     def handle(self, *args, **options):
         try:
-            tag_type = getattr(ProfileService, options['tag_type'].upper())
+            tag_type = getattr(profile_containers.TagV1, options['tag_type'].upper())
         except AttributeError:
             raise CommandError('Invalid tag type: %s' % (options['tag_type'],))
         self.parser_kwargs['tag_type'] = tag_type

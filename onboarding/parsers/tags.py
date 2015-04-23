@@ -1,7 +1,7 @@
 from csv import DictReader
 
 from protobuf_to_dict import protobuf_to_dict
-from protobufs.profile_service_pb2 import ProfileService
+from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 
 from .base import OrganizationParser
@@ -11,18 +11,18 @@ from .exceptions import ParseError
 class Parser(OrganizationParser):
 
     def parse(self, *args, **kwargs):
-        tag_type = kwargs.get('tag_type', ProfileService.SKILL)
+        tag_type = kwargs.get('tag_type', profile_containers.TagV1.SKILL)
         tags = set()
         with open(self.filename, 'r') as csvfile:
             reader = DictReader(csvfile)
             for row in reader:
-                tag = ProfileService.Containers.Tag()
+                tag = profile_containers.TagV1()
                 tag.tag_type = tag_type
                 tag.name = row['name']
                 self.debug_log('adding tag: %s' % (protobuf_to_dict(tag),))
                 tags.add(tag.SerializeToString())
 
-        deduped_tags = [ProfileService.Containers.Tag.FromString(t) for t in tags]
+        deduped_tags = [profile_containers.TagV1.FromString(t) for t in tags]
         if kwargs.get('commit'):
             self.debug_log('saving %s tags' % (len(tags),))
             client = service.control.Client('profile', token=self.token)
