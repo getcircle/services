@@ -2,6 +2,7 @@ import service.control
 from mock import patch
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.user.containers import token_pb2
 from services.test import TestCase
 from services.token import parse_token
 
@@ -39,6 +40,7 @@ class TestUsersAuthentication(TestCase):
                 'key': self.user.primary_email,
                 'secret': 'password',
             },
+            client_type=token_pb2.IOS,
         )
 
     def test_authenticate_user(self):
@@ -50,6 +52,17 @@ class TestUsersAuthentication(TestCase):
 
     def test_authenticate_user_invalid_password(self):
         with self.assertRaises(self.client.CallActionError):
+            self.client.call_action(
+                'authenticate_user',
+                backend=0,
+                credentials={
+                    'key': self.user.primary_email,
+                    'secret': 'invalid',
+                },
+            )
+
+    def test_authenticate_user_client_type_required(self):
+        with self.assertFieldError('client_type', 'MISSING'):
             self.client.call_action(
                 'authenticate_user',
                 backend=0,
@@ -94,6 +107,7 @@ class TestUsersAuthentication(TestCase):
                 'key': 'some-code',
                 'secret': 'some-id-token',
             },
+            client_type=token_pb2.IOS,
         )
         self.assertFalse(response.result.new_user)
         self._verify_containers(
@@ -123,6 +137,7 @@ class TestUsersAuthentication(TestCase):
                 'key': 'some-code',
                 'secret': 'some-id-token',
             },
+            client_type=token_pb2.ANDROID,
         )
         self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
         self.assertTrue(response.result.new_user)

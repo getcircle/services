@@ -1,10 +1,15 @@
+import binascii
+import os
 from common.db import models
+from common import utils
+
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
 )
 from phonenumber_field.modelfields import PhoneNumberField
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.user.containers import token_pb2
 import pyotp
 
 
@@ -87,6 +92,27 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
         return True
 
 
+class Token(models.Model):
+
+    key = models.CharField(max_length=40, primary_key=True)
+    user = models.ForeignKey(User, related_name='auth_token')
+    client_type = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(token_pb2.ClientTypeV1),
+    )
+    created = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        return super(Token, self).save(*args, **kwargs)
+
+    def generate_key(self):
+        return binascii.hexlify(os.urandom(20)).decode()
+
+    def __unicode__(self):
+        return self.key
+
+
 class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
     user = models.OneToOneField(User)
@@ -96,7 +122,8 @@ class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
 class Identity(models.UUIDModel, models.TimestampableModel):
 
-    # TODO: We should be using user_containers.ProviderV1.items() and reversing the tuples within the list
+    # TODO: We should be using user_containers.ProviderV1.items() and reversing
+    # the tuples within the list
     providers = (
         (user_containers.IdentityV1.LINKEDIN, 'LinkedIn'),
     )

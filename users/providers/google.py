@@ -200,4 +200,4 @@ class Provider(base.BaseProvider):
 
         # NB: Since google is our primary form of auth, ensure the user is logged out
         client = service.control.Client('user', token=self.token)
-        client.call_action('logout')
+        client.call_action('logout', revoke_all=True)

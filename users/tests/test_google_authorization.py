@@ -13,7 +13,7 @@ from oauth2client.client import (
 )
 from oauth2client.crypt import AppIdentityError
 from protobufs.services.user import containers_pb2 as user_containers
-from rest_framework.authtoken.models import Token
+from protobufs.services.user.containers import token_pb2
 import service.control
 
 from services.test import (
@@ -377,15 +377,18 @@ class TestGoogleAuthorization(TestCase):
             provider_uid=self.id_token['sub'],
             provider=user_containers.IdentityV1.GOOGLE,
         )
-        token = Token.objects.create(user=user)
+        # create tokens for several platforms
+        token = models.Token.objects.create(user=user, client_type=token_pb2.IOS)
+        models.Token.objects.create(user=user, client_type=token_pb2.ANDROID)
+
+        self.assertEqual(models.Token.objects.filter(user=token.user).count(), 2)
         client = service.control.Client('user', token=mocks.mock_token(user_id=user.id))
         client.call_action('delete_identity', identity=identity)
 
         with self.assertRaises(models.User.DoesNotExist):
             models.User.objects.get(id=identity.id)
 
-        with self.assertRaises(Token.DoesNotExist):
-            Token.objects.get(user=token.user)
+        self.assertEqual(models.Token.objects.filter(user=token.user).count(), 0)
 
     @patch('users.providers.google.requests')
     def test_google_revoke_provider_api_error(self, patched_requests):

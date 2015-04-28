@@ -3,7 +3,6 @@ from django.contrib.auth import authenticate
 import django.db
 from protobufs.services.user import containers_pb2 as user_containers
 import pyotp
-from rest_framework.authtoken.models import Token
 from twilio.rest import TwilioRestClient
 from twilio.rest.exceptions import TwilioRestException
 from service import (
@@ -124,6 +123,8 @@ class ValidUser(actions.Action):
 
 class AuthenticateUser(actions.Action):
 
+    required_fields = ('client_type',)
+
     def _handle_authentication(self):
         auth_params = {}
         if self.request.backend == self.request.INTERNAL:
@@ -160,7 +161,10 @@ class AuthenticateUser(actions.Action):
         return profile
 
     def _get_token(self, user):
-        token, _ = Token.objects.get_or_create(user=user)
+        token, _ = models.Token.objects.get_or_create(
+            user=user,
+            client_type=self.request.client_type,
+        )
         # XXX this assumes that we have profiles already set up
         temporary_token = make_token(auth_token=token.key, user_id=user.id)
         profile = self._get_profile(user.id, temporary_token)
@@ -180,13 +184,33 @@ class AuthenticateUser(actions.Action):
 
 class Logout(actions.Action):
 
+    def validate(self, *args, **kwargs):
+        super(Logout, self).validate(*args, **kwargs)
+        if (
+            not self.is_error() and
+            not self.request.HasField('client_type') and
+            not self.request.HasField('revoke_all')
+        ):
+            raise self.ActionFieldError('client_type', 'MISSING')
+
+    def _delete_token_for_client(self, service_token, client_type):
+        try:
+            models.Token.objects.get(
+                user_id=service_token.user_id,
+                client_type=self.request.client_type,
+            ).delete()
+        except models.Token.DoesNotExist:
+            pass
+
+    def _delete_all_tokens_for_user(self, service_token):
+        models.Token.objects.filter(user_id=service_token.user_id).delete()
+
     def run(self, *args, **kwargs):
         token = parse_token(self.token)
-        # delete the user's auth token, failing silently if it doesn't exist
-        try:
-            Token.objects.get(user_id=token.user_id).delete()
-        except Token.DoesNotExist:
-            pass
+        if self.request.revoke_all:
+            self._delete_all_tokens_for_user(token)
+        else:
+            self._delete_token_for_client(token, self.request.client_type)
 
 
 class SendVerificationCode(actions.Action):
