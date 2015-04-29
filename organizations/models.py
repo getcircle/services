@@ -1,3 +1,5 @@
+import binascii
+import os
 from common.db import models
 from timezone_field import TimeZoneField
 
@@ -88,3 +90,22 @@ class Location(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('name', 'organization')
+
+
+class Token(models.Model):
+
+    key = models.CharField(max_length=40, primary_key=True)
+    organization = models.ForeignKey(Organization, related_name='auth_token')
+    requested_by_user_id = models.UUIDField()
+    created = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        return super(Token, self).save(*args, **kwargs)
+
+    def generate_key(self):
+        return binascii.hexlify(os.urandom(20)).decode()
+
+    def __unicode__(self):
+        return self.key

@@ -22,4 +22,6 @@ class Server(service.control.Server):
         'update_location': actions.UpdateLocation,
         'get_location': actions.GetLocation,
         'get_locations': actions.GetLocations,
+        'create_token': actions.CreateToken,
+        'get_tokens': actions.GetTokens,
     }
