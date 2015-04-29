@@ -69,7 +69,7 @@ class TestParser(TestCase):
             token='test-token',
         )
         parser.parse(commit=False)
-        with self.default_mock_transport(self.profile_client) as mock:
+        with self.mock_transport(self.profile_client) as mock:
             self._mock_get_profile_stats(mock)
 
         response = self.organization_client.call_action(

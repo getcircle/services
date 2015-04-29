@@ -60,7 +60,7 @@ class TestCase(DjangoTestCase):
         self.assertTrue(matching_uuids(first, second))
 
     @contextmanager
-    def default_mock_transport(self, client):
+    def mock_transport(self, client):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
         client.set_transport(local.instance)
         yield mock

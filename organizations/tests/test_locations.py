@@ -107,7 +107,7 @@ class OrganizationLocationTests(TestCase):
 
     def test_get_location_with_location_id(self):
         location = factories.LocationFactory.create_protobuf()
-        with self.default_mock_transport(self.client) as mock:
+        with self.mock_transport(self.client) as mock:
             self._mock_get_profile_stats(mock, [str(location.id)])
             response = self.client.call_action('get_location', location_id=location.id)
         self._verify_containers(location, response.result.location)
@@ -134,7 +134,7 @@ class OrganizationLocationTests(TestCase):
         organization = factories.OrganizationFactory.create()
         locations = factories.LocationFactory.create_batch(size=3, organization=organization)
         factories.LocationFactory.create_batch(size=3)
-        with self.default_mock_transport(self.client) as mock:
+        with self.mock_transport(self.client) as mock:
             self._mock_get_profile_stats(mock, [str(location.id) for location in locations])
             response = self.client.call_action(
                 'get_locations',

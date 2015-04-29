@@ -223,7 +223,7 @@ class TestProfiles(TestCase):
         )
 
     def test_get_profiles(self):
-        with self.default_mock_transport(self.client) as mock:
+        with self.mock_transport(self.client) as mock:
             team = self._mock_get_team(mock)
             created_first = factories.ProfileFactory.create_protobuf(
                 first_name='b',
@@ -254,7 +254,7 @@ class TestProfiles(TestCase):
         owner = factories.ProfileFactory.create_protobuf(first_name='owner')
         factories.ProfileFactory.create_batch(size=2, team_id=owner.team_id)
 
-        with self.default_mock_transport(self.client) as mock:
+        with self.mock_transport(self.client) as mock:
             team = self._mock_get_team(mock, id=owner.team_id, owner_id=owner.user_id)
             self._mock_get_team(mock, owner_id=owner.id)
             self._mock_get_direct_reports(mock, team.owner_id)
@@ -512,7 +512,7 @@ class TestProfiles(TestCase):
 
     def test_get_profile_stats_team_no_profiles(self):
         team_id = fuzzy.FuzzyUUID().fuzz()
-        with self.default_mock_transport(self.client) as mock:
+        with self.mock_transport(self.client) as mock:
             self._mock_get_team_descendants(mock, team_id, [])
             response = self.client.call_action(
                 'get_profile_stats',
@@ -527,7 +527,7 @@ class TestProfiles(TestCase):
         for sub_team_id in sub_team_ids:
             factories.ProfileFactory.create(team_id=sub_team_id)
 
-        with self.default_mock_transport(self.client) as mock:
+        with self.mock_transport(self.client) as mock:
             self._mock_get_team_descendants(mock, team_id, sub_team_ids)
             response = self.client.call_action('get_profile_stats', team_ids=[team_id])
         self.assertEqual(response.result.stats[0].count, 7)

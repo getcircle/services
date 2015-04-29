@@ -115,7 +115,7 @@ class TestAuthorization(TestCase):
         user = factories.UserFactory.create_protobuf()
         self.client.token = mocks.mock_token(user_id=user.id)
         parsed_token = parse_token(self.client.token)
-        with self.default_mock_transport(self.client) as mock:
+        with self.mock_transport(self.client) as mock:
             mock_response = mock.get_mockable_response('profile', 'add_tags')
             mock.instance.register_mock_response(
                 'profile',
