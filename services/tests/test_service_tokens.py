@@ -1,10 +1,10 @@
 from itsdangerous import BadTimeSignature
-from .test import (
+from ..test import (
     fuzzy,
     TestCase,
 )
 
-from . import token
+from .. import token
 
 
 class TestServiceTokens(TestCase):

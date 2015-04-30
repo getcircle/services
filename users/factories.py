@@ -1,4 +1,5 @@
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.user.containers import token_pb2
 
 from services.test import (
     factory,
@@ -59,3 +60,11 @@ class DeviceFactory(factory.Factory):
     app_version = fuzzy.FuzzyText()
     device_uuid = fuzzy.FuzzyUUID()
     language_preference = 'en'
+
+
+class TokenFactory(factory.Factory):
+    class Meta:
+        model = models.Token
+
+    user = factory.SubFactory(UserFactory)
+    client_type = token_pb2.IOS

@@ -1,1 +1,4 @@
-from .base import TestCase
+from .base import (  # NOQA
+    TestAuthView,
+    TestCase,
+)

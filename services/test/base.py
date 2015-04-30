@@ -1,6 +1,10 @@
 from contextlib import contextmanager
 import uuid
 from django.test import TestCase as DjangoTestCase
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
+from rest_framework.views import APIView
 import service.control
 from service.transports import (
     local,
@@ -65,3 +69,11 @@ class TestCase(DjangoTestCase):
         client.set_transport(local.instance)
         yield mock
         service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
+
+
+class TestAuthView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        if not request.auth:
+            raise AuthenticationFailed()
+        return Response(status=HTTP_200_OK)

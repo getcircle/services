@@ -215,6 +215,7 @@ CACHES = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'services.authentication.ServiceTokenAuthentication',
+        'services.authentication.OrganizationTokenAuthentication',
         'rest_framework.authentication.TokenAuthentication',
     )
 }
