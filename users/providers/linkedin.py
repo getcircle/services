@@ -228,7 +228,7 @@ class Provider(base.BaseProvider):
                 profile_id=self.token.profile_id,
                 tags=internal_skills,
             )
-        except client.CallActionError:
+        except service.control.CallActionError:
             pass
         return None
 

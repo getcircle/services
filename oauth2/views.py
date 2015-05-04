@@ -28,7 +28,7 @@ class OAuth2LinkedIn(APIView):
                 provider=self.provider_value,
                 oauth2_details={'code': code, 'state': state},
             )
-        except client.CallActionError as e:
+        except service.control.CallActionError as e:
             return self._handle_error(', '.join(e.response.errors))
 
         parameters = {

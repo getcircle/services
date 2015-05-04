@@ -59,7 +59,7 @@ class TestUserActions(TestCase):
         response = self.client.call_action('create_user', email=self.email)
         self.assertTrue(response.success)
 
-        with self.assertRaises(self.client.CallActionError) as expected:
+        with self.assertRaises(service.control.CallActionError) as expected:
             self.client.call_action('create_user', email=self.email)
         response = expected.exception.response
         self.assertEqual(response.error_details[0].detail, 'ALREADY_EXISTS')

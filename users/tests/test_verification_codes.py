@@ -37,7 +37,7 @@ class TestUsersVerificationCodes(TestCase):
 
     def test_send_verification_code_no_cell_number(self):
         user = factories.UserFactory.create(phone_number=None)
-        with self.assertRaises(self.client.CallActionError) as expected:
+        with self.assertRaises(service.control.CallActionError) as expected:
             self.client.call_action('send_verification_code', user_id=str(user.id))
         self.assertIn('NO_PHONE_NUMBER', expected.exception.response.errors)
 
@@ -49,7 +49,7 @@ class TestUsersVerificationCodes(TestCase):
             'failed',
         )
         user = factories.UserFactory.create()
-        with self.assertRaises(self.client.CallActionError) as expected:
+        with self.assertRaises(service.control.CallActionError) as expected:
             self.client.call_action('send_verification_code', user_id=str(user.id))
         self.assertIn('FAILED', expected.exception.response.errors)
 

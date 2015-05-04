@@ -32,7 +32,7 @@ class StartImageUpload(actions.Action):
 
         try:
             self.profile_client.call_action('get_profile', profile_id=self.request.media_key)
-        except service.control.Client.CallActionError:
+        except service.control.CallActionError:
             raise self.ActionFieldError('media_key', 'DOES_NOT_EXIST')
 
     def _get_s3_connection(self):

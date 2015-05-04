@@ -137,7 +137,7 @@ class Parser(OrganizationParser):
                 address=address,
             )
             address = response.result.address
-        except self.organization_client.CallActionError:
+        except self.organization_service.control.CallActionError:
             response = self.organization_client.call_action(
                 'get_address',
                 name=address['name'],
@@ -153,7 +153,7 @@ class Parser(OrganizationParser):
         }
         try:
             response = self.organization_client.call_action('create_location', location=location)
-        except self.organization_client.CallActionError:
+        except self.organization_service.control.CallActionError:
             response = self.organization_client.call_action(
                 'get_location',
                 name=location['name'],
@@ -197,7 +197,7 @@ class Parser(OrganizationParser):
                 **parameters
             )
             team = response.result.team
-        except self.organization_client.CallActionError:
+        except self.organization_service.control.CallActionError:
             response = self.organization_client.call_action(
                 'get_team',
                 name=team,
@@ -225,7 +225,7 @@ class Parser(OrganizationParser):
         #try:
             #response = client.call_action('create_profile', profile=profile_data)
             #profile = response.result.profile
-        #except client.CallActionError as e:
+        #except service.control.CallActionError as e:
             #self.debug_log('error creating profile: %s' % (e,))
             ## fetch the profile
             #response = client.call_action('get_profile', user_id=self.saved_users[row.email])

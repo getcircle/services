@@ -51,7 +51,7 @@ class TestUsersAuthentication(TestCase):
         self._verify_containers(response.result.user, self.user)
 
     def test_authenticate_user_invalid_password(self):
-        with self.assertRaises(self.client.CallActionError):
+        with self.assertRaises(service.control.CallActionError):
             self.client.call_action(
                 'authenticate_user',
                 backend=0,

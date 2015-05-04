@@ -157,7 +157,7 @@ class TestAuthorization(TestCase):
         ):
         mocked_get_access_token.return_value = (fuzzy.FuzzyUUID().fuzz(), 5184000)
         mocked_linkedin().get_profile.side_effect = linkedin.LinkedInError
-        with self.assertRaises(self.client.CallActionError) as expected:
+        with self.assertRaises(service.control.CallActionError) as expected:
             self.client.call_action(
                 'complete_authorization',
                 provider=user_containers.IdentityV1.LINKEDIN,

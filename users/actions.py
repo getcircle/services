@@ -156,7 +156,7 @@ class AuthenticateUser(actions.Action):
         try:
             response = client.call_action('get_profile', user_id=str(user_id))
             profile = response.result.profile
-        except service.control.Client.CallActionError:
+        except service.control.CallActionError:
             profile = None
         return profile
 
@@ -334,7 +334,7 @@ class CompleteAuthorization(actions.Action):
             try:
                 response = client.call_action('create_user', email=identity.email)
                 self.response.new_user = True
-            except client.CallActionError as e:
+            except service.control.CallActionError as e:
                 if 'FIELD_ERROR' in e.response.errors:
                     field_error = e.response.error_details[0]
                     if field_error.key == 'email' and field_error.detail == 'ALREADY_EXISTS':

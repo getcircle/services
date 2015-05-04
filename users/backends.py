@@ -18,7 +18,7 @@ class GoogleAuthenticationBackend(object):
                         'id_token': id_token,
                     },
                 )
-            except client.CallActionError:
+            except service.control.CallActionError:
                 pass
             else:
                 user = models.User.objects.get(pk=response.result.user.id)
