@@ -8,6 +8,8 @@ from service import settings
 settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 100)
 settings.DEFAULT_METRICS_HANDLER = 'service.metrics.datadog.instance'
 
+DEBUG = False
+
 database_url = urlparse.urlparse(os.environ['DATABASE_URL'])
 DATABASES = {
     'default': {
