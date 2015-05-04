@@ -30,7 +30,7 @@ DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['api.circlehq.co']
 
 
 # Application definition
