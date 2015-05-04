@@ -31,7 +31,7 @@ class TestCase(DjangoTestCase):
 
     @contextmanager
     def assertRaisesCallActionError(self):
-        with self.assertRaises(service.control.Client.CallActionError) as expected:
+        with self.assertRaises(service.control.CallActionError) as expected:
             yield expected
 
     def _verify_values(self, expected_value, value, message=''):

@@ -49,6 +49,7 @@ INSTALLED_APPS = (
 
     'services',
 
+    'api',
     'appreciation',
     'feed',
     'media',
