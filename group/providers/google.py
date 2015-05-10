@@ -49,14 +49,24 @@ class Provider(base.BaseGroupsProvider):
             self._settings_client = build('groupssettings', 'v1', http=self.http)
         return self._settings_client
 
-    def _get_provider_groups(self, email=None):
+    def _get_role_from_role_v1(self, role_v1):
+        return group_containers.RoleV1.keys()[role_v1]
+
+    def _get_groups(self, email=None):
         if email is not None:
             list_kwargs = {'userKey': email}
         else:
             list_kwargs = {'domain': self.organization.domain}
+        # TODO add tests around Http 400 & 403 failures
+        # TODO add tests around pagination
         return self.directory_client.groups().list(**list_kwargs).execute()
 
-    def _get_groups_settings_and_membership(self, provider_groups, fetch_membership=True):
+    def _get_group_members(self, group_email, role):
+        # TODO add tests around Http 400 & 403 failure
+        # TODO add tests around pagination
+        return self.directory_client.members().list(groupKey=group_email, roles=role).execute()
+
+    def _get_groups_settings_and_membership(self, group_emails, fetch_membership=True):
         groups_settings = {}
         membership = {}
 
@@ -71,10 +81,10 @@ class Provider(base.BaseGroupsProvider):
 
         batch = BatchHttpRequest()
         request_num = 0
-        for group in provider_groups['groups']:
+        for group_email in group_emails:
             request_num += 1
             batch.add(
-                self.settings_client.groups().get(groupUniqueId=group['email']),
+                self.settings_client.groups().get(groupUniqueId=group_email),
                 callback=handle_groups_settings,
             )
             if fetch_membership:
@@ -82,10 +92,10 @@ class Provider(base.BaseGroupsProvider):
                 batch.add(
                     self.directory_client.members().get(
                         memberKey=self.requester_profile.email,
-                        groupKey=group['email'],
+                        groupKey=group_email,
                     ),
                     callback=handle_is_member,
-                    request_id='%s::%s' % (request_num, group['email']),
+                    request_id='%s::%s' % (request_num, group_email),
                 )
 
         batch.execute(http=self.http)
@@ -123,9 +133,10 @@ class Provider(base.BaseGroupsProvider):
         group.email = provider_group['email']
         return group
 
-    def list_for_profile(self, profile, **kwargs):
-        provider_groups = self._get_provider_groups(profile.email)
-        groups_settings, membership = self._get_groups_settings_and_membership(provider_groups)
+    def list_groups_for_profile(self, profile, **kwargs):
+        provider_groups = self._get_groups(profile.email)
+        group_emails = [x['email'] for x in provider_groups['groups']]
+        groups_settings, membership = self._get_groups_settings_and_membership(group_emails)
 
         groups = []
         for provider_group in provider_groups['groups']:
@@ -142,10 +153,11 @@ class Provider(base.BaseGroupsProvider):
                 groups.append(group)
         return groups
 
-    def list_for_organization(self, **kwargs):
-        provider_groups = self._get_provider_groups()
+    def list_groups_for_organization(self, **kwargs):
+        provider_groups = self._get_groups()
+        group_emails = [x['email'] for x in provider_groups['groups']]
         groups_settings, _ = self._get_groups_settings_and_membership(
-            provider_groups,
+            group_emails,
             fetch_membership=False,
         )
 
@@ -156,3 +168,13 @@ class Provider(base.BaseGroupsProvider):
             if group_settings.get('showInGroupDirectory', False):
                 groups.append(group)
         return groups
+
+    def list_members_for_group(self, group_email, role, **kwargs):
+        groups_settings, membership = self._get_groups_settings_and_membership([group_email])
+        group_settings = groups_settings.values()[0]
+        provider_role = self._get_role_from_role_v1(role)
+
+        members = []
+        if self.is_group_visible(group_email, group_settings, membership):
+            members = self._get_group_members(group_email, provider_role)
+        return members

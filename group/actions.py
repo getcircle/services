@@ -37,9 +37,9 @@ class ListGroups(actions.Action):
                 action_kwargs={'profile_id': self.parsed_token.profile_id},
                 return_object='profile',
             )
-            groups = provider.list_for_profile(for_profile)
+            groups = provider.list_groups_for_profile(for_profile)
         else:
-            groups = provider.list_for_organization()
+            groups = provider.list_groups_for_organization()
 
         self.response.groups.extend(groups)
 
