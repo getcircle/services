@@ -12,7 +12,7 @@ class TestGoogleGroups(TestCase):
 
     def setUp(self):
         super(TestGoogleGroups, self).setUp()
-        self.organization = mocks.mock_organization()
+        self.organization = mocks.mock_organization(domain='circlehq.co')
         self.for_profile = mocks.mock_profile(
             email='michael@circlehq.co',
             organization_id=self.organization.id,
@@ -23,7 +23,10 @@ class TestGoogleGroups(TestCase):
         )
         self.provider = Provider(self.organization, self.by_profile)
 
-    def _execute_test(self, assertions, fixtures):
+    def _execute_test(self, provider_func_name, assertions, fixtures, provider_func_args=None):
+        if provider_func_args is None:
+            provider_func_args = tuple()
+
         @patch.object(self.provider, '_get_provider_groups', return_value=fixtures['groups'])
         @patch.object(
             self.provider,
@@ -31,7 +34,7 @@ class TestGoogleGroups(TestCase):
             return_value=(fixtures['settings'], fixtures['membership']),
         )
         def test(*patches):
-            groups = self.provider.list_for_profile(self.for_profile)
+            groups = getattr(self.provider, provider_func_name)(*provider_func_args)
             if callable(assertions):
                 assertions(groups)
             else:
@@ -72,7 +75,7 @@ class TestGoogleGroups(TestCase):
                     previous_part = previous_part.setdefault(part, {})
         return test_case
 
-    def _execute_test_cases(self, test_cases):
+    def _execute_test_cases(self, provider_func_name, test_cases, provider_func_args=None):
         # TODO switch to generator test case
         for test_case in test_cases:
             test_case = self._parse_test_case(test_case)
@@ -90,11 +93,33 @@ class TestGoogleGroups(TestCase):
 
             fixtures = self._structure_fixtures([group], membership=membership)
             try:
-                self._execute_test(test_case['assertions'], fixtures)
+                self._execute_test(
+                    provider_func_name,
+                    test_case['assertions'],
+                    fixtures,
+                    provider_func_args=provider_func_args,
+                )
             except AssertionError:
                 print '\nTest Case Failed:'
                 pprint(test_case)
                 raise
+
+    def test_get_groups_for_organization_cases(self):
+        test_cases = [
+            {
+                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:settings.whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:settings.showInGroupDirectory': False,
+                'assertions:group:can_view': False,
+            },
+            {
+                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:settings.whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:settings.showInGroupDirectory': False,
+                'assertions:group:can_view': True,
+            },
+        ]
+        self._execute_test_cases('list_for_organization', test_cases)
 
     def test_get_groups_for_user_single_group_cases(self):
         test_cases = [
@@ -507,7 +532,11 @@ class TestGoogleGroups(TestCase):
                 'assertions:group:can_view': True,
             },
         ]
-        self._execute_test_cases(test_cases)
+        self._execute_test_cases(
+            'list_for_profile',
+            test_cases,
+            provider_func_args=(self.for_profile,),
+        )
 
     def test_get_groups_for_user_one_public_one_members_only(self):
         groups = [
@@ -528,4 +557,9 @@ class TestGoogleGroups(TestCase):
             group = groups[0]
             self.assertTrue(group.can_join)
             self.assertFalse(group.is_member)
-        self._execute_test(assertions, self._structure_fixtures(groups))
+            self._execute_test(
+                'list_for_profile',
+                assertions,
+                self._structure_fixtures(groups),
+                provider_func_args=(self.for_profile,),
+            )

@@ -6,26 +6,21 @@ from apiclient.discovery import build
 from oauth2client.client import SignedJwtAssertionCredentials
 from protobufs.services.group import containers_pb2 as group_containers
 
+from . import base
+
 # TODO move to settings
 SERVICE_ACCOUNT_EMAIL = '1077014421904-v3q3sd1e8n0fq6bgchfv7qul4k9135ur@developer.gserviceaccount.com'
 # TODO move to vault or something
 SERVICE_ACCOUNT_JSON_FILE = '/Users/mhahn/labs/services/Circle-b34aaf973f59.json'
+# TODO move to settings
+GOOGLE_GROUPS_PROVIDER_SCOPES = (
+    'https://www.googleapis.com/auth/admin.directory.user',
+    'https://www.googleapis.com/auth/admin.directory.group',
+    'https://www.googleapis.com/auth/apps.groups.settings',
+)
 
 
-class BaseGroupsProvider(object):
-
-    def __init__(self, organization, requester_profile):
-        self.organization = organization
-        self.requester_profile = requester_profile
-
-    def list_for_profile(self, profile, **kwargs):
-        raise NotImplementedError('Subclass must implement `list_for_profile`')
-
-    def list_for_organization(self, organization, **kwargs):
-        raise NotImplementedError('Subclass must implement `list_for_organization`')
-
-
-class Provider(BaseGroupsProvider):
+class Provider(base.BaseGroupsProvider):
 
     @property
     def http(self):
@@ -36,11 +31,7 @@ class Provider(BaseGroupsProvider):
             credentials = SignedJwtAssertionCredentials(
                 SERVICE_ACCOUNT_EMAIL,
                 json_key['private_key'],
-                scope=(
-                    'https://www.googleapis.com/auth/admin.directory.user',
-                    'https://www.googleapis.com/auth/admin.directory.group',
-                    'https://www.googleapis.com/auth/apps.groups.settings',
-                ),
+                scope=GOOGLE_GROUPS_PROVIDER_SCOPES,
                 sub=self.requester_profile.email,
             )
             self._http = credentials.authorize(httplib2.Http())
@@ -58,10 +49,14 @@ class Provider(BaseGroupsProvider):
             self._settings_client = build('groupssettings', 'v1', http=self.http)
         return self._settings_client
 
-    def _get_provider_groups(self, email):
-        return self.directory_client.groups().list(userKey=email).execute()
+    def _get_provider_groups(self, email=None):
+        if email is not None:
+            list_kwargs = {'userKey': email}
+        else:
+            list_kwargs = {'domain': self.organization.domain}
+        return self.directory_client.groups().list(**list_kwargs).execute()
 
-    def _get_groups_settings_and_membership(self, provider_groups):
+    def _get_groups_settings_and_membership(self, provider_groups, fetch_membership=True):
         groups_settings = {}
         membership = {}
 
@@ -82,15 +77,16 @@ class Provider(BaseGroupsProvider):
                 self.settings_client.groups().get(groupUniqueId=group['email']),
                 callback=handle_groups_settings,
             )
-            request_num += 1
-            batch.add(
-                self.directory_client.members().get(
-                    memberKey=self.requester_profile.email,
-                    groupKey=group['email'],
-                ),
-                callback=handle_is_member,
-                request_id='%s::%s' % (request_num, group['email']),
-            )
+            if fetch_membership:
+                request_num += 1
+                batch.add(
+                    self.directory_client.members().get(
+                        memberKey=self.requester_profile.email,
+                        groupKey=group['email'],
+                    ),
+                    callback=handle_is_member,
+                    request_id='%s::%s' % (request_num, group['email']),
+                )
 
         batch.execute(http=self.http)
         return groups_settings, membership
@@ -119,6 +115,14 @@ class Provider(BaseGroupsProvider):
             visible = True
         return visible
 
+    def provider_group_to_container(self, provider_group):
+        group = group_containers.GroupV1()
+        group.id = provider_group['id']
+        group.name = provider_group['name']
+        group.members_count = int(provider_group['directMembersCount'])
+        group.email = provider_group['email']
+        return group
+
     def list_for_profile(self, profile, **kwargs):
         provider_groups = self._get_provider_groups(profile.email)
         groups_settings, membership = self._get_groups_settings_and_membership(provider_groups)
@@ -127,12 +131,7 @@ class Provider(BaseGroupsProvider):
         for provider_group in provider_groups['groups']:
             group_email = provider_group['email']
             group_settings = groups_settings.get(group_email, {})
-
-            group = group_containers.GroupV1()
-            group.id = provider_group['id']
-            group.name = provider_group['name']
-            group.members_count = int(provider_group['directMembersCount'])
-            group.email = group_email
+            group = self.provider_group_to_container(provider_group)
             group.is_member, group.can_join = self.is_member_or_can_join(
                 group_email,
                 group_settings,
@@ -140,5 +139,20 @@ class Provider(BaseGroupsProvider):
             )
 
             if self.is_group_visible(group_email, group_settings, membership):
+                groups.append(group)
+        return groups
+
+    def list_for_organization(self, **kwargs):
+        provider_groups = self._get_provider_groups()
+        groups_settings, _ = self._get_groups_settings_and_membership(
+            provider_groups,
+            fetch_membership=False,
+        )
+
+        groups = []
+        for provider_group in provider_groups['groups']:
+            group = self.provider_group_to_container(provider_group)
+            group_settings = groups_settings.get(provider_group['email'], {})
+            if group_settings.get('showInGroupDirectory', False):
                 groups.append(group)
         return groups
