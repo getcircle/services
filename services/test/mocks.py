@@ -6,6 +6,7 @@ from service.transports import local
 from . import fuzzy
 from .. import token
 
+from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.note import containers_pb2 as note_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
@@ -250,5 +251,17 @@ def mock_contact_method(container=None, **overrides):
             'contact_method_type'
         ],
         fuzzy.FuzzyText: ['label', 'value'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_group(container=None, **overrides):
+    if container is None:
+        container = group_containers.GroupV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id'],
+        fuzzy.FuzzyText: ['name', 'display_name', 'description'],
+        fuzzy.FuzzyText(suffix='@circlehq.co'): ['email'],
     }
     return _mock_container(container, mock_dict, **overrides)

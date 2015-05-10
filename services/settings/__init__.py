@@ -104,6 +104,7 @@ STATIC_ROOT = 'static'
 LOCALIZED_SERVICES = [
     'appreciation.server.Server',
     'feed.server.Server',
+    'group.server.Server',
     'media.server.Server',
     'notes.server.Server',
     'organizations.server.Server',
