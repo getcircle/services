@@ -44,7 +44,7 @@ class TestGoogleGroups(TestCase):
 
     @patch('group.actions.providers.Google')
     def test_list_groups_for_organization(self, mock_google_provider):
-        mock_google_provider().list_for_organization.return_value = [
+        mock_google_provider().list_groups_for_organization.return_value = [
             mocks.mock_group(),
             mocks.mock_group(),
         ]
@@ -55,7 +55,7 @@ class TestGoogleGroups(TestCase):
 
     @patch('group.actions.providers.Google')
     def test_list_groups_for_profile(self, mock_google_provider):
-        mock_google_provider().list_for_profile.return_value = [
+        mock_google_provider().list_groups_for_profile.return_value = [
             mocks.mock_group(),
             mocks.mock_group(),
         ]
