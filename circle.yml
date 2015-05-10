@@ -7,12 +7,11 @@ machine:
 dependencies:
     override:
         - pip install --no-deps -r dev-requirements.txt
-    post:
-        - docker build -t mhahn/services:$CIRCLE_SHA1 .
 
 deployment:
     hub:
         branch: master
         commands:
+            - docker build -t mhahn/services:$CIRCLE_SHA1 .
             - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
             - docker push mhahn/services
