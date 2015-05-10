@@ -52,6 +52,7 @@ INSTALLED_APPS = (
     'api',
     'appreciation',
     'feed',
+    'group',
     'media',
     'notes',
     'oauth2',
