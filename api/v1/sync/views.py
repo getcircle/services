@@ -27,7 +27,7 @@ class SyncViewSet(viewsets.ViewSet):
             raise exceptions.NotAuthenticated()
 
         request.token = make_token(
-            auth_token=request.auth,
+            auth_token=request.auth.key,
             organization_id=request.organization.id,
         )
 
