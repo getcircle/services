@@ -566,6 +566,9 @@ class CreateToken(actions.Action):
         super(CreateToken, self).validate(*args, **kwargs)
         if not self.is_error():
             self.service_token = parse_token(self.token)
+            if not self.service_token.organization_id:
+                raise self.ActionFieldError('token.organization_id', 'MISSING')
+
             if not validators.is_uuid4(self.service_token.organization_id):
                 raise self.ActionFieldError('token.organization_id', 'INVALID')
 

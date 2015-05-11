@@ -28,6 +28,14 @@ class OrganizationTokenTests(TestCase):
         with self.assertFieldError('token.organization_id', 'DOES_NOT_EXIST'):
             client.call_action('create_token')
 
+    def test_create_organization_token_organization_id_not_present(self):
+        client = service.control.Client(
+            'organization',
+            token=mocks.mock_token(organization_id=None),
+        )
+        with self.assertFieldError('token.organization_id', 'MISSING'):
+            client.call_action('create_token')
+
     def test_create_organization_token_invalid_organization(self):
         client = service.control.Client(
             'organization',
