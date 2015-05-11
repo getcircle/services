@@ -206,6 +206,8 @@ class GetProfiles(actions.Action):
             parameters['id__in'] = list(self.request.ids)
         elif self.request.location_id:
             parameters['location_id'] = self.request.location_id
+        elif self.request.emails:
+            parameters['email__in'] = list(self.request.emails)
         else:
             raise self.ActionError('missing parameters')
 

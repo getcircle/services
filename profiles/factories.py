@@ -24,6 +24,7 @@ class ProfileFactory(factory.Factory):
     birth_date = factory.FuzzyDate(datetime.date(1950, 1, 1))
     about = factory.FuzzyText()
     nickname = factory.FuzzyText()
+    email = factory.FuzzyText(suffix='@example.com')
 
     @classmethod
     def get_protobuf_data(cls, **data):

@@ -898,6 +898,16 @@ class TestProfiles(TestCase):
         response = self.client.call_action('get_profiles', location_id=location_id)
         self.assertEqual(len(profiles), len(response.result.profiles))
 
+    def test_get_profiles_with_emails(self):
+        organization_id = fuzzy.FuzzyUUID().fuzz()
+        profiles = factories.ProfileFactory.create_batch(
+            size=3,
+            organization_id=organization_id,
+        )
+        factories.ProfileFactory.create_batch(size=2, organization_id=organization_id)
+        response = self.client.call_action('get_profiles', emails=[x.email for x in profiles])
+        self.assertEqual(len(profiles), len(response.result.profiles))
+
     def test_get_profiles_with_location_id_invalid_location_id(self):
         with self.assertFieldError('location_id'):
             self.client.call_action('get_profiles', location_id='invalid')

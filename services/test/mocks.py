@@ -146,6 +146,7 @@ def mock_profile(container=None, **overrides):
         fuzzy.FuzzyUUID: ['id', 'organization_id', 'user_id', 'address_id', 'team_id'],
         fuzzy.FuzzyText: ['title', 'full_name', 'about', 'first_name', 'last_name', 'nickname'],
         fuzzy.FuzzyDate(arrow.Arrow(1980, 1, 1)): ['birth_date', 'hire_date'],
+        fuzzy.FuzzyText(suffix='@example.com'): ['email'],
     }
     return _mock_container(container, mock_dict, **overrides)
 
@@ -265,3 +266,19 @@ def mock_group(container=None, **overrides):
         fuzzy.FuzzyText(suffix='@circlehq.co'): ['email'],
     }
     return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_member(container=None, profile_overrides=None, **overrides):
+    if container is None:
+        container = group_containers.MemberV1()
+
+    if profile_overrides is None:
+        profile_overrides = {}
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id'],
+        fuzzy.FuzzyChoice(group_containers.RoleV1.values()): ['role'],
+    }
+    container = _mock_container(container, mock_dict, **overrides)
+    container.profile.CopyFrom(mock_profile(**profile_overrides))
+    return container

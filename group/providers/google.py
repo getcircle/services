@@ -1,5 +1,6 @@
 import httplib2
 import json
+import os
 
 from apiclient.http import BatchHttpRequest
 from apiclient.discovery import build
@@ -11,7 +12,7 @@ from . import base
 # TODO move to settings
 SERVICE_ACCOUNT_EMAIL = '1077014421904-v3q3sd1e8n0fq6bgchfv7qul4k9135ur@developer.gserviceaccount.com'
 # TODO move to vault or something
-SERVICE_ACCOUNT_JSON_FILE = '/Users/mhahn/labs/services/Circle-b34aaf973f59.json'
+SERVICE_ACCOUNT_JSON_FILE = os.path.join(os.path.dirname(__file__), 'Circle-b34aaf973f59.json')
 # TODO move to settings
 GOOGLE_GROUPS_PROVIDER_SCOPES = (
     'https://www.googleapis.com/auth/admin.directory.user',
@@ -32,6 +33,7 @@ class Provider(base.BaseGroupsProvider):
                 SERVICE_ACCOUNT_EMAIL,
                 json_key['private_key'],
                 scope=GOOGLE_GROUPS_PROVIDER_SCOPES,
+                # XXX this can only be the admin
                 sub=self.requester_profile.email,
             )
             self._http = credentials.authorize(httplib2.Http())
@@ -133,6 +135,13 @@ class Provider(base.BaseGroupsProvider):
         group.email = provider_group['email']
         return group
 
+    def provider_member_to_container(self, provider_member):
+        member = group_containers.MemberV1()
+        member.id = provider_member['id']
+        member.role = group_containers.RoleV1.keys().index(provider_member['role'])
+        member.profile.email = provider_member['email']
+        return member
+
     def list_groups_for_profile(self, profile, **kwargs):
         provider_groups = self._get_groups(profile.email)
         group_emails = [x['email'] for x in provider_groups['groups']]
@@ -176,5 +185,8 @@ class Provider(base.BaseGroupsProvider):
 
         members = []
         if self.is_group_visible(group_email, group_settings, membership):
-            members = self._get_group_members(group_email, provider_role)
+            provider_members = self._get_group_members(group_email, provider_role)
+            for provider_member in provider_members:
+                member = self.provider_member_to_container(provider_member)
+                members.append(member)
         return members
