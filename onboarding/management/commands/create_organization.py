@@ -1,6 +1,7 @@
 from optparse import make_option
 import subprocess
 
+from django.conf import settings
 from django.db import connection
 import service.control
 
@@ -29,8 +30,15 @@ class Command(BaseCommand):
         organization_domain = args[1]
 
         reset = options.get('reset')
-        verify = raw_input('are you sure you want to reset the db?: ')
+        verify = raw_input('are you sure you want to reset the db? ')
         if reset and verify == 'yes':
+            if not settings.DEBUG:
+                double_check = raw_input(
+                    'it looks like you\'re in production, proceed with reset? '
+                )
+                if double_check != 'yes':
+                    raise CommandError('Cancelling create with reset. Failed double check.')
+
             cursor = connection.cursor()
             cursor.execute('DROP SCHEMA PUBLIC CASCADE')
             cursor.execute('CREATE SCHEMA PUBLIC')
