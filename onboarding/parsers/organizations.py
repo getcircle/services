@@ -137,7 +137,7 @@ class Parser(OrganizationParser):
                 address=address,
             )
             address = response.result.address
-        except self.organization_service.control.CallActionError:
+        except service.control.CallActionError:
             response = self.organization_client.call_action(
                 'get_address',
                 name=address['name'],
@@ -153,7 +153,7 @@ class Parser(OrganizationParser):
         }
         try:
             response = self.organization_client.call_action('create_location', location=location)
-        except self.organization_service.control.CallActionError:
+        except service.control.CallActionError:
             response = self.organization_client.call_action(
                 'get_location',
                 name=location['name'],
@@ -197,7 +197,7 @@ class Parser(OrganizationParser):
                 **parameters
             )
             team = response.result.team
-        except self.organization_service.control.CallActionError:
+        except service.control.CallActionError:
             response = self.organization_client.call_action(
                 'get_team',
                 name=team,
