@@ -4,10 +4,7 @@ from rest_framework import status
 import service.control
 
 from api.test import APITestCase
-from services.test import (
-    fuzzy,
-    mocks,
-)
+from services.test import mocks
 
 
 class TestSyncAPI(APITestCase):
@@ -19,7 +16,7 @@ class TestSyncAPI(APITestCase):
         self.complete_sync_url = reverse('public-api-v1-sync-complete')
         self.check_sync_url = reverse('public-api-v1-sync-check')
         self.organization = mocks.mock_organization()
-        self.token = fuzzy.FuzzyUUID().fuzz()
+        self.token = mocks.mock_organization_token()
 
     def test_start_sync_unauthenticated(self):
         response = self.client.post(self.start_sync_url)

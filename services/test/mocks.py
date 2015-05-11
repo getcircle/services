@@ -282,3 +282,13 @@ def mock_member(container=None, profile_overrides=None, **overrides):
     container = _mock_container(container, mock_dict, **overrides)
     container.profile.CopyFrom(mock_profile(**profile_overrides))
     return container
+
+
+def mock_organization_token(container=None, **overrides):
+    if container is None:
+        container = organization_containers.TokenV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['key', 'requested_by_user_id'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
