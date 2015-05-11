@@ -46,8 +46,6 @@ class Command(BaseCommand):
         elif reset:
             raise CommandError('Cancelling create with reset. Failed verification.')
 
-        # XXX we shouldn't have an admin token, we should have some way of
-        # generating one on the fly though
         client = service.control.Client('organization', token=make_admin_token())
         response = client.call_action(
             'create_organization',
@@ -56,6 +54,12 @@ class Command(BaseCommand):
                 'domain': organization_domain,
             },
         )
+
+        client = service.control.Client(
+            'organization',
+            token=make_admin_token(organization_id=response.result.organization.id),
+        )
+        client.call_action('create_token')
         if not response.success:
             raise CommandError('Error creating organization: %s' % (
                 response.errors,
