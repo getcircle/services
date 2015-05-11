@@ -55,6 +55,9 @@ class SyncViewSet(viewsets.ViewSet):
         client.call_action('complete_sync', sync_id=request.data['sync_id'])
         return Response()
 
+    def check(self, request, *args, **kwargs):
+        return Response()
+
     def handle_exception(self, exception):
         if isinstance(exception, service.control.CallActionError):
             exception = exceptions.APIException()

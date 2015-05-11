@@ -1,5 +1,3 @@
-import json
-
 from django.core.urlresolvers import reverse
 import mock
 from rest_framework import status
@@ -19,6 +17,7 @@ class TestSyncAPI(APITestCase):
         self.sync_users_url = reverse('public-api-v1-sync-users')
         self.sync_groups_url = reverse('public-api-v1-sync-groups')
         self.complete_sync_url = reverse('public-api-v1-sync-complete')
+        self.check_sync_url = reverse('public-api-v1-sync-check')
         self.organization = mocks.mock_organization()
         self.token = fuzzy.FuzzyUUID().fuzz()
 
@@ -39,6 +38,15 @@ class TestSyncAPI(APITestCase):
             response = self.client.post(self.start_sync_url)
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def test_check_sync_unauthenticated(self):
+        response = self.client.post(self.check_sync_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_check_sync(self):
+        self.client.force_authenticate(user=self.organization, token=self.token)
+        response = self.client.post(self.check_sync_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_sync_users_unauthenticated(self):
         response = self.client.post(self.sync_users_url)

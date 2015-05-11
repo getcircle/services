@@ -24,4 +24,9 @@ urlpatterns = [
         views.SyncViewSet.as_view({'post': 'complete'}),
         name='public-api-v1-sync-complete',
     ),
+    url(
+        r'^check/$',
+        views.SyncViewSet.as_view({'post': 'check'}),
+        name='public-api-v1-sync-check',
+    ),
 ]
