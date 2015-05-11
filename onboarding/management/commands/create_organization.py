@@ -30,8 +30,11 @@ class Command(BaseCommand):
         organization_domain = args[1]
 
         reset = options.get('reset')
-        verify = raw_input('are you sure you want to reset the db? ')
-        if reset and verify == 'yes':
+        if reset:
+            verify = raw_input('are you sure you want to reset the db? ')
+            if verify != 'yes':
+                raise CommandError('Cancelling create with reset. Failed verification.')
+
             if not settings.DEBUG:
                 double_check = raw_input(
                     'it looks like you\'re in production, proceed with reset? '
@@ -43,8 +46,6 @@ class Command(BaseCommand):
             cursor.execute('DROP SCHEMA PUBLIC CASCADE')
             cursor.execute('CREATE SCHEMA PUBLIC')
             subprocess.call(['python', 'manage.py', 'migrate', '--noinput'])
-        elif reset:
-            raise CommandError('Cancelling create with reset. Failed verification.')
 
         client = service.control.Client('organization', token=make_admin_token())
         response = client.call_action(
