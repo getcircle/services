@@ -86,10 +86,21 @@ class BulkCreateProfiles(actions.Action):
         return models.Profile.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
-        profiles = self.bulk_create_profiles(self.request.profiles)
+        existing_profiles = models.Profile.objects.filter(
+            email__in=[x.email for x in self.request.profiles]
+        )
+        existing_profiles_dict = dict((profile.email, profile) for profile in existing_profiles)
+        containers_dict = dict((profile.email, profile) for profile in self.request.profiles)
+
+        profiles_to_create = []
+        for profile in self.request.profiles:
+            if profile.email not in existing_profiles_dict:
+                profiles_to_create.append(profile)
+
+        profiles = self.bulk_create_profiles(profiles_to_create)
         contact_methods = []
-        for index, profile in enumerate(profiles):
-            profile_container = self.request.profiles[index]
+        for profile in profiles:
+            profile_container = containers_dict[profile.email]
             for container in profile_container.contact_methods:
                 contact_method = models.ContactMethod.objects.from_protobuf(
                     container,
@@ -104,6 +115,7 @@ class BulkCreateProfiles(actions.Action):
             profile_id_to_contact_methods.setdefault(contact_method.profile_id, []).append(
                 contact_method,
             )
+
         for profile in profiles:
             container = self.response.profiles.add()
             profile.to_protobuf(

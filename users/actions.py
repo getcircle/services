@@ -73,8 +73,17 @@ class BulkCreateUsers(actions.Action):
         return models.User.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
-        users = self.bulk_create_users(self.request.users)
-        for user in users:
+        existing_users = models.User.objects.filter(
+            primary_email__in=[x.primary_email for x in self.request.users],
+        )
+        existing_users_dict = dict((user.primary_email, user) for user in existing_users)
+        users_to_create = []
+        for user in self.request.users:
+            if user.primary_email not in existing_users_dict:
+                users_to_create.append(user)
+
+        users = self.bulk_create_users(users_to_create)
+        for user in list(users) + list(existing_users):
             container = self.response.users.add()
             user.to_protobuf(container)
 
