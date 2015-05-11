@@ -81,11 +81,11 @@ class OrganizationTokenAuthentication(BaseAuthentication):
 
     def authenticate_credentials(self, key):
         try:
-            token = self.model.objects.get(key=key)
+            token = self.model.objects.select_related('organization').get(key=key)
         except self.model.DoesNotExist:
             raise exceptions.AuthenticationFailed('Invalid organization token')
 
-        return (token.organization, token)
+        return (token.organization.to_protobuf(), token)
 
     def authenticate_header(self, request):
         return 'Organization Token'

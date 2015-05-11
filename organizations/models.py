@@ -1,6 +1,7 @@
 import binascii
 import os
 from common.db import models
+from protobufs.services.organization import containers_pb2 as organization_containers
 from timezone_field import TimeZoneField
 
 
@@ -11,6 +12,9 @@ class LTreeField(models.Field):
 
 
 class Organization(models.UUIDModel, models.TimestampableModel):
+
+    class Meta:
+        protobuf = organization_containers.OrganizationV1
 
     name = models.CharField(max_length=64)
     domain = models.CharField(max_length=64, unique=True)
