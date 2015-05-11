@@ -27,7 +27,8 @@ class ListGroups(actions.Action):
         )
 
     def run(self, *args, **kwargs):
-        provider = providers.Google(profile=self.profile, organization=self.organization)
+        # TODO add a test case to ensure that this is instantiated without the mock
+        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
         if self.request.HasField('profile_id'):
             for_profile = service.control.get_object(
                 'profile',
@@ -76,24 +77,24 @@ class ListMembers(actions.Action):
         )
 
     def run(self, *args, **kwargs):
-        provider = providers.Google(profile=self.profile)
+        provider = providers.Google(requester_profile=self.profile)
         members = provider.list_members_for_group(self.request.group_id, self.request.role)
-        profiles = service.control.get_object(
-            'profile',
-            client_kwargs={'token': self.token},
-            action='get_profiles',
-            action_kwargs={'emails': [x.profile.email for x in members]},
-            return_object='profiles',
-        )
-        profiles_dict = dict((profile.email, profile) for profile in profiles)
-        for member in members:
-            profile = profiles_dict.get(member.profile.email)
-            if not profile:
-                # TODO log some error here
-                continue
-            member.profile.CopyFrom(profile)
-
-        self.response.members.extend(members)
+        if members:
+            profiles = service.control.get_object(
+                'profile',
+                client_kwargs={'token': self.token},
+                action='get_profiles',
+                action_kwargs={'emails': [x.profile.email for x in members]},
+                return_object='profiles',
+            )
+            profiles_dict = dict((profile.email, profile) for profile in profiles)
+            for member in members:
+                profile = profiles_dict.get(member.profile.email)
+                if not profile:
+                    # TODO log some error here
+                    continue
+                member.profile.CopyFrom(profile)
+            self.response.members.extend(members)
 
 
 class GetGroup(actions.Action):

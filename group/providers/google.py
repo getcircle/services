@@ -180,6 +180,10 @@ class Provider(base.BaseGroupsProvider):
 
     def list_members_for_group(self, group_email, role, **kwargs):
         groups_settings, membership = self._get_groups_settings_and_membership([group_email])
+        # TODO handle case where the group doesn't exist
+        if not groups_settings:
+            return []
+
         group_settings = groups_settings.values()[0]
         provider_role = self._get_role_from_role_v1(role)
 
