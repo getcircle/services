@@ -96,7 +96,7 @@ class Token(models.Model):
 
     key = models.CharField(max_length=40, primary_key=True)
     organization = models.ForeignKey(Organization, related_name='auth_token')
-    requested_by_user_id = models.UUIDField()
+    requested_by_user_id = models.UUIDField(null=True)
     created = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
