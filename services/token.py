@@ -14,12 +14,14 @@ class MissingTokenParameter(Exception):
 
 class ServiceToken(object):
 
+    admin_key = 'ADMIN'
     required_fields = ('auth_token',)
     optional_fields = ('profile_id',)
     one_of_fields = ('organization_id', 'user_id')
 
     def __init__(self, token=None, *args, **kwargs):
         self._token = token
+
         for field in self.required_fields:
             try:
                 setattr(self, field, kwargs[field])
@@ -32,7 +34,7 @@ class ServiceToken(object):
                 setattr(self, field, kwargs[field])
                 one_of = True
 
-        if not one_of:
+        if not one_of and not self.is_admin():
             raise MissingTokenParameter(
                 None,
                 message='Must provide either "user_id" or "organization_id"',
@@ -50,6 +52,9 @@ class ServiceToken(object):
             output[field] = value
         return output
 
+    def is_admin(self):
+        return self.auth_token == self.admin_key
+
 
 def make_token(**values):
     token = ServiceToken(**values)
@@ -61,3 +66,8 @@ def parse_token(token):
     serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
     token_values = serializer.loads(token)
     return ServiceToken(token=token, **token_values)
+
+
+def make_admin_token(**values):
+    values['auth_token'] = ServiceToken.admin_key
+    return make_token(**values)

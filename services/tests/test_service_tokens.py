@@ -38,3 +38,11 @@ class TestServiceTokens(TestCase):
         expected = token.make_token(auth_token=auth_token, user_id=user_id)
         with self.assertRaises(BadTimeSignature):
             token.parse_token(expected[:-11])
+
+    def test_make_admin_token(self):
+        expected = token.make_admin_token()
+        parsed = token.parse_token(expected)
+        self.assertEqual(parsed.auth_token, token.ServiceToken.admin_key)
+        self.assertTrue(parsed.is_admin())
+        self.assertIsNone(parsed.user_id)
+        self.assertIsNone(parsed.organization_id)

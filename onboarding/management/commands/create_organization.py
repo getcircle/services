@@ -8,6 +8,7 @@ from services.management.base import (
     BaseCommand,
     CommandError,
 )
+from services.token import make_admin_token
 
 
 class Command(BaseCommand):
@@ -36,7 +37,7 @@ class Command(BaseCommand):
 
         # XXX we shouldn't have an admin token, we should have some way of
         # generating one on the fly though
-        client = service.control.Client('organization', token='admin-token')
+        client = service.control.Client('organization', token=make_admin_token())
         response = client.call_action(
             'create_organization',
             organization={

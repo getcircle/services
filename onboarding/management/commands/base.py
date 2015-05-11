@@ -6,6 +6,7 @@ from services.management.base import (
     BaseCommand,
     CommandError,
 )
+from services.token import make_admin_token
 
 
 class BaseOrganizationParserCommand(BaseCommand):
@@ -56,7 +57,7 @@ class BaseOrganizationParserCommand(BaseCommand):
         parser = self.parser_class(
             organization_domain=organization_domain,
             filename=filename,
-            token='admin-token',
+            token=make_admin_token(),
             verbose=options['verbose'],
         )
         try:

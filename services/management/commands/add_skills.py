@@ -1,6 +1,8 @@
 import random
 import service.control
+
 from services.management.base import BaseCommand
+from services.token import make_admin_token
 
 from protobufs.services.profile import containers_pb2 as profile_containers
 
@@ -13,8 +15,11 @@ class Command(BaseCommand):
     args = '<organization_domain>'
 
     def handle(self, *args, **options):
-        client = service.control.Client('profile', token='admin-token')
         organization = organization_models.Organization.objects.get(domain=args[0])
+        client = service.control.Client(
+            'profile',
+            token=make_admin_token(str(organization_id=organization.id)),
+        )
         skills = profile_models.Tag.objects.filter(
             organization_id=organization.id,
             type=profile_containers.TagV1.SKILL,
