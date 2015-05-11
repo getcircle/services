@@ -68,6 +68,7 @@ def parse_token(token):
     return ServiceToken(token=token, **token_values)
 
 
+# XXX think through all the cases where this could be vulnerable
 def make_admin_token(**values):
     values['auth_token'] = ServiceToken.admin_key
     return make_token(**values)

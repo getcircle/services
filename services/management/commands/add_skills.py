@@ -18,7 +18,7 @@ class Command(BaseCommand):
         organization = organization_models.Organization.objects.get(domain=args[0])
         client = service.control.Client(
             'profile',
-            token=make_admin_token(str(organization_id=organization.id)),
+            token=make_admin_token(organization_id=str(organization.id)),
         )
         skills = profile_models.Tag.objects.filter(
             organization_id=organization.id,
