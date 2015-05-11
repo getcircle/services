@@ -572,10 +572,13 @@ class CreateToken(actions.Action):
             if not validators.is_uuid4(self.service_token.organization_id):
                 raise self.ActionFieldError('token.organization_id', 'INVALID')
 
-            if not self.service_token.user_id:
+            if not self.service_token.is_admin() and not self.service_token.user_id:
                 raise self.ActionFieldError('token.user_id', 'MISSING')
 
-            if not validators.is_uuid4(self.service_token.user_id):
+            if (
+                not self.service_token.is_admin() and
+                not validators.is_uuid4(self.service_token.user_id)
+            ):
                 raise self.ActionFieldError('token.user_id', 'INVALID')
 
     def run(self, *args, **kwargs):

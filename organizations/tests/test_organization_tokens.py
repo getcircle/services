@@ -1,5 +1,8 @@
 import service.control
-from services.token import parse_token
+from services.token import (
+    make_admin_token,
+    parse_token,
+)
 from services.test import (
     fuzzy,
     mocks,
@@ -66,6 +69,16 @@ class OrganizationTokenTests(TestCase):
         token = response.result.token
         self.assertTrue(token.key)
         self.assertEqual(token.requested_by_user_id, service_token.user_id)
+        model_token = models.Token.objects.get(key=token.key)
+        self.assertEqual(model_token.organization_id, self.organization.id)
+
+    def test_create_organization_token_with_admin(self):
+        admin_token = make_admin_token(organization_id=self.organization.id)
+        client = service.control.Client('organization', token=admin_token)
+        response = client.call_action('create_token')
+        token = response.result.token
+        self.assertTrue(token.key)
+        self.assertFalse(token.HasField('requested_by_user_id'))
         model_token = models.Token.objects.get(key=token.key)
         self.assertEqual(model_token.organization_id, self.organization.id)
 
