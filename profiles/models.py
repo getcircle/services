@@ -23,6 +23,10 @@ class Tag(models.UUIDModel, models.TimestampableModel):
 
 class Profile(models.UUIDModel, models.TimestampableModel):
 
+    # TODO this should really be coming from the "to_python" method of the
+    # field. otherwise its going to get really confusing why importing to a
+    # protobuf has a particular behavior. we should look into how
+    # rest_framework handles this with model serializers
     from_protobuf_transforms = {
         'about': lambda x: None if not x else x
     }
