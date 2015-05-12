@@ -17,6 +17,11 @@ class Command(BaseCommand):
     help = 'Creates an organization'
     option_list = BaseCommand.option_list + (
         make_option(
+            '--image_url',
+            dest='image_url',
+            help='Link to the companies logo',
+        ),
+        make_option(
             '--reset',
             action='store_true',
             dest='reset',
@@ -48,12 +53,16 @@ class Command(BaseCommand):
             subprocess.call(['python', 'manage.py', 'migrate', '--noinput'])
 
         client = service.control.Client('organization', token=make_admin_token())
+        organization = {
+            'name': organization_name,
+            'domain': organization_domain,
+        }
+        if 'image_url' in options:
+            organization['image_url'] = options.get('image_url')
+
         response = client.call_action(
             'create_organization',
-            organization={
-                'name': organization_name,
-                'domain': organization_domain,
-            },
+            organization=organization,
         )
 
         client = service.control.Client(
