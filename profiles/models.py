@@ -23,6 +23,9 @@ class Tag(models.UUIDModel, models.TimestampableModel):
 
 class Profile(models.UUIDModel, models.TimestampableModel):
 
+    from_protobuf_transforms = {
+        'about': lambda x: None if not x else x
+    }
     protobuf_include_fields = ('full_name',)
 
     organization_id = models.UUIDField()

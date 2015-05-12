@@ -131,6 +131,12 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self._verify_container_matches_data(response.result.profile, profile_data)
 
+    def test_create_profile_about_empty_string_ignored(self):
+        profile_data = factories.ProfileFactory.get_protobuf_data()
+        profile_data['about'] = ''
+        response = self.client.call_action('create_profile', profile=profile_data)
+        self.assertFalse(response.result.profile.HasField('about'))
+
     def test_get_profiles_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
             self.client.call_action(
