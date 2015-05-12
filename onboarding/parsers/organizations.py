@@ -95,7 +95,8 @@ class Row(object):
     def profile(self):
         profile = {}
         for key in self.profile_fields:
-            profile[key] = smart_text(self.data[key])
+            if key in self.data:
+                profile[key] = smart_text(self.data[key])
 
         contact_methods = []
         for key in self.contact_method_fields:
