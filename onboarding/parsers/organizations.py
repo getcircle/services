@@ -110,7 +110,7 @@ class Row(object):
         return profile
 
     def is_team_owner(self):
-        return self.owns_team == '1' or self.owns_team == 'True'
+        return self.owns_team == '1' or self.owns_team == 'True' or self.owns_team == 'TRUE'
 
 
 class Parser(OrganizationParser):
