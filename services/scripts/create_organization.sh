@@ -2,8 +2,9 @@
 
 COMPANY_NAME=$1
 COMPANY_DOMAIN=$2
+COMPANY_IMAGE_URL=$3
 
-python manage.py create_organization $COMPANY_NAME $COMPANY_DOMAIN --reset &&
+python manage.py create_organization $COMPANY_NAME $COMPANY_DOMAIN --reset --image_url "$COMPANY_IMAGE_URL" &&
     python manage.py load_organization $COMPANY_DOMAIN --commit &&
     python manage.py load_tags $COMPANY_DOMAIN --filename onboarding/fixtures/eventbrite_skills.csv --tag_type skill --commit &&
     python manage.py load_tags $COMPANY_DOMAIN --filename onboarding/fixtures/interests.csv --tag_type interest --commit &&
