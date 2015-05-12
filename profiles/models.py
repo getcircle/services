@@ -36,8 +36,8 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     last_name = models.CharField(max_length=64)
     nickname = models.CharField(max_length=64, null=True)
     image_url = models.URLField(max_length=256, null=True)
-    birth_date = models.DateField()
-    hire_date = models.DateField()
+    birth_date = models.DateField(null=True)
+    hire_date = models.DateField(null=True)
     verified = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, through='ProfileTags')
     items = ArrayField(
