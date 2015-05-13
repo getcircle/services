@@ -2,6 +2,7 @@ import httplib2
 import json
 import os
 
+from apiclient.errors import HttpError
 from apiclient.http import BatchHttpRequest
 from apiclient.discovery import build
 from oauth2client.client import SignedJwtAssertionCredentials
@@ -71,6 +72,15 @@ class Provider(base.BaseGroupsProvider):
     def _get_group(self, group_key):
         # TODO add tests around Http 400 & 403 failure
         return self.directory_client.groups().get(groupKey=group_key).execute()
+
+    def _leave_group(self, group_key):
+        try:
+            self.directory_client.members().delete(
+                groupKey=group_key,
+                memberKey=self.requester_profile.email,
+            )
+        except HttpError:
+            pass
 
     def _get_groups_settings_and_membership(self, group_keys, fetch_membership=True):
         groups_settings = {}
@@ -210,3 +220,9 @@ class Provider(base.BaseGroupsProvider):
         if group_settings.get('showInGroupDirectory', False):
             group = self.provider_group_to_container(provider_group)
         return group
+
+    def join_group(self, group_key, **kwargs):
+        pass
+
+    def leave_group(self, group_key, **kwargs):
+        self._leave_group(group_key)

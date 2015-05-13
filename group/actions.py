@@ -59,10 +59,13 @@ class RespondToMembershipRequest(actions.Action):
         pass
 
 
-class LeaveGroup(actions.Action):
+class LeaveGroup(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('group_key',)
 
     def run(self, *args, **kwargs):
-        pass
+        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
+        provider.leave_group(self.request.group_key)
 
 
 class ListMembers(actions.Action):

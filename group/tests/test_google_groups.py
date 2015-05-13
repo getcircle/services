@@ -132,3 +132,15 @@ class TestGoogleGroups(TestCase):
             response = self.client.call_action('get_group', group_key=mock_group.email)
 
         self.verify_containers(mock_group, response.result.group)
+
+    def test_leave_group_no_group_key(self):
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            with self.assertFieldError('group_key', 'MISSING'):
+                self.client.call_action('leave_group')
+
+    @patch('group.actions.providers.Google')
+    def test_leave_group(self, mock_google_provider):
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            self.client.call_action('leave_group', group_key='group@circlehq.co')

@@ -1,6 +1,7 @@
 from mock import patch
 from pprint import pprint
 
+from apiclient.errors import HttpError
 from protobufs.services.group import containers_pb2 as group_containers
 
 from services.test import TestCase
@@ -849,3 +850,16 @@ class TestGoogleListMembers(BaseGoogleCase):
         test(group_containers.MEMBER, 'MEMBER')
         test(group_containers.OWNER, 'OWNER')
         test(group_containers.MANAGER, 'MANAGER')
+
+
+class TestGoogleGroups(BaseGoogleCase):
+
+    def test_leave_group_not_a_member(self):
+        with patch('group.providers.google.build') as patched_build_api:
+            patched_build_api().members().delete.side_effect = HttpError('404', 'Error')
+            self.provider.leave_group('group@circlehq.co')
+
+    def test_leave_group(self):
+        with patch('group.providers.google.build') as patched_build_api:
+            patched_build_api().members().delete.return_value = ''
+            self.provider.leave_group('group@circlehq.co')
