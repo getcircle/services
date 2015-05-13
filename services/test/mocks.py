@@ -262,7 +262,7 @@ def mock_group(container=None, **overrides):
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],
-        fuzzy.FuzzyText: ['name', 'display_name', 'description'],
+        fuzzy.FuzzyText: ['name', 'display_name', 'group_description'],
         fuzzy.FuzzyText(suffix='@circlehq.co'): ['email'],
     }
     return _mock_container(container, mock_dict, **overrides)

@@ -80,10 +80,10 @@ class TestGoogleGroups(TestCase):
 
     def test_list_members_provider_required(self):
         with self.assertFieldError('provider', 'MISSING'):
-            self.client.call_action('list_members', group_id=fuzzy.FuzzyUUID().fuzz())
+            self.client.call_action('list_members', group_key=fuzzy.FuzzyUUID().fuzz())
 
-    def test_list_members_group_id_required(self):
-        with self.assertFieldError('group_id', 'MISSING'):
+    def test_list_members_group_key_required(self):
+        with self.assertFieldError('group_key', 'MISSING'):
             self.client.call_action('list_members', provider=group_containers.GOOGLE)
 
     @patch('group.actions.providers.Google')
@@ -105,8 +105,30 @@ class TestGoogleGroups(TestCase):
             response = self.client.call_action(
                 'list_members',
                 provider=group_containers.GOOGLE,
-                group_id='group@circlehq.co',
+                group_key='group@circlehq.co',
             )
         self.assertEqual(len(response.result.members), len(mock_members))
         for member in response.result.members:
             self.assertEqual(member.role, group_containers.GOOGLE)
+
+    def test_get_group_group_key_required(self):
+        with self.assertFieldError('group_key', 'MISSING'):
+            self.client.call_action('get_group')
+
+    @patch('group.actions.providers.Google')
+    def test_get_group_not_found(self, mock_google_provider):
+        mock_google_provider().get_group.return_value = None
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            response = self.client.call_action('get_group', group_key='group@criclehq.co')
+        self.assertFalse(response.result.HasField('group'))
+
+    @patch('group.actions.providers.Google')
+    def test_get_group(self, mock_google_provider):
+        mock_group = mocks.mock_group()
+        mock_google_provider().get_group.return_value = mock_group
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            response = self.client.call_action('get_group', group_key=mock_group.email)
+
+        self._verify_containers(mock_group, response.result.group)

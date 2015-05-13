@@ -23,7 +23,7 @@ class BaseGoogleCase(TestCase):
             email='ravi@circlehq.co',
             organization_id=self.organization.id,
         )
-        self.provider = Provider(self.organization, self.by_profile)
+        self.provider = Provider(self.by_profile, self.organization)
 
     def _structure_fixtures(self, groups, membership=None, members=None):
         if membership is None:
@@ -65,7 +65,13 @@ class BaseGoogleCase(TestCase):
                     test_case['provider_func_args'][int(key)] = value
         return test_case
 
-    def _execute_test_cases(self, provider_func_name, test_cases, provider_func_args=None):
+    def _execute_test_cases(
+            self,
+            provider_func_name,
+            test_cases,
+            provider_func_args=None,
+            test_func=None,
+        ):
         # TODO switch to generator test case
         for test_case in test_cases:
             test_case = self._parse_test_case(test_case)
@@ -98,6 +104,7 @@ class BaseGoogleCase(TestCase):
                     test_case['assertions'],
                     fixtures,
                     provider_func_args=provider_func_args or func_args,
+                    test_func=test_func,
                 )
             except AssertionError:
                 print '\nTest Case Failed:'
@@ -107,10 +114,18 @@ class BaseGoogleCase(TestCase):
 
 class TestGoogleListGroups(BaseGoogleCase):
 
-    def _execute_test(self, provider_func_name, assertions, fixtures, provider_func_args=None):
+    def _execute_test(
+            self,
+            provider_func_name,
+            assertions,
+            fixtures,
+            provider_func_args=None,
+            test_func=None,
+        ):
         if provider_func_args is None:
             provider_func_args = tuple()
 
+        @patch.object(self.provider, '_get_group', return_value=fixtures['groups']['groups'][0])
         @patch.object(self.provider, '_get_groups', return_value=fixtures['groups'])
         @patch.object(
             self.provider,
@@ -118,23 +133,26 @@ class TestGoogleListGroups(BaseGoogleCase):
             return_value=(fixtures['settings'], fixtures['membership']),
         )
         def test(*patches):
-            groups = getattr(self.provider, provider_func_name)(*provider_func_args)
-            if callable(assertions):
-                assertions(groups)
+            result = getattr(self.provider, provider_func_name)(*provider_func_args)
+            if test_func:
+                test_func(assertions, result)
             else:
-                try:
-                    group = groups[0]
-                except IndexError:
-                    if assertions['group']['can_view']:
-                        raise AssertionError('Group should have been visible')
-                    return
+                if callable(assertions):
+                    assertions(result)
                 else:
-                    if not assertions['group']['can_view']:
-                        raise AssertionError('Group should not have been visible')
+                    try:
+                        group = result[0]
+                    except IndexError:
+                        if assertions['group']['can_view']:
+                            raise AssertionError('Group should have been visible')
+                        return
+                    else:
+                        if not assertions['group']['can_view']:
+                            raise AssertionError('Group should not have been visible')
 
-                for key, value in assertions['group'].iteritems():
-                    if key != 'can_view':
-                        self.assertEqual(getattr(group, key), value)
+                    for key, value in assertions['group'].iteritems():
+                        if key != 'can_view':
+                            self.assertEqual(getattr(group, key), value)
         test()
 
     def test_list_groups_for_organization_cases(self):
@@ -153,6 +171,34 @@ class TestGoogleListGroups(BaseGoogleCase):
             },
         ]
         self._execute_test_cases('list_groups_for_organization', test_cases)
+
+    def test_get_group(self):
+        test_cases = [
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:settings:showInGroupDirectory': False,
+                'provider_func_args:0': 'setup:group:email',
+                'assertions:group:can_view': False,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:settings:showInGroupDirectory': True,
+                'provider_func_args:0': 'setup:group:email',
+                'assertions:group:can_view': True,
+            },
+        ]
+
+        def test(assertions, result):
+            if not assertions['group']['can_view'] and result is not None:
+                raise AssertionError('Group should not have been visible')
+            elif assertions['group']['can_view'] and result is None:
+                raise AssertionError('Group should be visible')
+
+        self._execute_test_cases('get_group', test_cases, test_func=test)
 
     def test_list_groups_for_user_single_group_cases(self):
         test_cases = [
@@ -601,7 +647,14 @@ class TestGoogleListGroups(BaseGoogleCase):
 
 class TestGoogleListMembers(BaseGoogleCase):
 
-    def _execute_test(self, provider_func_name, assertions, fixtures, provider_func_args=None):
+    def _execute_test(
+            self,
+            provider_func_name,
+            assertions,
+            fixtures,
+            provider_func_args=None,
+            **kwargs
+        ):
         if provider_func_args is None:
             provider_func_args = tuple()
 

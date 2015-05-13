@@ -14,3 +14,6 @@ class BaseGroupsProvider(object):
 
     def list_members_for_group(self, group_email, role, **kwargs):
         raise NotImplementedError('Subclass must implement `list_members_for_group`')
+
+    def get_group(self, group_email, **kwargs):
+        raise NotImplementedError('Subclass must implement `get_group`')

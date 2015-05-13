@@ -5,9 +5,7 @@ from services.token import parse_token
 from . import providers
 
 
-class ListGroups(actions.Action):
-
-    required_fields = ('provider',)
+class PreRunParseTokenMixin(object):
 
     def pre_run(self, *args, **kwargs):
         self.parsed_token = parse_token(self.token)
@@ -25,6 +23,11 @@ class ListGroups(actions.Action):
             action_kwargs={'profile_id': self.parsed_token.profile_id},
             return_object='profile',
         )
+
+
+class ListGroups(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('provider',)
 
     def run(self, *args, **kwargs):
         # TODO add a test case to ensure that this is instantiated without the mock
@@ -64,7 +67,7 @@ class LeaveGroup(actions.Action):
 
 class ListMembers(actions.Action):
 
-    required_fields = ('provider', 'group_id')
+    required_fields = ('provider', 'group_key')
 
     def pre_run(self, *args, **kwargs):
         self.parsed_token = parse_token(self.token)
@@ -78,7 +81,7 @@ class ListMembers(actions.Action):
 
     def run(self, *args, **kwargs):
         provider = providers.Google(requester_profile=self.profile)
-        members = provider.list_members_for_group(self.request.group_id, self.request.role)
+        members = provider.list_members_for_group(self.request.group_key, self.request.role)
         if members:
             profiles = service.control.get_object(
                 'profile',
@@ -97,7 +100,12 @@ class ListMembers(actions.Action):
             self.response.members.extend(members)
 
 
-class GetGroup(actions.Action):
+class GetGroup(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('group_key',)
 
     def run(self, *args, **kwargs):
-        pass
+        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
+        group = provider.get_group(self.request.group_key)
+        if group:
+            self.response.group.CopyFrom(group)
