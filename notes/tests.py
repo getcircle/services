@@ -57,7 +57,7 @@ class NotesTests(TestCase):
         }
         response = self.client.call_action('create_note', note=note)
         self.assertTrue(response.success)
-        self._verify_container_matches_data(response.result.note, note)
+        self.verify_container_matches_data(response.result.note, note)
 
     def test_get_notes_invalid_for_profile_id(self):
         with self.assertFieldError('for_profile_id'):
@@ -102,8 +102,8 @@ class NotesTests(TestCase):
         # verify we didn't return the deleted note
         self.assertEqual(len(response.result.notes), 2)
         # ensure that the notes are sorted by most recently added
-        self._verify_containers(response.result.notes[0], second)
-        self._verify_containers(response.result.notes[1], first)
+        self.verify_containers(response.result.notes[0], second)
+        self.verify_containers(response.result.notes[1], first)
 
     def test_get_notes_all_notes_for_owner(self):
         owner_profile_id = fuzzy.FuzzyUUID().fuzz()

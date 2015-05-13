@@ -46,7 +46,7 @@ class AppreciationTests(TestCase):
             'content': 'thanks for everything!',
         }
         response = self.client.call_action('create_appreciation', appreciation=expected)
-        self._verify_container_matches_data(response.result.appreciation, expected)
+        self.verify_container_matches_data(response.result.appreciation, expected)
 
     def test_get_appreciation_invalid_destination_profile_id(self):
         with self.assertFieldError('destination_profile_id'):
@@ -75,7 +75,7 @@ class AppreciationTests(TestCase):
             self.assertEqualUUID4(appreciation.destination_profile_id, destination_profile_id)
 
         # verify that the most recently created appreciation is first
-        self._verify_containers(most_recent, response.result.appreciation[0])
+        self.verify_containers(most_recent, response.result.appreciation[0])
 
     def test_delete_appreciation_invalid_id(self):
         appreciation = factories.AppreciationFactory.build_protobuf()

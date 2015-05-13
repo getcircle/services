@@ -130,10 +130,10 @@ class TestGetExtendedOrganization(TestCase):
         executives = category_dict[feed_containers.CategoryV1.EXECUTIVES]
         # equal to 4 because we include the owner (the rest are just direct reports)
         self.assertEqual(len(executives.profiles), 4)
-        self._verify_containers(owner, executives.profiles[0])
+        self.verify_containers(owner, executives.profiles[0])
 
         departments = category_dict[feed_containers.CategoryV1.DEPARTMENTS]
         # top level team should be the first "department" listed
-        self._verify_containers(top_level_team, departments.teams[0])
+        self.verify_containers(top_level_team, departments.teams[0])
         # equal to 6 because we include the top level team
         self.assertEqual(len(departments.teams), 6)

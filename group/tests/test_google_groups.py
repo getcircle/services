@@ -131,4 +131,4 @@ class TestGoogleGroups(TestCase):
             self._mock_token_objects(mock)
             response = self.client.call_action('get_group', group_key=mock_group.email)
 
-        self._verify_containers(mock_group, response.result.group)
+        self.verify_containers(mock_group, response.result.group)

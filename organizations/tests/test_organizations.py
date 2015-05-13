@@ -374,7 +374,7 @@ class TestOrganizations(TestCase):
             address_id=expected.id,
         )
         self.assertTrue(response.success)
-        self._verify_containers(expected, response.result.address)
+        self.verify_containers(expected, response.result.address)
 
     def test_get_addresses_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
@@ -417,7 +417,7 @@ class TestOrganizations(TestCase):
                 'get_team',
                 team_id=expected.id,
             )
-        self._verify_containers(expected, response.result.team)
+        self.verify_containers(expected, response.result.team)
         self.assertEqual(response.result.team.profile_count, 5)
 
     def test_get_organization_invalid_organization_id(self):
@@ -440,7 +440,7 @@ class TestOrganizations(TestCase):
             'get_organization',
             organization_id=expected.id,
         )
-        self._verify_containers(expected, response.result.organization)
+        self.verify_containers(expected, response.result.organization)
 
     def test_get_organization_with_domain_does_not_exist(self):
         with self.assertFieldError('organization_domain', 'DOES_NOT_EXIST'):
@@ -452,7 +452,7 @@ class TestOrganizations(TestCase):
             'get_organization',
             organization_domain=expected.domain,
         )
-        self._verify_containers(expected, response.result.organization)
+        self.verify_containers(expected, response.result.organization)
 
     def test_get_teams_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
@@ -705,7 +705,7 @@ class TestOrganizations(TestCase):
             organization_id=address.organization_id,
         )
         self.assertTrue(response.success)
-        self._verify_containers(address, response.result.address)
+        self.verify_containers(address, response.result.address)
 
     def test_get_top_level_team_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):
@@ -728,4 +728,4 @@ class TestOrganizations(TestCase):
             'get_top_level_team',
             organization_id=parent_team.organization_id,
         )
-        self._verify_containers(parent_team, response.result.team)
+        self.verify_containers(parent_team, response.result.team)

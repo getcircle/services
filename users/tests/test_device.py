@@ -42,14 +42,14 @@ class TestUserDevices(TestCase):
         user = factories.UserFactory.create()
         device = factories.DeviceFactory.build_protobuf(id=None, user=user)
         response = self.client.call_action('record_device', device=device)
-        self._verify_containers(device, response.result.device)
+        self.verify_containers(device, response.result.device)
 
     def test_user_record_multiple_devices(self):
         user = factories.UserFactory.create()
         for _ in range(2):
             device = factories.DeviceFactory.build_protobuf(id=None, user=user)
             response = self.client.call_action('record_device', device=device)
-            self._verify_containers(device, response.result.device)
+            self.verify_containers(device, response.result.device)
 
         self.assertEqual(models.Device.objects.filter(user=user).count(), 2)
 
@@ -57,7 +57,7 @@ class TestUserDevices(TestCase):
         device = factories.DeviceFactory.create_protobuf()
         device.app_version = 'updated'
         response = self.client.call_action('record_device', device=device)
-        self._verify_containers(device, response.result.device)
+        self.verify_containers(device, response.result.device)
 
         expected = models.Device.objects.get(id=device.id)
         self.assertEqual(device.app_version, expected.app_version)

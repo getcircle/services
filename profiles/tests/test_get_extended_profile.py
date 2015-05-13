@@ -171,16 +171,16 @@ class TestGetExtendedProfile(TestCase):
         )
 
         self.assertTrue(response.success)
-        self._verify_containers(manager, response.result.manager)
-        self._verify_containers(location, response.result.location)
-        self._verify_containers(team, response.result.team)
-        self._verify_containers(profile, response.result.profile)
+        self.verify_containers(manager, response.result.manager)
+        self.verify_containers(location, response.result.location)
+        self.verify_containers(team, response.result.team)
+        self.verify_containers(profile, response.result.profile)
         self.assertEqual(len(skills), len(response.result.skills))
         self.assertEqual(len(interests), len(response.result.interests))
         self.assertEqual(len(notes), len(response.result.notes))
         self.assertEqual(len(direct_reports), len(response.result.direct_reports))
         self.assertEqual(len(self.identities), len(response.result.identities))
-        self._verify_containers(self.resume, response.result.resume)
+        self.verify_containers(self.resume, response.result.resume)
 
     def test_get_extended_profile_of_manager(self):
         manager = factories.ProfileFactory.create_protobuf()

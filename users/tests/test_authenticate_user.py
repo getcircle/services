@@ -48,7 +48,7 @@ class TestUsersAuthentication(TestCase):
         self.assertTrue(response.success)
         self.assertTrue(response.result.token)
         self.assertFalse(response.result.new_user)
-        self._verify_containers(response.result.user, self.user)
+        self.verify_containers(response.result.user, self.user)
 
     def test_authenticate_user_invalid_password(self):
         with self.assertRaises(service.control.CallActionError):
@@ -110,7 +110,7 @@ class TestUsersAuthentication(TestCase):
             client_type=token_pb2.IOS,
         )
         self.assertFalse(response.result.new_user)
-        self._verify_containers(
+        self.verify_containers(
             response.result.user,
             user.to_protobuf(user_containers.UserV1()),
         )

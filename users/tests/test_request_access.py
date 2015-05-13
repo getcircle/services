@@ -39,4 +39,4 @@ class TestUserDevices(TestCase):
         response = self.client.call_action('request_access', user_id=user.id)
         access_request = response.result.access_request
         response = self.client.call_action('request_access', user_id=user.id)
-        self._verify_containers(access_request, response.result.access_request)
+        self.verify_containers(access_request, response.result.access_request)

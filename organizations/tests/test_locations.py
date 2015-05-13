@@ -65,7 +65,7 @@ class OrganizationLocationTests(TestCase):
             },
         )
         self.assertEqual(response.result.location.organization_id, organization_id)
-        self._verify_containers(response.result.location.address, address)
+        self.verify_containers(response.result.location.address, address)
 
     def test_create_location_duplicate(self):
         location = factories.LocationFactory.create_protobuf()
@@ -110,7 +110,7 @@ class OrganizationLocationTests(TestCase):
         with self.mock_transport(self.client) as mock:
             self._mock_get_profile_stats(mock, [str(location.id)])
             response = self.client.call_action('get_location', location_id=location.id)
-        self._verify_containers(location, response.result.location)
+        self.verify_containers(location, response.result.location)
         self.assertEqual(response.result.location.profile_count, 5)
 
     def test_get_location_by_name_organization_id_required(self):
@@ -124,7 +124,7 @@ class OrganizationLocationTests(TestCase):
             name=location.name,
             organization_id=location.organization_id,
         )
-        self._verify_containers(location, response.result.location)
+        self.verify_containers(location, response.result.location)
 
     def test_get_locations_invalid_organization_id(self):
         with self.assertFieldError('organization_id'):

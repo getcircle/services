@@ -39,7 +39,7 @@ class TestResumes(TestCase):
         [self.assertTrue(education.id) for education in response.result.educations]
         educations_by_name = dict((education.school_name, education) for education in educations)
         for education in response.result.educations:
-            self._verify_containers(educations_by_name[education.school_name], education)
+            self.verify_containers(educations_by_name[education.school_name], education)
 
     def test_bulk_create_educations_duplicates(self):
         education = factories.EducationFactory.create_protobuf()
@@ -58,7 +58,7 @@ class TestResumes(TestCase):
         )
         self.assertEqual(len(response.result.educations), 3)
 
-        self._verify_containers(education, response.result.educations[0])
+        self.verify_containers(education, response.result.educations[0])
         educations = models.Education.objects.all()
         self.assertEqual(len(educations), 3)
 
@@ -81,7 +81,7 @@ class TestResumes(TestCase):
         [self.assertTrue(position.id) for position in response.result.positions]
         positions_by_title = dict((position.title, position) for position in positions)
         for position in response.result.positions:
-            self._verify_containers(positions_by_title[position.title], position)
+            self.verify_containers(positions_by_title[position.title], position)
 
     def test_bulk_create_positions_duplicates(self):
         company = factories.CompanyFactory.create_protobuf()
@@ -110,13 +110,13 @@ class TestResumes(TestCase):
         positions = models.Position.objects.all()
         self.assertEqual(len(positions), 3)
         duplicate_position.id = position.id.hex
-        self._verify_containers(duplicate_position, positions_by_title[position.title])
+        self.verify_containers(duplicate_position, positions_by_title[position.title])
 
     def test_create_company(self):
         company = mocks.mock_company(id=None)
         response = self.client.call_action('create_company', company=company)
         self.assertTrue(response.result.company.id)
-        self._verify_containers(company, response.result.company)
+        self.verify_containers(company, response.result.company)
 
     def test_create_company_duplicate(self):
         company = factories.CompanyFactory.create_protobuf()
@@ -124,7 +124,7 @@ class TestResumes(TestCase):
         duplicate_company.CopyFrom(company)
         duplicate_company.ClearField('id')
         response = self.client.call_action('create_company', company=duplicate_company)
-        self._verify_containers(company, response.result.company)
+        self.verify_containers(company, response.result.company)
 
     def test_get_resume_invalid_user_id(self):
         with self.assertFieldError('user_id'):

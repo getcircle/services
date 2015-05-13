@@ -51,11 +51,11 @@ class TestCase(DjangoTestCase):
             '%s - expected: "%s", got: "%s"' % (message, expected_value, value),
         )
 
-    def _verify_container_matches_data(self, container, data):
+    def verify_container_matches_data(self, container, data):
         for key, value in data.iteritems():
             self._verify_values(value, getattr(container, key), message='key: %s' % (key,))
 
-    def _verify_containers(self, expected, to_verify):
+    def verify_containers(self, expected, to_verify):
         for field, expected_value in expected.ListFields():
             value = getattr(to_verify, field.name, None)
             self._verify_values(expected_value, value, message='field: %s' % (field.name,))

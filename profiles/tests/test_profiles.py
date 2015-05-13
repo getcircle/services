@@ -129,7 +129,7 @@ class TestProfiles(TestCase):
         profile_data = factories.ProfileFactory.get_protobuf_data()
         response = self.client.call_action('create_profile', profile=profile_data)
         self.assertTrue(response.success)
-        self._verify_container_matches_data(response.result.profile, profile_data)
+        self.verify_container_matches_data(response.result.profile, profile_data)
 
     def test_create_profile_about_empty_string_ignored(self):
         profile_data = factories.ProfileFactory.get_protobuf_data()
@@ -152,7 +152,7 @@ class TestProfiles(TestCase):
         )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
-        self._verify_containers(profile, response.result.profiles[0])
+        self.verify_containers(profile, response.result.profiles[0])
 
     def test_get_profiles_invalid_tag_id(self):
         with self.assertFieldError('tag_id'):
@@ -253,8 +253,8 @@ class TestProfiles(TestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 4)
         # ensure results are sorted alphabetically
-        self._verify_containers(created_second, response.result.profiles[0])
-        self._verify_containers(created_first, response.result.profiles[1])
+        self.verify_containers(created_second, response.result.profiles[0])
+        self.verify_containers(created_first, response.result.profiles[1])
 
     def test_get_profiles_team_id_includes_owners_direct_reports(self):
         owner = factories.ProfileFactory.create_protobuf(first_name='owner')
@@ -276,7 +276,7 @@ class TestProfiles(TestCase):
             'get_profile',
             profile_id=expected.id,
         )
-        self._verify_containers(expected, response.result.profile)
+        self.verify_containers(expected, response.result.profile)
 
     def test_get_profile_full_name(self):
         profile = factories.ProfileFactory.create_protobuf()
@@ -319,7 +319,7 @@ class TestProfiles(TestCase):
         profile.full_name = 'Michael Hahn'
 
         response = self.client.call_action('update_profile', profile=profile)
-        self._verify_containers(profile, response.result.profile)
+        self.verify_containers(profile, response.result.profile)
 
     def test_get_direct_reports_invalid_profile_id(self):
         with self.assertFieldError('profile_id'):
@@ -399,7 +399,7 @@ class TestProfiles(TestCase):
             key=lambda x: (x.first_name.lower(), x.last_name.lower()),
         )
         for index, profile in enumerate(response.result.profiles):
-            self._verify_containers(profile, sorted_profiles[index])
+            self.verify_containers(profile, sorted_profiles[index])
 
     def test_get_direct_reports_user_id(self):
         owner = self._setup_direct_reports_test()
@@ -467,7 +467,7 @@ class TestProfiles(TestCase):
             key=lambda x: (x.first_name.lower(), x.last_name.lower()),
         )
         for index, profile in enumerate(response.result.profiles):
-            self._verify_containers(sorted_profiles[index], profile)
+            self.verify_containers(sorted_profiles[index], profile)
 
     def test_get_peers_ceo(self):
         address = self._create_address()
