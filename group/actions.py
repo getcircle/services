@@ -25,6 +25,19 @@ class PreRunParseTokenMixin(object):
         )
 
 
+class PreRunParseTokenFetchProfileMixin(object):
+
+    def pre_run(self, *args, **kwargs):
+        self.parsed_token = parse_token(self.token)
+        self.profile = service.control.get_object(
+            'profile',
+            client_kwargs={'token': self.token},
+            action='get_profile',
+            action_kwargs={'profile_id': self.parsed_token.profile_id},
+            return_object='profile',
+        )
+
+
 class ListGroups(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('provider',)
@@ -47,10 +60,17 @@ class ListGroups(PreRunParseTokenMixin, actions.Action):
         self.response.groups.extend(groups)
 
 
-class JoinGroup(actions.Action):
+class JoinGroup(PreRunParseTokenFetchProfileMixin, actions.Action):
+
+    required_fields = ('group_key',)
 
     def run(self, *args, **kwargs):
-        pass
+        provider = providers.Google(
+            requester_profile=self.profile,
+            token=self.token,
+        )
+        group_request = provider.join_group(self.request.group_key)
+        group_request.to_protobuf(self.response.request, meta=group_request.get_meta())
 
 
 class RespondToMembershipRequest(actions.Action):
@@ -68,19 +88,9 @@ class LeaveGroup(PreRunParseTokenMixin, actions.Action):
         provider.leave_group(self.request.group_key)
 
 
-class ListMembers(actions.Action):
+class ListMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
 
     required_fields = ('provider', 'group_key')
-
-    def pre_run(self, *args, **kwargs):
-        self.parsed_token = parse_token(self.token)
-        self.profile = service.control.get_object(
-            'profile',
-            client_kwargs={'token': self.token},
-            action='get_profile',
-            action_kwargs={'profile_id': self.parsed_token.profile_id},
-            return_object='profile',
-        )
 
     def run(self, *args, **kwargs):
         provider = providers.Google(requester_profile=self.profile)

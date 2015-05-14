@@ -1,5 +1,8 @@
 from factory import Factory
+from protobufs.services.group import containers_pb2 as group_containers
 from services.test import factory
+
+from . import models
 
 
 class BaseObject(object):
@@ -103,3 +106,13 @@ class GoogleProviderGroupsFactory(object):
 
     def as_dict(self):
         return {'kind': self.kind, 'etag': self.etag, 'groups': self.groups}
+
+
+class GroupMembershipRequestFactory(factory.Factory):
+    class Meta:
+        model = models.GroupMembershipRequest
+
+    status = factory.FuzzyChoice(group_containers.MembershipRequestStatusV1.values())
+    requester_profile_id = factory.FuzzyUUID()
+    group_key = factory.FuzzyText(suffix='@example.com')
+    provider = group_containers.GOOGLE

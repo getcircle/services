@@ -1,3 +1,4 @@
+import contextlib
 from mock import patch
 from pprint import pprint
 
@@ -24,20 +25,28 @@ class BaseGoogleCase(TestCase):
             email='ravi@circlehq.co',
             organization_id=self.organization.id,
         )
-        self.provider = Provider(self.by_profile, self.organization)
+        token = mocks.mock_token(
+            organization_id=self.organization.id,
+            profile_id=self.by_profile.id,
+        )
+        self.provider = Provider(self.by_profile, self.organization, token=token)
 
-    def _structure_fixtures(self, groups, membership=None, members=None):
+    def _structure_fixtures(self, groups, membership=None, members=None, managers=None):
         if membership is None:
             membership = {}
 
         if members is None:
             members = tuple()
 
+        if managers is None:
+            managers = tuple()
+
         return {
             'groups': factories.GoogleProviderGroupsFactory(groups).as_dict(),
             'settings': dict((x.email, x.settings.as_dict()) for x in groups),
             'membership': membership,
             'members': members,
+            'managers': managers,
         }
 
     def _parse_test_case(self, raw):
@@ -80,6 +89,7 @@ class BaseGoogleCase(TestCase):
             settings = setup.get('settings', {})
             membership = setup.get('membership', {})
             members = setup.get('members', [])
+            managers = setup.get('managers', [])
             func_args = None
             if provider_func_args is None and 'provider_func_args' in test_case:
                 func_args = test_case['provider_func_args']
@@ -98,7 +108,12 @@ class BaseGoogleCase(TestCase):
             if membership:
                 membership = {group.email: factories.GoogleGroupMember(**membership).as_dict()}
 
-            fixtures = self._structure_fixtures([group], membership=membership, members=members)
+            fixtures = self._structure_fixtures(
+                [group],
+                membership=membership,
+                members=members,
+                managers=managers,
+            )
             try:
                 self._execute_test(
                     provider_func_name,
@@ -126,14 +141,32 @@ class TestGoogleListGroups(BaseGoogleCase):
         if provider_func_args is None:
             provider_func_args = tuple()
 
-        @patch.object(self.provider, '_get_group', return_value=fixtures['groups']['groups'][0])
-        @patch.object(self.provider, '_get_groups', return_value=fixtures['groups'])
-        @patch.object(
+        patch_get_managers = patch.object(
+            self.provider,
+            '_get_group_managers',
+            return_value=fixtures['managers'],
+        )
+        patch_get_group = patch.object(
+            self.provider,
+            '_get_group',
+            return_value=fixtures['groups']['groups'][0],
+        )
+        patch_get_groups = patch.object(
+            self.provider,
+            '_get_groups',
+            return_value=fixtures['groups'],
+        )
+        patch_get_group_settings_and_membership = patch.object(
             self.provider,
             '_get_groups_settings_and_membership',
             return_value=(fixtures['settings'], fixtures['membership']),
         )
-        def test(*patches):
+        with contextlib.nested(
+            patch_get_group,
+            patch_get_groups,
+            patch_get_group_settings_and_membership,
+            patch_get_managers
+        ):
             result = getattr(self.provider, provider_func_name)(*provider_func_args)
             if test_func:
                 test_func(assertions, result)
@@ -154,7 +187,6 @@ class TestGoogleListGroups(BaseGoogleCase):
                     for key, value in assertions['group'].iteritems():
                         if key != 'can_view':
                             self.assertEqual(getattr(group, key), value)
-        test()
 
     def test_list_groups_for_organization_cases(self):
         test_cases = [
@@ -645,6 +677,67 @@ class TestGoogleListGroups(BaseGoogleCase):
             provider_func_args=(self.for_profile,),
         )
 
+    def test_join_group(self):
+        test_cases = [
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'provider_func_args:0': 'setup:group:email',
+                'assertions:request:status': group_containers.APPROVED,
+                'assertions:request:meta:whoCanJoin': 'ANYONE_CAN_JOIN',
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'provider_func_args:0': 'setup:group:email',
+                'assertions:request:status': group_containers.APPROVED,
+                'assertions:request:meta:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'provider_func_args:0': 'setup:group:email',
+                'assertions:request:status': group_containers.REJECTED,
+                'assertions:request:meta:whoCanJoin': 'INVITED_CAN_JOIN',
+            },
+            {
+                'setup:managers': [
+                    factories.GoogleGroupMemberFactory.create(
+                        role=group_containers.OWNER,
+                    ).as_dict(),
+                    factories.GoogleGroupMemberFactory.create(
+                        role=group_containers.MANAGER,
+                    ).as_dict(),
+                ],
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'provider_func_args:0': 'setup:group:email',
+                'assertions:request:status': group_containers.PENDING,
+                'assertions:request:meta:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'assertions:request:approver_profile_ids': 2,
+            },
+        ]
+
+        def test(assertions, result):
+            self.assertEqual(assertions['request']['status'], result.status)
+            self.assertEqual(
+                assertions['request']['meta']['whoCanJoin'],
+                result.meta['whoCanJoin'],
+            )
+            expected_approver_ids = assertions['request'].get('approver_profile_ids')
+            if expected_approver_ids:
+                self.assertEqual(len(result.approver_profile_ids), expected_approver_ids)
+
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profiles',
+                return_object_path='profiles',
+                return_object=[mocks.mock_profile(), mocks.mock_profile()],
+                mock_regex_lookup='.*',
+            )
+            self._execute_test_cases('join_group', test_cases, test_func=test)
+
 
 class TestGoogleListMembers(BaseGoogleCase):
 
@@ -659,13 +752,17 @@ class TestGoogleListMembers(BaseGoogleCase):
         if provider_func_args is None:
             provider_func_args = tuple()
 
-        @patch.object(self.provider, '_get_group_members', return_value=fixtures['members'])
-        @patch.object(
+        patched_get_group_members = patch.object(
+            self.provider,
+            '_get_group_members',
+            return_value=fixtures['members'],
+        )
+        patched_get_groups_settings_and_membership = patch.object(
             self.provider,
             '_get_groups_settings_and_membership',
             return_value=(fixtures['settings'], fixtures['membership']),
         )
-        def test(*patches):
+        with patched_get_group_members, patched_get_groups_settings_and_membership:
             members = getattr(self.provider, provider_func_name)(*provider_func_args)
             if callable(assertions):
                 assertions(members)
@@ -680,7 +777,6 @@ class TestGoogleListMembers(BaseGoogleCase):
                             )
                 else:
                     raise NotImplemented('Not sure how to evaluate assertions: %s' % (assertions,))
-        test()
 
     def test_list_members(self):
         test_cases = [

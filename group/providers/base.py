@@ -2,9 +2,10 @@
 
 class BaseGroupsProvider(object):
 
-    def __init__(self, requester_profile, organization=None):
+    def __init__(self, requester_profile, organization=None, token=None):
         self.organization = organization
         self.requester_profile = requester_profile
+        self.token = token
 
     def list_groups_for_profile(self, profile, **kwargs):
         raise NotImplementedError('Subclass must implement `list_groups_for_profile`')

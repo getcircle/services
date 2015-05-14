@@ -7,8 +7,10 @@ from apiclient.http import BatchHttpRequest
 from apiclient.discovery import build
 from oauth2client.client import SignedJwtAssertionCredentials
 from protobufs.services.group import containers_pb2 as group_containers
+import service.control
 
 from . import base
+from .. import models
 
 # TODO move to settings
 SERVICE_ACCOUNT_EMAIL = '1077014421904-v3q3sd1e8n0fq6bgchfv7qul4k9135ur@developer.gserviceaccount.com'
@@ -69,9 +71,29 @@ class Provider(base.BaseGroupsProvider):
         # TODO add tests around pagination
         return self.directory_client.members().list(groupKey=group_key, roles=role).execute()
 
+    def _get_group_managers(self, group_key):
+        roles = ','.join(map(
+            self._get_role_from_role_v1,
+            [group_containers.OWNER, group_containers.MANAGER],
+        ))
+        # TODO HttpError tests
+        # TODO pagination test
+        return self.directory_client.members().list(
+            groupKey=group_key, roles=roles,
+        ).execute().get('members', [])
+
     def _get_group(self, group_key):
         # TODO add tests around Http 400 & 403 failure
         return self.directory_client.groups().get(groupKey=group_key).execute()
+
+    def _get_approver_profile_ids(self, group_key):
+        managers = self._get_group_managers(group_key)
+        client = service.control.Client('profile', token=self.token)
+        response = client.call_action(
+            'get_profiles',
+            emails=[manager['email'] for manager in managers],
+        )
+        return [profile.id for profile in response.result.profiles]
 
     def _leave_group(self, group_key):
         try:
@@ -117,16 +139,24 @@ class Provider(base.BaseGroupsProvider):
         batch.execute(http=self.http)
         return groups_settings, membership
 
+    def can_join(self, group_key, group_settings):
+        can_join = False
+        who_can_join = group_settings.get('whoCanJoin')
+        if who_can_join == 'CAN_REQUEST_TO_JOIN':
+            can_join = True
+        elif who_can_join in ('ANYONE_CAN_JOIN', 'ALL_IN_DOMAIN_CAN_JOIN'):
+            can_join = True
+        return can_join
+
+    def can_join_without_approval(self, group_key, group_settings):
+        return group_settings.get('whoCanJoin') in ('ANYONE_CAN_JOIN', 'ALL_IN_DOMAIN_CAN_JOIN')
+
     def is_member_or_can_join(self, group_key, group_settings, membership):
         is_member = can_join = False
         if group_key in membership:
             is_member = True
         else:
-            who_can_join = group_settings.get('whoCanJoin')
-            if who_can_join == 'CAN_REQUEST_TO_JOIN':
-                can_join = True
-            elif who_can_join in ('ANYONE_CAN_JOIN', 'ALL_IN_DOMAIN_CAN_JOIN'):
-                can_join = True
+            can_join = self.can_join(group_key, group_settings)
         return is_member, can_join
 
     def is_group_visible(self, group_key, group_settings, membership):
@@ -222,7 +252,28 @@ class Provider(base.BaseGroupsProvider):
         return group
 
     def join_group(self, group_key, **kwargs):
-        pass
+        group_settings, _ = self._get_groups_settings_and_membership(
+            [group_key],
+            fetch_membership=False,
+        )
+        group_settings = group_settings.values()[0]
+
+        membership_request = models.GroupMembershipRequest(
+            requester_profile_id=self.requester_profile.id,
+            status=group_containers.REJECTED,
+            provider=group_containers.GOOGLE,
+            group_key=group_key,
+            meta={'whoCanJoin': group_settings.get('whoCanJoin', '')},
+        )
+        if self.can_join_without_approval(group_key, group_settings):
+            membership_request.status = group_containers.APPROVED
+        elif self.can_join(group_key, group_settings):
+            # TODO raise some error if we don't have any managers to approve
+            membership_request.approver_profile_ids = self._get_approver_profile_ids(group_key)
+            membership_request.status = group_containers.PENDING
+
+        membership_request.save()
+        return membership_request
 
     def leave_group(self, group_key, **kwargs):
         self._leave_group(group_key)

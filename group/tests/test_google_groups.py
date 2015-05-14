@@ -8,6 +8,8 @@ from services.test import (
 )
 from protobufs.services.group import containers_pb2 as group_containers
 
+from .. import factories
+
 
 class TestGoogleGroups(TestCase):
 
@@ -144,3 +146,18 @@ class TestGoogleGroups(TestCase):
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
             self.client.call_action('leave_group', group_key='group@circlehq.co')
+
+    def test_join_group_group_key_required(self):
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            with self.assertFieldError('group_key', 'MISSING'):
+                self.client.call_action('join_group')
+
+    @patch('group.actions.providers.Google')
+    def test_join_group(self, mock_google_provider):
+        expected_request = factories.GroupMembershipRequestFactory.create()
+        mock_google_provider().join_group.return_value = expected_request
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            response = self.client.call_action('join_group', group_key='group@circlehq.co')
+            self.assertEqual(response.result.request.status, expected_request.status)
