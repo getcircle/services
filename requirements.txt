@@ -42,9 +42,7 @@ funcy==1.4
 redis==2.10.3
 google-api-python-client==1.4.0
 uritemplate==0.6
-
-# most recent django version
-git+https://git@github.com/django/django.git@1.8c1
+Django==1.8
 
 # fork of django-cacheops
 git+https://git@github.com/mhahn/django-cacheops.git
