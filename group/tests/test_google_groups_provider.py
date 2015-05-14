@@ -1,4 +1,5 @@
 import contextlib
+from functools import partial
 from mock import patch
 from pprint import pprint
 
@@ -6,9 +7,13 @@ from apiclient.errors import HttpError
 from protobufs.services.group import containers_pb2 as group_containers
 
 from services.test import TestCase
-from services.test import mocks
+from services.test import (
+    fuzzy,
+    mocks,
+)
 
 from .. import factories
+from ..providers import exceptions
 from ..providers.google import Provider
 
 
@@ -117,7 +122,7 @@ class BaseGoogleCase(TestCase):
             try:
                 self._execute_test(
                     provider_func_name,
-                    test_case['assertions'],
+                    test_case.get('assertions'),
                     fixtures,
                     provider_func_args=provider_func_args or func_args,
                     test_func=test_func,
@@ -167,7 +172,17 @@ class TestGoogleListGroups(BaseGoogleCase):
             patch_get_group_settings_and_membership,
             patch_get_managers
         ):
-            result = getattr(self.provider, provider_func_name)(*provider_func_args)
+            partial_method = partial(
+                getattr(self.provider, provider_func_name),
+                *provider_func_args
+            )
+            expected_exception = assertions.get('raises') if hasattr(assertions, 'get') else None
+            if expected_exception:
+                with self.assertRaises(expected_exception):
+                    partial_method()
+                return
+            else:
+                result = partial_method()
             if test_func:
                 test_func(assertions, result)
             else:
@@ -697,7 +712,7 @@ class TestGoogleListGroups(BaseGoogleCase):
                 'setup:group:email': 'group@circlehq.co',
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'provider_func_args:0': 'setup:group:email',
-                'assertions:request:status': group_containers.REJECTED,
+                'assertions:request:status': group_containers.DENIED,
                 'assertions:request:meta:whoCanJoin': 'INVITED_CAN_JOIN',
             },
             {
@@ -737,6 +752,43 @@ class TestGoogleListGroups(BaseGoogleCase):
                 mock_regex_lookup='.*',
             )
             self._execute_test_cases('join_group', test_cases, test_func=test)
+
+    def test_approve_request_to_join(self):
+        managers = [
+            factories.GoogleGroupMemberFactory.create(
+                email=self.by_profile.email,
+                role=group_containers.OWNER,
+            ).as_dict(),
+            factories.GoogleGroupMemberFactory.create().as_dict(),
+        ]
+        request = factories.GroupMembershipRequestFactory(
+            approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
+        )
+        test_cases = [
+            {
+                'setup:managers': managers,
+                'provider_func_args:0': request,
+                'assertions:result:status': group_containers.APPROVED,
+            },
+            {
+                'setup:managers': [factories.GoogleGroupMemberFactory.create().as_dict()],
+                'provider_func_args:0': request,
+                'assertions:raises': exceptions.Unauthorized,
+            }
+        ]
+
+        def test(assertions, result):
+            self.assertEqual(result.status, group_containers.APPROVED)
+
+        with self.mock_transport() as mock, patch.object(self.provider, '_add_to_group'):
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=mocks.mock_profile(id=request.requester_profile_id),
+                mock_regex_lookup='.*',
+            )
+            self._execute_test_cases('approve_request_to_join', test_cases, test_func=test)
 
 
 class TestGoogleListMembers(BaseGoogleCase):

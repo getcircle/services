@@ -9,7 +9,10 @@ from oauth2client.client import SignedJwtAssertionCredentials
 from protobufs.services.group import containers_pb2 as group_containers
 import service.control
 
-from . import base
+from . import (
+    base,
+    exceptions,
+)
 from .. import models
 
 # TODO move to settings
@@ -103,6 +106,12 @@ class Provider(base.BaseGroupsProvider):
             )
         except HttpError:
             pass
+
+    def _add_to_group(self, group_key, email):
+        return self.directory_client.members().insert(
+            groupKey=group_key,
+            body={'role': 'MEMBER', 'email': email, 'type': 'USER'},
+        ).execute()
 
     def _get_groups_settings_and_membership(self, group_keys, fetch_membership=True):
         groups_settings = {}
@@ -260,7 +269,7 @@ class Provider(base.BaseGroupsProvider):
 
         membership_request = models.GroupMembershipRequest(
             requester_profile_id=self.requester_profile.id,
-            status=group_containers.REJECTED,
+            status=group_containers.DENIED,
             provider=group_containers.GOOGLE,
             group_key=group_key,
             meta={'whoCanJoin': group_settings.get('whoCanJoin', '')},
@@ -277,3 +286,26 @@ class Provider(base.BaseGroupsProvider):
 
     def leave_group(self, group_key, **kwargs):
         self._leave_group(group_key)
+
+    def approve_request_to_join(self, request, **kwargs):
+        managers = self._get_group_managers(request.group_key)
+        manager_emails = [manager['email'] for manager in managers]
+        if self.requester_profile.email not in manager_emails:
+            raise exceptions.Unauthorized('Only a manager can approve a request')
+
+        profile = service.control.get_object(
+            service='profile',
+            client_kwargs={'token': self.token},
+            action='get_profile',
+            action_kwargs={'profile_id': request.requester_profile_id},
+            return_object='profile',
+        )
+        self._add_to_group(request.group_key, profile.email)
+        request.status = group_containers.APPROVED
+        request.save()
+        return request
+
+    def deny_request_to_join(self, request, **kwargs):
+        request.status = group_containers.DENIED
+        request.save()
+        return request

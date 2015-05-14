@@ -23,6 +23,10 @@ class TestCase(DjangoTestCase):
         self.assertEqual(key, error.key)
         self.assertEqual(detail, error.detail)
 
+    def tearDown(self):
+        super(TestCase, self).tearDown()
+        mock.instance.clear()
+
     @contextmanager
     def assertFieldError(self, key, detail='INVALID'):
         with self.assertRaisesCallActionError() as expected:

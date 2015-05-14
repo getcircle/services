@@ -24,3 +24,9 @@ class BaseGroupsProvider(object):
 
     def leave_group(self, group_key, **kwargs):
         raise NotImplementedError('Subclass must implement `leave_group`')
+
+    def approve_request_to_join(self, request, **kwargs):
+        raise NotImplementedError('Subclass must implement `approve_request_to_join`')
+
+    def deny_request_to_join(self, request, **kwargs):
+        raise NotImplementedError('Subclass msut implement `deny_request_to_join`')

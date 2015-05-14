@@ -1,8 +1,19 @@
-from service import actions
+from protobufs.services.group.actions import respond_to_membership_request_pb2
+from service import (
+    actions,
+    validators,
+)
 import service.control
 from services.token import parse_token
 
-from . import providers
+from . import (
+    models,
+    providers,
+)
+
+
+def is_valid_membership_request(value):
+    return models.GroupMembershipRequest.objects.filter(id=value).exists()
 
 
 class PreRunParseTokenMixin(object):
@@ -73,10 +84,28 @@ class JoinGroup(PreRunParseTokenFetchProfileMixin, actions.Action):
         group_request.to_protobuf(self.response.request, meta=group_request.get_meta())
 
 
-class RespondToMembershipRequest(actions.Action):
+class RespondToMembershipRequest(PreRunParseTokenFetchProfileMixin, actions.Action):
+
+    required_fields = ('action', 'request_id')
+    type_validators = {
+        'request_id': (validators.is_uuid4,),
+    }
+    field_validators = {
+        'request_id': {
+            is_valid_membership_request: 'DOES_NOT_EXIST',
+        },
+    }
 
     def run(self, *args, **kwargs):
-        pass
+        member_request = models.GroupMembershipRequest.objects.get(id=self.request.request_id)
+        provider = providers.Google(
+            requester_profile=self.profile,
+            token=self.token,
+        )
+        if self.request.action == respond_to_membership_request_pb2.RequestV1.APPROVE:
+            provider.approve_request_to_join(member_request)
+        else:
+            provider.deny_request_to_join(member_request)
 
 
 class LeaveGroup(PreRunParseTokenMixin, actions.Action):

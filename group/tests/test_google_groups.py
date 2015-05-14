@@ -7,8 +7,12 @@ from services.test import (
     TestCase,
 )
 from protobufs.services.group import containers_pb2 as group_containers
+from protobufs.services.group.actions import respond_to_membership_request_pb2
 
-from .. import factories
+from .. import (
+    factories,
+    models,
+)
 
 
 class TestGoogleGroups(TestCase):
@@ -161,3 +165,61 @@ class TestGoogleGroups(TestCase):
             self._mock_token_objects(mock)
             response = self.client.call_action('join_group', group_key='group@circlehq.co')
             self.assertEqual(response.result.request.status, expected_request.status)
+
+    def test_respond_to_membership_request_request_id_required(self):
+        with self.assertFieldError('request_id', 'MISSING'):
+            self.client.call_action(
+                'respond_to_membership_request',
+                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+            )
+
+    def test_respond_to_membership_request_action_required(self):
+        with self.assertFieldError('action', 'MISSING'):
+            self.client.call_action(
+                'respond_to_membership_request',
+                request_id=fuzzy.FuzzyUUID().fuzz(),
+            )
+
+    def test_respond_to_membership_request_request_id_invalid(self):
+        with self.assertFieldError('request_id', 'INVALID'):
+            self.client.call_action(
+                'respond_to_membership_request',
+                request_id='invalid',
+                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+            )
+
+    def test_respond_to_membership_request_request_id_does_not_exist(self):
+        with self.assertFieldError('request_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'respond_to_membership_request',
+                request_id=fuzzy.FuzzyUUID().fuzz(),
+                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+            )
+
+    @patch('group.actions.providers.Google')
+    def test_respond_to_membership_request_approve(self, mock_google_provider):
+        member_request = factories.GroupMembershipRequestFactory.create(
+            status=group_containers.PENDING,
+        )
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            self.client.call_action(
+                'respond_to_membership_request',
+                request_id=str(member_request.id),
+                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+            )
+        self.assertEqual(mock_google_provider().approve_request_to_join.call_count, 1)
+
+    @patch('group.actions.providers.Google')
+    def test_respond_to_membership_request_denied(self, mock_google_provider):
+        member_request = factories.GroupMembershipRequestFactory.create(
+            status=group_containers.PENDING,
+        )
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            self.client.call_action(
+                'respond_to_membership_request',
+                request_id=str(member_request.id),
+                action=respond_to_membership_request_pb2.RequestV1.DENY,
+            )
+        self.assertEqual(mock_google_provider().deny_request_to_join.call_count, 1)
