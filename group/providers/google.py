@@ -297,8 +297,8 @@ class Provider(base.BaseGroupsProvider):
             service='profile',
             client_kwargs={'token': self.token},
             action='get_profile',
-            action_kwargs={'profile_id': request.requester_profile_id},
             return_object='profile',
+            profile_id=request.requester_profile_id,
         )
         self._add_to_group(request.group_key, profile.email)
         request.status = group_containers.APPROVED

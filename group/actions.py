@@ -24,15 +24,15 @@ class PreRunParseTokenMixin(object):
             'organization',
             client_kwargs={'token': self.token},
             action='get_organization',
-            action_kwargs={'organization_id': self.parsed_token.organization_id},
             return_object='organization',
+            organization_id=self.parsed_token.organization_id,
         )
         self.profile = service.control.get_object(
             'profile',
             client_kwargs={'token': self.token},
             action='get_profile',
-            action_kwargs={'profile_id': self.parsed_token.profile_id},
             return_object='profile',
+            profile_id=self.parsed_token.profile_id,
         )
 
 
@@ -44,8 +44,8 @@ class PreRunParseTokenFetchProfileMixin(object):
             'profile',
             client_kwargs={'token': self.token},
             action='get_profile',
-            action_kwargs={'profile_id': self.parsed_token.profile_id},
             return_object='profile',
+            profile_id=self.parsed_token.profile_id,
         )
 
 
@@ -61,7 +61,7 @@ class ListGroups(PreRunParseTokenMixin, actions.Action):
                 'profile',
                 client_kwargs={'token': self.token},
                 action='get_profile',
-                action_kwargs={'profile_id': self.parsed_token.profile_id},
+                profile_id=self.parsed_token.profile_id,
                 return_object='profile',
             )
             groups = provider.list_groups_for_profile(for_profile)
@@ -129,8 +129,8 @@ class ListMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
                 'profile',
                 client_kwargs={'token': self.token},
                 action='get_profiles',
-                action_kwargs={'emails': [x.profile.email for x in members]},
                 return_object='profiles',
+                emails=[x.profile.email for x in members],
             )
             profiles_dict = dict((profile.email, profile) for profile in profiles)
             for member in members:

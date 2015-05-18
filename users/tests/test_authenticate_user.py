@@ -1,7 +1,7 @@
 import service.control
 from mock import patch
-from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user.containers import token_pb2
 from services.test import TestCase
 from services.token import parse_token
@@ -14,7 +14,52 @@ from .. import (
 from ..providers import google as google_provider
 
 
+class TestUsersGetAuthenticationInstructions(TestCase):
+
+    def setUp(self):
+        super(TestUsersGetAuthenticationInstructions, self).setUp()
+        self.client = service.control.Client('user')
+
+    def test_get_authentication_instructions_email_required(self):
+        with self.assertFieldError('email', 'MISSING'):
+            self.client.call_action('get_authentication_instructions')
+
+    def test_get_authentication_instructions_email_invalid(self):
+        with self.assertFieldError('email'):
+            self.client.call_action('get_authentication_instructions', email='invalid@invalid')
+
+    def test_get_authentication_instructions_new_user(self):
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email='example@example.com',
+        )
+        self.assertFalse(response.result.user_exists)
+        self.assertTrue(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
+
+    def test_get_authentication_instructions_existing_user(self):
+        user = factories.UserFactory.create()
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email=user.primary_email,
+        )
+        self.assertTrue(response.result.user_exists)
+        self.assertTrue(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
+
+    def test_get_authentication_instructions_demo_user_forced_internal(self):
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email='demo@circlehq.co',
+        )
+        self.assertFalse(response.result.user_exists)
+        self.assertFalse(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
+
+
 class TestUsersAuthentication(TestCase):
+
+    action = 'authenticate_user'
 
     def setUp(self):
         super(TestUsersAuthentication, self).setUp()
@@ -34,7 +79,7 @@ class TestUsersAuthentication(TestCase):
 
     def _authenticate_user(self):
         return self.client.call_action(
-            'authenticate_user',
+            self.action,
             backend=0,
             credentials={
                 'key': self.user.primary_email,
@@ -53,7 +98,7 @@ class TestUsersAuthentication(TestCase):
     def test_authenticate_user_invalid_password(self):
         with self.assertRaises(service.control.CallActionError):
             self.client.call_action(
-                'authenticate_user',
+                self.action,
                 backend=0,
                 credentials={
                     'key': self.user.primary_email,
@@ -64,7 +109,7 @@ class TestUsersAuthentication(TestCase):
     def test_authenticate_user_client_type_required(self):
         with self.assertFieldError('client_type', 'MISSING'):
             self.client.call_action(
-                'authenticate_user',
+                self.action,
                 backend=0,
                 credentials={
                     'key': self.user.primary_email,
@@ -101,7 +146,7 @@ class TestUsersAuthentication(TestCase):
             user=user,
         )
         response = self.client.call_action(
-            'authenticate_user',
+            self.action,
             backend=authenticate_user_pb2.RequestV1.GOOGLE,
             credentials={
                 'key': 'some-code',
@@ -131,7 +176,7 @@ class TestUsersAuthentication(TestCase):
         mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
         mocked_verify_id_token.return_value = self.id_token
         response = self.client.call_action(
-            'authenticate_user',
+            self.action,
             backend=authenticate_user_pb2.RequestV1.GOOGLE,
             credentials={
                 'key': 'some-code',

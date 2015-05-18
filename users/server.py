@@ -10,6 +10,7 @@ class Server(service.control.Server):
         'authenticate_user',
         'get_authorization_instructions',
         'complete_authorization',
+        'get_authentication_instructions',
     )
 
     actions = {
@@ -28,4 +29,5 @@ class Server(service.control.Server):
         'record_device': actions.RecordDevice,
         'request_access': actions.RequestAccess,
         'delete_identity': actions.DeleteIdentity,
+        'get_authentication_instructions': actions.GetAuthenticationInstructions,
     }

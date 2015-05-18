@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.core import validators as django_validators
 import django.db
+from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
 import pyotp
 from twilio.rest import TwilioRestClient
@@ -32,6 +34,16 @@ def validate_new_password_max_length(value):
 
 def valid_user(value):
     return models.User.objects.filter(pk=value).exists()
+
+
+def validate_email(value):
+    valid = False
+    try:
+        django_validators.validate_email(value)
+        valid = True
+    except django_validators.ValidationError:
+        pass
+    return valid
 
 
 def get_totp_code(token):
@@ -134,17 +146,26 @@ class AuthenticateUser(actions.Action):
 
     required_fields = ('client_type',)
 
-    def _handle_authentication(self):
+    def _is_internal_backend(self):
+        return self.request.backend == self.request.INTERNAL
+
+    def _is_google_backend(self):
+        return self.request.backend == self.request.GOOGLE
+
+    def _get_auth_params(self):
         auth_params = {}
-        if self.request.backend == self.request.INTERNAL:
+        if self._is_internal_backend():
             auth_params['username'] = self.request.credentials.key
             auth_params['password'] = self.request.credentials.secret
-        elif self.request.backend == self.request.GOOGLE:
+        elif self._is_google_backend():
             auth_params['code'] = self.request.credentials.key
             auth_params['id_token'] = self.request.credentials.secret
         else:
             raise self.ActionFieldError('backend', 'INVALID')
+        return auth_params
 
+    def _handle_authentication(self):
+        auth_params = self._get_auth_params()
         user = authenticate(**auth_params)
         if user is not None:
             if not user.is_active:
@@ -468,3 +489,32 @@ class RequestAccess(actions.Action):
             user_id=self.request.user_id,
         )
         access_request.to_protobuf(self.response.access_request)
+
+
+class GetAuthenticationInstructions(actions.Action):
+
+    required_fields = ('email',)
+
+    type_validators = {
+        'email': [validate_email],
+    }
+
+    def _populate_google_instructions(self):
+        self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
+        self.response.authorization_url = service.control.get_object(
+            service='user',
+            action='get_authorization_instructions',
+            return_object='authorization_url',
+            provider=user_containers.IdentityV1.GOOGLE,
+            login_hint=self.request.email,
+        )
+
+    def run(self, *args, **kwargs):
+        self.response.user_exists = models.User.objects.filter(
+            primary_email=self.request.email,
+        ).exists()
+        # TODO this should be using an actual feature flag service
+        if self.request.email == 'demo@circlehq.co':
+            self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
+        else:
+            self._populate_google_instructions()
