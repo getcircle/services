@@ -31,3 +31,5 @@ CACHEOPS_REDIS = {
 }
 
 METRICS_HANDLER_KWARGS = {'name': 'services.metrics'}
+
+CORS_ORIGIN_ALLOW_ALL = True

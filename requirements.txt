@@ -43,6 +43,7 @@ redis==2.10.3
 google-api-python-client==1.4.0
 uritemplate==0.6
 Django==1.8
+django-cors-headers==1.1.0
 
 # fork of django-cacheops
 git+https://git@github.com/mhahn/django-cacheops.git
