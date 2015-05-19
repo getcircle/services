@@ -11,6 +11,8 @@ class Server(service.control.Server):
         'get_authorization_instructions',
         'complete_authorization',
         'get_authentication_instructions',
+        # XXX this shouldn't be unauthenticated, we should have a way only our apps can call this
+        'create_user',
     )
 
     actions = {
