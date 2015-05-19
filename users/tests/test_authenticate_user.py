@@ -3,10 +3,7 @@ from mock import patch
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user.containers import token_pb2
-from services.test import (
-    mocks,
-    TestCase,
-)
+from services.test import TestCase
 from services.token import parse_token
 
 from . import MockCredentials
@@ -22,16 +19,12 @@ class TestUsersGetAuthenticationInstructions(TestCase):
     def setUp(self):
         super(TestUsersGetAuthenticationInstructions, self).setUp()
         self.client = service.control.Client('user')
-        self.organization = mocks.mock_organization(domain='example.com')
 
-    def _register_mock_organization(self, mock):
-        mock.instance.register_mock_object(
-            service='organization',
-            action='get_organization',
-            return_object_path='organization',
-            return_object=self.organization,
-            organization_domain=self.organization.domain,
-        )
+    def _mock_dns(self, mock_dns, is_google):
+        if is_google:
+            mock_dns.return_value = [(10, 'gmail-smtp.google.com')]
+        else:
+            mock_dns.return_value = [(10, 'yahoo-smtp.yahoo.com')]
 
     def test_get_authentication_instructions_email_required(self):
         with self.assertFieldError('email', 'MISSING'):
@@ -41,51 +34,49 @@ class TestUsersGetAuthenticationInstructions(TestCase):
         with self.assertFieldError('email'):
             self.client.call_action('get_authentication_instructions', email='invalid@invalid')
 
-    def test_get_authentication_instructions_new_user_domain_exists(self):
-        with self.mock_transport() as mock:
-            mock.instance.dont_mock_service('user')
-            self._register_mock_organization(mock)
-            response = self.client.call_action(
-                'get_authentication_instructions',
-                email='example@%s' % (self.organization.domain,),
-            )
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_new_user_google_domain(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=True)
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email='example@example.com',
+        )
         self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
 
-    def test_get_authentication_instructions_existing_user(self):
-        organization = mocks.mock_organization(domain='example.com')
-        user = factories.UserFactory.create(primary_email='example@%s' % (organization.domain,))
-        with self.mock_transport() as mock:
-            mock.instance.dont_mock_service('user')
-            self._register_mock_organization(mock)
-            response = self.client.call_action(
-                'get_authentication_instructions',
-                email=user.primary_email,
-            )
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_existing_user(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=True)
+        user = factories.UserFactory.create(primary_email='example@example.com')
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email=user.primary_email,
+        )
         self.assertTrue(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
 
-    def test_get_authentication_instructions_new_user_domain_doesnt_exist(self):
-        with self.mock_transport() as mock:
-            mock.instance.dont_mock_service('user')
-            mock.instance.register_mock_call_action_error(
-                service_name='organization',
-                action_name='get_organization',
-                errors=['FIELD_ERROR'],
-                error_details=[{
-                    'error': 'FIELD_ERROR',
-                    'key': 'organization_domain',
-                    'detail': 'DOES_NOT_EXIST',
-                }],
-                organization_domain='example.com',
-            )
-            response = self.client.call_action(
-                'get_authentication_instructions',
-                email='example@example.com',
-            )
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_new_user_non_google_domain(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=False)
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email='example@example.com',
+        )
         self.assertFalse(response.result.user_exists)
+        self.assertFalse(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
+
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_existing_user_non_google_domain(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=False)
+        user = factories.UserFactory.create(primary_email='example@example.com')
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email=user.primary_email,
+        )
+        self.assertTrue(response.result.user_exists)
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
 

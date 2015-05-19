@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core import validators as django_validators
 import django.db
+import DNS
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
 import pyotp
@@ -510,22 +511,20 @@ class GetAuthenticationInstructions(actions.Action):
             login_hint=self.request.email,
         )
 
-    def _is_domain_registered(self):
-        registered = False
+    def _is_google_domain(self):
         domain = self.request.email.split('@', 1)[1]
-        client = service.control.Client('organization', token=self.token)
-        try:
-            response = client.call_action('get_organization', organization_domain=domain)
-            registered = response.result.HasField('organization')
-        except service.control.CallActionError:
-            pass
-        return registered
+        mail_exchangers = DNS.mxlookup(domain)
+
+        def is_google_mx(mx):
+            mx = mx.strip().lower()
+            return mx.endswith('google.com') or mx.endswith('googlemail.com')
+        return any([is_google_mx(mx) for _, mx in mail_exchangers])
 
     def run(self, *args, **kwargs):
         self.response.user_exists = models.User.objects.filter(
             primary_email=self.request.email,
         ).exists()
-        if self._is_domain_registered():
+        if self._is_google_domain():
             self._populate_google_instructions()
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
