@@ -505,16 +505,27 @@ class GetAuthenticationInstructions(actions.Action):
             service='user',
             action='get_authorization_instructions',
             return_object='authorization_url',
+            client_kwargs={'token': self.token},
             provider=user_containers.IdentityV1.GOOGLE,
             login_hint=self.request.email,
         )
+
+    def _is_domain_registered(self):
+        registered = False
+        domain = self.request.email.split('@', 1)[1]
+        client = service.control.Client('organization', token=self.token)
+        try:
+            response = client.call_action('get_organization', organization_domain=domain)
+            registered = response.result.HasField('organization')
+        except service.control.CallActionError:
+            pass
+        return registered
 
     def run(self, *args, **kwargs):
         self.response.user_exists = models.User.objects.filter(
             primary_email=self.request.email,
         ).exists()
-        # TODO this should be using an actual feature flag service
-        if self.request.email == 'demo@circlehq.co':
-            self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
-        else:
+        if self._is_domain_registered():
             self._populate_google_instructions()
+        else:
+            self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
