@@ -520,11 +520,14 @@ class GetAuthenticationInstructions(actions.Action):
             return mx.endswith('google.com') or mx.endswith('googlemail.com')
         return any([is_google_mx(mx) for _, mx in mail_exchangers])
 
+    def _should_force_internal_authentication(self):
+        return self.request.email in settings.USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION
+
     def run(self, *args, **kwargs):
         self.response.user_exists = models.User.objects.filter(
             primary_email=self.request.email,
         ).exists()
-        if self._is_google_domain():
+        if not self._should_force_internal_authentication() and self._is_google_domain():
             self._populate_google_instructions()
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL

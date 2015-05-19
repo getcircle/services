@@ -80,6 +80,18 @@ class TestUsersGetAuthenticationInstructions(TestCase):
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
 
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_google_domain_force_to_password(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=True)
+        user = factories.UserFactory.create(primary_email='demo@circlehq.co')
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email=user.primary_email,
+        )
+        self.assertTrue(response.result.user_exists)
+        self.assertFalse(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
+
 
 class TestUsersAuthentication(TestCase):
 
