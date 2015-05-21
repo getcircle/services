@@ -40,7 +40,12 @@ GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 DATADOG_API_KEY = os.environ.get('DATADOG_API_KEY', '')
 METRICS_HANDLER_KWARGS = {'api_key': DATADOG_API_KEY}
 
-USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION = os.environ.get(
-    'USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION',
-    USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION,
+_force_internal = os.environ.get('USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION')
+if _force_internal and ':' in _force_internal:
+    _force_internal = _force_internal.split(':')
+if isinstance(_force_internal, basestring):
+    _force_internal = (_force_internal,)
+
+USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION = (
+    _force_internal or USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION
 )
