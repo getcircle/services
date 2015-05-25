@@ -1,6 +1,9 @@
 import contextlib
 from functools import partial
-from mock import patch
+from mock import (
+    MagicMock,
+    patch,
+)
 from pprint import pprint
 
 from apiclient.errors import HttpError
@@ -998,6 +1001,21 @@ class TestGoogleListMembers(BaseGoogleCase):
         test(group_containers.MEMBER, 'MEMBER')
         test(group_containers.OWNER, 'OWNER')
         test(group_containers.MANAGER, 'MANAGER')
+
+    def test_get_group_members_none(self):
+
+        @patch('group.providers.google.build')
+        @patch.object(self.provider, 'is_group_visible')
+        @patch.object(self.provider, '_get_groups_settings_and_membership')
+        def test(mock_settings, mock_visible, mock_api_builder):
+            mock_settings.return_value = ({'group@circlhq.co': {}}, {})
+            mock_visible.return_value = True
+            mock_api_builder().members().list().execute.return_value = {
+                'kind': 'admin#directory#members',
+            }
+            members = self.provider.list_members_for_group('group@circlehq.co', 0)
+            self.assertEqual(members, [])
+        test()
 
 
 class TestGoogleGroups(BaseGoogleCase):

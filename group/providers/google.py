@@ -72,7 +72,10 @@ class Provider(base.BaseGroupsProvider):
     def _get_group_members(self, group_key, role):
         # TODO add tests around Http 400 & 403 failure
         # TODO add tests around pagination
-        return self.directory_client.members().list(groupKey=group_key, roles=role).execute()
+        return self.directory_client.members().list(
+            groupKey=group_key,
+            roles=role,
+        ).execute().get('members', [])
 
     def _get_group_managers(self, group_key):
         roles = ','.join(map(
@@ -82,7 +85,8 @@ class Provider(base.BaseGroupsProvider):
         # TODO HttpError tests
         # TODO pagination test
         return self.directory_client.members().list(
-            groupKey=group_key, roles=roles,
+            groupKey=group_key,
+            roles=roles,
         ).execute().get('members', [])
 
     def _get_group(self, group_key):
