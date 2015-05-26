@@ -154,3 +154,24 @@ class GetGroup(PreRunParseTokenMixin, actions.Action):
         group = provider.get_group(self.request.group_key)
         if group:
             self.response.group.CopyFrom(group)
+
+
+class AddToGroup(PreRunParseTokenMixin, actions.Action):
+
+    type_validators = {
+        'profile_ids': [validators.is_uuid4_list],
+    }
+    required_fields = ('group_key',)
+
+    def _fetch_profiles(self):
+        client = service.control.Client('profile', token=self.token)
+        # TODO add some MAX requirement so we don't have to deal with pagination
+        response = client.call_action('get_profiles', ids=self.request.profile_ids)
+        return response.result.profiles
+
+    def run(self, *args, **kwargs):
+        profiles = self._fetch_profiles()
+        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
+        members = provider.add_profiles_to_group(profiles, self.request.group_key)
+        if members:
+            self.response.new_members.extend(members)

@@ -800,6 +800,86 @@ class TestGoogleListGroups(BaseGoogleCase):
             )
             self._execute_test_cases('join_group', test_cases, test_func=test)
 
+    def test_add_to_group(self):
+        profiles = [mocks.mock_profile(organization_id=self.by_profile.organization_id)]
+        test_cases = [
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:membership:role': 'OWNER',
+                'setup:membership:email': self.by_profile.email,
+                'assertions:has_response': True,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'setup:membership:role': 'MANAGER',
+                'setup:membership:email': self.by_profile.email,
+                'assertions:has_response': True,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:email': self.by_profile.email,
+                'assertions:has_response': False,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'setup:membership:role': 'OWNER',
+                'setup:membership:email': self.by_profile.email,
+                'assertions:has_response': True,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'setup:membership:role': 'MANAGER',
+                'setup:membership:email': self.by_profile.email,
+                'assertions:has_response': True,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:email': self.by_profile.email,
+                'assertions:has_response': True,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'assertions:has_response': False,
+            },
+            {
+                'setup:group:email': 'group@circlehq.co',
+                'provider_func_args:0': profiles,
+                'provider_func_args:1': 'setup:group:email',
+                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'assertions:has_response': False,
+            },
+        ]
+
+        with patch.object(self.provider, '_add_to_group') as mock_add_to_group:
+            def test(assertions, result):
+                if assertions.get('has_response'):
+                    self.assertEqual(mock_add_to_group.call_count, 1)
+                mock_add_to_group.reset_mock()
+            self._execute_test_cases('add_profiles_to_group', test_cases, test_func=test)
+
     def test_approve_request_to_join(self):
         managers = [
             factories.GoogleGroupMemberFactory.create(

@@ -224,3 +224,46 @@ class TestGoogleGroups(TestCase):
                 action=respond_to_membership_request_pb2.RequestV1.DENY,
             )
         self.assertEqual(mock_google_provider().deny_request_to_join.call_count, 1)
+
+    def test_add_to_group_group_key_required(self):
+        with self.mock_transport() as mock, self.assertFieldError('group_key', 'MISSING'):
+            self._mock_token_objects(mock)
+            self.client.call_action(
+                'add_to_group',
+                profile_ids=[fuzzy.FuzzyUUID().fuzz()],
+            )
+
+    def test_add_to_group_profile_ids_invalid(self):
+        with self.mock_transport() as mock, self.assertFieldError('profile_ids'):
+            self._mock_token_objects(mock)
+            self.client.call_action(
+                'add_to_group',
+                group_key='group@circlehq.co',
+                profile_ids=['invalid'],
+            )
+
+    @patch('group.actions.providers.Google')
+    def test_add_to_group(self, mock_google_provider):
+        profile_overrides = {'organization_id': self.by_profile.organization_id}
+        members = [
+            mocks.mock_member(profile_overrides=profile_overrides),
+            mocks.mock_member(profile_overrides=profile_overrides),
+        ]
+        profiles = [member.profile for member in members]
+        profile_ids = [profile.id for profile in profiles]
+        mock_google_provider().add_profiles_to_group.return_value = members
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profiles',
+                return_object_path='profiles',
+                return_object=profiles,
+                ids=profile_ids,
+            )
+            response = self.client.call_action(
+                'add_to_group',
+                group_key='group@circlehq.co',
+                profile_ids=profile_ids,
+            )
+            self.assertEqual(len(response.result.new_members), 2)

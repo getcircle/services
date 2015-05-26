@@ -111,11 +111,27 @@ class Provider(base.BaseGroupsProvider):
         except HttpError:
             pass
 
-    def _add_to_group(self, group_key, email):
-        return self.directory_client.members().insert(
-            groupKey=group_key,
-            body={'role': 'MEMBER', 'email': email, 'type': 'USER'},
-        ).execute()
+    def _add_to_group(self, emails, group_key):
+        new_members = []
+
+        def handle_new_member(request_id, response, exception, **kwargs):
+            if response:
+                new_members.append(response)
+
+        batch = BatchHttpRequest()
+        request_num = 0
+        for email in emails:
+            request_num += 1
+            batch.add(
+                self.directory_client.members().insert(
+                    groupKey=group_key,
+                    body={'role': 'MEMBER', 'email': email, 'type': 'USER'},
+                ),
+                callback=handle_new_member,
+            )
+
+        batch.execute(http=self.http)
+        return new_members
 
     def _get_groups_settings_and_membership(self, group_keys, fetch_membership=True):
         groups_settings = {}
@@ -161,6 +177,16 @@ class Provider(base.BaseGroupsProvider):
             can_join = True
         return can_join
 
+    def can_add_to_group(self, group_key, group_settings, membership):
+        can_add = False
+        who_can_add = group_settings.get('whoCanInvite')
+        role = membership.get(group_key, {}).get('role')
+        if who_can_add == 'ALL_MEMBERS_CAN_INVITE':
+            can_add = True
+        elif who_can_add == 'ALL_MANAGERS_CAN_INVITE' and role in ('OWNER', 'MANAGER'):
+            can_add = True
+        return can_add
+
     def can_join_without_approval(self, group_key, group_settings):
         return group_settings.get('whoCanJoin') in ('ANYONE_CAN_JOIN', 'ALL_IN_DOMAIN_CAN_JOIN')
 
@@ -192,11 +218,14 @@ class Provider(base.BaseGroupsProvider):
         group.email = provider_group['email']
         return group
 
-    def provider_member_to_container(self, provider_member):
+    def provider_member_to_container(self, provider_member, profile=None):
         member = group_containers.MemberV1()
         member.id = provider_member['id']
         member.role = group_containers.RoleV1.keys().index(provider_member['role'])
-        member.profile.email = provider_member['email']
+        if profile:
+            member.profile.CopyFrom(profile)
+        else:
+            member.profile.email = provider_member['email']
         return member
 
     def list_groups_for_profile(self, profile, **kwargs):
@@ -264,6 +293,26 @@ class Provider(base.BaseGroupsProvider):
             group = self.provider_group_to_container(provider_group)
         return group
 
+    def add_profiles_to_group(self, profiles, group_key, **kwargs):
+        new_members = []
+
+        profiles_dict = dict((profile.email, profile) for profile in profiles)
+        groups_settings, membership = self._get_groups_settings_and_membership([group_key])
+        # TODO handle case where group doesn't exist
+        group_settings = groups_settings.values()[0]
+        if self.can_add_to_group(group_key, group_settings, membership):
+            # TODO add test case for profiles with a different organization_id
+            provider_members = self._add_to_group(
+                [profile.email for profile in profiles],
+                group_key,
+            )
+            for member in provider_members:
+                profile = profiles_dict.get(member['email'])
+                if not profile:
+                    continue
+                new_members.append(self.provider_member_to_container(member, profile=profile))
+        return new_members
+
     def join_group(self, group_key, **kwargs):
         group_settings, _ = self._get_groups_settings_and_membership(
             [group_key],
@@ -304,7 +353,7 @@ class Provider(base.BaseGroupsProvider):
             return_object='profile',
             profile_id=request.requester_profile_id,
         )
-        self._add_to_group(request.group_key, profile.email)
+        self._add_to_group([profile.email], request.group_key)
         request.status = group_containers.APPROVED
         request.save()
         return request

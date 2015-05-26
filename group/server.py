@@ -13,4 +13,5 @@ class Server(service.control.Server):
         'leave_group': actions.LeaveGroup,
         'list_members': actions.ListMembers,
         'get_group': actions.GetGroup,
+        'add_to_group': actions.AddToGroup,
     }
