@@ -267,3 +267,19 @@ class TestGoogleGroups(TestCase):
                 profile_ids=profile_ids,
             )
             self.assertEqual(len(response.result.new_members), 2)
+
+    def test_get_membership_requests(self):
+        # Create membership requests where by_profile is an approver
+        factories.GroupMembershipRequestFactory.create_batch(
+            size=2,
+            approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
+        )
+        # Create membership requests where by_profile is not an approver
+        factories.GroupMembershipRequestFactory.create_batch(
+            size=2,
+            approver_profile_ids=[fuzzy.FuzzyUUID().fuzz()],
+        )
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            response = self.client.call_action('get_membership_requests')
+            self.assertEqual(len(response.result.requests), 2)

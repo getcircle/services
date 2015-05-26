@@ -153,6 +153,9 @@ class GetProfileFeed(actions.Action):
             container = tags.tags.add()
             container.CopyFrom(tag)
 
+    def _get_profiles_dict(self, profiles):
+        return dict((profile.id, profile) for profile in profiles)
+
     def _get_recent_notes_category(self, profile):
         response = self.note_client.call_action(
             'get_notes',
@@ -172,7 +175,7 @@ class GetProfileFeed(actions.Action):
         if not response.success:
             raise Exception('failed to fetch profiles for notes')
 
-        profile_id_to_profile = dict((profile.id, profile) for profile in response.result.profiles)
+        profile_id_to_profile = self._get_profiles_dict(response.result.profiles)
 
         category = self.response.categories.add()
         category.title = 'Notes'
@@ -184,6 +187,33 @@ class GetProfileFeed(actions.Action):
             note_container.CopyFrom(note)
 
             profile = profile_id_to_profile[note.for_profile_id]
+            profile_container = category.profiles.add()
+            profile_container.CopyFrom(profile)
+
+    def _get_group_membership_requests_category(self):
+        client = service.control.Client('group', token=self.token)
+        response = client.call_action('get_membership_requests')
+
+        requests = response.result.requests
+        if not len(requests):
+            return
+
+        response = self.profile_client.call_action(
+            'get_profiles',
+            ids=[request.requester_profile_id for request in requests],
+        )
+        profile_id_to_profile = self._get_profiles_dict(response.result.profiles)
+
+        category = self.response.categories.add()
+        category.title = 'Group Membership Requests'
+        category.content_key = 'requester_profile_id'
+        category.category_type = feed_containers.CategoryV1.GROUP_MEMBERSHIP_REQUESTS
+        category.total_count = len(requests)
+        for request in requests:
+            request_container = category.group_membership_requests.add()
+            request_container.CopyFrom(request)
+
+            profile = profile_id_to_profile[request.requester_profile_id]
             profile_container = category.profiles.add()
             profile_container.CopyFrom(profile)
 
@@ -203,6 +233,7 @@ class GetProfileFeed(actions.Action):
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_active_skills_or_interests_category(profile.organization_id)
+        self._get_group_membership_requests_category()
 
 
 class GetOrganizationFeed(GetProfileFeed):

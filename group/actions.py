@@ -175,3 +175,16 @@ class AddToGroup(PreRunParseTokenMixin, actions.Action):
         members = provider.add_profiles_to_group(profiles, self.request.group_key)
         if members:
             self.response.new_members.extend(members)
+
+
+class GetMembershipRequests(PreRunParseTokenFetchProfileMixin, actions.Action):
+
+    def run(self, *args, **kwargs):
+        requests = models.GroupMembershipRequest.objects.filter(
+            approver_profile_ids__contains=[self.profile.id],
+        )
+        self.paginated_response(
+            self.response.requests,
+            requests,
+            lambda item, container: item.to_protobuf(container.add(), meta=item.get_meta()),
+        )

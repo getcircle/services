@@ -165,6 +165,22 @@ class TestGetCategories(TestCase):
             ids=profile_ids,
         )
 
+    def _mock_get_membership_requests(self, profile_id, requests=3):
+        service = 'group'
+        action = 'get_membership_requests'
+
+        mock_response = mock.get_mockable_response(service, action)
+        for _ in range(requests):
+            container = mock_response.requests.add()
+            mocks.mock_group_membership_request(container, approver_profile_ids=[profile_id])
+
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+        )
+        return mock_response.requests
+
     def test_profile_category_invalid_profile_id(self):
         with self.assertFieldError('profile_id'):
             self.client.call_action('get_profile_feed', profile_id='invalid')
@@ -180,6 +196,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags_skills(profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -201,6 +218,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags_skills(profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -221,6 +239,7 @@ class TestGetCategories(TestCase):
         self._mock_get_upcoming_anniversaries(profile.organization_id)
         self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
         self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         self._mock_get_active_tags_skills(profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(profile.organization_id, tags=0)
@@ -248,6 +267,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags_skills(profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -271,6 +291,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags_skills(profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -296,6 +317,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags_skills(profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(profile.organization_id)
         self._mock_get_notes(profile.id, notes=0)
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -319,6 +341,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags_skills(profile.organization_id)
         self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         self._mock_get_notes(profile.id, notes=0)
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -342,6 +365,7 @@ class TestGetCategories(TestCase):
         self._mock_get_active_tags_interests(profile.organization_id, tags=0)
         notes = self._mock_get_notes(profile.id)
         self._mock_get_profiles([note.for_profile_id for note in notes])
+        self._mock_get_membership_requests(profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=profile.id)
         self.assertTrue(response.success)
@@ -352,4 +376,32 @@ class TestGetCategories(TestCase):
         self.assertEqual(len(category.notes), 3)
         self.assertEqual(category.content_key, 'changed')
         self.assertEqual(category.category_type, feed_containers.CategoryV1.NOTES)
+        self.assertEqual(category.total_count, 3)
+
+    def test_group_membership_requests_category(self):
+        profile = self._mock_get_profile()
+        self._mock_get_peers(profile.id, peers=0)
+        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
+        self._mock_get_notes(profile.id, notes=0)
+        requests = self._mock_get_membership_requests(profile.id)
+        self._mock_get_profiles([request.requester_profile_id for request in requests])
+
+        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.result.categories), 1)
+
+        category = response.result.categories[0]
+        self.assertEqual(category.title, 'Group Membership Requests')
+        self.assertEqual(len(category.group_membership_requests), 3)
+        self.assertEqual(category.content_key, 'requester_profile_id')
+        self.assertEqual(
+            category.category_type,
+            feed_containers.CategoryV1.GROUP_MEMBERSHIP_REQUESTS,
+        )
         self.assertEqual(category.total_count, 3)

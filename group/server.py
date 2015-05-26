@@ -14,4 +14,5 @@ class Server(service.control.Server):
         'list_members': actions.ListMembers,
         'get_group': actions.GetGroup,
         'add_to_group': actions.AddToGroup,
+        'get_membership_requests': actions.GetMembershipRequests,
     }

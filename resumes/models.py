@@ -3,6 +3,9 @@ from django_date_extensions.fields import ApproximateDateField
 
 
 def approximate_date_as_dict(approximate_date):
+    if not approximate_date:
+        return None
+
     output = {}
     if approximate_date.year:
         output['year'] = approximate_date.year

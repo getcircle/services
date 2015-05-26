@@ -293,3 +293,14 @@ def mock_organization_token(container=None, **overrides):
         fuzzy.FuzzyUUID: ['key', 'requested_by_user_id'],
     }
     return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_group_membership_request(container=None, **overrides):
+    if container is None:
+        container = group_containers.MembershipRequestV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'requester_profile_id'],
+        fuzzy.FuzzyText(suffix='@circlehq.co'): ['group_key'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
