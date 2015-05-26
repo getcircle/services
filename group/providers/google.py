@@ -217,7 +217,7 @@ class Provider(base.BaseGroupsProvider):
 
             if self.is_group_visible(group_key, group_settings, membership):
                 groups.append(group)
-        return groups
+        return sorted(groups, key=lambda x: x.name)
 
     def list_groups_for_organization(self, **kwargs):
         provider_groups = self._get_groups()
@@ -233,7 +233,7 @@ class Provider(base.BaseGroupsProvider):
             group_settings = groups_settings.get(provider_group['email'], {})
             if group_settings.get('showInGroupDirectory', False):
                 groups.append(group)
-        return groups
+        return sorted(groups, key=lambda x: x.name)
 
     def list_members_for_group(self, group_key, role, **kwargs):
         groups_settings, membership = self._get_groups_settings_and_membership([group_key])

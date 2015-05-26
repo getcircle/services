@@ -670,8 +670,14 @@ class TestGoogleListGroups(BaseGoogleCase):
 
     def test_list_groups_for_user_one_public_one_members_only(self):
         groups = [
-            # create a public group
+            # create public groups with alphabetical names
             factories.GoogleGroupFactory(
+                name='b',
+                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
+                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
+            ),
+            factories.GoogleGroupFactory(
+                name='a',
                 settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
                 settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
             ),
@@ -683,16 +689,54 @@ class TestGoogleListGroups(BaseGoogleCase):
         ]
 
         def assertions(groups):
-            self.assertEqual(len(groups), 1)
+            self.assertEqual(len(groups), 2)
             group = groups[0]
             self.assertTrue(group.can_join)
             self.assertFalse(group.is_member)
+            self.assertEqual(groups[0].name, 'a')
+            self.assertEqual(groups[1].name, 'b')
 
         self._execute_test(
             'list_groups_for_profile',
             assertions,
             self._structure_fixtures(groups),
             provider_func_args=(self.for_profile,),
+        )
+
+    def test_list_groups_for_organization_alphabetical(self):
+        groups = [
+            # create public groups with alphabetical names
+            factories.GoogleGroupFactory(
+                name='b',
+                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
+                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
+                settings__showInGroupDirectory=True,
+            ),
+            factories.GoogleGroupFactory(
+                name='a',
+                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
+                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
+                settings__showInGroupDirectory=True,
+            ),
+            factories.GoogleGroupFactory(
+                name='c',
+                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
+                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
+                settings__showInGroupDirectory=False,
+            ),
+        ]
+
+        def assertions(groups):
+            self.assertEqual(len(groups), 2)
+            group = groups[0]
+            self.assertFalse(group.is_member)
+            self.assertEqual(groups[0].name, 'a')
+            self.assertEqual(groups[1].name, 'b')
+
+        self._execute_test(
+            'list_groups_for_organization',
+            assertions,
+            self._structure_fixtures(groups),
         )
 
     def test_join_group(self):
