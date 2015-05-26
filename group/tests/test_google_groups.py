@@ -95,8 +95,9 @@ class TestGoogleGroups(TestCase):
     @patch('group.actions.providers.Google')
     def test_list_members(self, mock_google_provider):
         mock_members = [
-            mocks.mock_member(role=group_containers.GOOGLE),
-            mocks.mock_member(role=group_containers.GOOGLE),
+            mocks.mock_member(role=group_containers.MEMBER),
+            mocks.mock_member(role=group_containers.MEMBER),
+            mocks.mock_member(role=group_containers.MEMBER, should_mock_profile=False),
         ]
         mock_google_provider().list_members_for_group.return_value = mock_members
         with self.mock_transport() as mock:
@@ -105,7 +106,7 @@ class TestGoogleGroups(TestCase):
                 service='profile',
                 action='get_profiles',
                 return_object_path='profiles',
-                return_object=[x.profile for x in mock_members],
+                return_object=[x.profile for x in mock_members[:-1]],
                 emails=[x.profile.email for x in mock_members],
             )
             response = self.client.call_action(
@@ -113,9 +114,9 @@ class TestGoogleGroups(TestCase):
                 provider=group_containers.GOOGLE,
                 group_key='group@circlehq.co',
             )
-        self.assertEqual(len(response.result.members), len(mock_members))
+        self.assertEqual(len(response.result.members), len(mock_members) - 1)
         for member in response.result.members:
-            self.assertEqual(member.role, group_containers.GOOGLE)
+            self.assertEqual(member.role, group_containers.MEMBER)
 
     def test_get_group_group_key_required(self):
         with self.assertFieldError('group_key', 'MISSING'):

@@ -268,7 +268,7 @@ def mock_group(container=None, **overrides):
     return _mock_container(container, mock_dict, **overrides)
 
 
-def mock_member(container=None, profile_overrides=None, **overrides):
+def mock_member(container=None, profile_overrides=None, should_mock_profile=True, **overrides):
     if container is None:
         container = group_containers.MemberV1()
 
@@ -280,7 +280,8 @@ def mock_member(container=None, profile_overrides=None, **overrides):
         fuzzy.FuzzyChoice(group_containers.RoleV1.values()): ['role'],
     }
     container = _mock_container(container, mock_dict, **overrides)
-    container.profile.CopyFrom(mock_profile(**profile_overrides))
+    if should_mock_profile:
+        container.profile.CopyFrom(mock_profile(**profile_overrides))
     return container
 
 

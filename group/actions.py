@@ -121,25 +121,28 @@ class ListMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
 
     required_fields = ('provider', 'group_key')
 
+    def _populate_response_members(self, members):
+        members_dict = dict((member.profile.email, member) for member in members)
+        profiles = service.control.get_object(
+            'profile',
+            client_kwargs={'token': self.token},
+            action='get_profiles',
+            return_object='profiles',
+            emails=[x.profile.email for x in members],
+        )
+        for profile in profiles:
+            member = members_dict.get(profile.email)
+            if not member:
+                # TODO log some error here
+                continue
+            member.profile.CopyFrom(profile)
+            self.response.members.extend([member])
+
     def run(self, *args, **kwargs):
         provider = providers.Google(requester_profile=self.profile)
         members = provider.list_members_for_group(self.request.group_key, self.request.role)
         if members:
-            profiles = service.control.get_object(
-                'profile',
-                client_kwargs={'token': self.token},
-                action='get_profiles',
-                return_object='profiles',
-                emails=[x.profile.email for x in members],
-            )
-            profiles_dict = dict((profile.email, profile) for profile in profiles)
-            for member in members:
-                profile = profiles_dict.get(member.profile.email)
-                if not profile:
-                    # TODO log some error here
-                    continue
-                member.profile.CopyFrom(profile)
-            self.response.members.extend(members)
+            self._populate_response_members(members)
 
 
 class GetGroup(PreRunParseTokenMixin, actions.Action):
