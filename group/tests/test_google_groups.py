@@ -127,14 +127,6 @@ class TestGoogleGroups(TestCase):
             self.client.call_action('get_group')
 
     @patch('group.actions.providers.Google')
-    def test_get_group_not_found(self, mock_google_provider):
-        mock_google_provider().get_group.return_value = None
-        with self.mock_transport() as mock:
-            self._mock_token_objects(mock)
-            response = self.client.call_action('get_group', group_key='group@criclehq.co')
-        self.assertFalse(response.result.HasField('group'))
-
-    @patch('group.actions.providers.Google')
     def test_get_group(self, mock_google_provider):
         mock_group = mocks.mock_group()
         mock_google_provider().get_group.return_value = mock_group
@@ -143,6 +135,13 @@ class TestGoogleGroups(TestCase):
             response = self.client.call_action('get_group', group_key=mock_group.email)
 
         self.verify_containers(mock_group, response.result.group)
+
+    @patch('group.actions.providers.Google')
+    def test_get_group_does_not_exist(self, mock_google_provider):
+        mock_google_provider().get_group.return_value = None
+        with self.mock_transport() as mock, self.assertFieldError('group_key', 'DOES_NOT_EXIST'):
+            self._mock_token_objects(mock)
+            self.client.call_action('get_group', group_key='ghost@circlehq.co')
 
     def test_leave_group_no_group_key(self):
         with self.mock_transport() as mock:

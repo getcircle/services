@@ -164,8 +164,9 @@ class GetGroup(PreRunParseTokenMixin, actions.Action):
             token=self.token,
         )
         group = provider.get_group(self.request.group_key)
-        if group:
-            self.response.group.CopyFrom(group)
+        if not group:
+            raise self.ActionFieldError('group_key', 'DOES_NOT_EXIST')
+        self.response.group.CopyFrom(group)
 
 
 class AddToGroup(PreRunParseTokenMixin, actions.Action):
