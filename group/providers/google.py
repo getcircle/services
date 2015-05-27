@@ -323,6 +323,7 @@ class Provider(base.BaseGroupsProvider):
         )
         if self.can_join_without_approval(group_key, group_settings):
             membership_request.status = group_containers.APPROVED
+            self._add_to_group([self.requester_profile.email], group_key)
         elif self.can_join(group_key, group_settings):
             # TODO raise some error if we don't have any managers to approve
             membership_request.approver_profile_ids = self._get_approver_profile_ids(group_key)

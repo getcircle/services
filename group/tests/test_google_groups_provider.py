@@ -781,17 +781,26 @@ class TestGoogleListGroups(BaseGoogleCase):
             },
         ]
 
-        def test(assertions, result):
-            self.assertEqual(assertions['request']['status'], result.status)
-            self.assertEqual(
-                assertions['request']['meta']['whoCanJoin'],
-                result.meta['whoCanJoin'],
-            )
-            expected_approver_ids = assertions['request'].get('approver_profile_ids')
-            if expected_approver_ids:
-                self.assertEqual(len(result.approver_profile_ids), expected_approver_ids)
+        contexts = [
+            self.mock_transport(),
+            patch.object(self.provider, '_add_to_group'),
+        ]
+        with contextlib.nested(*contexts) as (mock, mock_add_to_group):
 
-        with self.mock_transport() as mock:
+            def test(assertions, result):
+                self.assertEqual(assertions['request']['status'], result.status)
+                if assertions['request']['status'] == group_containers.APPROVED:
+                    self.assertEqual(mock_add_to_group.call_count, 1)
+                    mock_add_to_group.reset_mock()
+
+                self.assertEqual(
+                    assertions['request']['meta']['whoCanJoin'],
+                    result.meta['whoCanJoin'],
+                )
+                expected_approver_ids = assertions['request'].get('approver_profile_ids')
+                if expected_approver_ids:
+                    self.assertEqual(len(result.approver_profile_ids), expected_approver_ids)
+
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profiles',
