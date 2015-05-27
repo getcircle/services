@@ -94,6 +94,7 @@ class Provider(base.BaseGroupsProvider):
         return self.directory_client.groups().get(groupKey=group_key).execute()
 
     def _get_approver_profile_ids(self, group_key):
+        # XXX should raise an exception here if there are no managers
         managers = self._get_group_managers(group_key)
         client = service.control.Client('profile', token=self.token)
         response = client.call_action(
