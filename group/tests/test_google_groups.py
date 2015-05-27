@@ -82,6 +82,10 @@ class TestGoogleGroups(TestCase):
                 provider=group_containers.GOOGLE,
                 profile_id=for_profile.id,
             )
+        self.assertEqual(
+            mock_google_provider().list_groups_for_profile.call_args[0][0],
+            for_profile,
+        )
         self.assertEqual(len(response.result.groups), len(mock_groups))
 
     def test_list_members_provider_required(self):

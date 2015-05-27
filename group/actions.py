@@ -61,7 +61,7 @@ class ListGroups(PreRunParseTokenMixin, actions.Action):
                 'profile',
                 client_kwargs={'token': self.token},
                 action='get_profile',
-                profile_id=self.parsed_token.profile_id,
+                profile_id=self.request.profile_id,
                 return_object='profile',
             )
             groups = provider.list_groups_for_profile(for_profile)
