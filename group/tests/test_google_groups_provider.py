@@ -670,6 +670,7 @@ class TestGoogleListGroups(BaseGoogleCase):
             # create public groups with alphabetical names
             factories.GoogleGroupFactory(
                 name='b',
+                description='test',
                 settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
                 settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
             ),
@@ -692,6 +693,7 @@ class TestGoogleListGroups(BaseGoogleCase):
             self.assertFalse(group.is_member)
             self.assertEqual(groups[0].name, 'a')
             self.assertEqual(groups[1].name, 'b')
+            self.assertEqual(groups[1].group_description, 'test')
 
         self._execute_test(
             'list_groups_for_profile',

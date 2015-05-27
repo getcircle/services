@@ -217,6 +217,7 @@ class Provider(base.BaseGroupsProvider):
         group.name = provider_group['name']
         group.members_count = int(provider_group['directMembersCount'])
         group.email = provider_group['email']
+        group.group_description = provider_group['description']
         return group
 
     def provider_member_to_container(self, provider_member, profile=None):
