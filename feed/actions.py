@@ -226,6 +226,7 @@ class GetProfileFeed(actions.Action):
             raise Exception('failed to fetch profile')
 
         profile = response.result.profile
+        self._get_group_membership_requests_category()
         self._get_recent_notes_category(profile)
         self._get_peers_category()
         self._get_direct_reports_category()
@@ -233,7 +234,6 @@ class GetProfileFeed(actions.Action):
         self._get_upcoming_birthdays_category(profile)
         self._get_upcoming_anniversaries_category(profile)
         self._get_active_skills_or_interests_category(profile.organization_id)
-        self._get_group_membership_requests_category()
 
 
 class GetOrganizationFeed(GetProfileFeed):
