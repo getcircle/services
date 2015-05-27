@@ -133,6 +133,8 @@ class BaseGoogleCase(TestCase):
                 raise
 
 
+@patch('group.providers.google.service.control.get_object')
+@patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleListGroups(BaseGoogleCase):
 
     def _execute_test(
@@ -203,7 +205,7 @@ class TestGoogleListGroups(BaseGoogleCase):
                         if key != 'can_view':
                             self.assertEqual(getattr(group, key), value)
 
-    def test_list_groups_for_organization_cases(self):
+    def test_list_groups_for_organization_cases(self, *patches):
         test_cases = [
             {
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
@@ -220,7 +222,7 @@ class TestGoogleListGroups(BaseGoogleCase):
         ]
         self._execute_test_cases('list_groups_for_organization', test_cases)
 
-    def test_get_group(self):
+    def test_get_group(self, *patches):
         test_cases = [
             {
                 'setup:group:email': 'group@circlehq.co',
@@ -248,7 +250,7 @@ class TestGoogleListGroups(BaseGoogleCase):
 
         self._execute_test_cases('get_group', test_cases, test_func=test)
 
-    def test_list_groups_for_user_single_group_cases(self):
+    def test_list_groups_for_user_single_group_cases(self, *patches):
         test_cases = [
             {
                 'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
@@ -665,7 +667,7 @@ class TestGoogleListGroups(BaseGoogleCase):
             provider_func_args=(self.for_profile,),
         )
 
-    def test_list_groups_for_user_one_public_one_members_only(self):
+    def test_list_groups_for_user_one_public_one_members_only(self, *patches):
         groups = [
             # create public groups with alphabetical names
             factories.GoogleGroupFactory(
@@ -702,7 +704,7 @@ class TestGoogleListGroups(BaseGoogleCase):
             provider_func_args=(self.for_profile,),
         )
 
-    def test_list_groups_for_organization_alphabetical(self):
+    def test_list_groups_for_organization_alphabetical(self, *patches):
         groups = [
             # create public groups with alphabetical names
             factories.GoogleGroupFactory(
@@ -738,7 +740,7 @@ class TestGoogleListGroups(BaseGoogleCase):
             self._structure_fixtures(groups),
         )
 
-    def test_join_group(self):
+    def test_join_group(self, *patches):
         test_cases = [
             {
                 'setup:group:email': 'group@circlehq.co',
@@ -799,7 +801,7 @@ class TestGoogleListGroups(BaseGoogleCase):
             )
             self._execute_test_cases('join_group', test_cases, test_func=test)
 
-    def test_add_to_group(self):
+    def test_add_to_group(self, *patches):
         profiles = [mocks.mock_profile(organization_id=self.by_profile.organization_id)]
         test_cases = [
             {
@@ -879,7 +881,7 @@ class TestGoogleListGroups(BaseGoogleCase):
                 mock_add_to_group.reset_mock()
             self._execute_test_cases('add_profiles_to_group', test_cases, test_func=test)
 
-    def test_approve_request_to_join(self):
+    def test_approve_request_to_join(self, *patches):
         managers = [
             factories.GoogleGroupMemberFactory.create(
                 email=self.by_profile.email,
@@ -917,6 +919,8 @@ class TestGoogleListGroups(BaseGoogleCase):
             self._execute_test_cases('approve_request_to_join', test_cases, test_func=test)
 
 
+@patch('group.providers.google.service.control.get_object')
+@patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleListMembers(BaseGoogleCase):
 
     def _execute_test(
@@ -956,7 +960,7 @@ class TestGoogleListMembers(BaseGoogleCase):
                 else:
                     raise NotImplemented('Not sure how to evaluate assertions: %s' % (assertions,))
 
-    def test_list_members(self):
+    def test_list_members(self, *patches):
         test_cases = [
             # all in domain can view, not a member
             {
@@ -1111,7 +1115,7 @@ class TestGoogleListMembers(BaseGoogleCase):
         ]
         self._execute_test_cases('list_members_for_group', test_cases)
 
-    def test_get_group_members_called_with_google_group_role(self):
+    def test_get_group_members_called_with_google_group_role(self, *patches):
         @patch.object(self.provider, '_get_group_members')
         @patch.object(self.provider, 'is_group_visible')
         @patch.object(self.provider, '_get_groups_settings_and_membership')
@@ -1125,7 +1129,7 @@ class TestGoogleListMembers(BaseGoogleCase):
         test(group_containers.OWNER, 'OWNER')
         test(group_containers.MANAGER, 'MANAGER')
 
-    def test_get_group_members_none(self):
+    def test_get_group_members_none(self, *patches):
 
         @patch('group.providers.google.build')
         @patch.object(self.provider, 'is_group_visible')
@@ -1141,14 +1145,16 @@ class TestGoogleListMembers(BaseGoogleCase):
         test()
 
 
+@patch('group.providers.google.service.control.get_object')
+@patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleGroups(BaseGoogleCase):
 
-    def test_leave_group_not_a_member(self):
+    def test_leave_group_not_a_member(self, *patches):
         with patch('group.providers.google.build') as patched_build_api:
             patched_build_api().members().delete.execute.side_effect = HttpError('404', 'Error')
             self.provider.leave_group('group@circlehq.co')
 
-    def test_leave_group(self):
+    def test_leave_group(self, *patches):
         with patch('group.providers.google.build') as patched_build_api:
             patched_build_api().members().delete.execute.return_value = ''
             self.provider.leave_group('group@circlehq.co')

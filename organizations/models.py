@@ -1,7 +1,11 @@
 import binascii
 import os
 from common.db import models
+from common import utils
+from protobuf_to_dict import protobuf_to_dict
+
 from protobufs.services.organization import containers_pb2 as organization_containers
+from protobufs.services.organization.containers import integration_pb2
 from timezone_field import TimeZoneField
 
 
@@ -113,3 +117,29 @@ class Token(models.Model):
 
     def __unicode__(self):
         return self.key
+
+
+class Integration(models.UUIDModel, models.Model):
+
+    model_to_protobuf_mapping = {'type': 'integration_type'}
+    as_dict_value_transforms = {'type': int}
+
+    class Meta:
+        protobuf = integration_pb2.IntegrationV1
+        unique_together = ('organization', 'type')
+
+    organization = models.ForeignKey(Organization, db_index=True)
+    type = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(
+            integration_pb2.IntegrationTypeV1,
+        ),
+    )
+    details = models.ProtobufField(
+        protobuf_classes=[integration_pb2.GoogleGroupDetailsV1],
+        null=True,
+    )
+
+    def to_protobuf(self, *args, **kwargs):
+        if self.details and self.type == integration_pb2.GOOGLE_GROUPS:
+            kwargs.update({'google_groups': protobuf_to_dict(self.details)})
+        return super(Integration, self).to_protobuf(*args, **kwargs)

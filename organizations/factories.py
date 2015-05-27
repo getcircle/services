@@ -1,4 +1,5 @@
 from protobufs.services.organization import containers_pb2 as organization_containers
+from protobufs.services.organization.containers import integration_pb2
 
 from services.test import factory
 
@@ -74,3 +75,12 @@ class TokenFactory(factory.Factory):
 
     organization = factory.SubFactory(OrganizationFactory)
     requested_by_user_id = factory.FuzzyUUID()
+
+
+class IntegrationFactory(factory.Factory):
+    class Meta:
+        model = models.Integration
+        protobuf = integration_pb2.IntegrationV1
+
+    organization = factory.SubFactory(OrganizationFactory)
+    type = integration_pb2.GOOGLE_GROUPS

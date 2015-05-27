@@ -1,8 +1,10 @@
 from copy import copy
+import json
 import uuid
 
 from cacheops import cached_as
 import django.db
+from protobufs.services.organization.containers import integration_pb2
 from service import (
     actions,
     validators,
@@ -611,3 +613,65 @@ class GetTokens(actions.Action):
             tokens,
             lambda item, container: item.to_protobuf(container.add()),
         )
+
+
+class PreRunParseTokenMixin(object):
+
+    def pre_run(self, *args, **kwargs):
+        self.parsed_token = parse_token(self.token)
+
+
+class EnableIntegration(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('integration', 'integration.integration_type',)
+
+    def _default_google_group_scopes(self):
+        return (
+            'https://www.googleapis.com/auth/admin.directory.user',
+            'https://www.googleapis.com/auth/admin.directory.group',
+            'https://www.googleapis.com/auth/apps.groups.settings',
+        )
+
+    def _get_details_object(self):
+        details = self.request.integration.google_groups
+        if not len(details.scopes):
+            details.scopes.extend(self._default_google_group_scopes())
+        return details
+
+    def run(self, *args, **kwargs):
+        try:
+            integration = models.Integration.objects.from_protobuf(
+                self.request.integration,
+                organization_id=self.parsed_token.organization_id,
+                details=self._get_details_object(),
+            )
+        except django.db.IntegrityError:
+            raise self.ActionFieldError('integration.integration_type', 'DUPLICATE')
+
+        integration.to_protobuf(self.response.integration)
+
+
+class DisableIntegration(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('integration_type',)
+
+    def _get_integration(self):
+        try:
+            integration = models.Integration.objects.get(
+                organization_id=self.parsed_token.organization_id,
+                type=self.request.integration_type,
+            )
+        except models.Integration.DoesNotExist:
+            raise self.ActionFieldError('integration_type', 'DOES_NOT_EXIST')
+        return integration
+
+    def run(self, *args, **kwargs):
+        integration = self._get_integration()
+        integration.delete()
+
+
+class GetIntegration(DisableIntegration):
+
+    def run(self, *args, **kwargs):
+        integration = self._get_integration()
+        integration.to_protobuf(self.response.integration)

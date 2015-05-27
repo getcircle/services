@@ -7,6 +7,7 @@ https://docs.djangoproject.com/en/1.7/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.7/ref/settings/
 """
+import json
 import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -276,3 +277,6 @@ CACHEOPS = {
     'resumes.*': {'ops': 'all'},
     'users.*': {'ops': 'get'},
 }
+
+# Google Admin SDK
+GOOGLE_ADMIN_SDK_JSON_KEY = json.loads(os.environ.get('GOOGLE_ADMIN_SDK_JSON_KEY', '{}'))

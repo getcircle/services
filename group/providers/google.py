@@ -1,12 +1,12 @@
 import httplib2
-import json
-import os
 
 from apiclient.errors import HttpError
 from apiclient.http import BatchHttpRequest
 from apiclient.discovery import build
+from django.conf import settings
 from oauth2client.client import SignedJwtAssertionCredentials
 from protobufs.services.group import containers_pb2 as group_containers
+from protobufs.services.organization.containers import integration_pb2
 import service.control
 
 from . import (
@@ -15,32 +15,24 @@ from . import (
 )
 from .. import models
 
-# TODO move to settings
-SERVICE_ACCOUNT_EMAIL = '1077014421904-v3q3sd1e8n0fq6bgchfv7qul4k9135ur@developer.gserviceaccount.com'
-# TODO move to vault or something
-SERVICE_ACCOUNT_JSON_FILE = os.path.join(os.path.dirname(__file__), 'Circle-b34aaf973f59.json')
-# TODO move to settings
-GOOGLE_GROUPS_PROVIDER_SCOPES = (
-    'https://www.googleapis.com/auth/admin.directory.user',
-    'https://www.googleapis.com/auth/admin.directory.group',
-    'https://www.googleapis.com/auth/apps.groups.settings',
-)
-
 
 class Provider(base.BaseGroupsProvider):
 
     @property
     def http(self):
         if not hasattr(self, '_http'):
-            with open(SERVICE_ACCOUNT_JSON_FILE, 'r') as json_key_file:
-                json_key = json.load(json_key_file)
-
+            integration = service.control.get_object(
+                service='organization',
+                action='get_integration',
+                return_object='integration',
+                client_kwargs={'token': self.token},
+                integration_type=integration_pb2.GOOGLE_GROUPS,
+            )
             credentials = SignedJwtAssertionCredentials(
-                SERVICE_ACCOUNT_EMAIL,
-                json_key['private_key'],
-                scope=GOOGLE_GROUPS_PROVIDER_SCOPES,
-                # XXX this can only be the admin
-                sub='michael@circlehq.co',
+                settings.GOOGLE_ADMIN_SDK_JSON_KEY.get('client_email'),
+                settings.GOOGLE_ADMIN_SDK_JSON_KEY.get('private_key'),
+                scope=integration.google_groups.scopes,
+                sub=integration.google_groups.admin_email,
             )
             self._http = credentials.authorize(httplib2.Http())
         return self._http

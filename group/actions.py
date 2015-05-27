@@ -55,7 +55,11 @@ class ListGroups(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         # TODO add a test case to ensure that this is instantiated without the mock
-        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
+        provider = providers.Google(
+            requester_profile=self.profile,
+            organization=self.organization,
+            token=self.token,
+        )
         if self.request.HasField('profile_id'):
             for_profile = service.control.get_object(
                 'profile',
@@ -113,7 +117,11 @@ class LeaveGroup(PreRunParseTokenMixin, actions.Action):
     required_fields = ('group_key',)
 
     def run(self, *args, **kwargs):
-        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
+        provider = providers.Google(
+            requester_profile=self.profile,
+            organization=self.organization,
+            token=self.token,
+        )
         provider.leave_group(self.request.group_key)
 
 
@@ -139,7 +147,7 @@ class ListMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
             self.response.members.extend([member])
 
     def run(self, *args, **kwargs):
-        provider = providers.Google(requester_profile=self.profile)
+        provider = providers.Google(requester_profile=self.profile, token=self.token)
         members = provider.list_members_for_group(self.request.group_key, self.request.role)
         if members:
             self._populate_response_members(members)
@@ -150,7 +158,11 @@ class GetGroup(PreRunParseTokenMixin, actions.Action):
     required_fields = ('group_key',)
 
     def run(self, *args, **kwargs):
-        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
+        provider = providers.Google(
+            requester_profile=self.profile,
+            organization=self.organization,
+            token=self.token,
+        )
         group = provider.get_group(self.request.group_key)
         if group:
             self.response.group.CopyFrom(group)
@@ -171,7 +183,11 @@ class AddToGroup(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         profiles = self._fetch_profiles()
-        provider = providers.Google(requester_profile=self.profile, organization=self.organization)
+        provider = providers.Google(
+            requester_profile=self.profile,
+            organization=self.organization,
+            token=self.token,
+        )
         members = provider.add_profiles_to_group(profiles, self.request.group_key)
         if members:
             self.response.new_members.extend(members)

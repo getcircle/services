@@ -24,4 +24,7 @@ class Server(service.control.Server):
         'get_locations': actions.GetLocations,
         'create_token': actions.CreateToken,
         'get_tokens': actions.GetTokens,
+        'enable_integration': actions.EnableIntegration,
+        'get_integration': actions.GetIntegration,
+        'disable_integration': actions.DisableIntegration,
     }
