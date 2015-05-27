@@ -40,7 +40,7 @@ class Provider(base.BaseGroupsProvider):
                 json_key['private_key'],
                 scope=GOOGLE_GROUPS_PROVIDER_SCOPES,
                 # XXX this can only be the admin
-                sub=self.requester_profile.email,
+                sub='michael@circlehq.co',
             )
             self._http = credentials.authorize(httplib2.Http())
         return self._http
