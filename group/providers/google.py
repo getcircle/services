@@ -107,7 +107,7 @@ class Provider(base.BaseGroupsProvider):
             self.directory_client.members().delete(
                 groupKey=group_key,
                 memberKey=self.requester_profile.email,
-            )
+            ).execute()
         except HttpError:
             pass
 

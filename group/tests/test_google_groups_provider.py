@@ -1,9 +1,6 @@
 import contextlib
 from functools import partial
-from mock import (
-    MagicMock,
-    patch,
-)
+from mock import patch
 from pprint import pprint
 
 from apiclient.errors import HttpError
@@ -1146,10 +1143,11 @@ class TestGoogleGroups(BaseGoogleCase):
 
     def test_leave_group_not_a_member(self):
         with patch('group.providers.google.build') as patched_build_api:
-            patched_build_api().members().delete.side_effect = HttpError('404', 'Error')
+            patched_build_api().members().delete.execute.side_effect = HttpError('404', 'Error')
             self.provider.leave_group('group@circlehq.co')
 
     def test_leave_group(self):
         with patch('group.providers.google.build') as patched_build_api:
-            patched_build_api().members().delete.return_value = ''
+            patched_build_api().members().delete.execute.return_value = ''
             self.provider.leave_group('group@circlehq.co')
+            self.assertEqual(patched_build_api().members().delete().execute.call_count, 1)
