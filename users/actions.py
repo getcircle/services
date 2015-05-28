@@ -447,7 +447,6 @@ class RecordDevice(actions.Action):
         'device.os_version',
         'device.device_uuid',
         'device.app_version',
-        'device.language_preference',
     )
 
     type_validators = {
