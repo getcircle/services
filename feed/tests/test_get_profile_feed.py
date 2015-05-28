@@ -174,10 +174,22 @@ class TestGetCategories(TestCase):
             container = mock_response.requests.add()
             mocks.mock_group_membership_request(container, approver_profile_ids=[profile_id])
 
+        # mock group calls as well
+        mock_groups = mock.get_mockable_response(service, 'get_groups')
+        for request in mock_response.requests:
+            container = mock_groups.groups.add()
+            mocks.mock_group(container, email=request.group_key)
+
         mock.instance.register_mock_response(
             service,
             action,
             mock_response,
+        )
+        mock.instance.register_mock_response(
+            service,
+            'get_groups',
+            mock_groups,
+            group_keys=[request.group_key for request in mock_response.requests],
         )
         return mock_response.requests
 

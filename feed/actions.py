@@ -204,6 +204,12 @@ class GetProfileFeed(actions.Action):
         )
         profile_id_to_profile = self._get_profiles_dict(response.result.profiles)
 
+        response = client.call_action(
+            'get_groups',
+            group_keys=[request.group_key for request in requests],
+        )
+        group_key_to_group = dict((group.email, group) for group in response.result.groups)
+
         category = self.response.categories.add()
         category.title = 'Group Membership Requests'
         category.content_key = 'requester_profile_id'
@@ -216,6 +222,10 @@ class GetProfileFeed(actions.Action):
             profile = profile_id_to_profile[request.requester_profile_id]
             profile_container = category.profiles.add()
             profile_container.CopyFrom(profile)
+
+            group = group_key_to_group[request.group_key]
+            group_container = category.groups.add()
+            group_container.CopyFrom(group)
 
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
