@@ -198,35 +198,41 @@ class Provider(base.BaseGroupsProvider):
                 groups.append(group)
         return sorted(groups, key=lambda x: x.name)
 
-    def can_join(self, group_key, group_settings):
-        can_join = False
+    def can_join_or_can_request(self, group_key, group_settings):
+        can_join = can_request = False
         who_can_join = group_settings.get('whoCanJoin')
         if who_can_join == 'CAN_REQUEST_TO_JOIN':
-            can_join = True
+            can_request = True
         elif who_can_join in ('ANYONE_CAN_JOIN', 'ALL_IN_DOMAIN_CAN_JOIN'):
             can_join = True
-        return can_join
+        return can_join, can_request
 
     def can_add_to_group(self, group_key, group_settings, membership):
         can_add = False
         who_can_add = group_settings.get('whoCanInvite')
-        role = membership.get(group_key, {}).get('role')
         if who_can_add == 'ALL_MEMBERS_CAN_INVITE':
             can_add = True
-        elif who_can_add == 'ALL_MANAGERS_CAN_INVITE' and role in ('OWNER', 'MANAGER'):
+        elif who_can_add == 'ALL_MANAGERS_CAN_INVITE' and self.is_manager(group_key, membership):
             can_add = True
         return can_add
 
-    def can_join_without_approval(self, group_key, group_settings):
-        return group_settings.get('whoCanJoin') in ('ANYONE_CAN_JOIN', 'ALL_IN_DOMAIN_CAN_JOIN')
-
-    def is_member_or_can_join(self, group_key, group_settings, membership):
-        is_member = can_join = False
+    def get_states_for_user_in_group(self, group_key, group_settings, membership):
+        is_member = is_manager = can_join = can_request = False
         if group_key in membership:
+            if self.is_manager(group_key, membership):
+                is_manager = True
             is_member = True
         else:
-            can_join = self.can_join(group_key, group_settings)
-        return is_member, can_join
+            can_join, can_request = self.can_join_or_can_request(group_key, group_settings)
+        return {
+            'is_member': is_member,
+            'is_manager': is_manager,
+            'can_join': can_join,
+            'can_request': can_request,
+        }
+
+    def is_manager(self, group_key, membership):
+        return membership.get(group_key, {}).get('role') in ('MANAGER', 'OWNER')
 
     def is_group_visible(self, group_key, group_settings, membership):
         visible = False
@@ -269,11 +275,11 @@ class Provider(base.BaseGroupsProvider):
             group_key = provider_group['email']
             group_settings = groups_settings.get(group_key, {})
             group = self.provider_group_to_container(provider_group)
-            group.is_member, group.can_join = self.is_member_or_can_join(
-                group_key,
-                group_settings,
-                membership,
-            )
+            states = self.get_states_for_user_in_group(group_key, group_settings, membership)
+            group.is_member = states.get('is_member', False)
+            group.is_manager = states.get('is_manager', False)
+            group.can_join = states.get('can_join', False)
+            group.can_request = states.get('can_request', False)
 
             if self.is_group_visible(group_key, group_settings, membership):
                 groups.append(group)
@@ -350,10 +356,11 @@ class Provider(base.BaseGroupsProvider):
             group_key=group_key,
             meta={'whoCanJoin': group_settings.get('whoCanJoin', '')},
         )
-        if self.can_join_without_approval(group_key, group_settings):
+        can_join, can_request = self.can_join_or_can_request(group_key, group_settings)
+        if can_join:
             membership_request.status = group_containers.APPROVED
             self._add_to_group([self.requester_profile.email], group_key)
-        elif self.can_join(group_key, group_settings):
+        elif can_request:
             # TODO raise some error if we don't have any managers to approve
             membership_request.approver_profile_ids = self._get_approver_profile_ids(group_key)
             membership_request.status = group_containers.PENDING
