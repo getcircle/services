@@ -197,9 +197,13 @@ class AddToGroup(PreRunParseTokenMixin, actions.Action):
 class GetMembershipRequests(PreRunParseTokenFetchProfileMixin, actions.Action):
 
     def run(self, *args, **kwargs):
-        requests = models.GroupMembershipRequest.objects.filter(
-            approver_profile_ids__contains=[self.profile.id],
-        )
+        request_kwargs = {
+            'approver_profile_ids__contains': [self.profile.id],
+        }
+        if self.request.HasField('status'):
+            request_kwargs['status'] = self.request.status
+
+        requests = models.GroupMembershipRequest.objects.filter(**request_kwargs)
         self.paginated_response(
             self.response.requests,
             requests,

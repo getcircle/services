@@ -286,3 +286,29 @@ class TestGoogleGroups(TestCase):
             self._mock_token_objects(mock)
             response = self.client.call_action('get_membership_requests')
             self.assertEqual(len(response.result.requests), 2)
+
+    def test_get_membership_requests_pending_only(self):
+        # Create membership requests that are pending
+        factories.GroupMembershipRequestFactory.create_batch(
+            size=2,
+            approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
+            status=group_containers.PENDING,
+        )
+        # Create membership requests that are approved
+        factories.GroupMembershipRequestFactory.create_batch(
+            size=2,
+            approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
+            status=group_containers.APPROVED,
+        )
+        factories.GroupMembershipRequestFactory.create_batch(
+            size=2,
+            approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
+            status=group_containers.DENIED,
+        )
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            response = self.client.call_action(
+                'get_membership_requests',
+                status=group_containers.PENDING,
+            )
+            self.assertEqual(len(response.result.requests), 2)
