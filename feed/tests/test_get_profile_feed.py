@@ -185,6 +185,7 @@ class TestGetCategories(TestCase):
             service,
             action,
             mock_response,
+            status=group_containers.PENDING,
         )
         mock.instance.register_mock_response(
             service,
