@@ -65,9 +65,9 @@ class Provider(base.BaseGroupsProvider):
         groups = []
 
         def handle_group(request_id, response, exception, **kwargs):
-            # XXX should be raising this exception
-            if response:
-                groups.append(response)
+            if exception is not None:
+                raise exception
+            groups.append(response)
 
         batch = BatchHttpRequest()
         request_num = 0
@@ -130,8 +130,9 @@ class Provider(base.BaseGroupsProvider):
         new_members = []
 
         def handle_new_member(request_id, response, exception, **kwargs):
-            if response:
-                new_members.append(response)
+            if exception is not None:
+                raise exception
+            new_members.append(response)
 
         batch = BatchHttpRequest()
         request_num = 0
@@ -153,13 +154,15 @@ class Provider(base.BaseGroupsProvider):
         membership = {}
 
         def handle_is_member(request_id, response, exception, **kwargs):
+            if exception is not None:
+                raise exception
             request_num, group = request_id.split('::')
-            if response:
-                membership[group] = response
+            membership[group] = response
 
         def handle_groups_settings(request_id, response, exception, **kwargs):
-            if response:
-                groups_settings[response['email']] = response
+            if exception is not None:
+                raise exception
+            groups_settings[response['email']] = response
 
         batch = BatchHttpRequest()
         request_num = 0
