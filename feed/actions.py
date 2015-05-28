@@ -5,6 +5,7 @@ from service import (
 import service.control
 
 from protobufs.services.feed import containers_pb2 as feed_containers
+from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 
 
@@ -207,6 +208,7 @@ class GetProfileFeed(actions.Action):
         response = client.call_action(
             'get_groups',
             group_keys=[request.group_key for request in requests],
+            provider=group_containers.GOOGLE,
         )
         group_key_to_group = dict((group.email, group) for group in response.result.groups)
 
