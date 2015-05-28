@@ -183,16 +183,28 @@ class Provider(base.BaseGroupsProvider):
         batch.execute(http=self.http)
         return groups_settings, membership
 
+    def _get_pending_requests_dict(self, group_keys):
+        pending_requests = models.GroupMembershipRequest.objects.filter(
+            group_key__in=group_keys,
+            provider=group_containers.GOOGLE,
+            status=group_containers.PENDING,
+            requester_profile_id=self.requester_profile.id,
+        ).values('id', 'group_key')
+        return dict((req['group_key'], req['id']) for req in pending_requests)
+
     def _filter_visible_groups(self, provider_groups):
         group_keys = [x['email'] for x in provider_groups['groups']]
         groups_settings, membership = self._get_groups_settings_and_membership(group_keys)
 
+        pending_requests_dict = self._get_pending_requests_dict(group_keys)
         groups = []
         for provider_group in provider_groups['groups']:
             group_settings = groups_settings.get(provider_group['email'], {})
             group = self.provider_group_to_container(provider_group, group_settings, membership)
+            group.has_pending_request = provider_group['email'] in pending_requests_dict
             if group_settings.get('showInGroupDirectory', False):
                 groups.append(group)
+
         return sorted(groups, key=lambda x: x.name)
 
     def can_join_or_can_request(self, group_key, group_settings):
@@ -277,11 +289,14 @@ class Provider(base.BaseGroupsProvider):
         group_keys = [x['email'] for x in provider_groups['groups']]
         groups_settings, membership = self._get_groups_settings_and_membership(group_keys)
 
+        pending_requests_dict = self._get_pending_requests_dict(group_keys)
+
         groups = []
         for provider_group in provider_groups['groups']:
             group_key = provider_group['email']
             group_settings = groups_settings.get(group_key, {})
             group = self.provider_group_to_container(provider_group, group_settings, membership)
+            group.has_pending_request = group_key in pending_requests_dict
             if self.is_group_visible(group_key, group_settings, membership):
                 groups.append(group)
         return sorted(groups, key=lambda x: x.name)
@@ -320,6 +335,13 @@ class Provider(base.BaseGroupsProvider):
         group = None
         if group_settings.get('showInGroupDirectory', False):
             group = self.provider_group_to_container(provider_group, group_settings, membership)
+            if not group.is_member and group.can_request:
+                group.has_pending_request = models.GroupMembershipRequest.objects.filter(
+                    provider=group_containers.GOOGLE,
+                    group_key=group.email,
+                    requester_profile_id=self.requester_profile.id,
+                    status=group_containers.PENDING,
+                ).exists()
         return group
 
     def add_profiles_to_group(self, profiles, group_key, **kwargs):

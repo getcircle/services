@@ -230,6 +230,11 @@ class TestGoogleGetGroups(BaseGoogleCase):
             self.assertEqual(len(groups), 2)
 
     def test_get_groups_for_organization_cases(self, *patches):
+        factories.GroupMembershipRequestFactory.create(
+            group_key='group@circlehq.co',
+            requester_profile_id=self.by_profile.id,
+            status=group_containers.PENDING,
+        )
         test_cases = [
             {
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
@@ -238,15 +243,22 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
                 'setup:settings:showInGroupDirectory': True,
                 'assertions:group:can_view': True,
+                'assertions:group:has_pending_request': True,
             },
         ]
         self._execute_test_cases('get_groups_for_organization', test_cases)
 
     def test_get_group(self, *patches):
+        factories.GroupMembershipRequestFactory.create(
+            group_key='group@circlehq.co',
+            requester_profile_id=self.by_profile.id,
+            status=group_containers.PENDING,
+        )
         test_cases = [
             {
                 'setup:group:email': 'group@circlehq.co',
@@ -257,11 +269,24 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
-                'assertions:group:is_member': True,
-                'assertions:group:is_manager': True,
+                'assertions:group:is_member': False,
+                'assertions:group:is_manager': False,
             },
             {
                 'setup:group:email': 'group@circlehq.co',
+                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:settings:showInGroupDirectory': True,
+                'provider_func_args:0': 'setup:group:email',
+                'assertions:group:can_view': True,
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': True,
+                'assertions:group:is_member': False,
+                'assertions:group:is_manager': False,
+                'assertions:group:has_pending_request': True,
+            },
+            {
+                'setup:group:email': 'norequest@circlehq.co',
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
                 'setup:settings:showInGroupDirectory': True,
@@ -273,6 +298,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
                 'assertions:group:is_manager': True,
+                'assertions:group:has_pending_request': False,
             },
             {
                 'setup:group:email': 'group@circlehq.co',
@@ -296,9 +322,18 @@ class TestGoogleGetGroups(BaseGoogleCase):
             elif assertions['group']['can_view'] and result is None:
                 raise AssertionError('Group should be visible')
 
+            for key, value in assertions['group'].iteritems():
+                if hasattr(result, key):
+                    self.assertEqual(getattr(result, key), value)
+
         self._execute_test_cases('get_group', test_cases, test_func=test)
 
     def test_get_groups_for_user_single_group_cases(self, *patches):
+        factories.GroupMembershipRequestFactory.create(
+            group_key='group@circlehq.co',
+            requester_profile_id=self.by_profile.id,
+            status=group_containers.PENDING,
+        )
         test_cases = [
             {
                 'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
@@ -355,6 +390,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
+                'setup:group:email': 'group@circlehq.co',
                 'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
                 'assertions:group:can_join': False,
@@ -362,6 +398,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:is_member': False,
                 'assertions:group:is_manager': False,
                 'assertions:group:can_view': True,
+                'assertions:group:has_pending_request': True,
             },
             {
                 'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
