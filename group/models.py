@@ -19,8 +19,8 @@ class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
     status = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(group_containers.MembershipRequestStatusV1),
     )
-    requester_profile_id = models.UUIDField()
-    approver_profile_ids = ArrayField(models.UUIDField(), null=True)
+    requester_profile_id = models.UUIDField(db_index=True)
+    approver_profile_ids = ArrayField(models.UUIDField(), null=True, db_index=True)
     group_key = models.CharField(max_length=255)
     provider = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(group_containers.GroupProviderV1),
@@ -32,3 +32,6 @@ class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
         if self.meta:
             meta = [{'key': key, 'value': value} for key, value in self.meta.iteritems()]
         return meta
+
+    class Meta:
+        index_together = ('provider', 'group_key')
