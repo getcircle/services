@@ -61,6 +61,28 @@ class Provider(base.BaseGroupsProvider):
         # TODO add tests around pagination
         return self.directory_client.groups().list(**list_kwargs).execute()
 
+    def _get_groups_with_keys(self, keys):
+        groups = []
+
+        def handle_group(request_id, response, exception, **kwargs):
+            # XXX should be raising this exception
+            if response:
+                groups.append(response)
+
+        batch = BatchHttpRequest()
+        request_num = 0
+        for key in keys:
+            request_num += 1
+            batch.add(
+                self.directory_client.groups().get(
+                    groupKey=key,
+                ),
+                callback=handle_group,
+            )
+
+        batch.execute(http=self.http)
+        return groups
+
     def _get_group_members(self, group_key, role):
         # TODO add tests around Http 400 & 403 failure
         # TODO add tests around pagination
@@ -161,6 +183,21 @@ class Provider(base.BaseGroupsProvider):
         batch.execute(http=self.http)
         return groups_settings, membership
 
+    def _filter_visible_groups(self, provider_groups):
+        group_keys = [x['email'] for x in provider_groups['groups']]
+        groups_settings, _ = self._get_groups_settings_and_membership(
+            group_keys,
+            fetch_membership=False,
+        )
+
+        groups = []
+        for provider_group in provider_groups['groups']:
+            group = self.provider_group_to_container(provider_group)
+            group_settings = groups_settings.get(provider_group['email'], {})
+            if group_settings.get('showInGroupDirectory', False):
+                groups.append(group)
+        return sorted(groups, key=lambda x: x.name)
+
     def can_join(self, group_key, group_settings):
         can_join = False
         who_can_join = group_settings.get('whoCanJoin')
@@ -244,19 +281,7 @@ class Provider(base.BaseGroupsProvider):
 
     def get_groups_for_organization(self, **kwargs):
         provider_groups = self._get_groups()
-        group_keys = [x['email'] for x in provider_groups['groups']]
-        groups_settings, _ = self._get_groups_settings_and_membership(
-            group_keys,
-            fetch_membership=False,
-        )
-
-        groups = []
-        for provider_group in provider_groups['groups']:
-            group = self.provider_group_to_container(provider_group)
-            group_settings = groups_settings.get(provider_group['email'], {})
-            if group_settings.get('showInGroupDirectory', False):
-                groups.append(group)
-        return sorted(groups, key=lambda x: x.name)
+        return self._filter_visible_groups(provider_groups)
 
     def get_members_for_group(self, group_key, role, **kwargs):
         groups_settings, membership = self._get_groups_settings_and_membership([group_key])
@@ -275,10 +300,14 @@ class Provider(base.BaseGroupsProvider):
                 members.append(member)
         return members
 
+    def get_groups_with_keys(self, keys, **kwargs):
+        provider_groups = self._get_groups_with_keys(keys)
+        return self._filter_visible_groups(provider_groups)
+
     def get_group(self, group_key, **kwargs):
         provider_group = self._get_group(group_key)
         group_settings, _ = self._get_groups_settings_and_membership(
-            [group_key],
+            [provider_group['email']],
             fetch_membership=False,
         )
         group_settings = group_settings.values()[0]

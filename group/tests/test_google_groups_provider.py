@@ -135,7 +135,7 @@ class BaseGoogleCase(TestCase):
 
 @patch('group.providers.google.service.control.get_object')
 @patch('group.providers.google.SignedJwtAssertionCredentials')
-class TestGoogleListGroups(BaseGoogleCase):
+class TestGoogleGetGroups(BaseGoogleCase):
 
     def _execute_test(
             self,
@@ -204,6 +204,30 @@ class TestGoogleListGroups(BaseGoogleCase):
                     for key, value in assertions['group'].iteritems():
                         if key != 'can_view':
                             self.assertEqual(getattr(group, key), value)
+
+    def test_get_groups_with_keys(self, *patches):
+        groups = []
+        for i in range(4):
+            show_group = bool(i % 2)
+            group_kwargs = {
+                'settings__showInGroupDirectory': show_group,
+            }
+            groups.append(factories.GoogleGroupFactory.create(**group_kwargs))
+
+        groups_settings = dict((group.email, group.settings.as_dict()) for group in groups)
+        patched_settings = patch.object(
+            self.provider,
+            '_get_groups_settings_and_membership',
+            return_value=(groups_settings, {}),
+        )
+        patched_get_groups = patch.object(
+            self.provider,
+            '_get_groups_with_keys',
+            return_value={'groups': map(lambda x: x.as_dict(), groups)},
+        )
+        with contextlib.nested(patched_settings, patched_get_groups):
+            groups = self.provider.get_groups_with_keys([group.id for group in groups])
+            self.assertEqual(len(groups), 2)
 
     def test_get_groups_for_organization_cases(self, *patches):
         test_cases = [

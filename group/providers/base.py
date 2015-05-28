@@ -7,14 +7,17 @@ class BaseGroupsProvider(object):
         self.requester_profile = requester_profile
         self.token = token
 
-    def list_groups_for_profile(self, profile, **kwargs):
-        raise NotImplementedError('Subclass must implement `list_groups_for_profile`')
+    def get_groups_for_profile(self, profile, **kwargs):
+        raise NotImplementedError('Subclass must implement `get_groups_for_profile`')
 
-    def list_groups_for_organization(self, **kwargs):
-        raise NotImplementedError('Subclass must implement `list_groups_for_organization`')
+    def get_groups_for_organization(self, **kwargs):
+        raise NotImplementedError('Subclass must implement `get_groups_for_organization`')
 
-    def list_members_for_group(self, group_key, role, **kwargs):
-        raise NotImplementedError('Subclass must implement `list_members_for_group`')
+    def get_groups_with_keys(self, keys, **kwargs):
+        raise NotImplementedError('Subclass must implement `get_groups_with_keys`')
+
+    def get_members_for_group(self, group_key, role, **kwargs):
+        raise NotImplementedError('Subclass must implement `get_members_for_group`')
 
     def get_group(self, group_key, **kwargs):
         raise NotImplementedError('Subclass must implement `get_group`')
