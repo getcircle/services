@@ -222,7 +222,7 @@ class Provider(base.BaseGroupsProvider):
             member.profile.email = provider_member['email']
         return member
 
-    def list_groups_for_profile(self, profile, **kwargs):
+    def get_groups_for_profile(self, profile, **kwargs):
         provider_groups = self._get_groups(profile.email)
         group_keys = [x['email'] for x in provider_groups['groups']]
         groups_settings, membership = self._get_groups_settings_and_membership(group_keys)
@@ -242,7 +242,7 @@ class Provider(base.BaseGroupsProvider):
                 groups.append(group)
         return sorted(groups, key=lambda x: x.name)
 
-    def list_groups_for_organization(self, **kwargs):
+    def get_groups_for_organization(self, **kwargs):
         provider_groups = self._get_groups()
         group_keys = [x['email'] for x in provider_groups['groups']]
         groups_settings, _ = self._get_groups_settings_and_membership(
@@ -258,7 +258,7 @@ class Provider(base.BaseGroupsProvider):
                 groups.append(group)
         return sorted(groups, key=lambda x: x.name)
 
-    def list_members_for_group(self, group_key, role, **kwargs):
+    def get_members_for_group(self, group_key, role, **kwargs):
         groups_settings, membership = self._get_groups_settings_and_membership([group_key])
         # TODO handle case where the group doesn't exist
         if not groups_settings:

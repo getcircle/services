@@ -49,7 +49,7 @@ class PreRunParseTokenFetchProfileMixin(object):
         )
 
 
-class ListGroups(PreRunParseTokenMixin, actions.Action):
+class GetGroups(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('provider',)
 
@@ -68,9 +68,9 @@ class ListGroups(PreRunParseTokenMixin, actions.Action):
                 profile_id=self.request.profile_id,
                 return_object='profile',
             )
-            groups = provider.list_groups_for_profile(for_profile)
+            groups = provider.get_groups_for_profile(for_profile)
         else:
-            groups = provider.list_groups_for_organization()
+            groups = provider.get_groups_for_organization()
 
         self.response.groups.extend(groups)
 
@@ -125,7 +125,7 @@ class LeaveGroup(PreRunParseTokenMixin, actions.Action):
         provider.leave_group(self.request.group_key)
 
 
-class ListMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
+class GetMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
 
     required_fields = ('provider', 'group_key')
 
@@ -148,7 +148,7 @@ class ListMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         provider = providers.Google(requester_profile=self.profile, token=self.token)
-        members = provider.list_members_for_group(self.request.group_key, self.request.role)
+        members = provider.get_members_for_group(self.request.group_key, self.request.role)
         if members:
             self._populate_response_members(members)
 

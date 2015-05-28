@@ -205,7 +205,7 @@ class TestGoogleListGroups(BaseGoogleCase):
                         if key != 'can_view':
                             self.assertEqual(getattr(group, key), value)
 
-    def test_list_groups_for_organization_cases(self, *patches):
+    def test_get_groups_for_organization_cases(self, *patches):
         test_cases = [
             {
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
@@ -220,7 +220,7 @@ class TestGoogleListGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
         ]
-        self._execute_test_cases('list_groups_for_organization', test_cases)
+        self._execute_test_cases('get_groups_for_organization', test_cases)
 
     def test_get_group(self, *patches):
         test_cases = [
@@ -250,7 +250,7 @@ class TestGoogleListGroups(BaseGoogleCase):
 
         self._execute_test_cases('get_group', test_cases, test_func=test)
 
-    def test_list_groups_for_user_single_group_cases(self, *patches):
+    def test_get_groups_for_user_single_group_cases(self, *patches):
         test_cases = [
             {
                 'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
@@ -662,12 +662,12 @@ class TestGoogleListGroups(BaseGoogleCase):
             },
         ]
         self._execute_test_cases(
-            'list_groups_for_profile',
+            'get_groups_for_profile',
             test_cases,
             provider_func_args=(self.for_profile,),
         )
 
-    def test_list_groups_for_user_one_public_one_members_only(self, *patches):
+    def test_get_groups_for_user_one_public_one_members_only(self, *patches):
         groups = [
             # create public groups with alphabetical names
             factories.GoogleGroupFactory(
@@ -698,13 +698,13 @@ class TestGoogleListGroups(BaseGoogleCase):
             self.assertEqual(groups[1].group_description, 'test')
 
         self._execute_test(
-            'list_groups_for_profile',
+            'get_groups_for_profile',
             assertions,
             self._structure_fixtures(groups),
             provider_func_args=(self.for_profile,),
         )
 
-    def test_list_groups_for_organization_alphabetical(self, *patches):
+    def test_get_groups_for_organization_alphabetical(self, *patches):
         groups = [
             # create public groups with alphabetical names
             factories.GoogleGroupFactory(
@@ -735,7 +735,7 @@ class TestGoogleListGroups(BaseGoogleCase):
             self.assertEqual(groups[1].name, 'b')
 
         self._execute_test(
-            'list_groups_for_organization',
+            'get_groups_for_organization',
             assertions,
             self._structure_fixtures(groups),
         )
@@ -969,7 +969,7 @@ class TestGoogleListMembers(BaseGoogleCase):
                 else:
                     raise NotImplemented('Not sure how to evaluate assertions: %s' % (assertions,))
 
-    def test_list_members(self, *patches):
+    def test_get_members(self, *patches):
         test_cases = [
             # all in domain can view, not a member
             {
@@ -1122,7 +1122,7 @@ class TestGoogleListMembers(BaseGoogleCase):
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
         ]
-        self._execute_test_cases('list_members_for_group', test_cases)
+        self._execute_test_cases('get_members_for_group', test_cases)
 
     def test_get_group_members_called_with_google_group_role(self, *patches):
         @patch.object(self.provider, '_get_group_members')
@@ -1131,7 +1131,7 @@ class TestGoogleListMembers(BaseGoogleCase):
         def test(container_role, expected_role, mock_settings, mock_visible, mock_members):
             mock_settings.return_value = ({'group@circlhq.co': {}}, {})
             mock_visible.return_value = True
-            self.provider.list_members_for_group('group@circlehq.co', container_role)
+            self.provider.get_members_for_group('group@circlehq.co', container_role)
             self.assertEqual(mock_members.call_args[0][1], expected_role)
 
         test(group_containers.MEMBER, 'MEMBER')
@@ -1149,7 +1149,7 @@ class TestGoogleListMembers(BaseGoogleCase):
             mock_api_builder().members().list().execute.return_value = {
                 'kind': 'admin#directory#members',
             }
-            members = self.provider.list_members_for_group('group@circlehq.co', 0)
+            members = self.provider.get_members_for_group('group@circlehq.co', 0)
             self.assertEqual(members, [])
         test()
 

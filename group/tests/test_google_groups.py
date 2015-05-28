@@ -45,28 +45,28 @@ class TestGoogleGroups(TestCase):
             profile_id=self.by_profile.id,
         )
 
-    def test_list_groups_provider_required(self):
+    def test_get_groups_provider_required(self):
         with self.assertFieldError('provider', 'MISSING'):
-            self.client.call_action('list_groups')
+            self.client.call_action('get_groups')
 
     @patch('group.actions.providers.Google')
-    def test_list_groups_for_organization(self, mock_google_provider):
-        mock_google_provider().list_groups_for_organization.return_value = [
+    def test_get_groups_for_organization(self, mock_google_provider):
+        mock_google_provider().get_groups_for_organization.return_value = [
             mocks.mock_group(),
             mocks.mock_group(),
         ]
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
-            response = self.client.call_action('list_groups', provider=group_containers.GOOGLE)
+            response = self.client.call_action('get_groups', provider=group_containers.GOOGLE)
         self.assertEqual(len(response.result.groups), 2)
 
     @patch('group.actions.providers.Google')
-    def test_list_groups_for_profile(self, mock_google_provider):
+    def test_get_groups_for_profile(self, mock_google_provider):
         mock_groups = [
             mocks.mock_group(),
             mocks.mock_group(),
         ]
-        mock_google_provider().list_groups_for_profile.return_value = mock_groups
+        mock_google_provider().get_groups_for_profile.return_value = mock_groups
         for_profile = mocks.mock_profile(email='michael@circlehq.co')
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
@@ -78,32 +78,32 @@ class TestGoogleGroups(TestCase):
                 profile_id=for_profile.id,
             )
             response = self.client.call_action(
-                'list_groups',
+                'get_groups',
                 provider=group_containers.GOOGLE,
                 profile_id=for_profile.id,
             )
         self.assertEqual(
-            mock_google_provider().list_groups_for_profile.call_args[0][0],
+            mock_google_provider().get_groups_for_profile.call_args[0][0],
             for_profile,
         )
         self.assertEqual(len(response.result.groups), len(mock_groups))
 
-    def test_list_members_provider_required(self):
+    def test_get_members_provider_required(self):
         with self.assertFieldError('provider', 'MISSING'):
-            self.client.call_action('list_members', group_key=fuzzy.FuzzyUUID().fuzz())
+            self.client.call_action('get_members', group_key=fuzzy.FuzzyUUID().fuzz())
 
-    def test_list_members_group_key_required(self):
+    def test_get_members_group_key_required(self):
         with self.assertFieldError('group_key', 'MISSING'):
-            self.client.call_action('list_members', provider=group_containers.GOOGLE)
+            self.client.call_action('get_members', provider=group_containers.GOOGLE)
 
     @patch('group.actions.providers.Google')
-    def test_list_members(self, mock_google_provider):
+    def test_get_members(self, mock_google_provider):
         mock_members = [
             mocks.mock_member(role=group_containers.MEMBER),
             mocks.mock_member(role=group_containers.MEMBER),
             mocks.mock_member(role=group_containers.MEMBER, should_mock_profile=False),
         ]
-        mock_google_provider().list_members_for_group.return_value = mock_members
+        mock_google_provider().get_members_for_group.return_value = mock_members
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
             mock.instance.register_mock_object(
@@ -114,7 +114,7 @@ class TestGoogleGroups(TestCase):
                 emails=[x.profile.email for x in mock_members],
             )
             response = self.client.call_action(
-                'list_members',
+                'get_members',
                 provider=group_containers.GOOGLE,
                 group_key='group@circlehq.co',
             )
