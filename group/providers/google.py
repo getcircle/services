@@ -185,15 +185,12 @@ class Provider(base.BaseGroupsProvider):
 
     def _filter_visible_groups(self, provider_groups):
         group_keys = [x['email'] for x in provider_groups['groups']]
-        groups_settings, _ = self._get_groups_settings_and_membership(
-            group_keys,
-            fetch_membership=False,
-        )
+        groups_settings, membership = self._get_groups_settings_and_membership(group_keys)
 
         groups = []
         for provider_group in provider_groups['groups']:
-            group = self.provider_group_to_container(provider_group)
             group_settings = groups_settings.get(provider_group['email'], {})
+            group = self.provider_group_to_container(provider_group, group_settings, membership)
             if group_settings.get('showInGroupDirectory', False):
                 groups.append(group)
         return sorted(groups, key=lambda x: x.name)
@@ -246,13 +243,23 @@ class Provider(base.BaseGroupsProvider):
             visible = True
         return visible
 
-    def provider_group_to_container(self, provider_group):
+    def provider_group_to_container(self, provider_group, group_settings, membership):
         group = group_containers.GroupV1()
         group.id = provider_group['id']
         group.name = provider_group['name']
         group.members_count = int(provider_group['directMembersCount'])
         group.email = provider_group['email']
         group.group_description = provider_group['description']
+
+        states = self.get_states_for_user_in_group(
+            provider_group['email'],
+            group_settings,
+            membership,
+        )
+        group.is_member = states.get('is_member', False)
+        group.is_manager = states.get('is_manager', False)
+        group.can_join = states.get('can_join', False)
+        group.can_request = states.get('can_request', False)
         return group
 
     def provider_member_to_container(self, provider_member, profile=None):
@@ -274,13 +281,7 @@ class Provider(base.BaseGroupsProvider):
         for provider_group in provider_groups['groups']:
             group_key = provider_group['email']
             group_settings = groups_settings.get(group_key, {})
-            group = self.provider_group_to_container(provider_group)
-            states = self.get_states_for_user_in_group(group_key, group_settings, membership)
-            group.is_member = states.get('is_member', False)
-            group.is_manager = states.get('is_manager', False)
-            group.can_join = states.get('can_join', False)
-            group.can_request = states.get('can_request', False)
-
+            group = self.provider_group_to_container(provider_group, group_settings, membership)
             if self.is_group_visible(group_key, group_settings, membership):
                 groups.append(group)
         return sorted(groups, key=lambda x: x.name)
@@ -312,14 +313,13 @@ class Provider(base.BaseGroupsProvider):
 
     def get_group(self, group_key, **kwargs):
         provider_group = self._get_group(group_key)
-        group_settings, _ = self._get_groups_settings_and_membership(
+        group_settings, membership = self._get_groups_settings_and_membership(
             [provider_group['email']],
-            fetch_membership=False,
         )
         group_settings = group_settings.values()[0]
         group = None
         if group_settings.get('showInGroupDirectory', False):
-            group = self.provider_group_to_container(provider_group)
+            group = self.provider_group_to_container(provider_group, group_settings, membership)
         return group
 
     def add_profiles_to_group(self, profiles, group_key, **kwargs):
