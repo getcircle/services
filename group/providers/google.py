@@ -202,7 +202,7 @@ class Provider(base.BaseGroupsProvider):
             group_settings = groups_settings.get(provider_group['email'], {})
             group = self.provider_group_to_container(provider_group, group_settings, membership)
             group.has_pending_request = provider_group['email'] in pending_requests_dict
-            if group_settings.get('showInGroupDirectory', False):
+            if group_settings.get('showInGroupDirectory', 'false') == 'true':
                 groups.append(group)
 
         return sorted(groups, key=lambda x: x.name)
@@ -333,7 +333,7 @@ class Provider(base.BaseGroupsProvider):
         )
         group_settings = group_settings.values()[0]
         group = None
-        if group_settings.get('showInGroupDirectory', False):
+        if group_settings.get('showInGroupDirectory', 'false') == 'true':
             group = self.provider_group_to_container(provider_group, group_settings, membership)
             if not group.is_member and group.can_request:
                 group.has_pending_request = models.GroupMembershipRequest.objects.filter(

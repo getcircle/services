@@ -210,7 +210,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
         for i in range(4):
             show_group = bool(i % 2)
             group_kwargs = {
-                'settings__showInGroupDirectory': show_group,
+                'settings__showInGroupDirectory': str(show_group).lower(),
             }
             groups.append(factories.GoogleGroupFactory.create(**group_kwargs))
 
@@ -239,14 +239,14 @@ class TestGoogleGetGroups(BaseGoogleCase):
             {
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': False,
+                'setup:settings:showInGroupDirectory': 'false',
                 'assertions:group:can_view': False,
             },
             {
                 'setup:group:email': 'group@circlehq.co',
                 'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': True,
+                'setup:settings:showInGroupDirectory': 'true',
                 'assertions:group:can_view': True,
                 'assertions:group:has_pending_request': True,
             },
@@ -264,7 +264,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'setup:group:email': 'group@circlehq.co',
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': False,
+                'setup:settings:showInGroupDirectory': 'false',
                 'provider_func_args:0': 'setup:group:email',
                 'assertions:group:can_view': False,
                 'assertions:group:can_join': False,
@@ -276,7 +276,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'setup:group:email': 'group@circlehq.co',
                 'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': True,
+                'setup:settings:showInGroupDirectory': 'true',
                 'provider_func_args:0': 'setup:group:email',
                 'assertions:group:can_view': True,
                 'assertions:group:can_join': False,
@@ -289,7 +289,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'setup:group:email': 'norequest@circlehq.co',
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': True,
+                'setup:settings:showInGroupDirectory': 'true',
                 'provider_func_args:0': 'setup:group:email',
                 'setup:membership:role': 'MANAGER',
                 'setup:membership:email': self.by_profile.email,
@@ -304,7 +304,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'setup:group:email': 'group@circlehq.co',
                 'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': True,
+                'setup:settings:showInGroupDirectory': 'true',
                 'provider_func_args:0': 'setup:group:email',
                 'setup:membership:role': 'MEMBER',
                 'setup:membership:email': self.by_profile.email,
@@ -892,19 +892,19 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 name='b',
                 settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
                 settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
-                settings__showInGroupDirectory=True,
+                settings__showInGroupDirectory='true',
             ),
             factories.GoogleGroupFactory(
                 name='a',
                 settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
                 settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
-                settings__showInGroupDirectory=True,
+                settings__showInGroupDirectory='true',
             ),
             factories.GoogleGroupFactory(
                 name='c',
                 settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
                 settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
-                settings__showInGroupDirectory=False,
+                settings__showInGroupDirectory='false',
             ),
         ]
 

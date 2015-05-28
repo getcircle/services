@@ -39,8 +39,8 @@ class GoogleGroupSettingsFactory(Factory):
 
     email = factory.FuzzyText(suffix='@circlehq.co')
     description = factory.FuzzyText()
-    allowExternalMembers = factory.FuzzyChoice([False, True])
-    showInGroupDirectory = factory.FuzzyChoice([False, True])
+    allowExternalMembers = factory.FuzzyChoice(['false', 'true'])
+    showInGroupDirectory = factory.FuzzyChoice(['false', 'true'])
     whoCanJoin = factory.FuzzyChoice([
         'ANYONE_CAN_JOIN',
         'ALL_IN_DOMAIN_CAN_JOIN',
