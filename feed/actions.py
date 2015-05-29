@@ -218,16 +218,21 @@ class GetProfileFeed(actions.Action):
         category.category_type = feed_containers.CategoryV1.GROUP_MEMBERSHIP_REQUESTS
         category.total_count = len(requests)
         for request in requests:
-            request_container = category.group_membership_requests.add()
-            request_container.CopyFrom(request)
+            profile = profile_id_to_profile.get(request.requester_profile_id)
+            if not profile:
+                # XXX log error here
+                continue
+            group = group_key_to_group.get(request.group_key)
+            if not group:
+                # XXX log error here
+                continue
 
-            profile = profile_id_to_profile[request.requester_profile_id]
             profile_container = category.profiles.add()
             profile_container.CopyFrom(profile)
-
-            group = group_key_to_group[request.group_key]
             group_container = category.groups.add()
             group_container.CopyFrom(group)
+            request_container = category.group_membership_requests.add()
+            request_container.CopyFrom(request)
 
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
