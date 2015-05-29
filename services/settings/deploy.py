@@ -34,6 +34,13 @@ CACHEOPS_REDIS = {
     'socket_timeout': os.environ.get('CACHEOPS_REDIS_SOCKET_TIMEOUT', 3),
 }
 
+SERVICES_REDIS = {
+    'host': redis_url.hostname,
+    'port': redis_url.port,
+    'db': 2,
+    'socket_timeout': os.environ.get('SERVICES_REDIS_SOCKET_TIMEOUT', 3),
+}
+
 LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 

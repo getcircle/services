@@ -30,6 +30,13 @@ CACHEOPS_REDIS = {
     'socket_timeout': 3,
 }
 
+SERVICES_REDIS = {
+    'host': 'localhost',
+    'port': 6379,
+    'db': 2,
+    'socket_timeout': 3,
+}
+
 METRICS_HANDLER_KWARGS = {'name': 'services.metrics'}
 
 CORS_ORIGIN_ALLOW_ALL = True

@@ -5,6 +5,7 @@ from pprint import pprint
 
 from apiclient.errors import HttpError
 from protobufs.services.group import containers_pb2 as group_containers
+from service_protobufs import soa_pb2 as service_containers
 
 from services.test import TestCase
 from services.test import (
@@ -133,6 +134,7 @@ class BaseGoogleCase(TestCase):
                 raise
 
 
+@patch('group.providers.google.get_redis_client')
 @patch('group.providers.google.service.control.get_object')
 @patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleGetGroups(BaseGoogleCase):
@@ -1109,6 +1111,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
             self._execute_test_cases('approve_request_to_join', test_cases, test_func=test)
 
 
+@patch('group.providers.google.get_redis_client')
 @patch('group.providers.google.service.control.get_object')
 @patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleListMembers(BaseGoogleCase):
@@ -1335,6 +1338,7 @@ class TestGoogleListMembers(BaseGoogleCase):
         test()
 
 
+@patch('group.providers.google.get_redis_client')
 @patch('group.providers.google.service.control.get_object')
 @patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleGroups(BaseGoogleCase):
@@ -1349,3 +1353,40 @@ class TestGoogleGroups(BaseGoogleCase):
             patched_build_api().members().delete.execute.return_value = ''
             self.provider.leave_group('group@circlehq.co')
             self.assertEqual(patched_build_api().members().delete().execute.call_count, 1)
+
+
+@patch('group.providers.google.service.control.get_object')
+@patch('group.providers.google.SignedJwtAssertionCredentials')
+class TestGoogleGroupsPagination(BaseGoogleCase):
+
+    def test_get_groups_pagination_mapping_first_page(self, *patches):
+        paginator = service_containers.PaginatorV1()
+        patches = [
+            patch('group.providers.google.build'),
+            patch.object(self.provider, '_filter_visible_groups'),
+            patch('group.providers.google.get_redis_client'),
+        ]
+        next_page_token = 'asdfasdfas'
+        with contextlib.nested(*patches) as (mock_build, mock_filter, mock_redis_client):
+            mock_build().groups().list().execute.return_value = {'nextPageToken': next_page_token}
+            mock_redis_client().hincrby.return_value = 2
+            mock_filter.return_value = []
+            self.provider.get_groups_for_organization(paginator=paginator)
+        self.assertEqual(mock_redis_client().hset.call_args[0][1], 2)
+        self.assertEqual(paginator.next_page, 2)
+
+    def test_get_groups_pagination_mapping_next_page(self, *patches):
+        paginator = service_containers.PaginatorV1(page=2, next_page=3)
+        patches = [
+            patch('group.providers.google.build'),
+            patch.object(self.provider, '_filter_visible_groups'),
+            patch('group.providers.google.get_redis_client'),
+        ]
+        with contextlib.nested(*patches) as (mock_build, mock_filter, mock_redis_client):
+            mock_build().groups().list().execute.return_value = {'nextPageToken': 'asdfasdf'}
+            mock_redis_client().hincrby.return_value = 3
+            mock_filter.return_value = []
+            self.provider.get_groups_for_organization(paginator=paginator)
+        self.assertEqual(mock_redis_client().hset.call_args[0][1], 3)
+        self.assertEqual(mock_redis_client().hget.call_args[0][1], 2)
+        self.assertEqual(paginator.next_page, 3)

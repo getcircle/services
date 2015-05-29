@@ -9,6 +9,8 @@ from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization.containers import integration_pb2
 import service.control
 
+from services.cache import get_redis_client
+
 from . import (
     base,
     exceptions,
@@ -52,14 +54,55 @@ class Provider(base.BaseGroupsProvider):
     def _get_role_from_role_v1(self, role_v1):
         return group_containers.RoleV1.keys()[role_v1]
 
-    def _get_groups(self, email=None):
+    def _get_next_page_cache_key(self, request_key):
+        return 'groups:google:paginator:%s' % (request_key,)
+
+    def _map_next_page_token(self, paginator, next_page_token, request_key):
+        if not next_page_token:
+            paginator.ClearField('next_page')
+            self._clear_next_page_mapping(request_key)
+            return
+
+        cache_key = self._get_next_page_cache_key(request_key)
+        redis_client = get_redis_client()
+        # default the next page to 1
+        redis_client.hsetnx(cache_key, 'next_page', 1)
+
+        page_number = redis_client.hincrby(cache_key, 'next_page', 1)
+        redis_client.hset(cache_key, page_number, next_page_token)
+        paginator.next_page = page_number
+
+    def _get_page_token(self, page_number, request_key):
+        cache_key = self._get_next_page_cache_key(request_key)
+        redis_client = get_redis_client()
+        return redis_client.hget(cache_key, page_number)
+
+    def _clear_next_page_mapping(self, request_key):
+        cache_key = self._get_next_page_cache_key(request_key)
+        redis_client = get_redis_client()
+        redis_client.delete(cache_key)
+
+    def _get_groups(self, request_key, email=None, paginator=None):
         if email is not None:
             list_kwargs = {'userKey': email}
         else:
             list_kwargs = {'domain': self.organization.domain}
+
+        if paginator is not None:
+            list_kwargs['maxResults'] = paginator.page_size
+            if paginator.next_page:
+                token = self._get_page_token(paginator.page, request_key)
+                list_kwargs['pageToken'] = token
+            elif paginator.page == 1:
+                self._clear_next_page_mapping(request_key)
+
         # TODO add tests around Http 400 & 403 failures
         # TODO add tests around pagination
-        return self.directory_client.groups().list(**list_kwargs).execute()
+        response = self.directory_client.groups().list(**list_kwargs).execute()
+        if paginator is not None:
+            next_page_token = response.get('nextPageToken', 0)
+            self._map_next_page_token(paginator, next_page_token, request_key)
+        return response
 
     def _get_groups_with_keys(self, keys):
         groups = []
@@ -286,8 +329,12 @@ class Provider(base.BaseGroupsProvider):
             member.profile.email = provider_member['email']
         return member
 
-    def get_groups_for_profile(self, profile, **kwargs):
-        provider_groups = self._get_groups(profile.email)
+    def get_groups_for_profile(self, profile, paginator=None, request_key=None, **kwargs):
+        provider_groups = self._get_groups(
+            request_key=request_key,
+            email=profile.email,
+            paginator=paginator,
+        )
         group_keys = [x['email'] for x in provider_groups['groups']]
         groups_settings, membership = self._get_groups_settings_and_membership(group_keys)
 
@@ -303,8 +350,8 @@ class Provider(base.BaseGroupsProvider):
                 groups.append(group)
         return sorted(groups, key=lambda x: x.name)
 
-    def get_groups_for_organization(self, **kwargs):
-        provider_groups = self._get_groups()
+    def get_groups_for_organization(self, paginator=None, request_key=None, **kwargs):
+        provider_groups = self._get_groups(request_key=request_key, paginator=paginator)
         return self._filter_visible_groups(provider_groups)
 
     def get_members_for_group(self, group_key, role, **kwargs):

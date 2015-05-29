@@ -1,3 +1,4 @@
+import hashlib
 from protobufs.services.group.actions import respond_to_membership_request_pb2
 from service import (
     actions,
@@ -49,7 +50,25 @@ class PreRunParseTokenFetchProfileMixin(object):
         )
 
 
-class GetGroups(PreRunParseTokenMixin, actions.Action):
+class BaseGroupAction(actions.Action):
+
+    def get_request_md5(self):
+        """An md5 of the request without pagination parameters.
+
+        This can be used to match the requests coming from a user that have
+        different page numbers specified.
+
+        """
+        parts = (
+            self.token,
+            self.control.service,
+            self.control.action,
+            self.request.SerializeToString()
+        )
+        return hashlib.md5(':'.join(parts)).hexdigest()
+
+
+class GetGroups(PreRunParseTokenMixin, BaseGroupAction):
 
     required_fields = ('provider',)
 
@@ -68,9 +87,16 @@ class GetGroups(PreRunParseTokenMixin, actions.Action):
                 profile_id=self.request.profile_id,
                 return_object='profile',
             )
-            groups = provider.get_groups_for_profile(for_profile)
+            groups = provider.get_groups_for_profile(
+                for_profile,
+                paginator=self.control.paginator,
+                request_key=self.get_request_md5(),
+            )
         else:
-            groups = provider.get_groups_for_organization()
+            groups = provider.get_groups_for_organization(
+                paginator=self.control.paginator,
+                request_key=self.get_request_md5(),
+            )
 
         self.response.groups.extend(groups)
 
