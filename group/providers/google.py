@@ -154,10 +154,9 @@ class Provider(base.BaseGroupsProvider):
         membership = {}
 
         def handle_is_member(request_id, response, exception, **kwargs):
-            if exception is not None:
-                raise exception
-            request_num, group = request_id.split('::')
-            membership[group] = response
+            if response:
+                request_num, group = request_id.split('::')
+                membership[group] = response
 
         def handle_groups_settings(request_id, response, exception, **kwargs):
             if exception is not None:
