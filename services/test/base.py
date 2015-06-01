@@ -65,7 +65,16 @@ class TestCase(DjangoTestCase):
             self._verify_values(expected_value, value, message='field: %s' % (field.name,))
 
     def assertEqualUUID4(self, first, second):
-        self.assertTrue(matching_uuids(first, second))
+        try:
+            self.assertTrue(matching_uuids(first, second))
+        except AssertionError:
+            raise AssertionError('%s does not equal %s' % (first, second))
+
+    def assertNotEqualUUID4(self, first, second):
+        try:
+            self.assertFalse(matching_uuids(first, second))
+        except AssertionError:
+            raise AssertionError('%s equals %s' % (first, second))
 
     @contextmanager
     def mock_transport(self, client=None):
