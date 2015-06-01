@@ -1,5 +1,6 @@
 from csv import DictReader
 
+from django.contrib.auth.hashers import make_password
 from django.utils.encoding import smart_text
 from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
@@ -7,7 +8,7 @@ import service.control
 from services.utils import get_timezone_for_location
 from .base import OrganizationParser
 
-DEFAULT_PASSWORD = 'rhlabs123'
+DEFAULT_PASSWORD = make_password('rhlabs123')
 
 
 class TeamStore(object):
