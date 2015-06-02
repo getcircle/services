@@ -26,6 +26,15 @@ class TestGlossaryTerm(TestCase):
             ),
         )
 
+    def _mock_requester_profile(self, profile, mock):
+        mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object_path='profile',
+            return_object=profile,
+            profile_id=profile.id,
+        )
+
     def test_create_term_term_required(self):
         with self.assertFieldError('term', 'MISSING'):
             self.client.call_action('create_term')
@@ -52,7 +61,11 @@ class TestGlossaryTerm(TestCase):
         response = self.client.call_action('create_term', term=expected)
         self.verify_containers(expected, response.result.term)
         term = models.Term.objects.get(pk=response.result.term.id)
-        self.verify_containers(response.result.term, term.to_protobuf())
+        self.verify_containers(
+            response.result.term,
+            term.to_protobuf(),
+            ignore_fields=('permissions',),
+        )
 
     def test_create_term_ignore_term_organization_id(self):
         expected = factories.TermFactory.build_protobuf(
@@ -96,7 +109,11 @@ class TestGlossaryTerm(TestCase):
         response = self.client.call_action('update_term', term=data)
         self.assertEqual(response.result.term.name, 'new name')
         term = models.Term.objects.get(pk=response.result.term.id)
-        self.verify_containers(response.result.term, term.to_protobuf())
+        self.verify_containers(
+            response.result.term,
+            term.to_protobuf(),
+            ignore_fields=('permissions',),
+        )
 
     def test_update_term_id_invalid(self):
         with self.assertFieldError('term.id'):
@@ -117,9 +134,12 @@ class TestGlossaryTerm(TestCase):
         self.assertEqualUUID4(str(expected.organization_id), response.result.term.organization_id)
 
     def test_get_term_by_id(self):
-        expected = factories.TermFactory.create_protobuf(organization_id=self.organization.id)
+        expected = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+            created_by_profile_id=self.profile.id,
+        )
         response = self.client.call_action('get_term', id=expected.id)
-        self.verify_containers(expected, response.result.term)
+        self.verify_containers(expected, response.result.term, ignore_fields=('permissions,'))
 
     def test_get_term_by_id_wrong_organization(self):
         expected = factories.TermFactory.create_protobuf()
@@ -143,7 +163,9 @@ class TestGlossaryTerm(TestCase):
         # create terms for another organization
         factories.TermFactory.create_batch(size=2)
         terms = factories.TermFactory.create_batch(size=3, organization_id=self.organization.id)
-        response = self.client.call_action('get_terms')
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('get_terms')
         self.assertEqual(len(terms), len(response.result.terms))
 
     def test_get_terms_with_ids_wrong_organization(self):
@@ -161,7 +183,9 @@ class TestGlossaryTerm(TestCase):
 
     def test_get_terms_by_ids(self):
         terms = factories.TermFactory.create_batch(size=3, organization_id=self.organization.id)
-        response = self.client.call_action('get_terms', ids=[str(terms[0].id)])
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('get_terms', ids=[str(terms[0].id)])
         self.assertEqual(len(response.result.terms), 1)
         self.verify_containers(response.result.terms[0], terms[0].to_protobuf())
 
@@ -183,8 +207,126 @@ class TestGlossaryTerm(TestCase):
             self.client.call_action('delete_term', id=term.id)
 
     def test_delete_term(self):
-        terms = factories.TermFactory.create_batch(size=3, organization_id=self.organization.id)
+        terms = factories.TermFactory.create_batch(
+            size=3,
+            organization_id=self.organization.id,
+            created_by_profile_id=self.profile.id,
+        )
         self.client.call_action('delete_term', id=str(terms[0].id))
 
         self.assertFalse(models.Term.objects.filter(id=terms[0].id).exists())
         self.assertEqual(len(models.Term.objects.filter(organization_id=self.organization.id)), 2)
+
+    def test_update_term_not_creator_profile(self):
+        term = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+            created_by_profile_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        term.name = 'test'
+        with self.mock_transport() as mock, self.assertRaisesCallActionError() as expected:
+            self._mock_requester_profile(self.profile, mock)
+            self.client.call_action('update_term', term=term)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
+    def test_delete_term_not_creator_profile(self):
+        term = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+            created_by_profile_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        with self.mock_transport() as mock, self.assertRaisesCallActionError() as expected:
+            self._mock_requester_profile(self.profile, mock)
+            self.client.call_action('delete_term', id=term.id)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
+    def test_update_term_not_creator_profile_admin(self):
+        term = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+            created_by_profile_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        term.name = 'test'
+        self.profile.is_admin = True
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('update_term', term=term)
+
+        self.assertEqual(term.name, response.result.term.name)
+
+    def test_delete_term_not_creator_profile_admin(self):
+        term = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+            created_by_profile_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        self.profile.is_admin = True
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            self.client.call_action('delete_term', id=term.id)
+
+        self.assertFalse(models.Term.objects.filter(id=term.id).exists())
+
+    def test_get_term_creator(self):
+        term = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+            created_by_profile_id=self.profile.id,
+        )
+        response = self.client.call_action('get_term', id=term.id)
+        self.assertTrue(response.result.term.permissions.can_edit)
+        self.assertTrue(response.result.term.permissions.can_delete)
+
+    def test_get_term_not_creator(self):
+        term = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+        )
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('get_term', id=term.id)
+        self.assertFalse(response.result.term.permissions.can_edit)
+        self.assertFalse(response.result.term.permissions.can_delete)
+
+    def test_get_term_admin(self):
+        term = factories.TermFactory.create_protobuf(
+            organization_id=self.organization.id,
+            created_by_profile_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        self.profile.is_admin = True
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('get_term', id=term.id)
+        self.assertTrue(response.result.term.permissions.can_edit)
+        self.assertTrue(response.result.term.permissions.can_delete)
+
+    def test_get_terms_not_creator(self):
+        factories.TermFactory.create_batch(size=2, organization_id=self.organization.id)
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('get_terms')
+        for term in response.result.terms:
+            self.assertFalse(term.permissions.can_edit)
+            self.assertFalse(term.permissions.can_delete)
+
+    def test_get_terms_creator(self):
+        factories.TermFactory.create_batch(
+            size=2,
+            organization_id=self.organization.id,
+            created_by_profile_id=self.profile.id,
+        )
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('get_terms')
+        for term in response.result.terms:
+            self.assertTrue(term.permissions.can_edit)
+            self.assertTrue(term.permissions.can_delete)
+
+    def test_get_terms_admin(self):
+        factories.TermFactory.create_batch(
+            size=2,
+            organization_id=self.organization.id,
+        )
+        self.profile.is_admin = True
+        with self.mock_transport() as mock:
+            self._mock_requester_profile(self.profile, mock)
+            response = self.client.call_action('get_terms')
+        for term in response.result.terms:
+            self.assertTrue(term.permissions.can_edit)
+            self.assertTrue(term.permissions.can_delete)

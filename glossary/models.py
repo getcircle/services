@@ -1,5 +1,4 @@
 from common.db import models
-from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.glossary import containers_pb2 as glossary_containers
 
 

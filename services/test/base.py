@@ -59,8 +59,11 @@ class TestCase(DjangoTestCase):
         for key, value in data.iteritems():
             self._verify_values(value, getattr(container, key), message='key: %s' % (key,))
 
-    def verify_containers(self, expected, to_verify):
+    def verify_containers(self, expected, to_verify, ignore_fields=tuple()):
         for field, expected_value in expected.ListFields():
+            if field.name in ignore_fields:
+                continue
+
             value = getattr(to_verify, field.name, None)
             self._verify_values(expected_value, value, message='field: %s' % (field.name,))
 

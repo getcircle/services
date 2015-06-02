@@ -1,15 +1,47 @@
+from protobufs.services.common import containers_pb2 as common_containers
 from service import (
     actions,
     validators,
 )
+import service.control
 
 from services import mixins
-from services.token import parse_token
+from services import utils
 
 from . import models
 
 
-class CreateTerm(mixins.PreRunParseTokenMixin, actions.Action):
+class TermPermissionsMixin(object):
+
+    @property
+    def requester_profile(self):
+        # TODO it would be great if we could test this was only called once by
+        # having a counter in the mock transport
+        if not hasattr(self, '_requester_profile'):
+            self._requester_profile = service.control.get_object(
+                service='profile',
+                action='get_profile',
+                return_object='profile',
+                client_kwargs={'token': self.token},
+                profile_id=self.parsed_token.profile_id,
+            )
+        return self._requester_profile
+
+    def get_permissions(self, term):
+        permissions = common_containers.PermissionsV1()
+        if utils.matching_uuids(term.created_by_profile_id, self.parsed_token.profile_id):
+            permissions.can_edit = True
+            permissions.can_add = True
+            permissions.can_delete = True
+        else:
+            if self.requester_profile.is_admin:
+                permissions.can_edit = True
+                permissions.can_add = True
+                permissions.can_delete = True
+        return permissions
+
+
+class CreateTerm(mixins.PreRunParseTokenMixin, TermPermissionsMixin, actions.Action):
 
     required_fields = (
         'term',
@@ -24,10 +56,11 @@ class CreateTerm(mixins.PreRunParseTokenMixin, actions.Action):
         term.organization_id = self.parsed_token.organization_id
         term.created_by_profile_id = self.parsed_token.profile_id
         term.save()
+        self.response.term.permissions.CopyFrom(self.get_permissions(term))
         term.to_protobuf(self.response.term)
 
 
-class UpdateTerm(mixins.PreRunParseTokenMixin, actions.Action):
+class UpdateTerm(mixins.PreRunParseTokenMixin, TermPermissionsMixin, actions.Action):
 
     required_fields = (
         'term',
@@ -42,15 +75,17 @@ class UpdateTerm(mixins.PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         term = models.Term.objects.get(pk=self.request.term.id)
+        permissions = self.get_permissions(term)
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
+
         term.update_from_protobuf(self.request.term)
         term.save()
+        self.response.term.permissions.CopyFrom(permissions)
         term.to_protobuf(self.response.term)
 
 
-class GetTerm(actions.Action):
-
-    def pre_run(self, *args, **kwargs):
-        self.parsed_token = parse_token(self.token)
+class GetTerm(mixins.PreRunParseTokenMixin, TermPermissionsMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         parameters = {'organization_id': self.parsed_token.organization_id}
@@ -68,10 +103,12 @@ class GetTerm(actions.Action):
             elif self.request.HasField('name'):
                 lookup_key = 'name'
             raise self.ActionFieldError(lookup_key, 'DOES_NOT_EXIST')
+
+        self.response.term.permissions.CopyFrom(self.get_permissions(term))
         term.to_protobuf(self.response.term)
 
 
-class GetTerms(mixins.PreRunParseTokenMixin, actions.Action):
+class GetTerms(mixins.PreRunParseTokenMixin, TermPermissionsMixin, actions.Action):
 
     type_validators = {
         'ids': [validators.is_uuid4_list],
@@ -82,15 +119,20 @@ class GetTerms(mixins.PreRunParseTokenMixin, actions.Action):
         if self.request.ids:
             parameters['pk__in'] = self.request.ids
 
+        def serialize_to_term(item, container):
+            item_container = container.add()
+            item_container.permissions.CopyFrom(self.get_permissions(item))
+            item.to_protobuf(item_container)
+
         terms = models.Term.objects.filter(**parameters)
         self.paginated_response(
             self.response.terms,
             terms,
-            lambda item, container: item.to_protobuf(container.add()),
+            serialize_to_term,
         )
 
 
-class DeleteTerm(mixins.PreRunParseTokenMixin, actions.Action):
+class DeleteTerm(mixins.PreRunParseTokenMixin, TermPermissionsMixin, actions.Action):
 
     required_fields = ('id',)
     type_validators = {
@@ -105,5 +147,9 @@ class DeleteTerm(mixins.PreRunParseTokenMixin, actions.Action):
             )
         except models.Term.DoesNotExist:
             raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
+
+        permissions = self.get_permissions(term)
+        if not permissions.can_delete:
+            raise self.PermissionDenied()
 
         term.delete()
