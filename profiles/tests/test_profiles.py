@@ -129,7 +129,14 @@ class TestProfiles(TestCase):
         profile_data = factories.ProfileFactory.get_protobuf_data()
         response = self.client.call_action('create_profile', profile=profile_data)
         self.assertTrue(response.success)
+        self.assertFalse(response.result.profile.is_admin)
         self.verify_container_matches_data(response.result.profile, profile_data)
+
+    def test_create_profile_admin(self):
+        profile_data = factories.ProfileFactory.get_protobuf_data()
+        profile_data['is_admin'] = True
+        response = self.client.call_action('create_profile', profile=profile_data)
+        self.assertTrue(response.result.profile.is_admin)
 
     def test_create_profile_about_empty_string_ignored(self):
         profile_data = factories.ProfileFactory.get_protobuf_data()

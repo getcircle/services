@@ -52,6 +52,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         null=True,
     )
     about = models.TextField(null=True)
+    is_admin = models.BooleanField(default=False)
 
     @property
     def full_name(self):
