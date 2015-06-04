@@ -1,6 +1,9 @@
 from boto.auth import S3HmacAuthV4Handler
-from boto.provider import Provider
 from boto.connection import HTTPRequest
+from boto.provider import Provider
+from boto.s3.connection import S3Connection
+
+from django.conf import settings
 
 
 def get_presigned_url(
@@ -42,3 +45,19 @@ def get_presigned_url(
         provider=provider,
     )
     return auth.presign(request, expires)
+
+
+class S3Manager(object):
+
+    def get_connection(self):
+        if not hasattr(self, '_s3_connection'):
+            self._s3_connection = S3Connection(
+                settings.AWS_ACCESS_KEY_ID,
+                settings.AWS_SECRET_ACCESS_KEY,
+            )
+        return self._s3_connection
+
+    def get_media_bucket(self, media_bucket=None):
+        media_bucket = media_bucket or settings.AWS_S3_MEDIA_BUCKET
+        connection = self.get_connection()
+        return connection.get_bucket(media_bucket)

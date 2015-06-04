@@ -11,10 +11,7 @@ from service import (
     validators,
 )
 import service.control
-from boto.s3.connection import (
-    S3Connection,
-    S3ResponseError,
-)
+from boto.s3.connection import S3ResponseError
 from boto.s3.multipart import MultiPartUpload
 
 from . import utils
@@ -25,6 +22,7 @@ class StartImageUpload(actions.Action):
     def __init__(self, *args, **kwargs):
         super(StartImageUpload, self).__init__(*args, **kwargs)
         self.profile_client = service.control.Client('profile', token=self.token)
+        self.s3_manager = utils.S3Manager()
 
     def _validate_profile_id(self, profile_id):
         if not validators.is_uuid4(profile_id):
@@ -34,13 +32,6 @@ class StartImageUpload(actions.Action):
             self.profile_client.call_action('get_profile', profile_id=self.request.media_key)
         except service.control.CallActionError:
             raise self.ActionFieldError('media_key', 'DOES_NOT_EXIST')
-
-    def _get_s3_connection(self):
-        return S3Connection(settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY)
-
-    def _get_media_bucket(self):
-        connection = self._get_s3_connection()
-        return connection.get_bucket(settings.AWS_S3_MEDIA_BUCKET)
 
     def _get_image_identifier(self, key):
         return hashlib.md5(arrow.utcnow().isoformat() + ':' + key).hexdigest()
@@ -59,7 +50,7 @@ class StartImageUpload(actions.Action):
                 self._validate_profile_id(self.request.media_key)
 
     def run(self, *args, **kwargs):
-        bucket = self._get_media_bucket()
+        bucket = self.s3_manager.get_media_bucket()
         media_key = self._build_media_key()
         if not media_key:
             self.note_error('ERROR', ('ERROR', 'unsupported media object'))
@@ -131,7 +122,7 @@ class CompleteImageUpload(StartImageUpload):
             self._delete_previous_profile_image()
 
     def run(self, *args, **kwargs):
-        self.bucket = self._get_media_bucket()
+        self.bucket = self.s3_manager.get_media_bucket()
         self._complete_upload()
         if not self.is_error():
             self._delete_previous_image()

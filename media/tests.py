@@ -95,7 +95,7 @@ class TestMediaService(TestCase):
             )
 
     # TODO add tests for failing connections
-    @patch('media.actions.S3Connection')
+    @patch('media.utils.S3Connection')
     def test_start_image_upload_profile(self, mock_s3_connection):
         type(
             mock_s3_connection().get_bucket().initiate_multipart_upload()
@@ -156,7 +156,7 @@ class TestMediaService(TestCase):
         mock_multipart().complete_upload.return_value = mock_response
 
     @patch('media.actions.MultiPartUpload')
-    @patch('media.actions.S3Connection')
+    @patch('media.utils.S3Connection')
     def test_complete_image_upload_profile(self, mock_s3_connection, mock_multipart):
         self._mock_complete_image_upload(mock_s3_connection, mock_multipart)
         profile_id = fuzzy.FuzzyUUID().fuzz()
@@ -174,7 +174,7 @@ class TestMediaService(TestCase):
         self.assertTrue(response.result.media_url.startswith('https'))
 
     @patch('media.actions.MultiPartUpload')
-    @patch('media.actions.S3Connection')
+    @patch('media.utils.S3Connection')
     def test_complete_image_upload_profile_delete_previous_image(
             self,
             mock_s3_connection,
