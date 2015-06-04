@@ -217,7 +217,7 @@ class Parser(OrganizationParser):
             profile_data = {
                 'organization_id': self.organization.id,
                 'team_id': self.saved_teams[row.team],
-                'location_id': self.saved_locations[row.address_composite_key],
+                'location_id': self.saved_locations.get(row.address_composite_key),
                 'user_id': self.saved_users[row.email],
             }
             profile_data.update(row.profile)
@@ -258,7 +258,8 @@ class Parser(OrganizationParser):
 
     def _save(self):
         for composite_key, address in self.addresses.iteritems():
-            self.saved_locations[composite_key] = self._save_location(address)
+            if any(address.values()):
+                self.saved_locations[composite_key] = self._save_location(address)
 
         # create users for all the rows
         users = self._save_users(self.rows)
