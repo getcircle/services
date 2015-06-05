@@ -86,6 +86,7 @@ class BulkCreateProfiles(actions.Action):
         return models.Profile.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
+        # TODO this should have organization id
         existing_profiles = models.Profile.objects.filter(
             email__in=[x.email for x in self.request.profiles]
         )
