@@ -226,7 +226,9 @@ class Logout(actions.Action):
 
     def _delete_token_for_client(self, service_token, client_type):
         try:
+            # TODO see if we really need client_type
             models.Token.objects.get(
+                key=service_token.auth_token,
                 user_id=service_token.user_id,
                 client_type=self.request.client_type,
             ).delete()
