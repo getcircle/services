@@ -1,6 +1,11 @@
 import service.control
 
-from services.test import TestCase
+from services.test import (
+    fuzzy,
+    mocks,
+    TestCase,
+)
+from services.token import parse_token
 
 from .. import (
     factories,
@@ -11,7 +16,9 @@ from .. import (
 class TestUserDevices(TestCase):
 
     def setUp(self):
-        self.client = service.control.Client('user', token='test-token')
+        self.service_token = mocks.mock_token()
+        self.parsed_token = parse_token(self.service_token)
+        self.client = service.control.Client('user', token=self.service_token)
 
     def test_record_device_invalid_user_id(self):
         device = factories.DeviceFactory.build_protobuf(id=None)
@@ -40,7 +47,19 @@ class TestUserDevices(TestCase):
         device = factories.DeviceFactory.build_protobuf(id=None, user=user)
         response = self.client.call_action('record_device', device=device)
         self.verify_containers(device, response.result.device)
-        self.assertTrue(device.active)
+
+        # verify that auth_token was recorded on the device
+        self.assertFalse(hasattr(response.result.device, 'last_token'))
+        result = models.Device.objects.get(id=response.result.device.id)
+        self.assertEqualUUID4(result.last_token, self.parsed_token.auth_token)
+
+        # verify that the auth_token is updated on the device
+        token = mocks.mock_token()
+        parsed_token = parse_token(token)
+        client = service.control.Client('user', token=token)
+        client.call_action('record_device', device=device)
+        result = models.Device.objects.get(id=response.result.device.id)
+        self.assertEqualUUID4(result.last_token, parsed_token.auth_token)
 
     def test_user_record_multiple_devices(self):
         user = factories.UserFactory.create()
@@ -59,3 +78,21 @@ class TestUserDevices(TestCase):
 
         expected = models.Device.objects.get(id=device.id)
         self.assertEqual(device.app_version, expected.app_version)
+
+    def test_user_get_active_devices(self):
+        user = factories.UserFactory.create()
+        # create active devices
+        active_devices = factories.DeviceFactory.create_batch(
+            size=2,
+            user=user,
+            last_token=factories.TokenFactory.create(user=user).key,
+        )
+        # create inactive devices
+        factories.DeviceFactory.create_batch(
+            size=2,
+            user=user,
+            last_token=fuzzy.FuzzyUUID().fuzz(),
+        )
+
+        response = self.client.call_action('get_active_devices', user_id=str(user.id))
+        self.assertEqual(len(response.result.devices), len(active_devices))

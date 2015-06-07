@@ -159,7 +159,7 @@ class Device(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(user_containers.DeviceV1.ProviderV1),
         null=True,
     )
-    active = models.BooleanField(default=True)
+    last_token = models.CharField(max_length=40, null=True)
 
 
 class AccessRequest(models.UUIDModel, models.TimestampableModel):

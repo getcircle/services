@@ -14,6 +14,7 @@ from service import (
 )
 import service.control
 
+from services import mixins
 from services.token import (
     make_token,
     parse_token,
@@ -441,9 +442,10 @@ class GetIdentities(actions.Action):
         )
 
 
-class RecordDevice(actions.Action):
+class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
 
     required_fields = (
+        # XXX should only accept this from the token
         'device.user_id',
         'device.platform',
         'device.os_version',
@@ -464,10 +466,16 @@ class RecordDevice(actions.Action):
     def run(self, *args, **kwargs):
         try:
             device = models.Device.objects.get(device_uuid=self.request.device.device_uuid)
-            device.update_from_protobuf(self.request.device)
+            device.update_from_protobuf(
+                self.request.device,
+                last_token=self.parsed_token.auth_token,
+            )
             device.save()
         except models.Device.DoesNotExist:
-            device = models.Device.objects.from_protobuf(self.request.device)
+            device = models.Device.objects.from_protobuf(
+                self.request.device,
+                last_token=self.parsed_token.auth_token,
+            )
 
         device.to_protobuf(self.response.device)
 

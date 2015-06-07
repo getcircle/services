@@ -60,6 +60,7 @@ class DeviceFactory(factory.Factory):
     app_version = fuzzy.FuzzyText()
     device_uuid = fuzzy.FuzzyUUID()
     language_preference = 'en'
+    last_token = fuzzy.FuzzyText()
 
 
 class TokenFactory(factory.Factory):

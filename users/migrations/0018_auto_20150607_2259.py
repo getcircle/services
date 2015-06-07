@@ -7,13 +7,13 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0016_device_provider'),
+        ('users', '0017_device_last_token'),
     ]
 
     operations = [
-        migrations.AddField(
+        migrations.AlterField(
             model_name='device',
-            name='active',
-            field=models.BooleanField(default=True),
+            name='last_token',
+            field=models.CharField(max_length=40, null=True),
         ),
     ]
