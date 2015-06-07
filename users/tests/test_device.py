@@ -40,6 +40,7 @@ class TestUserDevices(TestCase):
         device = factories.DeviceFactory.build_protobuf(id=None, user=user)
         response = self.client.call_action('record_device', device=device)
         self.verify_containers(device, response.result.device)
+        self.assertTrue(device.active)
 
     def test_user_record_multiple_devices(self):
         user = factories.UserFactory.create()
