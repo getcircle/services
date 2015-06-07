@@ -36,3 +36,31 @@ class GetPreferences(mixins.PreRunParseTokenMixin, actions.Action):
                 subscribed=subscribed,
                 notification_type=container,
             )
+
+
+class UpdatePreference(mixins.PreRunParseTokenMixin, actions.Action):
+
+    required_fields = (
+        'preference',
+        'preference.notification_type_id',
+        'preference.subscribed',
+    )
+
+    def run(self, *args, **kwargs):
+        if not self.request.preference.id:
+            preference = models.NotificationPreference.objects.from_protobuf(
+                self.request.preference,
+                profile_id=self.parsed_token.profile_id,
+            )
+        else:
+            try:
+                preference = models.NotificationPreference.objects.get(
+                    pk=self.request.preference.id,
+                )
+            except models.NotificationPreference.DoesNotExist:
+                raise self.ActionFieldError('preference.id', 'DOES_NOT_EXIST')
+
+            preference.update_from_protobuf(self.request.preference)
+            preference.save()
+
+        preference.to_protobuf(self.response.preference)

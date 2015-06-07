@@ -8,4 +8,5 @@ class Server(service.control.Server):
 
     actions = {
         'get_preferences': actions.GetPreferences,
+        'update_preference': actions.UpdatePreference,
     }

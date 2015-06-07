@@ -26,6 +26,8 @@ class NotificationType(models.TimestampableModel):
 
 class NotificationPreference(models.UUIDModel, models.TimestampableModel):
 
+    as_dict_value_transforms = {'notification_type': int}
+
     profile_id = models.UUIDField()
     notification_type = models.ForeignKey(NotificationType)
     subscribed = models.BooleanField()
