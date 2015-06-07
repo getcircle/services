@@ -540,3 +540,21 @@ class GetAuthenticationInstructions(actions.Action):
             self._populate_google_instructions()
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
+
+
+class GetActiveDevices(actions.Action):
+
+    required_fields = ('user_id',)
+
+    def run(self, *args, **kwargs):
+        active_auth_tokens = models.Token.objects.filter(
+            user_id=self.request.user_id,
+        ).values_list('key', flat=True)
+        if active_auth_tokens:
+            active_devices = models.Device.objects.filter(
+                user_id=self.request.user_id,
+                last_token__in=active_auth_tokens,
+            )
+            for device in active_devices:
+                container = self.response.devices.add()
+                device.to_protobuf(container)

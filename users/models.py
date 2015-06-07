@@ -95,7 +95,7 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
 class Token(models.Model):
 
     key = models.CharField(max_length=40, primary_key=True)
-    user = models.ForeignKey(User, related_name='auth_token')
+    user = models.ForeignKey(User, related_name='auth_token', db_index=True)
     client_type = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(token_pb2.ClientTypeV1),
     )
@@ -160,6 +160,9 @@ class Device(models.UUIDModel, models.TimestampableModel):
         null=True,
     )
     last_token = models.CharField(max_length=40, null=True)
+
+    class Meta:
+        index_together = ('user', 'last_token')
 
 
 class AccessRequest(models.UUIDModel, models.TimestampableModel):

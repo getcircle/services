@@ -91,8 +91,23 @@ class TestUserDevices(TestCase):
         factories.DeviceFactory.create_batch(
             size=2,
             user=user,
-            last_token=fuzzy.FuzzyUUID().fuzz(),
+            last_token=fuzzy.FuzzyText().fuzz(),
         )
 
         response = self.client.call_action('get_active_devices', user_id=str(user.id))
         self.assertEqual(len(response.result.devices), len(active_devices))
+
+    def test_user_get_active_devices_no_active_tokens(self):
+        user = factories.UserFactory.create()
+        factories.DeviceFactory.create_batch(
+            size=2,
+            user=user,
+            last_token=fuzzy.FuzzyText().fuzz(),
+        )
+
+        response = self.client.call_action('get_active_devices', user_id=str(user.id))
+        self.assertFalse(response.result.devices)
+
+    def test_user_get_active_devices_user_id_required(self):
+        with self.assertFieldError('user_id', 'MISSING'):
+            self.client.call_action('get_active_devices')
