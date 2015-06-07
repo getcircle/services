@@ -48,3 +48,5 @@ GOOGLE_ADMIN_SDK_JSON_KEY = {
     u'private_key_id': u'b34aaf973f595b3edce5029f2a1f7fd1ef8a3388',
     u'type': u'service_account',
 }
+
+AWS_SNS_PLATFORM_APPLICATION_APNS = 'arn:aws:sns:us-east-1:487220619225:app/APNS_SANDBOX/Circle-Dev'

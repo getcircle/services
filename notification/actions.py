@@ -3,7 +3,10 @@ from service import actions
 
 from services import mixins
 
-from . import models
+from . import (
+    models,
+    providers,
+)
 
 
 class GetPreferences(mixins.PreRunParseTokenMixin, actions.Action):
@@ -64,3 +67,39 @@ class UpdatePreference(mixins.PreRunParseTokenMixin, actions.Action):
             preference.save()
 
         preference.to_protobuf(self.response.preference)
+
+
+class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
+
+    required_fields = (
+        'device',
+        'device.id',
+        'device.notification_token',
+        'device.provider',
+    )
+
+    def run(self, *args, **kwargs):
+        provider = providers.SNS()
+        provider_platform = provider.get_platform_for_device(self.request.device)
+        try:
+            notification_token = models.NotificationToken.objects.get(
+                device_id=self.request.device.id,
+                user_id=self.parsed_token.user_id,
+                provider=provider.provider,
+                provider_platform=provider_platform,
+            )
+        except models.NotificationToken.DoesNotExist:
+            provider_token = provider.register_notification_token(
+                notification_token=self.request.device.notification_token,
+                platform=provider_platform,
+                user_id=self.parsed_token.user_id,
+            )
+            notification_token = models.NotificationToken.objects.create(
+                user_id=self.parsed_token.user_id,
+                device_id=self.request.device.id,
+                provider_token=provider_token,
+                provider=provider.provider,
+                provider_platform=provider_platform,
+            )
+
+        notification_token.to_protobuf(self.response.notification_token)

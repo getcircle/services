@@ -304,3 +304,17 @@ def mock_group_membership_request(container=None, **overrides):
         fuzzy.FuzzyText(suffix='@circlehq.co'): ['group_key'],
     }
     return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_device(container=None, **overrides):
+    if container is None:
+        container = user_containers.DeviceV1()
+
+    defaults = {'provider': user_containers.DeviceV1.APPLE}
+    defaults.update(overrides)
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'notification_token', 'device_uuid', 'user_id'],
+        fuzzy.FuzzyText: ['platform', 'os_version', 'app_version', 'language_preference'],
+    }
+    return _mock_container(container, mock_dict, **defaults)

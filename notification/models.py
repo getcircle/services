@@ -40,6 +40,8 @@ class NotificationPreference(models.UUIDModel, models.TimestampableModel):
 
 class NotificationToken(models.UUIDModel, models.TimestampableModel):
 
+    as_dict_value_transforms = {'provider': int, 'provider_platform': int}
+
     user_id = models.UUIDField()
     device_id = models.UUIDField()
     provider_token = models.CharField(max_length=255)
@@ -47,6 +49,12 @@ class NotificationToken(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(
             notification_containers.NotificationTokenV1.ProviderV1
         ),
+    )
+    provider_platform = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(
+            notification_containers.NotificationTokenV1.ProviderPlatformV1
+        ),
+        null=True,
     )
 
     class Meta:
