@@ -155,6 +155,10 @@ class Device(models.UUIDModel, models.TimestampableModel):
     app_version = models.CharField(max_length=255)
     device_uuid = models.CharField(max_length=255, db_index=True)
     language_preference = models.CharField(max_length=16, default='en')
+    provider = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(user_containers.DeviceV1.ProviderV1),
+        null=True,
+    )
 
 
 class AccessRequest(models.UUIDModel, models.TimestampableModel):

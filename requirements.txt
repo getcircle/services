@@ -46,6 +46,9 @@ Django==1.8
 django-cors-headers==1.1.0
 pyDNS==2.3.6
 
+# more recent version of bitfield for 1.8 compatibility
+git+https://git@github.com/disqus/django-bitfield.git#24126a01
+
 # fork of django-cacheops
 git+https://git@github.com/mhahn/django-cacheops.git
 
