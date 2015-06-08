@@ -33,7 +33,7 @@ class TestSendNotification(TestCase):
             self.client.call_action(
                 'send_notification',
                 to_profile_id=self.profile.id,
-                notification={'group_membership_request': {'group_id': fuzzy.FuzzyUUID().fuzz()}},
+                notification={'group_membership_request': {'group_key': fuzzy.FuzzyUUID().fuzz()}},
             )
 
     def test_send_notification_recipients_required(self):
@@ -53,7 +53,7 @@ class TestSendNotification(TestCase):
         models.NotificationType.objects.all().update(opt_in=True)
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
-            group_id=fuzzy.FuzzyUUID().fuzz(),
+            group_key=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
@@ -73,7 +73,7 @@ class TestSendNotification(TestCase):
 
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
-            group_id=fuzzy.FuzzyUUID().fuzz(),
+            group_key=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_type.id,
@@ -99,7 +99,7 @@ class TestSendNotification(TestCase):
 
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
-            group_id=fuzzy.FuzzyUUID().fuzz(),
+            group_key=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_type.id,
@@ -126,7 +126,7 @@ class TestSendNotification(TestCase):
         models.NotificationType.objects.all().update(opt_in=False)
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=requester_profile.id,
-            group_id=fuzzy.FuzzyUUID().fuzz(),
+            group_key=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
@@ -177,7 +177,7 @@ class TestSendNotification(TestCase):
         models.NotificationType.objects.all().update(opt_in=False)
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
-            group_id=fuzzy.FuzzyUUID().fuzz(),
+            group_key=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
@@ -212,7 +212,7 @@ class TestSendNotification(TestCase):
         models.NotificationType.objects.all().update(opt_in=False)
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
-            group_id=fuzzy.FuzzyUUID().fuzz(),
+            group_key=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
@@ -250,7 +250,7 @@ class TestSendNotification(TestCase):
         models.NotificationType.objects.all().update(opt_in=False)
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=requester_profile.id,
-            group_id=fuzzy.FuzzyUUID().fuzz(),
+            group_key=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,

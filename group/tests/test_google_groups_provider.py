@@ -991,11 +991,6 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 return_object=[mocks.mock_profile(), mocks.mock_profile()],
                 mock_regex_lookup='profile:.*',
             )
-            mock.instance.register_empty_response(
-                service='notification',
-                action='send_notification',
-                mock_regex_lookup='notification:.*',
-            )
             self._execute_test_cases('join_group', test_cases, test_func=test)
 
     def test_add_to_group(self, *patches):

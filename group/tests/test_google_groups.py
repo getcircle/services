@@ -162,8 +162,26 @@ class TestGoogleGroups(TestCase):
                 self.client.call_action('join_group')
 
     @patch('group.actions.providers.Google')
-    def test_join_group(self, mock_google_provider):
-        expected_request = factories.GroupMembershipRequestFactory.create()
+    def test_join_group_send_notification_when_pending(self, mock_google_provider):
+        expected_request = factories.GroupMembershipRequestFactory.create(
+            status=group_containers.PENDING,
+        )
+        mock_google_provider().join_group.return_value = expected_request
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            mock.instance.register_empty_response(
+                service='notification',
+                action='send_notification',
+                mock_regex_lookup='notification:.*',
+            )
+            response = self.client.call_action('join_group', group_key='group@circlehq.co')
+            self.assertEqual(response.result.request.status, expected_request.status)
+
+    @patch('group.actions.providers.Google')
+    def test_join_group_dont_send_notification_when_approved(self, mock_google_provider):
+        expected_request = factories.GroupMembershipRequestFactory.create(
+            status=group_containers.APPROVED,
+        )
         mock_google_provider().join_group.return_value = expected_request
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
@@ -205,8 +223,15 @@ class TestGoogleGroups(TestCase):
         member_request = factories.GroupMembershipRequestFactory.create(
             status=group_containers.PENDING,
         )
+        member_request.status = group_containers.APPROVED
+        mock_google_provider().approve_request_to_join.return_value = member_request
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
+            mock.instance.register_empty_response(
+                service='notification',
+                action='send_notification',
+                mock_regex_lookup='notification:.*',
+            )
             self.client.call_action(
                 'respond_to_membership_request',
                 request_id=str(member_request.id),
@@ -219,8 +244,15 @@ class TestGoogleGroups(TestCase):
         member_request = factories.GroupMembershipRequestFactory.create(
             status=group_containers.PENDING,
         )
+        member_request.status = group_containers.DENIED
+        mock_google_provider().deny_request_to_join.return_value = member_request
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
+            mock.instance.register_empty_response(
+                service='notification',
+                action='send_notification',
+                mock_regex_lookup='notification:.*',
+            )
             self.client.call_action(
                 'respond_to_membership_request',
                 request_id=str(member_request.id),

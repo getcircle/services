@@ -1,5 +1,7 @@
 import hashlib
+from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.group.actions import respond_to_membership_request_pb2
+from protobufs.services.notification import containers_pb2 as notification_containers
 from service import (
     actions,
     validators,
@@ -105,13 +107,36 @@ class JoinGroup(PreRunParseTokenFetchProfileMixin, actions.Action):
 
     required_fields = ('group_key',)
 
+    def _send_notification(self, membership_request):
+        if membership_request.status == group_containers.PENDING:
+            try:
+                service.control.call_action(
+                    service='notification',
+                    action='send_notification',
+                    client_kwargs={'token': self.token},
+                    to_profile_ids=membership_request.approver_profile_ids,
+                    notification={
+                        'notification_type_id': (
+                            notification_containers.NotificationTypeV1.GOOGLE_GROUPS
+                        ),
+                        'group_membership_request': {
+                            'group_key': membership_request.group_key,
+                            'requester_profile_id': membership_request.requester_profile_id,
+                        },
+                    },
+                )
+            except service.control.CallActionError:
+                # TODO log error
+                pass
+
     def run(self, *args, **kwargs):
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
         )
-        group_request = provider.join_group(self.request.group_key)
-        group_request.to_protobuf(self.response.request, meta=group_request.get_meta())
+        membership_request = provider.join_group(self.request.group_key)
+        self._send_notification(membership_request)
+        membership_request.to_protobuf(self.response.request, meta=membership_request.get_meta())
 
 
 class RespondToMembershipRequest(PreRunParseTokenFetchProfileMixin, actions.Action):
@@ -126,16 +151,40 @@ class RespondToMembershipRequest(PreRunParseTokenFetchProfileMixin, actions.Acti
         },
     }
 
+    def _send_notification(self, membership_request):
+        try:
+            service.control.call_action(
+                service='notification',
+                action='send_notification',
+                client_kwargs={'token': self.token},
+                to_profile_ids=[str(membership_request.requester_profile_id)],
+                notification={
+                    'notification_type_id': (
+                        notification_containers.NotificationTypeV1.GOOGLE_GROUPS
+                    ),
+                    'group_membership_request_response': {
+                        'group_key': membership_request.group_key,
+                        'group_manager_profile_id': self.profile.id,
+                        'approved': membership_request.status == group_containers.APPROVED,
+                    },
+                },
+            )
+        except service.control.CallActionError:
+            # TODO log error
+            pass
+
     def run(self, *args, **kwargs):
-        member_request = models.GroupMembershipRequest.objects.get(id=self.request.request_id)
+        membership_request = models.GroupMembershipRequest.objects.get(id=self.request.request_id)
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
         )
         if self.request.action == respond_to_membership_request_pb2.RequestV1.APPROVE:
-            provider.approve_request_to_join(member_request)
+            membership_request = provider.approve_request_to_join(membership_request)
         else:
-            provider.deny_request_to_join(member_request)
+            membership_request = provider.deny_request_to_join(membership_request)
+
+        self._send_notification(membership_request)
 
 
 class LeaveGroup(PreRunParseTokenMixin, actions.Action):

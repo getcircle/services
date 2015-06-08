@@ -6,7 +6,6 @@ from apiclient.discovery import build
 from django.conf import settings
 from oauth2client.client import SignedJwtAssertionCredentials
 from protobufs.services.group import containers_pb2 as group_containers
-from protobufs.services.notification import containers_pb2 as notification_containers
 from protobufs.services.organization.containers import integration_pb2
 import service.control
 
@@ -436,25 +435,6 @@ class Provider(base.BaseGroupsProvider):
             # TODO raise some error if we don't have any managers to approve
             membership_request.approver_profile_ids = self._get_approver_profile_ids(group_key)
             membership_request.status = group_containers.PENDING
-
-            type_id = notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
-            try:
-                service.control.call_action(
-                    service='notification',
-                    action='send_notification',
-                    client_kwargs={'token': self.token},
-                    to_profile_ids=membership_request.approver_profile_ids,
-                    notification={
-                        'notification_type_id': type_id,
-                        'group_membership_request': {
-                            'group_id': group_key,
-                            'requester_profile_id': self.requester_profile.id,
-                        },
-                    },
-                )
-            except service.control.CallActionError:
-                # TODO log error
-                pass
 
         membership_request.save()
         return membership_request
