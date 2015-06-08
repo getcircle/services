@@ -1,10 +1,12 @@
 from protobufs.services.notification import containers_pb2 as notification_containers
 from service import actions
+import service.control
 
 from services import mixins
 
 from . import (
     models,
+    platforms,
     providers,
 )
 
@@ -90,7 +92,7 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
             )
         except models.NotificationToken.DoesNotExist:
             provider_token = provider.register_notification_token(
-                notification_token=self.request.device.notification_token,
+                token=self.request.device.notification_token,
                 platform=provider_platform,
                 user_id=self.parsed_token.user_id,
             )
@@ -103,3 +105,61 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
             )
 
         notification_token.to_protobuf(self.response.notification_token)
+
+
+class SendNotification(actions.Action):
+
+    required_fields = (
+        'notification',
+        'notification.notification_type_id',
+        'to_profile_id',
+    )
+
+    def run(self, *args, **kwargs):
+        notification_type = models.NotificationType.objects.get(
+            pk=self.request.notification.notification_type_id,
+        )
+        notification_preference = models.NotificationPreference.objects.get_or_none(
+            profile_id=self.request.to_profile_id,
+            notification_type=notification_type,
+        )
+        if notification_type.opt_in and not notification_preference:
+            raise self.ActionFieldError('notification.notification_type_id', 'NOT_OPTED_IN')
+        elif notification_preference and not notification_preference.subscribed:
+            raise self.ActionFieldError('notification.notification_type_id', 'UNSUBSCRIBED')
+
+        profile = service.control.get_object(
+            service='profile',
+            action='get_profile',
+            return_object='profile',
+            client_kwargs={'token': self.token},
+            profile_id=self.request.to_profile_id,
+        )
+        devices = service.control.get_object(
+            service='user',
+            action='get_active_devices',
+            return_object='devices',
+            client_kwargs={'token': self.token},
+            user_id=profile.user_id,
+        )
+
+        if not devices:
+            raise self.ActionFieldError('to_profile_id', 'NO_ACTIVE_DEVICES')
+
+        notification_tokens = models.NotificationToken.objects.filter(
+            user_id=profile.user_id,
+            device_id__in=[device.id for device in devices],
+        )
+
+        if not notification_tokens:
+            raise self.ActionFieldError('to_profile_id', 'NO_NOTIFICATION_TOKENS')
+
+        for notification_token in notification_tokens:
+            provider = providers.SNS()
+            if notification_token.provider_platform == notification_containers.NotificationTokenV1.APNS:
+                platform = platforms.APNS()
+                message = platform.construct_message(
+                    self.request.to_profile_id,
+                    self.request.notification,
+                )
+                provider.publish_notification(message, notification_token.provider_token)

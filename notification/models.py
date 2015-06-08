@@ -10,7 +10,7 @@ class NotificationType(models.TimestampableModel):
 
     id = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(
-            notification_containers.NotificationTypeV1.TypeV1
+            notification_containers.NotificationTypeV1.TypeIdV1
         ),
         primary_key=True,
     )
@@ -29,7 +29,7 @@ class NotificationPreference(models.UUIDModel, models.TimestampableModel):
     as_dict_value_transforms = {'notification_type': int}
 
     profile_id = models.UUIDField()
-    notification_type = models.ForeignKey(NotificationType)
+    notification_type = models.ForeignKey(NotificationType, related_name='preferences')
     subscribed = models.BooleanField()
 
     class Meta:

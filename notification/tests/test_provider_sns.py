@@ -57,8 +57,18 @@ class TestProviderSNS(TestCase):
     @patch('notification.providers.sns.boto')
     def test_provider_publish_notification(self, patched_boto):
         message = 'message'
-        provider_token = 'token'
+        provider_token = 'arn:aws:sns:::endpoint/APNS_SANDBOX/token/'
         self.provider.publish_notification(message, provider_token)
         kwargs = patched_boto.connect_sns().publish.call_args[1]
-        self.assertEqual(kwargs['message'], message)
+        self.assertEqual(kwargs['message'], json.dumps({'APNS_SANDBOX': message}))
         self.assertEqual(kwargs['target_arn'], provider_token)
+        self.assertEqual(kwargs['message_structure'], 'json')
+
+    def test_provider_get_platform_from_arn(self):
+        arn = 'arn:aws:sns:us-east-1:487220619225:endpoint/APNS_SANDBOX/Circle-Dev/asdafdfasdf'
+        platform = self.provider._get_platform_from_arn(arn)
+        self.assertEqual(platform, 'APNS_SANDBOX')
+
+        arn = 'arn:aws:sns:us-east-1:487220619225:endpoint/APNS/Circle-Dev/asdafdfasdf'
+        platform = self.provider._get_platform_from_arn(arn)
+        self.assertEqual(platform, 'APNS')

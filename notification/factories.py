@@ -29,5 +29,5 @@ class NotificationTokenFactory(factory.Factory):
 
     user_id = factory.FuzzyUUID()
     device_id = factory.FuzzyUUID()
-    provider_token = factory.FuzzyUUID()
+    provider_token = factory.FuzzyText(prefix='arn:aws:::endpoint/APNS_SANDBOX/')
     provider = notification_containers.NotificationTokenV1.SNS

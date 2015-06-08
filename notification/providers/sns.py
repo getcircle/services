@@ -18,6 +18,11 @@ class Provider(object):
 
     provider = notification_containers.NotificationTokenV1.SNS
 
+    def _get_platform_from_arn(self, arn):
+        parts = arn.split('/', 1)
+        endpoint_parts = parts[1].split('/')
+        return endpoint_parts[0]
+
     @property
     def sns_connection(self):
         if not hasattr(self, '_sns_connection'):
@@ -33,6 +38,7 @@ class Provider(object):
         except KeyError:
             raise exceptions.UnsupportedPlatform(platform)
 
+        # XXX catch the BotoServerError
         response = self.sns_connection.create_platform_endpoint(
             platform_application_arn=platform_application_arn,
             token=token,
@@ -53,9 +59,15 @@ class Provider(object):
             raise exceptions.UnsupportedProvider(device.provider)
         return platform
 
-    def publish_notification(self, message, provider_token):
+    def publish_notification(self, message, provider_token, is_json=True, **kwargs):
+        parameters = {}
+        if is_json:
+            parameters['message_structure'] = 'json'
+
+        platform = self._get_platform_from_arn(provider_token)
         response = self.sns_connection.publish(
-            message=message,
+            message=json.dumps({platform: message}),
             target_arn=provider_token,
+            **parameters
         )
         return response

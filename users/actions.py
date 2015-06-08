@@ -468,6 +468,10 @@ class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
         },
     }
 
+    def _register_device_for_notifications(self, device):
+        client = service.control.Client('notification', token=self.token)
+        client.call_action('register_device', device=device)
+
     def run(self, *args, **kwargs):
         try:
             device = models.Device.objects.get(device_uuid=self.request.device.device_uuid)
@@ -483,6 +487,7 @@ class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
             )
 
         device.to_protobuf(self.response.device)
+        self._register_device_for_notifications(self.response.device)
 
 
 class RequestAccess(actions.Action):

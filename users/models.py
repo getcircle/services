@@ -148,6 +148,8 @@ class Identity(models.UUIDModel, models.TimestampableModel):
 
 class Device(models.UUIDModel, models.TimestampableModel):
 
+    as_dict_value_transforms = {'provider': int}
+
     user = models.ForeignKey(User)
     notification_token = models.CharField(max_length=255, null=True)
     platform = models.CharField(max_length=255)

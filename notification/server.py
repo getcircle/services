@@ -10,4 +10,5 @@ class Server(service.control.Server):
         'get_preferences': actions.GetPreferences,
         'update_preference': actions.UpdatePreference,
         'register_device': actions.RegisterDevice,
+        'send_notification': actions.SendNotification,
     }

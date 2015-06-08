@@ -61,6 +61,7 @@ class DeviceFactory(factory.Factory):
     device_uuid = fuzzy.FuzzyUUID()
     language_preference = 'en'
     last_token_id = fuzzy.FuzzyUUID()
+    provider = user_containers.DeviceV1.APPLE
 
 
 class TokenFactory(factory.Factory):

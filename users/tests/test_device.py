@@ -43,29 +43,42 @@ class TestUserDevices(TestCase):
         self.assertEqual(len(expected.exception.response.error_details), 5)
 
     def test_record_device(self):
-        user = factories.UserFactory.create()
-        device = factories.DeviceFactory.build_protobuf(id=None, user=user)
-        response = self.client.call_action('record_device', device=device)
-        self.verify_containers(device, response.result.device)
+        with self.mock_transport() as mock:
+            mock.instance.register_empty_response(
+                service='notification',
+                action='register_device',
+                mock_regex_lookup='notification:.*',
+            )
 
-        # verify that auth_token was recorded on the device
-        self.assertFalse(hasattr(response.result.device, 'last_token_id'))
-        result = models.Device.objects.get(id=response.result.device.id)
-        self.assertEqualUUID4(result.last_token_id, self.parsed_token.auth_token_id)
+            user = factories.UserFactory.create()
+            device = factories.DeviceFactory.build_protobuf(id=None, user=user)
+            response = self.client.call_action('record_device', device=device)
+            self.verify_containers(device, response.result.device)
 
-        # verify that the auth_token is updated on the device
-        token = mocks.mock_token()
-        parsed_token = parse_token(token)
-        client = service.control.Client('user', token=token)
-        client.call_action('record_device', device=device)
-        result = models.Device.objects.get(id=response.result.device.id)
-        self.assertEqualUUID4(result.last_token_id, parsed_token.auth_token_id)
+            # verify that auth_token was recorded on the device
+            self.assertFalse(hasattr(response.result.device, 'last_token_id'))
+            result = models.Device.objects.get(id=response.result.device.id)
+            self.assertEqualUUID4(result.last_token_id, self.parsed_token.auth_token_id)
+
+            # verify that the auth_token is updated on the device
+            token = mocks.mock_token()
+            parsed_token = parse_token(token)
+            self.client.token = token
+            self.client.call_action('record_device', device=device)
+            result = models.Device.objects.get(id=response.result.device.id)
+            self.assertEqualUUID4(result.last_token_id, parsed_token.auth_token_id)
 
     def test_user_record_multiple_devices(self):
         user = factories.UserFactory.create()
         for _ in range(2):
             device = factories.DeviceFactory.build_protobuf(id=None, user=user)
-            response = self.client.call_action('record_device', device=device)
+            with self.mock_transport() as mock:
+                mock.instance.register_empty_response(
+                    'notification',
+                    'register_device',
+                    mock_regex_lookup='notification:.*',
+                )
+                response = self.client.call_action('record_device', device=device)
             self.verify_containers(device, response.result.device)
 
         self.assertEqual(models.Device.objects.filter(user=user).count(), 2)
@@ -73,7 +86,13 @@ class TestUserDevices(TestCase):
     def test_user_update_device(self):
         device = factories.DeviceFactory.create_protobuf()
         device.app_version = 'updated'
-        response = self.client.call_action('record_device', device=device)
+        with self.mock_transport() as mock:
+            mock.instance.register_empty_response(
+                'notification',
+                'register_device',
+                mock_regex_lookup='notification:.*',
+            )
+            response = self.client.call_action('record_device', device=device)
         self.verify_containers(device, response.result.device)
 
         expected = models.Device.objects.get(id=device.id)
