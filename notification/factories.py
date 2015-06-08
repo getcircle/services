@@ -10,7 +10,7 @@ class NotificationTypeFactory(factory.Factory):
         model = models.NotificationType
         protobuf = notification_containers.NotificationTypeV1
 
-    id = notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
+    id = notification_containers.NotificationTypeV1.GOOGLE_GROUPS
     description = factory.FuzzyText()
 
 

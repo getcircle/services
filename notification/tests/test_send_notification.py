@@ -42,7 +42,7 @@ class TestSendNotification(TestCase):
                 'send_notification',
                 notification={
                     'notification_type_id': (
-                        notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
+                        notification_containers.NotificationTypeV1.GOOGLE_GROUPS
                     ),
                 },
             )
@@ -56,9 +56,7 @@ class TestSendNotification(TestCase):
             group_id=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
-            notification_type_id=(
-                notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
-            ),
+            notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
             group_membership_request=group_membership_request,
         )
         with self.assertFieldError('notification.notification_type_id', 'NOT_OPTED_IN'):
@@ -123,16 +121,15 @@ class TestSendNotification(TestCase):
     @patch('notification.actions.providers.sns.boto')
     def test_send_notification_group_membership_request(self, patched_boto):
         to_profile = mocks.mock_profile()
+        requester_profile = mocks.mock_profile()
 
         models.NotificationType.objects.all().update(opt_in=False)
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
-            requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
+            requester_profile_id=requester_profile.id,
             group_id=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
-            notification_type_id=(
-                notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
-            ),
+            notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
             group_membership_request=group_membership_request,
         )
 
@@ -158,6 +155,13 @@ class TestSendNotification(TestCase):
                 return_object=[device],
                 user_id=to_profile.user_id,
             )
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=requester_profile,
+                profile_id=requester_profile.id,
+            )
             self.client.call_action(
                 'send_notification',
                 to_profile_id=to_profile.id,
@@ -176,9 +180,7 @@ class TestSendNotification(TestCase):
             group_id=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
-            notification_type_id=(
-                notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
-            ),
+            notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
             group_membership_request=group_membership_request,
         )
 
@@ -213,9 +215,7 @@ class TestSendNotification(TestCase):
             group_id=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
-            notification_type_id=(
-                notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
-            ),
+            notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
             group_membership_request=group_membership_request,
         )
 
@@ -245,16 +245,15 @@ class TestSendNotification(TestCase):
     @patch('notification.actions.providers.sns.boto')
     def test_send_notification_group_membership_request_to_profile_ids(self, patched_boto):
         to_profiles = [mocks.mock_profile(), mocks.mock_profile()]
+        requester_profile = mocks.mock_profile()
 
         models.NotificationType.objects.all().update(opt_in=False)
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
-            requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
+            requester_profile_id=requester_profile.id,
             group_id=fuzzy.FuzzyUUID().fuzz(),
         )
         notification = notification_containers.NotificationV1(
-            notification_type_id=(
-                notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
-            ),
+            notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
             group_membership_request=group_membership_request,
         )
 
@@ -284,6 +283,14 @@ class TestSendNotification(TestCase):
                     return_object=[device_map[profile.id]],
                     user_id=profile.user_id,
                 )
+
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=requester_profile,
+                profile_id=requester_profile.id,
+            )
 
             self.client.call_action(
                 'send_notification',

@@ -163,7 +163,7 @@ class SendNotification(actions.Action):
             provider = providers.SNS()
             provider_platform = notification_token.provider_platform
             if provider_platform == notification_containers.NotificationTokenV1.APNS:
-                platform = platforms.APNS()
+                platform = platforms.APNS(service_token=self.token)
                 message = platform.construct_message(
                     to_profile_id,
                     self.request.notification,

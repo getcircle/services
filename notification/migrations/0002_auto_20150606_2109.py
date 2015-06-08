@@ -8,8 +8,8 @@ from protobufs.services.notification import containers_pb2 as notification_conta
 def new_notification(apps, schema_editor):
     NotificationType = apps.get_model('notification', 'NotificationType')
     notification = NotificationType.objects.create(
-        id=notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST,
-        description='Group membership requests',
+        id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
+        description='Google Group Notifications',
         channels=0,
         opt_in=False,
     )
