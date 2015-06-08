@@ -100,9 +100,9 @@ class Location(models.UUIDModel, models.TimestampableModel):
         unique_together = ('name', 'organization')
 
 
-class Token(models.Model):
+class Token(models.UUIDModel):
 
-    key = models.CharField(max_length=40, primary_key=True)
+    key = models.CharField(max_length=40)
     organization = models.ForeignKey(Organization, related_name='auth_token')
     requested_by_user_id = models.UUIDField(null=True)
     created = models.DateTimeField(auto_now_add=True)

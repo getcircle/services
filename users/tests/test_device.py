@@ -49,9 +49,9 @@ class TestUserDevices(TestCase):
         self.verify_containers(device, response.result.device)
 
         # verify that auth_token was recorded on the device
-        self.assertFalse(hasattr(response.result.device, 'last_token'))
+        self.assertFalse(hasattr(response.result.device, 'last_token_id'))
         result = models.Device.objects.get(id=response.result.device.id)
-        self.assertEqualUUID4(result.last_token, self.parsed_token.auth_token)
+        self.assertEqualUUID4(result.last_token_id, self.parsed_token.auth_token_id)
 
         # verify that the auth_token is updated on the device
         token = mocks.mock_token()
@@ -59,7 +59,7 @@ class TestUserDevices(TestCase):
         client = service.control.Client('user', token=token)
         client.call_action('record_device', device=device)
         result = models.Device.objects.get(id=response.result.device.id)
-        self.assertEqualUUID4(result.last_token, parsed_token.auth_token)
+        self.assertEqualUUID4(result.last_token_id, parsed_token.auth_token_id)
 
     def test_user_record_multiple_devices(self):
         user = factories.UserFactory.create()
@@ -85,13 +85,13 @@ class TestUserDevices(TestCase):
         active_devices = factories.DeviceFactory.create_batch(
             size=2,
             user=user,
-            last_token=factories.TokenFactory.create(user=user).key,
+            last_token_id=factories.TokenFactory.create(user=user).id,
         )
         # create inactive devices
         factories.DeviceFactory.create_batch(
             size=2,
             user=user,
-            last_token=fuzzy.FuzzyText().fuzz(),
+            last_token_id=fuzzy.FuzzyUUID().fuzz(),
         )
 
         response = self.client.call_action('get_active_devices', user_id=str(user.id))
@@ -102,7 +102,7 @@ class TestUserDevices(TestCase):
         factories.DeviceFactory.create_batch(
             size=2,
             user=user,
-            last_token=fuzzy.FuzzyText().fuzz(),
+            last_token_id=fuzzy.FuzzyUUID().fuzz(),
         )
 
         response = self.client.call_action('get_active_devices', user_id=str(user.id))

@@ -198,10 +198,15 @@ class AuthenticateUser(actions.Action):
             client_type=self.request.client_type,
         )
         # XXX this assumes that we have profiles already set up
-        temporary_token = make_token(auth_token=token.key, user_id=user.id)
+        temporary_token = make_token(
+            auth_token=token.key,
+            auth_token_id=token.id,
+            user_id=user.id,
+        )
         profile = self._get_profile(user.id, temporary_token)
         return make_token(
             auth_token=token.key,
+            auth_token_id=token.id,
             profile_id=getattr(profile, 'id', None),
             user_id=user.id,
             organization_id=getattr(profile, 'organization_id', None),
@@ -468,13 +473,13 @@ class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
             device = models.Device.objects.get(device_uuid=self.request.device.device_uuid)
             device.update_from_protobuf(
                 self.request.device,
-                last_token=self.parsed_token.auth_token,
+                last_token_id=self.parsed_token.auth_token_id,
             )
             device.save()
         except models.Device.DoesNotExist:
             device = models.Device.objects.from_protobuf(
                 self.request.device,
-                last_token=self.parsed_token.auth_token,
+                last_token_id=self.parsed_token.auth_token_id,
             )
 
         device.to_protobuf(self.response.device)
@@ -549,11 +554,11 @@ class GetActiveDevices(actions.Action):
     def run(self, *args, **kwargs):
         active_auth_tokens = models.Token.objects.filter(
             user_id=self.request.user_id,
-        ).values_list('key', flat=True)
+        ).values_list('pk', flat=True)
         if active_auth_tokens:
             active_devices = models.Device.objects.filter(
                 user_id=self.request.user_id,
-                last_token__in=active_auth_tokens,
+                last_token_id__in=active_auth_tokens,
             )
             for device in active_devices:
                 container = self.response.devices.add()

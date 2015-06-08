@@ -28,6 +28,7 @@ class SyncViewSet(viewsets.ViewSet):
 
         request.token = make_token(
             auth_token=request.auth.key,
+            auth_token_id=request.auth.id,
             organization_id=request.organization.id,
         )
 

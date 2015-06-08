@@ -71,7 +71,7 @@ def _mock_container(container, mock_dict, **extra):
 
 
 def mock_token(**values):
-    mock_fields = ['auth_token', 'user_id', 'profile_id', 'organization_id']
+    mock_fields = ['auth_token', 'auth_token_id', 'user_id', 'profile_id', 'organization_id']
     token_data = {}
     for field in mock_fields:
         token_data[field] = fuzzy.FuzzyUUID().fuzz()
