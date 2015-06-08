@@ -112,17 +112,21 @@ class SendNotification(actions.Action):
     required_fields = (
         'notification',
         'notification.notification_type_id',
-        'to_profile_id',
     )
 
-    def run(self, *args, **kwargs):
-        notification_type = models.NotificationType.objects.get(
-            pk=self.request.notification.notification_type_id,
-        )
-        notification_preference = models.NotificationPreference.objects.get_or_none(
-            profile_id=self.request.to_profile_id,
-            notification_type=notification_type,
-        )
+    def validate(self, *args, **kwargs):
+        super(SendNotification, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if not any([self.request.HasField('to_profile_id'), self.request.to_profile_ids]):
+                raise self.ActionError(
+                    'MISSING_RECIPIENTS',
+                    (
+                        'MISSING_RECIPIENTS',
+                        'must specify one of ("to_profile_id", "to_profile_ids"',
+                    ),
+                )
+
+    def _send_notification(self, to_profile_id, notification_type, notification_preference):
         if notification_type.opt_in and not notification_preference:
             raise self.ActionFieldError('notification.notification_type_id', 'NOT_OPTED_IN')
         elif notification_preference and not notification_preference.subscribed:
@@ -133,7 +137,7 @@ class SendNotification(actions.Action):
             action='get_profile',
             return_object='profile',
             client_kwargs={'token': self.token},
-            profile_id=self.request.to_profile_id,
+            profile_id=to_profile_id,
         )
         devices = service.control.get_object(
             service='user',
@@ -143,6 +147,7 @@ class SendNotification(actions.Action):
             user_id=profile.user_id,
         )
 
+        # XXX should support indexing these properly
         if not devices:
             raise self.ActionFieldError('to_profile_id', 'NO_ACTIVE_DEVICES')
 
@@ -156,10 +161,34 @@ class SendNotification(actions.Action):
 
         for notification_token in notification_tokens:
             provider = providers.SNS()
-            if notification_token.provider_platform == notification_containers.NotificationTokenV1.APNS:
+            provider_platform = notification_token.provider_platform
+            if provider_platform == notification_containers.NotificationTokenV1.APNS:
                 platform = platforms.APNS()
                 message = platform.construct_message(
-                    self.request.to_profile_id,
+                    to_profile_id,
                     self.request.notification,
                 )
                 provider.publish_notification(message, notification_token.provider_token)
+
+    def run(self, *args, **kwargs):
+        if self.request.to_profile_id:
+            to_profile_ids = [self.request.to_profile_id]
+        else:
+            to_profile_ids = self.request.to_profile_ids
+
+        notification_type = models.NotificationType.objects.get(
+            pk=self.request.notification.notification_type_id,
+        )
+        preferences = models.NotificationPreference.objects.filter(
+            profile_id__in=to_profile_ids,
+            notification_type=notification_type,
+        )
+        preferences_dict = dict(
+            (preference.profile_id.hex, preference) for preference in preferences
+        )
+        for to_profile_id in to_profile_ids:
+            self._send_notification(
+                to_profile_id,
+                notification_type,
+                preferences_dict.get(to_profile_id),
+            )

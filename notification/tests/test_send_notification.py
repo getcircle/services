@@ -36,8 +36,8 @@ class TestSendNotification(TestCase):
                 notification={'group_membership_request': {'group_id': fuzzy.FuzzyUUID().fuzz()}},
             )
 
-    def test_send_notification_to_profile_id_required(self):
-        with self.assertFieldError('to_profile_id', 'MISSING'):
+    def test_send_notification_recipients_required(self):
+        with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'send_notification',
                 notification={
@@ -46,6 +46,8 @@ class TestSendNotification(TestCase):
                     ),
                 },
             )
+
+        self.assertIn('MISSING_RECIPIENTS', expected.exception.response.errors)
 
     def test_send_notification_group_membership_request_not_opted_in(self):
         models.NotificationType.objects.all().update(opt_in=True)
@@ -239,3 +241,56 @@ class TestSendNotification(TestCase):
                     to_profile_id=to_profile.id,
                     notification=notification,
                 )
+
+    @patch('notification.actions.providers.sns.boto')
+    def test_send_notification_group_membership_request_to_profile_ids(self, patched_boto):
+        to_profiles = [mocks.mock_profile(), mocks.mock_profile()]
+
+        models.NotificationType.objects.all().update(opt_in=False)
+        group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
+            requester_profile_id=fuzzy.FuzzyUUID().fuzz(),
+            group_id=fuzzy.FuzzyUUID().fuzz(),
+        )
+        notification = notification_containers.NotificationV1(
+            notification_type_id=(
+                notification_containers.NotificationTypeV1.GROUP_MEMBERSHIP_REQUEST
+            ),
+            group_membership_request=group_membership_request,
+        )
+
+        device_map = {}
+        for profile in to_profiles:
+            device = mocks.mock_device(user_id=profile.user_id)
+            factories.NotificationTokenFactory.create(
+                user_id=profile.user_id,
+                device_id=device.id,
+                provider_platform=notification_containers.NotificationTokenV1.APNS,
+            )
+            device_map[profile.id] = device
+
+        with self.mock_transport() as mock:
+            for profile in to_profiles:
+                mock.instance.register_mock_object(
+                    service='profile',
+                    action='get_profile',
+                    return_object_path='profile',
+                    return_object=profile,
+                    profile_id=profile.id,
+                )
+                mock.instance.register_mock_object(
+                    service='user',
+                    action='get_active_devices',
+                    return_object_path='devices',
+                    return_object=[device_map[profile.id]],
+                    user_id=profile.user_id,
+                )
+
+            self.client.call_action(
+                'send_notification',
+                to_profile_ids=[profile.id for profile in to_profiles],
+                notification=notification,
+            )
+
+        self.assertEqual(patched_boto.connect_sns().publish.call_count, 2)
+        kwargs = patched_boto.connect_sns().publish.call_args[1]
+        self.assertIn('target_arn', kwargs)
