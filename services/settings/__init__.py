@@ -289,3 +289,9 @@ CACHEOPS = {
 
 # Google Admin SDK
 GOOGLE_ADMIN_SDK_JSON_KEY = json.loads(os.environ.get('GOOGLE_ADMIN_SDK_JSON_KEY', '{}'))
+
+SHELL_PLUS_POST_IMPORTS = (
+    'service.control',
+    ('services.token', 'make_admin_token'),
+    ('services.bootstrap', 'Bootstrap'),
+)
