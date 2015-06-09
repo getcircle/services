@@ -3,6 +3,7 @@ import service.control
 
 from services.test import (
     fuzzy,
+    mocks,
     TestCase,
 )
 from .. import (
@@ -14,9 +15,10 @@ from .. import (
 class TestOrganizations(TestCase):
 
     def setUp(self):
+        self.profile = mocks.mock_profile()
         self.client = service.control.Client(
             'organization',
-            token='test-token',
+            token=mocks.mock_token(profile_id=self.profile.id),
         )
         self.organization_name = 'RH Labs Inc.'
         self.organization_domain = 'rhlabs.com'
@@ -111,6 +113,16 @@ class TestOrganizations(TestCase):
             action,
             mock_response,
             mock_regex_lookup=r'%s:%s:.*' % (service, action,),
+        )
+
+    def _mock_get_requester_profile(self, mock, profile=None):
+        profile = profile or self.profile
+        mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object_path='profile',
+            return_object=profile,
+            profile_id=profile.id,
         )
 
     def test_create_organization(self):
@@ -411,8 +423,9 @@ class TestOrganizations(TestCase):
 
     def test_get_team(self):
         expected = self._create_team()
-        with self.mock_transport(self.client) as mock:
+        with self.mock_transport() as mock:
             self._mock_get_profile_stats(mock, [expected.id])
+            self._mock_get_requester_profile(mock)
             response = self.client.call_action(
                 'get_team',
                 team_id=expected.id,
@@ -464,22 +477,33 @@ class TestOrganizations(TestCase):
 
     def test_get_teams(self):
         organization = self._create_organization()
-        self._create_team_tree(
+        profile = mocks.mock_profile(organization_id=organization.id, is_admin=True)
+        teams = self._create_team_tree(
             organization_id=organization.id,
             levels=4,
         )
-        response = self.client.call_action(
-            'get_teams',
-            organization_id=organization.id,
-        )
+
+        self.client.token = mocks.mock_token(profile_id=profile.id)
+        with self.mock_transport() as mock:
+            self._mock_get_profile_stats(mock, [team.id for team in teams])
+            self._mock_get_requester_profile(mock, profile=profile)
+            response = self.client.call_action(
+                'get_teams',
+                organization_id=organization.id,
+            )
         self.assertTrue(response.success)
         self.assertTrue(len(response.result.teams), 5)
+        for team in response.result.teams:
+            self.assertTrue(team.permissions.can_edit)
+            self.assertTrue(team.permissions.can_add)
+            self.assertTrue(team.permissions.can_delete)
 
     def test_get_teams_by_location_id(self):
         location_id = fuzzy.FuzzyUUID().fuzz()
         organization = factories.OrganizationFactory.create()
         teams = factories.TeamFactory.create_batch(2, organization=organization)
-        with self.mock_transport(self.client) as mock:
+        with self.mock_transport() as mock:
+            self._mock_get_requester_profile(mock)
             self._mock_get_profile_stats(mock, [str(team.id) for team in teams])
             mock_response = mock.get_mockable_response('profile', 'get_attributes_for_profiles')
             for team in teams:
@@ -535,12 +559,13 @@ class TestOrganizations(TestCase):
     def test_get_team_descendants_depth_1(self):
         parent_team = self._setup_team_with_descendants()
         # verify only child teams are returned
-        response = self.client.call_action(
-            'get_team_descendants',
-            team_ids=[parent_team.id],
-            depth=1,
-        )
-        self.assertTrue(response.success)
+        with self.mock_transport() as mock:
+            self._mock_get_requester_profile(mock)
+            response = self.client.call_action(
+                'get_team_descendants',
+                team_ids=[parent_team.id],
+                depth=1,
+            )
 
         descendants = response.result.descendants[0]
         self.assertEqual(descendants.parent_team_id, parent_team.id)
@@ -561,13 +586,21 @@ class TestOrganizations(TestCase):
             )
 
     def test_get_team_descendants(self):
+        profile = mocks.mock_profile(is_admin=True)
         parent_team = self._setup_team_with_descendants()
-        response = self.client.call_action('get_team_descendants', team_ids=[parent_team.id])
+        self.client.token = mocks.mock_token(profile_id=profile.id)
+        with self.mock_transport() as mock:
+            self._mock_get_requester_profile(mock, profile=profile)
+            response = self.client.call_action('get_team_descendants', team_ids=[parent_team.id])
 
         descendants = response.result.descendants[0]
         self.assertEqual(len(descendants.teams), 3)
         self.assertEqual(descendants.teams[0].name, 'a')
         self.assertEqual(descendants.teams[1].name, 'b')
+        for team in descendants.teams:
+            self.assertTrue(team.permissions.can_edit)
+            self.assertTrue(team.permissions.can_add)
+            self.assertTrue(team.permissions.can_delete)
 
     def test_get_team_descendants_multiple_teams(self):
         # create 2 teams with descendants
@@ -611,10 +644,12 @@ class TestOrganizations(TestCase):
             child_of=second_child_team.id,
         )
 
-        response = self.client.call_action(
-            'get_team_descendants',
-            team_ids=[parent_team_1.id, parent_team_2.id, second_child_team.id],
-        )
+        with self.mock_transport() as mock:
+            self._mock_get_requester_profile(mock)
+            response = self.client.call_action(
+                'get_team_descendants',
+                team_ids=[parent_team_1.id, parent_team_2.id, second_child_team.id],
+            )
         descendants_1 = response.result.descendants[0]
         self.assertEqual(len(descendants_1.teams), 3)
         self.assertEqual(descendants_1.teams[0].name, 'a')
@@ -636,6 +671,7 @@ class TestOrganizations(TestCase):
             team_ids=[parent_team.id],
             attributes=['id', 'name'],
         )
+
         descendants = response.result.descendants[0]
         self.assertEqual(len(descendants.teams), 3)
         for team in descendants.teams:
@@ -673,11 +709,14 @@ class TestOrganizations(TestCase):
 
     def test_get_team_with_name_and_organization_id(self):
         team = factories.TeamFactory.create()
-        response = self.client.call_action(
-            'get_team',
-            name=team.name,
-            organization_id=str(team.organization_id),
-        )
+        with self.mock_transport() as mock:
+            self._mock_get_profile_stats(mock, [str(team.id)])
+            self._mock_get_requester_profile(mock)
+            response = self.client.call_action(
+                'get_team',
+                name=team.name,
+                organization_id=str(team.organization_id),
+            )
         self.assertTrue(response.success)
         self.assertTrue(str(team.id), response.result.team.id)
 
@@ -729,3 +768,28 @@ class TestOrganizations(TestCase):
             organization_id=parent_team.organization_id,
         )
         self.verify_containers(parent_team, response.result.team)
+
+    def test_get_team_include_permissions_not_admin(self):
+        team = factories.TeamFactory.create()
+        with self.mock_transport() as mock:
+            self._mock_get_profile_stats(mock, [str(team.id)])
+            self._mock_get_requester_profile(mock)
+            response = self.client.call_action('get_team', team_id=str(team.id))
+        team = response.result.team
+        self.assertFalse(team.permissions.can_add)
+        self.assertFalse(team.permissions.can_edit)
+        self.assertFalse(team.permissions.can_delete)
+
+    def test_get_team_include_permissions_admin(self):
+        team = factories.TeamFactory.create()
+        profile = mocks.mock_profile(organization_id=str(team.organization_id), is_admin=True)
+        token = mocks.mock_token(organization_id=team.organization_id, profile_id=profile.id)
+        self.client.token = token
+        with self.mock_transport() as mock:
+            self._mock_get_profile_stats(mock, [str(team.id)])
+            self._mock_get_requester_profile(mock, profile=profile)
+            response = self.client.call_action('get_team', team_id=str(team.id))
+        team = response.result.team
+        self.assertTrue(team.permissions.can_add)
+        self.assertTrue(team.permissions.can_edit)
+        self.assertTrue(team.permissions.can_delete)

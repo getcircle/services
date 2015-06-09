@@ -1,10 +1,9 @@
 from copy import copy
-import json
 import uuid
 
 from cacheops import cached_as
 import django.db
-from protobufs.services.organization.containers import integration_pb2
+from protobufs.services.common import containers_pb2 as common_containers
 from service import (
     actions,
     validators,
@@ -12,6 +11,7 @@ from service import (
 import service.control
 from service import metrics
 
+from services import mixins
 from services.token import parse_token
 from . import models
 
@@ -34,6 +34,29 @@ def valid_address(address_id):
 
 def valid_location(location_id):
     return models.Location.objects.filter(pk=location_id).exists()
+
+
+class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
+
+    @property
+    def requester_profile(self):
+        if not hasattr(self, '_requester_profile'):
+            self._requester_profile = service.control.get_object(
+                service='profile',
+                action='get_profile',
+                return_object='profile',
+                client_kwargs={'token': self.token},
+                profile_id=self.parsed_token.profile_id,
+            )
+        return self._requester_profile
+
+    def get_permissions(self, team):
+        permissions = common_containers.PermissionsV1()
+        if self.requester_profile.is_admin:
+            permissions.can_edit = True
+            permissions.can_add = True
+            permissions.can_delete = True
+        return permissions
 
 
 class TeamProfileStatsMixin(object):
@@ -93,7 +116,7 @@ class GetOrganization(actions.Action):
         model.to_protobuf(self.response.organization)
 
 
-class CreateTeam(actions.Action):
+class CreateTeam(TeamPermissionsMixin, actions.Action):
 
     type_validators = {
         'team.owner_id': [validators.is_uuid4],
@@ -155,7 +178,7 @@ class CreateTeam(actions.Action):
             team.to_protobuf(self.response.team, path=team.get_path())
 
 
-class GetTeam(actions.Action, TeamProfileStatsMixin):
+class GetTeam(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
 
     type_validators = {
         'team_id': [validators.is_uuid4],
@@ -191,9 +214,10 @@ class GetTeam(actions.Action, TeamProfileStatsMixin):
             path=team.get_path(),
             profile_count=profile_stats.get(str(team.id), 0),
         )
+        self.response.team.permissions.CopyFrom(self.get_permissions(team))
 
 
-class GetTeamDescendants(actions.Action):
+class GetTeamDescendants(TeamPermissionsMixin, actions.Action):
 
     required_fields = ('team_ids',)
     type_validators = {
@@ -291,11 +315,16 @@ class GetTeamDescendants(actions.Action):
                         else:
                             parameters['path'] = team.get_path()
                         team.to_protobuf(team_container, **parameters)
+                        if not self.request.attributes or (
+                            self.request.attributes and
+                            'permissions' in self.request.attributes
+                        ):
+                            team_container.permissions.CopyFrom(self.get_permissions(team))
             response_teams += len(container.teams)
         metrics.gauge('service.action.get_team_descendants.response.teams.gauge', response_teams)
 
 
-class GetTeams(actions.Action, TeamProfileStatsMixin):
+class GetTeams(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
 
     type_validators = {
         'organization_id': [validators.is_uuid4],
@@ -347,14 +376,20 @@ class GetTeams(actions.Action, TeamProfileStatsMixin):
         page = self.get_page(paginator)
         path_dict = self._get_paths_in_bulk(page.object_list)
         stats_dict = self._fetch_profile_stats([str(item.id) for item in page.object_list])
+
+        def add_team(item, repeated_container):
+            container = repeated_container.add()
+            item.to_protobuf(
+                container,
+                path=item.get_path(path_dict=path_dict),
+                profile_count=stats_dict.get(str(item.id), 0),
+            )
+            container.permissions.CopyFrom(self.get_permissions(item))
+
         self.paginated_response(
             self.response.teams,
             teams,
-            lambda item, container: item.to_protobuf(
-                container.add(),
-                path=item.get_path(path_dict=path_dict),
-                profile_count=stats_dict.get(str(item.id), 0),
-            ),
+            add_team,
             paginator=paginator,
             page=page,
         )
