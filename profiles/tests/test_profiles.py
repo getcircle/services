@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from freezegun import freeze_time
 from protobufs.services.profile import containers_pb2 as profile_containers
@@ -16,113 +17,40 @@ from .. import factories
 class TestProfiles(TestCase):
 
     def setUp(self):
-        self.client = service.control.Client('profile', token='test-token')
-        self.user_client = service.control.Client('user', token='test-token')
-        self.org_client = service.control.Client(
-            'organization',
-            token='test-token',
-        )
-        self.profile_data = factories.ProfileFactory.get_protobuf_data()
-
-    def _create_and_add_profile_to_team(self, team):
-        self.client.call_action(
-            'create_profile',
-            profile=factories.ProfileFactory.get_protobuf_data(),
-        )
-
-    def _create_user(self):
-        response = self.user_client.call_action(
-            'create_user',
-            email=fuzzy.FuzzyText(suffix='@example.com').fuzz(),
-        )
-        self.assertTrue(response.success)
-        return response.result.user
-
-    def _create_organization(self):
-        response = self.org_client.call_action(
-            'create_organization',
-            organization={
-                'name': fuzzy.FuzzyText().fuzz(),
-                'domain': fuzzy.FuzzyText(suffix='.com').fuzz(),
-            },
-        )
-        self.assertTrue(response.success)
-        return response.result.organization
-
-    def _create_address(self, organization=None):
-        if not organization:
-            organization = self._create_organization()
-
-        address_data = {
-            'organization_id': organization.id,
-            'address_1': '319 Primrose',
-            'city': 'Burlingame',
-            'region': 'California',
-            'postal_code': '94010',
-            'country_code': 'US',
-            'latitude': '37.578286',
-            'longitude': '-122.348729',
-            'timezone': 'America/Los_Angeles',
-        }
-        response = self.org_client.call_action(
-            'create_address',
-            address=address_data,
-        )
-        self.assertTrue(response.success)
-        return response.result.address
-
-    def _create_team_and_owner(self, organization_id, address_id, child_of=None):
-        user = self._create_user()
-        response = self.org_client.call_action(
-            'create_team',
-            team={
-                'organization_id': organization_id,
-                'name': fuzzy.FuzzyText().fuzz(),
-                'owner_id': user.id,
-            },
-            child_of=child_of,
-        )
-        self.assertTrue(response.success)
-        team = response.result.team
-
-        profile = factories.ProfileFactory.create_protobuf(
-            user_id=user.id,
-            organization_id=organization_id,
-            address_id=address_id,
-            team_id=team.id,
-        )
-        return team, profile
+        self.profile = factories.ProfileFactory.create_protobuf()
+        token = mocks.mock_token(profile_id=self.profile.id)
+        self.client = service.control.Client('profile', token=token)
 
     def test_create_profile_invalid_organization_id(self):
-        self.profile_data['organization_id'] = 'invalid'
+        self.profile.organization_id = 'invalid'
         with self.assertFieldError('profile.organization_id'):
             self.client.call_action(
                 'create_profile',
-                profile=self.profile_data,
+                profile=self.profile,
             )
 
     def test_create_profile_invalid_user_id(self):
-        self.profile_data['user_id'] = 'invalid'
+        self.profile.user_id = 'invalid'
         with self.assertFieldError('profile.user_id'):
             self.client.call_action(
                 'create_profile',
-                profile=self.profile_data,
+                profile=self.profile,
             )
 
     def test_create_profile_invalid_address_id(self):
-        self.profile_data['address_id'] = 'invalid'
+        self.profile.address_id = 'invalid'
         with self.assertFieldError('profile.address_id'):
             self.client.call_action(
                 'create_profile',
-                profile=self.profile_data,
+                profile=self.profile,
             )
 
     def test_create_profile_invalid_team_id(self):
-        self.profile_data['team_id'] = 'invalid'
+        self.profile.team_id = 'invalid'
         with self.assertFieldError('profile.team_id'):
             self.client.call_action(
                 'create_profile',
-                profile=self.profile_data,
+                profile=self.profile,
             )
 
     def test_create_profile(self):
@@ -304,14 +232,14 @@ class TestProfiles(TestCase):
             )
 
     def test_update_profile_invalid_profile_id(self):
-        self.profile_data['id'] = 'invalid'
+        self.profile.id = 'invalid'
         with self.assertFieldError('profile.id'):
-            self.client.call_action('update_profile', profile=self.profile_data)
+            self.client.call_action('update_profile', profile=self.profile)
 
     def test_update_profile_does_not_exist(self):
-        self.profile_data['id'] = fuzzy.FuzzyUUID().fuzz()
+        self.profile.id = fuzzy.FuzzyUUID().fuzz()
         with self.assertFieldError('profile.id', 'DOES_NOT_EXIST'):
-            self.client.call_action('update_profile', profile=self.profile_data)
+            self.client.call_action('update_profile', profile=self.profile)
 
     def test_update_profile(self):
         original = factories.ProfileFactory.create_protobuf()
@@ -393,12 +321,38 @@ class TestProfiles(TestCase):
         return owner
 
     def test_get_direct_reports(self):
-        owner = self._setup_direct_reports_test()
         # direct reports for owner should be equal to the number of teams 1
         # level below as well as anyone directly on his team
-        response = self.client.call_action('get_direct_reports', profile_id=owner.id)
+        parent_team = mocks.mock_team(
+            owner_id=self.profile.user_id,
+            organization_id=self.profile.organization_id,
+        )
+        descendant = mocks.mock_team_descendants(
+            parent_team_id=parent_team.id,
+        )
+        factories.ProfileFactory.create(
+            user_id=descendant.teams[0].owner_id,
+            organization_id=parent_team.organization_id,
+        )
+
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=parent_team,
+                mock_regex_lookup='organization:get_team:.*',
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team_descendants',
+                return_object_path='descendants',
+                return_object=[descendant],
+                mock_regex_lookup='organization:get_team_descendants:.*',
+            )
+            response = self.client.call_action('get_direct_reports', profile_id=self.profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profiles), 6)
+        self.assertEqual(len(response.result.profiles), 1)
 
         # verify profiles are case-insensitive sorted by first_name, last_name
         sorted_profiles = sorted(
@@ -409,62 +363,140 @@ class TestProfiles(TestCase):
             self.verify_containers(profile, sorted_profiles[index])
 
     def test_get_direct_reports_user_id(self):
-        owner = self._setup_direct_reports_test()
-        response = self.client.call_action('get_direct_reports', user_id=owner.user_id)
-        self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profiles), 6)
-
-    def test_get_direct_reports_no_direct_reports(self):
-        address = self._create_address()
-        parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
-        profile = factories.ProfileFactory.create_protobuf(
-            organization_id=address.organization_id,
-            address_id=address.id,
+        parent_team = mocks.mock_team(
+            owner_id=self.profile.user_id,
+            organization_id=self.profile.organization_id,
+        )
+        descendant = mocks.mock_team_descendants(
+            parent_team_id=parent_team.id,
+        )
+        factories.ProfileFactory.create(
+            user_id=descendant.teams[0].owner_id,
+            organization_id=parent_team.organization_id,
+        )
+        factories.ProfileFactory.create(
+            organization_id=parent_team.organization_id,
             team_id=parent_team.id,
         )
 
-        response = self.client.call_action('get_direct_reports', profile_id=profile.id)
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=parent_team,
+                mock_regex_lookup='organization:get_team:.*',
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team_descendants',
+                return_object_path='descendants',
+                return_object=[descendant],
+                mock_regex_lookup='organization:get_team_descendants:.*',
+            )
+            response = self.client.call_action('get_direct_reports', profile_id=self.profile.id)
+        self.assertEqual(len(response.result.profiles), 2)
+
+    def test_get_direct_reports_no_direct_reports(self):
+        parent_team = mocks.mock_team(
+            owner_id=self.profile.user_id,
+            organization_id=self.profile.organization_id,
+        )
+
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=parent_team,
+                mock_regex_lookup='organization:get_team:.*',
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team_descendants',
+                return_object_path='descendants',
+                return_object=[],
+                mock_regex_lookup='organization:get_team_descendants:.*',
+            )
+            response = self.client.call_action('get_direct_reports', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
 
     def test_get_peers_non_owner(self):
-        address = self._create_address()
-        parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
-
-        for _ in range(3):
-            peer = factories.ProfileFactory.create_protobuf(
-                address_id=address.id,
-                organization_id=address.organization_id,
-                team_id=parent_team.id,
-                user_id=self._create_user().id,
+        team = mocks.mock_team(
+            id=self.profile.team_id,
+            organization_id=self.profile.organization_id,
+        )
+        peers = factories.ProfileFactory.create_batch(
+            size=2,
+            organization_id=self.profile.organization_id,
+            team_id=self.profile.team_id,
+        )
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=team,
+                mock_regex_lookup='organization:get_team:.*',
             )
-
-        response = self.client.call_action('get_peers', profile_id=peer.id)
+            response = self.client.call_action('get_peers', profile_id=self.profile.id)
         self.assertTrue(response.success)
-        self.assertEqual(len(response.result.profiles), 2)
+        self.assertEqual(len(response.result.profiles), len(peers))
 
     def test_get_peers(self):
-        address = self._create_address()
-
-        # create a parent team
-        parent_team, _ = self._create_team_and_owner(address.organization_id, address.id)
-
-        # create a sub-team we'll use as our test case
-        team, _ = self._create_team_and_owner(
-            address.organization_id,
-            address.id,
-            child_of=parent_team.id,
+        manager = factories.ProfileFactory.create_protobuf(
+            organization_id=self.profile.organization_id,
+        )
+        parent_team = mocks.mock_team(
+            id=manager.team_id,
+            owner_id=manager.user_id,
+            organization_id=self.profile.organization_id,
         )
 
-        # create teams that are children of the one above
-        for _ in range(3):
-            _, peer = self._create_team_and_owner(
-                address.organization_id,
-                address.id,
-                child_of=team.id,
+        team = mocks.mock_team(
+            id=self.profile.team_id,
+            owner_id=self.profile.user_id,
+            path=list(parent_team.path),
+            organization_id=self.profile.organization_id,
+        )
+        teams = [team]
+        for _ in range(2):
+            profile = factories.ProfileFactory.create_protobuf(
+                organization_id=self.profile.organization_id,
+            )
+            teams.append(
+                mocks.mock_team(
+                    path=list(parent_team.path),
+                    id=profile.team_id,
+                    owner_id=profile.user_id,
+                )
             )
 
-        response = self.client.call_action('get_peers', profile_id=peer.id)
+        with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('profile')
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=team,
+                team_id=str(uuid.UUID(team.id)),
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=parent_team,
+                team_id=str(uuid.UUID(parent_team.id)),
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team_descendants',
+                return_object_path='descendants',
+                return_object=[mocks.mock_team_descendants(teams=teams)],
+                mock_regex_lookup='organization:get_team_descendants:.*',
+            )
+            response = self.client.call_action('get_peers', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 2)
 
@@ -477,25 +509,45 @@ class TestProfiles(TestCase):
             self.verify_containers(sorted_profiles[index], profile)
 
     def test_get_peers_ceo(self):
-        address = self._create_address()
+        team = mocks.mock_team(
+            id=self.profile.team_id,
+            organization_id=self.profile.organization_id,
+            owner_id=self.profile.user_id,
+        )
 
-        # create a root team
-        _, owner = self._create_team_and_owner(address.organization_id, address.id)
-        response = self.client.call_action('get_peers', profile_id=owner.id)
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=team,
+                mock_regex_lookup='organization:get_team:.*',
+            )
+            response = self.client.call_action('get_peers', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 0)
 
     def test_get_peers_ceo_members_on_direct_team(self):
-        address = self._create_address()
-
-        # create a root team
-        team, owner = self._create_team_and_owner(address.organization_id, address.id)
-
+        team = mocks.mock_team(
+            id=self.profile.team_id,
+            organization_id=self.profile.organization_id,
+            owner_id=self.profile.user_id,
+        )
         # add someone on his direct team (C level exec)
-        self._create_and_add_profile_to_team(team)
+        factories.ProfileFactory.create(
+            organization_id=self.profile.organization_id,
+            team_id=team.id,
+        )
 
-        response = self.client.call_action('get_peers', profile_id=owner.id)
-        self.assertTrue(response.success)
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_team',
+                return_object_path='team',
+                return_object=team,
+                mock_regex_lookup='organization:get_team:.*',
+            )
+            response = self.client.call_action('get_peers', profile_id=self.profile.id)
         self.assertEqual(len(response.result.profiles), 0)
 
     def test_get_profile_stats_address_invalid(self):

@@ -117,13 +117,33 @@ def mock_team(container=None, **overrides):
         fuzzy.FuzzyText: ['name', 'department'],
     }
     path = overrides.pop('path', [])
-    path.append(mock_team_path_part(id=team_id))
+    path_part_overrides = {}
+    if 'owner_id' in overrides:
+        path_part_overrides['owner_id'] = overrides['owner_id']
+
+    path.extend([mock_team_path_part(id=team_id, **path_part_overrides)])
     extra = {
         'path': path,
         'id': team_id,
     }
     extra.update(overrides)
     return _mock_container(container, mock_dict, **extra)
+
+
+def mock_team_descendants(container=None, **overrides):
+    if container is None:
+        container = organization_containers.TeamDescendantsV1()
+
+    defaults = {
+        'depth': 1,
+        'teams': [mock_team()],
+    }
+    defaults.update(overrides)
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['parent_team_id'],
+    }
+    return _mock_container(container, mock_dict, **defaults)
 
 
 def mock_organization(container=None, **overrides):

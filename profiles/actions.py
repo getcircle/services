@@ -530,19 +530,24 @@ class GetDirectReports(actions.Action):
             attributes=['owner_id'],
             depth=1,
         )
-        descendants = response.result.descendants[0]
-        return [item.owner_id for item in descendants.teams]
+        owner_ids = []
+        if response.result.descendants:
+            descendants = response.result.descendants[0]
+            owner_ids = [item.owner_id for item in descendants.teams]
+        return owner_ids
 
     def run(self, *args, **kwargs):
         parameters = {}
         if self.request.profile_id:
             parameters['pk'] = self.request.profile_id
         else:
+            # TODO this assumes that we only have 1 profile per user_id
             parameters['user_id'] = self.request.user_id
 
         try:
             profile = models.Profile.objects.get(**parameters)
         except models.Profile.DoesNotExist:
+            # TODO need to check the parameters, this could be "profile_id" doesn't exist
             raise self.ActionFieldError('user_id', 'DOES_NOT_EXIST')
 
         response = self.organization_client.call_action(
@@ -552,7 +557,7 @@ class GetDirectReports(actions.Action):
         )
         team = response.result.team
         user_ids = []
-        if team.owner_id == str(profile.user_id):
+        if matching_uuids(team.owner_id, profile.user_id):
             user_ids.extend(self._get_child_team_owner_ids(team))
             profiles = models.Profile.objects.filter(
                 Q(user_id__in=user_ids) | Q(team_id=team.id),
@@ -594,10 +599,10 @@ class GetPeers(actions.Action):
         team = response.result.team
 
         # handle CEO -- no peers
-        if team.owner_id == str(profile.user_id) and len(team.path) < 2:
+        if matching_uuids(team.owner_id, profile.user_id) and len(team.path) < 2:
             return
 
-        if team.owner_id == str(profile.user_id):
+        if matching_uuids(team.owner_id, profile.user_id):
             client = service.control.Client('profile', token=self.token)
             response = client.call_action(
                 'get_direct_reports',

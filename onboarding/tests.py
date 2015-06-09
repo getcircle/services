@@ -4,7 +4,10 @@ import unittest
 from mock import patch
 import service.control
 
-from services.test import TestCase
+from services.test import (
+    mocks,
+    TestCase,
+)
 
 from .parsers.organizations import Parser
 
@@ -12,14 +15,10 @@ from .parsers.organizations import Parser
 class TestParser(TestCase):
 
     def setUp(self):
-        self.organization_client = service.control.Client(
-            'organization',
-            token='test-token',
-        )
-        self.profile_client = service.control.Client(
-            'profile',
-            token='test-token',
-        )
+        self.profile = mocks.mock_profile()
+        self.token = mocks.mock_token(profile_id=self.profile.id)
+        self.organization_client = service.control.Client('organization', token=self.token)
+        self.profile_client = service.control.Client('profile', token=self.token)
 
         response = self.organization_client.call_action(
             'create_organization',
@@ -42,7 +41,7 @@ class TestParser(TestCase):
         parser = Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path(fixture_name),
-            token='test-token',
+            token=self.token,
         )
         parser.parse(commit=True)
 
@@ -66,7 +65,7 @@ class TestParser(TestCase):
         parser = Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path('sample_organization.csv'),
-            token='test-token',
+            token=self.token,
         )
         parser.parse(commit=False)
         with self.mock_transport(self.profile_client) as mock:
@@ -87,13 +86,26 @@ class TestParser(TestCase):
         parser = Parser(
             organization_domain=self.organization.domain,
             filename=self._fixture_path('sample_organization.csv'),
-            token='test-token',
+            token=self.token,
         )
         parser.parse(commit=True)
-        response = self.organization_client.call_action(
-            'get_teams',
-            organization_id=self.organization.id,
-        )
+        with self.mock_transport() as mock:
+            mock.instance.register_empty_response(
+                service='profile',
+                action='get_profile_stats',
+                mock_regex_lookup='profile:get_profile_stats.*',
+            )
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            response = self.organization_client.call_action(
+                'get_teams',
+                organization_id=self.organization.id,
+            )
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.teams), 12)
 
