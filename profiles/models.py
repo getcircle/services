@@ -42,6 +42,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     nickname = models.CharField(max_length=64, null=True)
+    # XXX what is this random max_length?
     image_url = models.URLField(max_length=256, null=True)
     birth_date = models.DateField(null=True)
     hire_date = models.DateField(null=True)
@@ -53,6 +54,8 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     )
     about = models.TextField(null=True)
     is_admin = models.BooleanField(default=False)
+    # XXX what is this random max_length?
+    small_image_url = models.URLField(max_length=256, null=True)
 
     @property
     def full_name(self):

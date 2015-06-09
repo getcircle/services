@@ -25,6 +25,7 @@ class ProfileFactory(factory.Factory):
     about = factory.FuzzyText()
     nickname = factory.FuzzyText()
     email = factory.FuzzyText(suffix='@example.com')
+    small_image_url = factory.FuzzyText(prefix='http://www.media.com/small/')
 
     @classmethod
     def get_protobuf_data(cls, **data):
