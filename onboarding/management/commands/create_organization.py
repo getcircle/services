@@ -19,14 +19,14 @@ class Command(BaseCommand):
         parser.add_argument('organization_name', type=str, help='Organization\'s name')
         parser.add_argument('organization_domain', type=str, help='Organization\'s domain')
         parser.add_argument(
-            '-i, --image_url',
+            '--image_url',
             dest='image_url',
             type=str,
             help='Link to the companies logo',
             required=False,
         )
         parser.add_argument(
-            '-r, --reset',
+            '--reset',
             action='store_true',
             required=False,
             default=False,
