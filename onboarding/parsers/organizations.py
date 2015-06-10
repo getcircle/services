@@ -48,6 +48,7 @@ class Row(object):
         'first_name',
         'last_name',
         'image_url',
+        'small_image_url',
         'title',
         'birth_date',
         'hire_date',
