@@ -49,6 +49,7 @@ class Platform(object):
                     ),
                 },
                 'sound': 'default',
+                'category': 'GROUP_REQUEST',
             },
         }
 
