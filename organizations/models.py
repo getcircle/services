@@ -34,9 +34,9 @@ class Team(models.UUIDModel, models.TimestampableModel):
     protobuf_include_fields = ('department',)
 
     name = models.CharField(max_length=255)
-    owner_id = models.UUIDField(db_index=True)
-    organization = models.ForeignKey(Organization, db_index=True)
-    path = LTreeField(null=True, db_index=True)
+    owner_id = models.UUIDField(db_index=True, editable=False)
+    organization = models.ForeignKey(Organization, db_index=True, editable=False)
+    path = LTreeField(null=True, db_index=True, editable=False)
 
     def get_path(self, path_dict=None):
         if self._path is None:
@@ -69,6 +69,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('name', 'organization')
+        protobuf = organization_containers.TeamV1
 
 
 class Address(models.UUIDModel, models.TimestampableModel):

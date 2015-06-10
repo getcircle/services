@@ -15,7 +15,8 @@ from .. import (
 class TestOrganizations(TestCase):
 
     def setUp(self):
-        self.profile = mocks.mock_profile()
+        self.organization = factories.OrganizationFactory.create()
+        self.profile = mocks.mock_profile(organization_id=str(self.organization.id))
         self.client = service.control.Client(
             'organization',
             token=mocks.mock_token(profile_id=self.profile.id),
@@ -793,3 +794,69 @@ class TestOrganizations(TestCase):
         self.assertTrue(team.permissions.can_add)
         self.assertTrue(team.permissions.can_edit)
         self.assertTrue(team.permissions.can_delete)
+
+    def test_update_team_team_required(self):
+        with self.assertFieldError('team', 'MISSING'):
+            self.client.call_action('update_team')
+
+    def test_update_team_team_does_not_exist(self):
+        with self.assertFieldError('team.id', 'DOES_NOT_EXIST'):
+            self.client.call_action('update_team', team=mocks.mock_team())
+
+    def test_update_team_profile_admin(self):
+        self.profile.is_admin = True
+        team = factories.TeamFactory.create(organization=self.organization)
+        container = team.to_protobuf(path=team.get_path())
+        container.name = 'new name'
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            response = self.client.call_action('update_team', team=container)
+        self.assertEqual(response.result.team.name, container.name)
+
+        team = models.Team.objects.get(pk=team.id)
+        self.assertEqual(team.name, container.name)
+
+    def test_update_team_profile_non_admin(self):
+        self.profile.is_admin = False
+        team = factories.TeamFactory.create(organization=self.organization)
+        container = team.to_protobuf(path=team.get_path())
+        container.name = 'new name'
+        with self.mock_transport() as mock, self.assertRaisesCallActionError() as expected:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            self.client.call_action('update_team', team=container)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
+    def test_update_team_non_editable_fields(self):
+        self.profile.is_admin = True
+        team = factories.TeamFactory.create(organization=self.organization)
+        container = team.to_protobuf(path=team.get_path())
+        container.organization_id = fuzzy.FuzzyUUID().fuzz()
+        container.owner_id = fuzzy.FuzzyUUID().fuzz()
+        container.name = 'new name'
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            response = self.client.call_action('update_team', team=container)
+
+        updated_team = response.result.team
+        self.assertNotEqual(updated_team.organization_id, container.organization_id)
+        self.assertNotEqual(updated_team.owner_id, container.owner_id)
+        self.assertEqual(updated_team.name, container.name)

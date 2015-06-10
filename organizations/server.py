@@ -12,6 +12,7 @@ class Server(service.control.Server):
         'get_team': actions.GetTeam,
         'get_teams': actions.GetTeams,
         'get_team_descendants': actions.GetTeamDescendants,
+        'update_team': actions.UpdateTeam,
         'create_address': actions.CreateAddress,
         'delete_address': actions.DeleteAddress,
         'get_address': actions.GetAddress,

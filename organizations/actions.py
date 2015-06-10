@@ -178,6 +178,28 @@ class CreateTeam(TeamPermissionsMixin, actions.Action):
             team.to_protobuf(self.response.team, path=team.get_path())
 
 
+class UpdateTeam(TeamPermissionsMixin, actions.Action):
+
+    required_fields = ('team',)
+
+    field_validators = {
+        'team.id': {
+            valid_team: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        team = models.Team.objects.get(pk=self.request.team.id)
+
+        permissions = self.get_permissions(team)
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
+
+        team.update_from_protobuf(self.request.team)
+        team.save()
+        team.to_protobuf(self.response.team, path=team.get_path())
+
+
 class GetTeam(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
 
     type_validators = {
