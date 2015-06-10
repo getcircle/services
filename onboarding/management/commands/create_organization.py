@@ -13,27 +13,27 @@ from services.token import make_admin_token
 
 
 class Command(BaseCommand):
-    args = '<organization name> <organization domain>'
     help = 'Creates an organization'
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '--image_url',
+
+    def add_arguments(self, parser):
+        parser.add_argument('organization_name', type=str, help='Organization\'s name')
+        parser.add_argument('organization_domain', type=str, help='Organization\'s domain')
+        parser.add_argument(
+            '-i, --image_url',
             dest='image_url',
+            type=str,
             help='Link to the companies logo',
-        ),
-        make_option(
-            '--reset',
+            required=False,
+        )
+        parser.add_argument(
+            '-r, --reset',
             action='store_true',
-            dest='reset',
+            required=False,
             default=False,
             help='Boolean for whether or not we should reset the schema before creating the org',
-        ),
-    )
+        )
 
     def handle(self, *args, **options):
-        organization_name = args[0]
-        organization_domain = args[1]
-
         reset = options.get('reset')
         if reset:
             verify = raw_input('are you sure you want to reset the db? ')
@@ -54,8 +54,8 @@ class Command(BaseCommand):
 
         client = service.control.Client('organization', token=make_admin_token())
         organization = {
-            'name': organization_name,
-            'domain': organization_domain,
+            'name': options['organization_name'],
+            'domain': options['organization_domain'],
         }
         if 'image_url' in options:
             organization['image_url'] = options.get('image_url')

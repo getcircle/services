@@ -12,40 +12,35 @@ from services.token import make_admin_token
 class BaseOrganizationParserCommand(BaseCommand):
     parser_class = None
     parser_kwargs = None
-    args = '<organization domain> <filename>'
     help = 'Loads the onboarding file into the organization'
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '--commit',
-            action='store_true',
-            dest='commit',
-            default=False,
-            help='Commit the parsed data',
-        ),
-        make_option(
-            '--verbose',
-            action='store_true',
-            dest='verbose',
-            default=False,
-            help='Run the command with debug logging',
-        ),
-        make_option(
-            '--filename',
-            dest='filename',
-            help='Filename to load if it isn\'t the companies name',
-        ),
-    )
 
     def __init__(self, *args, **kwargs):
         if self.parser_kwargs is None:
             self.parser_kwargs = {}
         super(BaseOrganizationParserCommand, self).__init__(*args, **kwargs)
 
+    def add_arguments(self, parser):
+        parser.add_argument('organization_domain', type=str, help='Organization\'s domain')
+        parser.add_argument(
+            '--commit',
+            action='store_true',
+            help='Commit the parsed data',
+        )
+        parser.add_argument(
+            '--verbose',
+            action='store_true',
+            help='Run the command with debug logging',
+        )
+        parser.add_argument(
+            '--filename',
+            help='Filename to load if it isn\'t the companies name',
+        )
+
     def handle(self, *args, **options):
         if self.parser_class is None:
             raise NotImplementedError('BaseOrganizationParserCommand must specify "parser_class"')
 
-        organization_domain = args[0]
+        organization_domain = options['organization_domain']
         filename = options.get('filename')
         if not filename:
             filename = os.path.join(

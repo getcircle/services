@@ -10,14 +10,9 @@ from .base import BaseOrganizationParserCommand
 class Command(BaseOrganizationParserCommand):
     parser_class = Parser
 
-    option_list = BaseOrganizationParserCommand.option_list + (
-        make_option(
-            '--tag_type',
-            dest='tag_type',
-            default='skill',
-            help='Tag type to upload',
-        ),
-    )
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('--tag_type', default='skill', help='Tag type to upload')
 
     def handle(self, *args, **options):
         try:
