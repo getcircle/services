@@ -1,9 +1,9 @@
+from bulk_update.manager import BulkUpdateManager
+from common.db import models
+from common import utils
 from django.contrib.postgres.fields import ArrayField
 import django.db
 from protobufs.services.profile import containers_pb2 as profile_containers
-
-from common.db import models
-from common import utils
 
 
 class Tag(models.UUIDModel, models.TimestampableModel):
@@ -22,6 +22,8 @@ class Tag(models.UUIDModel, models.TimestampableModel):
 
 
 class Profile(models.UUIDModel, models.TimestampableModel):
+
+    bulk_manager = BulkUpdateManager()
 
     # TODO this should really be coming from the "to_python" method of the
     # field. otherwise its going to get really confusing why importing to a

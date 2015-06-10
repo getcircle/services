@@ -94,11 +94,18 @@ class BulkCreateProfiles(actions.Action):
         containers_dict = dict((profile.email, profile) for profile in self.request.profiles)
 
         profiles_to_create = []
-        for profile in self.request.profiles:
-            if profile.email not in existing_profiles_dict:
-                profiles_to_create.append(profile)
+        profiles_to_update = []
+        for container in self.request.profiles:
+            if container.email not in existing_profiles_dict:
+                profiles_to_create.append(container)
+            else:
+                profile = existing_profiles_dict[container.email]
+                profile.update_from_protobuf(container)
+                profiles_to_update.append(profile)
 
         profiles = self.bulk_create_profiles(profiles_to_create)
+        models.Profile.bulk_manager.bulk_update(profiles_to_update)
+
         contact_methods = []
         for profile in profiles:
             profile_container = containers_dict[profile.email]
