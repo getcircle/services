@@ -6,6 +6,7 @@ class BaseGroupsProvider(object):
         self.organization = organization
         self.requester_profile = requester_profile
         self.token = token
+        self.write_access = True
 
     def get_groups_for_profile(self, profile, **kwargs):
         raise NotImplementedError('Subclass must implement `get_groups_for_profile`')

@@ -35,6 +35,11 @@ class Provider(base.BaseGroupsProvider):
                 client_kwargs={'token': self.token},
                 integration_type=integration_pb2.GOOGLE_GROUPS,
             )
+            for scope in integration.google_groups.scopes:
+                if scope.endswith('readonly'):
+                    self.write_access = False
+                    break
+
             credentials = SignedJwtAssertionCredentials(
                 settings.GOOGLE_ADMIN_SDK_JSON_KEY.get('client_email'),
                 settings.GOOGLE_ADMIN_SDK_JSON_KEY.get('private_key'),
@@ -262,6 +267,9 @@ class Provider(base.BaseGroupsProvider):
 
     def can_join_or_can_request(self, group_key, group_settings):
         can_join = can_request = False
+        if not self.write_access:
+            return can_join, can_request
+
         who_can_join = group_settings.get('whoCanJoin')
         if who_can_join == 'CAN_REQUEST_TO_JOIN':
             can_request = True
@@ -271,6 +279,9 @@ class Provider(base.BaseGroupsProvider):
 
     def can_add_to_group(self, group_key, group_settings, membership):
         can_add = False
+        if not self.write_access:
+            return can_add
+
         who_can_add = group_settings.get('whoCanInvite')
         if who_can_add == 'ALL_MEMBERS_CAN_INVITE':
             can_add = True
