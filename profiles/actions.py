@@ -104,7 +104,8 @@ class BulkCreateProfiles(actions.Action):
                 profiles_to_update.append(profile)
 
         profiles = self.bulk_create_profiles(profiles_to_create)
-        models.Profile.bulk_manager.bulk_update(profiles_to_update)
+        if profiles_to_update:
+            models.Profile.bulk_manager.bulk_update(profiles_to_update)
 
         contact_methods = []
         for profile in profiles:
