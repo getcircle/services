@@ -52,7 +52,7 @@ class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
 
     def get_permissions(self, team):
         permissions = common_containers.PermissionsV1()
-        if self.parsed_token.is_admin or self.requester_profile.is_admin:
+        if self.parsed_token.is_admin() or self.requester_profile.is_admin:
             permissions.can_edit = True
             permissions.can_add = True
             permissions.can_delete = True
