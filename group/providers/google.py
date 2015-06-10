@@ -1,4 +1,5 @@
 import httplib2
+import logging
 
 from apiclient.errors import HttpError
 from apiclient.http import BatchHttpRequest
@@ -19,6 +20,10 @@ from .. import models
 
 
 class Provider(base.BaseGroupsProvider):
+
+    @property
+    def logger(self):
+        return logging.getLogger('groups:google')
 
     @property
     def http(self):
@@ -109,7 +114,8 @@ class Provider(base.BaseGroupsProvider):
 
         def handle_group(request_id, response, exception, **kwargs):
             if exception is not None:
-                raise exception
+                self.logger.error('Error fetching group: %s', exception)
+                return False
             groups.append(response)
 
         batch = BatchHttpRequest()
@@ -174,7 +180,8 @@ class Provider(base.BaseGroupsProvider):
 
         def handle_new_member(request_id, response, exception, **kwargs):
             if exception is not None:
-                raise exception
+                self.logger.error('Error adding new member: %s', exception)
+                return False
             new_members.append(response)
 
         batch = BatchHttpRequest()
@@ -203,7 +210,8 @@ class Provider(base.BaseGroupsProvider):
 
         def handle_groups_settings(request_id, response, exception, **kwargs):
             if exception is not None:
-                raise exception
+                self.logger.error('Error fetching group settings: %s', exception)
+                return False
             groups_settings[response['email']] = response
 
         batch = BatchHttpRequest()
