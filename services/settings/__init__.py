@@ -279,12 +279,15 @@ CACHEOPS_DEFAULTS = {
 }
 
 CACHEOPS = {
-    'notes.*': {'ops': 'all'},
     'feed.*': {'ops': 'all'},
+    'glossary.*': {'ops': 'all'},
+    'group.*': {'ops': 'all'},
+    'notes.*': {'ops': 'all'},
+    'notification.*': {'ops': 'all'},
     'organizations.*': {'ops': 'all'},
     'profiles.*': {'ops': 'all'},
     'resumes.*': {'ops': 'all'},
-    'users.*': {'ops': 'get'},
+    '*.*': {},
 }
 
 # Google Admin SDK
