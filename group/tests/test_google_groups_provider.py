@@ -151,7 +151,6 @@ class BaseGoogleCase(TestCase):
                 group.delete()
 
 
-@patch('group.providers.google.get_redis_client')
 @patch('group.providers.google.service.control.get_object')
 @patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleGetGroups(BaseGoogleCase):
@@ -1443,11 +1442,50 @@ class TestGoogleGroups(BaseGoogleCase):
             patched_build_api().members().delete().execute.side_effect = HttpError('404', 'Error')
             self.provider.leave_group(group.id)
 
-    def test_leave_group(self, *patches):
+    def test_leave_group_all_members_can_leave(self, *patches):
         membership = model_factories.GoogleGroupMemberFactory.create(
             profile_id=self.by_profile.id,
             organization_id=self.by_profile.organization_id,
             group__direct_members_count=2,
+            group__settings={'whoCanLeaveGroup': 'ALL_MEMBERS_CAN_LEAVE'},
+        )
+        with patch('group.providers.google.build') as patched_build_api:
+            patched_build_api().members().delete.execute.return_value = ''
+            self.provider.leave_group(membership.group_id)
+        self.assertEqual(patched_build_api().members().delete().execute.call_count, 1)
+        self.assertFalse(
+            models.GoogleGroupMember.objects.filter(profile_id=self.by_profile.id).exists()
+        )
+        self.assertEqual(
+            models.GoogleGroup.objects.get(pk=membership.group_id).direct_members_count,
+            1,
+        )
+
+    def test_leave_group_member_managers_can_only_leave(self, *patches):
+        membership = model_factories.GoogleGroupMemberFactory.create(
+            profile_id=self.by_profile.id,
+            organization_id=self.by_profile.organization_id,
+            role='MEMBER',
+            group__direct_members_count=2,
+            group__settings={'whoCanLeaveGroup': 'ALL_MANAGERS_CAN_LEAVE'},
+        )
+        with self.assertRaises(exceptions.Unauthorized):
+            self.provider.leave_group(membership.group_id)
+        self.assertTrue(
+            models.GoogleGroupMember.objects.filter(profile_id=self.by_profile.id).exists()
+        )
+        self.assertEqual(
+            models.GoogleGroup.objects.get(pk=membership.group_id).direct_members_count,
+            2,
+        )
+
+    def test_leave_group_manager_managers_can_only_leave(self, *patches):
+        membership = model_factories.GoogleGroupMemberFactory.create(
+            profile_id=self.by_profile.id,
+            organization_id=self.by_profile.organization_id,
+            role='MANAGER',
+            group__direct_members_count=2,
+            group__settings={'whoCanLeaveGroup': 'ALL_MANAGERS_CAN_LEAVE'},
         )
         with patch('group.providers.google.build') as patched_build_api:
             patched_build_api().members().delete.execute.return_value = ''

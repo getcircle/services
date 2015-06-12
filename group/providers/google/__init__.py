@@ -346,6 +346,18 @@ class Provider(base.BaseGroupsProvider):
             can_add = True
         return can_add
 
+    def can_leave_group(self, group, membership):
+        can_leave = False
+        if not self.write_access:
+            return can_leave
+
+        who_can_leave = group.settings and group.settings.get('whoCanLeaveGroup')
+        if who_can_leave == 'ALL_MEMBERS_CAN_LEAVE':
+            can_leave = True
+        elif who_can_leave == 'ALL_MANAGERS_CAN_LEAVE' and self.is_manager(membership):
+            can_leave = True
+        return can_leave
+
     def get_states_for_user_in_group(self, group, membership):
         is_member = is_manager = can_join = can_request = False
         if membership:
@@ -554,6 +566,13 @@ class Provider(base.BaseGroupsProvider):
     def leave_group(self, group_id, **kwargs):
         # TODO catch DoesNotExist, IndexError
         group = models.GoogleGroup.objects.get(pk=group_id)
+        membership = self._get_requester_memberships([group_id])
+        if not membership:
+            return
+
+        if not self.can_leave_group(group, membership.get(group_id)):
+            raise exceptions.Unauthorized('Only a manager can leave this group')
+
         removed = self._leave_group(group.provider_uid)
         if removed:
             models.GoogleGroupMember.objects.get(
