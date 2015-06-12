@@ -2,12 +2,13 @@
 
 class BaseGroupsProvider(object):
 
-    def __init__(self, requester_profile, token=None, organization=None):
+    def __init__(self, requester_profile, token=None, organization=None, paginator=None):
         self.requester_profile = requester_profile
         self.organization_id = requester_profile.organization_id
         self.organization = organization
         self.token = token
         self.write_access = True
+        self.paginator = paginator
 
     def get_groups_for_profile(self, profile, **kwargs):
         raise NotImplementedError('Subclass must implement `get_groups_for_profile`')

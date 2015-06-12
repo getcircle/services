@@ -10,6 +10,7 @@ from django.db.models import F
 from oauth2client.client import SignedJwtAssertionCredentials
 from protobufs.services.group import containers_pb2 as group_containers
 import service.control
+from service.paginator import Paginator
 
 from services.cache import get_redis_client
 
@@ -391,6 +392,12 @@ class Provider(base.BaseGroupsProvider):
                 group_id=group_id,
                 role=self._get_role_from_role_v1(role),
             )
+            if self.paginator:
+                paginator = Paginator(members, self.paginator.page_size)
+                page = paginator.page(self.paginator.page)
+                service.control.update_paginator_protobuf(self.paginator, paginator, page)
+                members = page.object_list
+
             if not members:
                 return []
 

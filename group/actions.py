@@ -88,7 +88,11 @@ class GetGroups(PreRunParseTokenMixin, BaseGroupAction):
                 request_key=self.get_request_md5(),
             )
 
-        self.response.groups.extend(groups)
+        self.paginated_response(
+            self.response.groups,
+            groups,
+            lambda item, container: container.extend([item]),
+        )
 
 
 class JoinGroup(PreRunParseTokenMixin, actions.Action):
@@ -213,6 +217,7 @@ class GetMembers(PreRunParseTokenMixin, actions.Action):
             requester_profile=self.profile,
             token=self.token,
             integration=self.integration,
+            paginator=self.control.paginator,
         )
         members = provider.get_members_for_group(self.request.group_id, self.request.role)
         self.response.members.extend(members)
