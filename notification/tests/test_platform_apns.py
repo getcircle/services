@@ -1,5 +1,6 @@
 import json
 
+from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.notification import containers_pb2 as notification_containers
 
 from services.test import (
@@ -21,7 +22,8 @@ class TestPlatformAPNS(TestCase):
         requester_profile = mocks.mock_profile()
         group_membership_request = notification_containers.GroupMembershipRequestNotificationV1(
             requester_profile_id=requester_profile.id,
-            group_key=fuzzy.FuzzyUUID().fuzz(),
+            group_id=fuzzy.FuzzyUUID().fuzz(),
+            provider=group_containers.GOOGLE,
         )
         notification = notification_containers.NotificationV1(
             notification_type_id=notification_containers.NotificationTypeV1.GOOGLE_GROUPS,
@@ -35,12 +37,21 @@ class TestPlatformAPNS(TestCase):
                 return_object=mocks.mock_profile(),
                 profile_id=requester_profile.id,
             )
+            mock.instance.register_mock_object(
+                service='group',
+                action='get_group',
+                return_object_path='group',
+                return_object=mocks.mock_group(),
+                group_id=group_membership_request.group_id,
+                provider=group_containers.GOOGLE,
+            )
             payload = self.platform.construct_message(
                 to_profile_id=fuzzy.FuzzyUUID().fuzz(),
                 notification=notification,
             )
         message = json.loads(payload)
         self.assertEqual(message['aps']['alert']['title'], 'Group Membership Request')
+        self.assertEqual(message['request_id'], group_membership_request.request_id)
 
     def test_apns_construct_message_group_membership_request_response_notification(self):
         manager_profile = mocks.mock_profile()
@@ -48,7 +59,7 @@ class TestPlatformAPNS(TestCase):
             notification_containers.GroupMembershipRequestResponseNotificationV1(
                 group_manager_profile_id=manager_profile.id,
                 approved=False,
-                group_key=fuzzy.FuzzyUUID().fuzz(),
+                group_id=fuzzy.FuzzyUUID().fuzz(),
             )
         )
         notification = notification_containers.NotificationV1(
@@ -62,6 +73,14 @@ class TestPlatformAPNS(TestCase):
                 return_object_path='profile',
                 return_object=manager_profile,
                 profile_id=manager_profile.id,
+            )
+            mock.instance.register_mock_object(
+                service='group',
+                action='get_group',
+                return_object_path='group',
+                return_object=mocks.mock_group(),
+                group_id=group_membership_request_response.group_id,
+                provider=group_containers.GOOGLE,
             )
             payload = self.platform.construct_message(
                 to_profile_id=fuzzy.FuzzyUUID().fuzz(),
@@ -77,7 +96,7 @@ class TestPlatformAPNS(TestCase):
             notification_containers.GroupMembershipRequestResponseNotificationV1(
                 group_manager_profile_id=manager_profile.id,
                 approved=True,
-                group_key=fuzzy.FuzzyUUID().fuzz(),
+                group_id=fuzzy.FuzzyUUID().fuzz(),
             )
         )
         notification = notification_containers.NotificationV1(
@@ -91,6 +110,14 @@ class TestPlatformAPNS(TestCase):
                 return_object_path='profile',
                 return_object=manager_profile,
                 profile_id=manager_profile.id,
+            )
+            mock.instance.register_mock_object(
+                service='group',
+                action='get_group',
+                return_object_path='group',
+                return_object=mocks.mock_group(),
+                group_id=group_membership_request_response.group_id,
+                provider=group_containers.GOOGLE,
             )
             payload = self.platform.construct_message(
                 to_profile_id=fuzzy.FuzzyUUID().fuzz(),

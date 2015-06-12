@@ -18,6 +18,19 @@ class Platform(object):
             profile_id=profile_id,
         )
 
+    def _get_group(self, group_id, provider):
+        return service.control.get_object(
+            service='group',
+            action='get_group',
+            client_kwargs={'token': self.token},
+            return_object='group',
+            group_id=group_id,
+            provider=provider,
+        )
+
+    def _get_group_display_name(self, group):
+        return group.display_name or group.name
+
     def construct_message(self, to_profile_id, notification):
         notification_types = notification_containers.NotificationTypeV1
         if notification.notification_type_id == notification_types.GOOGLE_GROUPS:
@@ -35,6 +48,7 @@ class Platform(object):
 
     def group_membership_request_message(self, to_profile_id, notification, **kwargs):
         profile = self._get_profile(notification.requester_profile_id)
+        group = self._get_group(notification.group_id, notification.provider)
         # TODO strings should be localized
         # TODO should have some way to validate that the "notification" has all the
         # required fields. Potentially a class that has "validate" and
@@ -45,16 +59,18 @@ class Platform(object):
                     'title': 'Group Membership Request',
                     'body': '%s requested to join group %s' % (
                         ' '.join([profile.first_name, profile.last_name]).strip(),
-                        notification.group_key,
+                        self._get_group_display_name(group),
                     ),
                 },
                 'sound': 'default',
                 'category': 'GROUP_REQUEST',
             },
+            'request_id': notification.request_id,
         }
 
     def group_membership_request_response_message(self, to_profile_id, notification, **kwargs):
         profile = self._get_profile(notification.group_manager_profile_id)
+        group = self._get_group(notification.group_id, notification.provider)
         if notification.approved:
             action = 'approved'
         else:
@@ -66,7 +82,7 @@ class Platform(object):
                     'body': '%s %s your request to join %s' % (
                         ' '.join([profile.first_name, profile.last_name]).strip(),
                         action,
-                        notification.group_key,
+                        self._get_group_display_name(group),
                     ),
                 },
                 'sound': 'default',
