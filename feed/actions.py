@@ -207,10 +207,10 @@ class GetProfileFeed(actions.Action):
 
         response = client.call_action(
             'get_groups',
-            group_keys=[request.group_key for request in requests],
+            group_ids=[request.group_id for request in requests],
             provider=group_containers.GOOGLE,
         )
-        group_key_to_group = dict((group.email, group) for group in response.result.groups)
+        group_id_to_group = dict((group.id, group) for group in response.result.groups)
 
         category = self.response.categories.add()
         category.title = 'Group Membership Requests'
@@ -222,7 +222,7 @@ class GetProfileFeed(actions.Action):
             if not profile:
                 # XXX log error here
                 continue
-            group = group_key_to_group.get(request.group_key)
+            group = group_id_to_group.get(request.group_id)
             if not group:
                 # XXX log error here
                 continue

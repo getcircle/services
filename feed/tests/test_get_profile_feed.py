@@ -179,7 +179,7 @@ class TestGetCategories(TestCase):
         mock_groups = mock.get_mockable_response(service, 'get_groups')
         for request in mock_response.requests:
             container = mock_groups.groups.add()
-            mocks.mock_group(container, email=request.group_key)
+            mocks.mock_group(container, id=request.group_id)
 
         mock.instance.register_mock_response(
             service,
@@ -191,7 +191,7 @@ class TestGetCategories(TestCase):
             service,
             'get_groups',
             mock_groups,
-            group_keys=[request.group_key for request in mock_response.requests],
+            group_ids=[request.group_id for request in mock_response.requests],
             provider=group_containers.GOOGLE,
         )
         return mock_response.requests
