@@ -2,7 +2,7 @@
 
 class BaseGroupsProvider(object):
 
-    def __init__(self, requester_profile, token=None, organization=None, paginator=None):
+    def __init__(self, requester_profile=None, token=None, organization=None, paginator=None):
         self.requester_profile = requester_profile
         self.organization_id = requester_profile.organization_id
         self.organization = organization
