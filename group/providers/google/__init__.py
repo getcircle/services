@@ -217,7 +217,7 @@ class Provider(base.BaseGroupsProvider):
         batch.execute(http=self.http)
         return new_members
 
-    def get_groups_settings_and_membership(self, group_keys, fetch_membership=True):
+    def get_groups_settings_and_membership(self, group_emails, fetch_membership=True):
         groups_settings = {}
         membership = {}
 
@@ -230,14 +230,14 @@ class Provider(base.BaseGroupsProvider):
             if exception is not None:
                 self.logger.error('Error fetching group settings: %s', exception)
                 return False
-            groups_settings[response['email']] = response
+            groups_settings[response['email'].lower()] = response
 
         batch = BatchHttpRequest()
         request_num = 0
-        for group_key in group_keys:
+        for group_email in group_emails:
             request_num += 1
             batch.add(
-                self.settings_client.groups().get(groupUniqueId=group_key),
+                self.settings_client.groups().get(groupUniqueId=group_email),
                 callback=handle_groups_settings,
             )
             if fetch_membership:
@@ -245,10 +245,10 @@ class Provider(base.BaseGroupsProvider):
                 batch.add(
                     self.directory_client.members().get(
                         memberKey=self.requester_profile.email,
-                        groupKey=group_key,
+                        groupKey=group_email,
                     ),
                     callback=handle_is_member,
-                    request_id='%s::%s' % (request_num, group_key),
+                    request_id='%s::%s' % (request_num, group_email),
                 )
 
         batch.execute(http=self.http)
@@ -277,7 +277,7 @@ class Provider(base.BaseGroupsProvider):
         for group in groups:
             container = self.group_to_container(group, membership_dict.get(group.id))
             container.has_pending_request = group.id in pending_requests_dict
-            if group.settings.get('showInGroupDirectory', 'false') == 'true':
+            if group.settings and group.settings.get('showInGroupDirectory', 'false') == 'true':
                 containers.append(container)
 
         return sorted(containers, key=lambda x: x.name)
@@ -330,7 +330,7 @@ class Provider(base.BaseGroupsProvider):
         if not self.write_access:
             return can_join, can_request
 
-        who_can_join = group.settings.get('whoCanJoin')
+        who_can_join = group.settings and group.settings.get('whoCanJoin')
         if who_can_join == 'CAN_REQUEST_TO_JOIN':
             can_request = True
         elif who_can_join in ('ANYONE_CAN_JOIN', 'ALL_IN_DOMAIN_CAN_JOIN'):
@@ -342,7 +342,7 @@ class Provider(base.BaseGroupsProvider):
         if not self.write_access:
             return can_add
 
-        who_can_add = group.settings.get('whoCanInvite')
+        who_can_add = group.settings and group.settings.get('whoCanInvite')
         if who_can_add == 'ALL_MEMBERS_CAN_INVITE':
             can_add = True
         elif who_can_add == 'ALL_MANAGERS_CAN_INVITE' and self.is_manager(membership):
@@ -369,7 +369,7 @@ class Provider(base.BaseGroupsProvider):
 
     def is_group_visible(self, group, membership):
         visible = False
-        who_can_view_membership = group.settings.get('whoCanViewMembership')
+        who_can_view_membership = group.settings and group.settings.get('whoCanViewMembership')
         if who_can_view_membership == 'ALL_IN_DOMAIN_CAN_VIEW':
             visible = True
         elif who_can_view_membership == 'ALL_MEMBERS_CAN_VIEW' and membership:
@@ -516,10 +516,10 @@ class Provider(base.BaseGroupsProvider):
             container.has_pending_request = group.id in membership_requests
             if (
                 not container.is_member and
-                group.settings.get('showInGroupDirectory', 'false') == 'false'
+                group.settings and
+                group.settings.get('showInGroupDirectory', 'false') == 'true'
             ):
-                continue
-            containers.append(container)
+                containers.append(container)
         return containers
 
     def add_profiles_to_group(self, profiles, group_id, **kwargs):

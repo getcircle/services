@@ -1,5 +1,6 @@
 import datetime
 import logging
+import time
 import uuid
 
 from cacheops import invalidate_model
@@ -23,6 +24,7 @@ class Sync(object):
         return logging.getLogger('groups:google:sync')
 
     def sync_groups(self):
+        start = time.time()
         self.logger.info('starting groups sync: %s', self.sync_id)
         in_progress = True
         page_token = None
@@ -41,6 +43,12 @@ class Sync(object):
                 in_progress = False
         self._clear_stale_groups()
         self._clear_cacheops()
+        end = time.time()
+        self.logger.info(
+            'finished groups sync: %s [took %s seconds]',
+            self.sync_id,
+            (end - start) / 60,
+        )
 
     def _sync_groups(self, provider_groups):
         groups = []
@@ -94,8 +102,22 @@ class Sync(object):
 
     def _sync_settings(self, groups):
         if not groups:
+            self.logger.error("no groups provided for _sync_settings")
             # XXX log an error to #sentry
             return False
+
+        batch_size = 10
+        batches = len(groups) / batch_size
+        remaining = len(groups) % batch_size
+        for batch_number in range(batches):
+            batch_groups = groups[batch_number * batch_size:batch_number * batch_size + batch_size]
+            self._sync_settings_for_batch(batch_groups)
+
+        if remaining:
+            batch_groups = groups[batches * batch_size:batches * batch_size + remaining]
+            self._sync_settings_for_batch(batch_groups)
+
+    def _sync_settings_for_batch(self, groups):
         # XXX should be a public method on provider?
         # XXX batch this up into smaller groups so google doesn't complain
         groups_settings, _ = self.provider.get_groups_settings_and_membership(
@@ -104,8 +126,9 @@ class Sync(object):
         )
         groups_to_update = []
         for group in groups:
-            group_settings = groups_settings.get(group.email)
+            group_settings = groups_settings.get(group.email.lower())
             if not group_settings:
+                import ipdb; ipdb.set_trace()
                 continue
 
             # hstore values must be strings
