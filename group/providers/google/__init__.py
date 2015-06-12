@@ -9,7 +9,6 @@ from django.conf import settings
 from django.db.models import F
 from oauth2client.client import SignedJwtAssertionCredentials
 from protobufs.services.group import containers_pb2 as group_containers
-from protobufs.services.organization.containers import integration_pb2
 import service.control
 
 from services.cache import get_redis_client
@@ -24,14 +23,12 @@ from ... import models
 class Provider(base.BaseGroupsProvider):
 
     def __init__(self, *args, **kwargs):
+        integration = kwargs.pop('integration', None)
         super(Provider, self).__init__(*args, **kwargs)
-        self.integration = service.control.get_object(
-            service='organization',
-            action='get_integration',
-            return_object='integration',
-            client_kwargs={'token': self.token},
-            integration_type=integration_pb2.GOOGLE_GROUPS,
-        )
+        if integration is None:
+            raise TypeError('"integration" must be passed to Google Groups provider')
+
+        self.integration = integration
         for scope in self.integration.google_groups.scopes:
             if scope.endswith('readonly'):
                 self.write_access = False
@@ -515,9 +512,10 @@ class Provider(base.BaseGroupsProvider):
             container = self.group_to_container(group, membership.get(group.id))
             container.has_pending_request = group.id in membership_requests
             if (
-                not container.is_member and
-                group.settings and
-                group.settings.get('showInGroupDirectory', 'false') == 'true'
+                container.is_member or (
+                    group.settings and
+                    group.settings.get('showInGroupDirectory', 'false') == 'true'
+                )
             ):
                 containers.append(container)
         return containers

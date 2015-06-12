@@ -27,6 +27,11 @@ class TestGoogleGroups(TestCase):
         )
 
     def _mock_token_objects(self, mock):
+        mock.instance.register_empty_response(
+            service='organization',
+            action='get_integration',
+            mock_regex_lookup='organization:get_integration:.*',
+        )
         mock.instance.register_mock_object(
             service='organization',
             action='get_organization',

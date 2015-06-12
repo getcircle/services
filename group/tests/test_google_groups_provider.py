@@ -1,6 +1,9 @@
 import contextlib
 from functools import partial
-from mock import patch
+from mock import (
+    MagicMock,
+    patch,
+)
 from pprint import pprint
 
 from apiclient.errors import HttpError
@@ -36,7 +39,12 @@ class BaseGoogleCase(TestCase):
             organization_id=self.organization.id,
             profile_id=self.by_profile.id,
         )
-        self.provider = Provider(self.by_profile, organization=self.organization, token=token)
+        self.provider = Provider(
+            self.by_profile,
+            organization=self.organization,
+            token=token,
+            integration=MagicMock(),
+        )
 
     def _structure_fixtures(self, groups, membership=None, members=None):
         if membership is None:

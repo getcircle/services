@@ -1,6 +1,7 @@
 import hashlib
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.group.actions import respond_to_membership_request_pb2
+from protobufs.services.organization.containers import integration_pb2
 from protobufs.services.notification import containers_pb2 as notification_containers
 from service import (
     actions,
@@ -29,6 +30,13 @@ class PreRunParseTokenMixin(object):
             action='get_profile',
             return_object='profile',
             profile_id=self.parsed_token.profile_id,
+        )
+        self.integration = service.control.get_object(
+            service='organization',
+            action='get_integration',
+            return_object='integration',
+            client_kwargs={'token': self.token},
+            integration_type=integration_pb2.GOOGLE_GROUPS,
         )
 
 
@@ -59,6 +67,7 @@ class GetGroups(PreRunParseTokenMixin, BaseGroupAction):
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
+            integration=self.integration,
         )
         if self.request.HasField('profile_id'):
             for_profile = service.control.get_object(
@@ -120,6 +129,7 @@ class JoinGroup(PreRunParseTokenMixin, actions.Action):
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
+            integration=self.integration,
         )
         membership_request = provider.join_group(self.request.group_id)
         self._send_notification(membership_request)
@@ -166,6 +176,7 @@ class RespondToMembershipRequest(PreRunParseTokenMixin, actions.Action):
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
+            integration=self.integration,
         )
         if self.request.action == respond_to_membership_request_pb2.RequestV1.APPROVE:
             membership_request = provider.approve_request_to_join(membership_request)
@@ -184,6 +195,7 @@ class LeaveGroup(PreRunParseTokenMixin, actions.Action):
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
+            integration=self.integration,
         )
         provider.leave_group(self.request.group_id)
 
@@ -197,7 +209,11 @@ class GetMembers(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         # TODO switch on provider
-        provider = providers.Google(requester_profile=self.profile, token=self.token)
+        provider = providers.Google(
+            requester_profile=self.profile,
+            token=self.token,
+            integration=self.integration,
+        )
         members = provider.get_members_for_group(self.request.group_id, self.request.role)
         self.response.members.extend(members)
 
@@ -211,6 +227,7 @@ class GetGroup(PreRunParseTokenMixin, actions.Action):
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
+            integration=self.integration,
         )
         group = provider.get_group(self.request.group_id)
         if not group:
@@ -237,6 +254,7 @@ class AddToGroup(PreRunParseTokenMixin, actions.Action):
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
+            integration=self.integration,
         )
         members = provider.add_profiles_to_group(profiles, self.request.group_id)
         if members:
