@@ -166,59 +166,46 @@ class TestGoogleGetGroups(BaseGoogleCase):
         ):
         if provider_func_args is None:
             provider_func_args = tuple()
-        patch_get_group = patch.object(
-            self.provider,
-            '_get_group',
-            return_value=fixtures['groups']['groups'][0],
-        )
-        patch_get_groups = patch.object(
-            self.provider,
-            '_get_groups',
-            return_value=fixtures['groups'],
-        )
-        with contextlib.nested(
-            patch_get_group,
-            patch_get_groups,
-        ):
-            partial_method = partial(
-                getattr(self.provider, provider_func_name),
-                *provider_func_args
-            )
-            expected_exception = assertions.get('raises') if hasattr(assertions, 'get') else None
-            if expected_exception:
-                with self.assertRaises(expected_exception):
-                    partial_method()
-                return
-            else:
-                result = partial_method()
-            if test_func:
-                test_func(assertions, result, **kwargs)
-            else:
-                if callable(assertions):
-                    assertions(result)
-                else:
-                    try:
-                        group = result[0]
-                    except IndexError:
-                        if assertions['group']['can_view']:
-                            raise AssertionError('Group should have been visible')
-                        return
-                    else:
-                        if not assertions['group']['can_view']:
-                            raise AssertionError('Group should not have been visible')
 
-                    for key, value in assertions['group'].iteritems():
-                        if key != 'can_view':
-                            try:
-                                self.assertEqual(getattr(group, key), value)
-                            except AssertionError:
-                                raise AssertionError(
-                                    'Expected: %s to equal %s (got %s)' % (
-                                        key,
-                                        value,
-                                        getattr(group, key),
-                                    )
+        partial_method = partial(
+            getattr(self.provider, provider_func_name),
+            *provider_func_args
+        )
+        expected_exception = assertions.get('raises') if hasattr(assertions, 'get') else None
+        if expected_exception:
+            with self.assertRaises(expected_exception):
+                partial_method()
+            return
+        else:
+            result = partial_method()
+        if test_func:
+            test_func(assertions, result, **kwargs)
+        else:
+            if callable(assertions):
+                assertions(result)
+            else:
+                try:
+                    group = result[0]
+                except IndexError:
+                    if assertions['group']['can_view']:
+                        raise AssertionError('Group should have been visible')
+                    return
+                else:
+                    if not assertions['group']['can_view']:
+                        raise AssertionError('Group should not have been visible')
+
+                for key, value in assertions['group'].iteritems():
+                    if key != 'can_view':
+                        try:
+                            self.assertEqual(getattr(group, key), value)
+                        except AssertionError:
+                            raise AssertionError(
+                                'Expected: %s to equal %s (got %s)' % (
+                                    key,
+                                    value,
+                                    getattr(group, key),
                                 )
+                            )
 
     def test_get_groups_with_ids(self, *patches):
         groups = []
