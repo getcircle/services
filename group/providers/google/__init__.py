@@ -23,6 +23,20 @@ from ... import models
 
 class Provider(base.BaseGroupsProvider):
 
+    def __init__(self, *args, **kwargs):
+        super(Provider, self).__init__(*args, **kwargs)
+        self.integration = service.control.get_object(
+            service='organization',
+            action='get_integration',
+            return_object='integration',
+            client_kwargs={'token': self.token},
+            integration_type=integration_pb2.GOOGLE_GROUPS,
+        )
+        for scope in self.integration.google_groups.scopes:
+            if scope.endswith('readonly'):
+                self.write_access = False
+                break
+
     @property
     def logger(self):
         return logging.getLogger('groups:google')
@@ -30,23 +44,11 @@ class Provider(base.BaseGroupsProvider):
     @property
     def http(self):
         if not hasattr(self, '_http'):
-            integration = service.control.get_object(
-                service='organization',
-                action='get_integration',
-                return_object='integration',
-                client_kwargs={'token': self.token},
-                integration_type=integration_pb2.GOOGLE_GROUPS,
-            )
-            for scope in integration.google_groups.scopes:
-                if scope.endswith('readonly'):
-                    self.write_access = False
-                    break
-
             credentials = SignedJwtAssertionCredentials(
                 settings.GOOGLE_ADMIN_SDK_JSON_KEY.get('client_email'),
                 settings.GOOGLE_ADMIN_SDK_JSON_KEY.get('private_key'),
-                scope=integration.google_groups.scopes,
-                sub=integration.google_groups.admin_email,
+                scope=self.integration.google_groups.scopes,
+                sub=self.integration.google_groups.admin_email,
             )
             self._http = credentials.authorize(httplib2.Http())
         return self._http
