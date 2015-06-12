@@ -193,7 +193,14 @@ class GetProfileFeed(actions.Action):
 
     def _get_group_membership_requests_category(self):
         client = service.control.Client('group', token=self.token)
-        response = client.call_action('get_membership_requests', status=group_containers.PENDING)
+        try:
+            response = client.call_action(
+                'get_membership_requests',
+                status=group_containers.PENDING,
+            )
+        except service.control.CallActionError:
+            # XXX log error to #sentry
+            return
 
         requests = response.result.requests
         if not len(requests):
