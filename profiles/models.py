@@ -63,7 +63,8 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     def full_name(self):
         return ' '.join([self.first_name, self.last_name])
 
-    def to_protobuf(self, protobuf, strict=False, extra=None, **overrides):
+    def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
+        protobuf = self.new_protobuf_container(protobuf)
         items = []
         for item in overrides.get('items', self.items) or []:
             container = protobuf.items.add()
@@ -124,6 +125,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('organization_id', 'user_id')
+        protobuf = profile_containers.ProfileV1
 
 
 class ProfileTags(models.TimestampableModel):

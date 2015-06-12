@@ -5,15 +5,16 @@ from pprint import pprint
 
 from apiclient.errors import HttpError
 from protobufs.services.group import containers_pb2 as group_containers
-from service_protobufs import soa_pb2 as service_containers
 
-from services.test import TestCase
 from services.test import (
     fuzzy,
     mocks,
+    TestCase,
 )
 
-from .. import factories
+from .. import models
+from ..factories import provider as provider_factories
+from ..factories import models as model_factories
 from ..providers import exceptions
 from ..providers.google import Provider
 
@@ -35,24 +36,19 @@ class BaseGoogleCase(TestCase):
             organization_id=self.organization.id,
             profile_id=self.by_profile.id,
         )
-        self.provider = Provider(self.by_profile, self.organization, token=token)
+        self.provider = Provider(self.by_profile, organization=self.organization, token=token)
 
-    def _structure_fixtures(self, groups, membership=None, members=None, managers=None):
+    def _structure_fixtures(self, groups, membership=None, members=None):
         if membership is None:
             membership = {}
 
         if members is None:
             members = tuple()
 
-        if managers is None:
-            managers = tuple()
-
         return {
-            'groups': factories.GoogleProviderGroupsFactory(groups).as_dict(),
-            'settings': dict((x.email, x.settings.as_dict()) for x in groups),
+            'groups': provider_factories.GoogleProviderGroupsFactory(groups).as_dict(),
             'membership': membership,
             'members': members,
-            'managers': managers,
         }
 
     def _parse_test_case(self, raw):
@@ -87,15 +83,14 @@ class BaseGoogleCase(TestCase):
             test_cases,
             provider_func_args=None,
             test_func=None,
+            **kwargs
         ):
         # TODO switch to generator test case
         for test_case in test_cases:
             test_case = self._parse_test_case(test_case)
             setup = test_case.get('setup', {})
-            settings = setup.get('settings', {})
             membership = setup.get('membership', {})
             members = setup.get('members', [])
-            managers = setup.get('managers', [])
             func_args = None
             if provider_func_args is None and 'provider_func_args' in test_case:
                 func_args = test_case['provider_func_args']
@@ -104,21 +99,32 @@ class BaseGoogleCase(TestCase):
                     key=lambda x: x[0],
                 )]
 
-            group_kwargs = {}
-            for key, value in setup.get('group', {}).iteritems():
-                group_kwargs[key] = value
-            for key, value in settings.iteritems():
-                group_kwargs['settings__%s' % (key,)] = value
-
-            group = factories.GoogleGroupFactory(**group_kwargs)
+            group = model_factories.GoogleGroupFactory.create(
+                organization_id=self.organization.id,
+                **setup.get('group', {})
+            )
             if membership:
-                membership = {group.email: factories.GoogleGroupMember(**membership).as_dict()}
+                model_factories.GoogleGroupMemberFactory.create(
+                    group=group,
+                    organization_id=group.organization_id,
+                    **membership
+                )
+
+            member_models = []
+            if members:
+                models.GoogleGroupMember.objects.filter(group_id=group.id).delete()
+                for member in members:
+                    member_models.append(
+                        model_factories.GoogleGroupMemberFactory.create(
+                            organization_id=group.organization_id,
+                            group=group,
+                            **member
+                        )
+                    )
 
             fixtures = self._structure_fixtures(
                 [group],
-                membership=membership,
-                members=members,
-                managers=managers,
+                members=member_models,
             )
             try:
                 self._execute_test(
@@ -127,11 +133,14 @@ class BaseGoogleCase(TestCase):
                     fixtures,
                     provider_func_args=provider_func_args or func_args,
                     test_func=test_func,
+                    test_case=test_case,
                 )
             except AssertionError:
                 print '\nTest Case Failed:'
                 pprint(test_case)
                 raise
+            else:
+                group.delete()
 
 
 @patch('group.providers.google.get_redis_client')
@@ -146,15 +155,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
             fixtures,
             provider_func_args=None,
             test_func=None,
+            **kwargs
         ):
         if provider_func_args is None:
             provider_func_args = tuple()
-
-        patch_get_managers = patch.object(
-            self.provider,
-            '_get_group_managers',
-            return_value=fixtures['managers'],
-        )
         patch_get_group = patch.object(
             self.provider,
             '_get_group',
@@ -165,16 +169,9 @@ class TestGoogleGetGroups(BaseGoogleCase):
             '_get_groups',
             return_value=fixtures['groups'],
         )
-        patch_get_group_settings_and_membership = patch.object(
-            self.provider,
-            '_get_groups_settings_and_membership',
-            return_value=(fixtures['settings'], fixtures['membership']),
-        )
         with contextlib.nested(
             patch_get_group,
             patch_get_groups,
-            patch_get_group_settings_and_membership,
-            patch_get_managers
         ):
             partial_method = partial(
                 getattr(self.provider, provider_func_name),
@@ -188,7 +185,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
             else:
                 result = partial_method()
             if test_func:
-                test_func(assertions, result)
+                test_func(assertions, result, **kwargs)
             else:
                 if callable(assertions):
                     assertions(result)
@@ -205,50 +202,53 @@ class TestGoogleGetGroups(BaseGoogleCase):
 
                     for key, value in assertions['group'].iteritems():
                         if key != 'can_view':
-                            self.assertEqual(getattr(group, key), value)
+                            try:
+                                self.assertEqual(getattr(group, key), value)
+                            except AssertionError:
+                                raise AssertionError(
+                                    'Expected: %s to equal %s (got %s)' % (
+                                        key,
+                                        value,
+                                        getattr(group, key),
+                                    )
+                                )
 
-    def test_get_groups_with_keys(self, *patches):
+    def test_get_groups_with_ids(self, *patches):
         groups = []
         for i in range(4):
             show_group = bool(i % 2)
             group_kwargs = {
-                'settings__showInGroupDirectory': str(show_group).lower(),
+                'settings': {
+                    'showInGroupDirectory': str(show_group).lower(),
+                },
+                'organization_id': self.organization.id,
             }
-            groups.append(factories.GoogleGroupFactory.create(**group_kwargs))
-
-        groups_settings = dict((group.email, group.settings.as_dict()) for group in groups)
-        patched_settings = patch.object(
-            self.provider,
-            '_get_groups_settings_and_membership',
-            return_value=(groups_settings, {}),
-        )
-        patched_get_groups = patch.object(
-            self.provider,
-            '_get_groups_with_keys',
-            return_value={'groups': map(lambda x: x.as_dict(), groups)},
-        )
-        with contextlib.nested(patched_settings, patched_get_groups):
-            groups = self.provider.get_groups_with_keys([group.id for group in groups])
-            self.assertEqual(len(groups), 2)
+            groups.append(
+                model_factories.GoogleGroupFactory.create(
+                    **group_kwargs
+                )
+            )
+        groups = self.provider.get_groups_with_ids([group.id for group in groups])
+        self.assertEqual(len(groups), 2)
 
     def test_get_groups_for_organization_cases(self, *patches):
-        factories.GroupMembershipRequestFactory.create(
-            group_key='group@circlehq.co',
+        request = model_factories.GroupMembershipRequestFactory.create(
             requester_profile_id=self.by_profile.id,
             status=group_containers.PENDING,
+            provider=group_containers.GOOGLE,
         )
         test_cases = [
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': 'false',
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'false',
                 'assertions:group:can_view': False,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': 'true',
+                'setup:group:id': request.group_id,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'true',
                 'assertions:group:can_view': True,
                 'assertions:group:has_pending_request': True,
             },
@@ -256,18 +256,18 @@ class TestGoogleGetGroups(BaseGoogleCase):
         self._execute_test_cases('get_groups_for_organization', test_cases)
 
     def test_get_group(self, *patches):
-        factories.GroupMembershipRequestFactory.create(
-            group_key='group@circlehq.co',
+        request = model_factories.GroupMembershipRequestFactory.create(
             requester_profile_id=self.by_profile.id,
             status=group_containers.PENDING,
+            provider=group_containers.GOOGLE,
         )
         test_cases = [
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': 'false',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'false',
+                'provider_func_args:0': 'setup:group:id',
                 'assertions:group:can_view': False,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
@@ -275,11 +275,11 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:is_manager': False,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': 'true',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': request.group_id,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'true',
+                'provider_func_args:0': 'setup:group:id',
                 'assertions:group:can_view': True,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': True,
@@ -288,13 +288,13 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:has_pending_request': True,
             },
             {
-                'setup:group:email': 'norequest@circlehq.co',
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': 'true',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'true',
+                'provider_func_args:0': 'setup:group:id',
                 'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:group:can_view': True,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
@@ -303,13 +303,13 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:has_pending_request': False,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:settings:showInGroupDirectory': 'true',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'true',
+                'provider_func_args:0': 'setup:group:id',
                 'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:group:can_view': True,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
@@ -318,7 +318,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
             },
         ]
 
-        def test(assertions, result):
+        def test(assertions, result, **kwargs):
             if not assertions['group']['can_view'] and result is not None:
                 raise AssertionError('Group should not have been visible')
             elif assertions['group']['can_view'] and result is None:
@@ -331,15 +331,17 @@ class TestGoogleGetGroups(BaseGoogleCase):
         self._execute_test_cases('get_group', test_cases, test_func=test)
 
     def test_get_groups_for_user_single_group_cases(self, *patches):
-        factories.GroupMembershipRequestFactory.create(
-            group_key='group@circlehq.co',
+        request = model_factories.GroupMembershipRequestFactory.create(
             requester_profile_id=self.by_profile.id,
             status=group_containers.PENDING,
+            provider=group_containers.GOOGLE,
         )
         test_cases = [
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -347,8 +349,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -356,8 +360,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -365,8 +371,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -374,8 +382,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -383,8 +393,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -392,9 +404,11 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:id': request.group_id,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': True,
                 'assertions:group:is_member': False,
@@ -403,8 +417,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:has_pending_request': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -412,8 +428,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': True,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -421,8 +439,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -430,8 +450,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -439,8 +461,10 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.for_profile.id,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': False,
@@ -448,10 +472,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -459,10 +485,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -470,43 +498,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'assertions:group:can_join': False,
-                'assertions:group:can_request': False,
-                'assertions:group:is_member': True,
-                'assertions:group:is_manager': False,
-                'assertions:group:can_view': False,
-            },
-            {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'assertions:group:can_join': False,
-                'assertions:group:can_request': False,
-                'assertions:group:is_member': True,
-                'assertions:group:is_manager': False,
-                'assertions:group:can_view': True,
-            },
-            {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'assertions:group:can_join': False,
-                'assertions:group:can_request': False,
-                'assertions:group:is_member': True,
-                'assertions:group:is_manager': False,
-                'assertions:group:can_view': True,
-            },
-            {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -514,10 +511,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -525,10 +524,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -536,43 +537,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'assertions:group:can_join': False,
-                'assertions:group:can_request': False,
-                'assertions:group:is_member': True,
-                'assertions:group:is_manager': False,
-                'assertions:group:can_view': False,
-            },
-            {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'assertions:group:can_join': False,
-                'assertions:group:can_request': False,
-                'assertions:group:is_member': True,
-                'assertions:group:is_manager': False,
-                'assertions:group:can_view': True,
-            },
-            {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'assertions:group:can_join': False,
-                'assertions:group:can_request': False,
-                'assertions:group:is_member': True,
-                'assertions:group:is_manager': False,
-                'assertions:group:can_view': True,
-            },
-            {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -580,10 +550,90 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': False,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:can_view': True,
+            },
+            {
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:can_view': True,
+            },
+            {
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:can_view': False,
+            },
+            {
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:can_view': True,
+            },
+            {
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:can_view': True,
+            },
+            {
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:can_view': False,
+            },
+            {
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -591,10 +641,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -602,10 +654,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -613,10 +667,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -624,10 +680,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -635,10 +693,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -646,10 +706,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -657,10 +719,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -668,10 +732,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -679,10 +745,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -690,10 +758,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -701,10 +771,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -712,10 +784,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -723,10 +797,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -734,10 +810,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -745,10 +823,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -756,10 +836,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -767,10 +849,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -778,10 +862,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -789,10 +875,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -800,10 +888,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -811,10 +901,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -822,10 +914,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -833,10 +927,12 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:can_view': True,
             },
             {
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER', 'profile_id': self.for_profile.id},
+                ],
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
@@ -853,21 +949,34 @@ class TestGoogleGetGroups(BaseGoogleCase):
     def test_get_groups_for_user_one_public_one_members_only(self, *patches):
         groups = [
             # create public groups with alphabetical names
-            factories.GoogleGroupFactory(
-                name='b',
-                description='test',
-                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
-                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
+            model_factories.GoogleGroupMemberFactory.create(
+                group__name='b',
+                group__description='test',
+                group__settings={
+                    'whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                    'whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                },
+                group__organization_id=self.organization.id,
+                profile_id=self.for_profile.id,
+                organization_id=self.organization.id,
             ),
-            factories.GoogleGroupFactory(
-                name='a',
-                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
-                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
+            model_factories.GoogleGroupMemberFactory.create(
+                group__name='a',
+                group__settings={
+                    'whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                    'whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                },
+                group__organization_id=self.organization.id,
+                profile_id=self.for_profile.id,
+                organization_id=self.organization.id,
             ),
             # create a members only group
-            factories.GoogleGroupFactory(
-                settings__whoCanJoin='INVITED_CAN_JOIN',
-                settings__whoCanViewMembership='ALL_MEMBERS_CAN_VIEW',
+            model_factories.GoogleGroupFactory.create(
+                settings={
+                    'whoCanJoin': 'INVITED_CAN_JOIN',
+                    'whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                },
+                organization_id=self.organization.id,
             )
         ]
 
@@ -890,30 +999,38 @@ class TestGoogleGetGroups(BaseGoogleCase):
     def test_get_groups_for_organization_alphabetical(self, *patches):
         groups = [
             # create public groups with alphabetical names
-            factories.GoogleGroupFactory(
+            model_factories.GoogleGroupFactory(
                 name='b',
-                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
-                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
-                settings__showInGroupDirectory='true',
+                settings={
+                    'whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                    'whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                    'showInGroupDirectory': 'true',
+                },
+                organization_id=self.organization.id,
             ),
-            factories.GoogleGroupFactory(
+            model_factories.GoogleGroupFactory(
                 name='a',
-                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
-                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
-                settings__showInGroupDirectory='true',
+                settings={
+                    'whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                    'whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                    'showInGroupDirectory': 'true',
+                },
+                organization_id=self.organization.id,
             ),
-            factories.GoogleGroupFactory(
+            model_factories.GoogleGroupFactory(
                 name='c',
-                settings__whoCanJoin='ALL_IN_DOMAIN_CAN_JOIN',
-                settings__whoCanViewMembership='ALL_IN_DOMAIN_CAN_VIEW',
-                settings__showInGroupDirectory='false',
+                settings={
+                    'whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                    'whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                    'showInGroupDirectory': 'false',
+                },
+                organization_id=self.organization.id,
             ),
         ]
 
         def assertions(groups):
             self.assertEqual(len(groups), 2)
-            group = groups[0]
-            self.assertFalse(group.is_member)
+            self.assertFalse(groups[0].is_member)
             self.assertEqual(groups[0].name, 'a')
             self.assertEqual(groups[1].name, 'b')
 
@@ -926,38 +1043,31 @@ class TestGoogleGetGroups(BaseGoogleCase):
     def test_join_group(self, *patches):
         test_cases = [
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'ANYONE_CAN_JOIN',
+                'provider_func_args:0': 'setup:group:id',
                 'assertions:request:status': group_containers.APPROVED,
                 'assertions:request:meta:whoCanJoin': 'ANYONE_CAN_JOIN',
             },
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
+                'provider_func_args:0': 'setup:group:id',
                 'assertions:request:status': group_containers.APPROVED,
                 'assertions:request:meta:whoCanJoin': 'ALL_IN_DOMAIN_CAN_JOIN',
             },
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'INVITED_CAN_JOIN',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'provider_func_args:0': 'setup:group:id',
                 'assertions:request:status': group_containers.DENIED,
                 'assertions:request:meta:whoCanJoin': 'INVITED_CAN_JOIN',
             },
             {
-                'setup:managers': [
-                    factories.GoogleGroupMemberFactory.create(
-                        role=group_containers.OWNER,
-                    ).as_dict(),
-                    factories.GoogleGroupMemberFactory.create(
-                        role=group_containers.MANAGER,
-                    ).as_dict(),
-                ],
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
-                'provider_func_args:0': 'setup:group:email',
+                'setup:members': [{'role': 'OWNER'}, {'role': 'MANAGER'}, {'role': 'MEMBER'}],
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
+                'provider_func_args:0': 'setup:group:id',
                 'assertions:request:status': group_containers.PENDING,
                 'assertions:request:meta:whoCanJoin': 'CAN_REQUEST_TO_JOIN',
                 'assertions:request:approver_profile_ids': 2,
@@ -970,7 +1080,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
         ]
         with contextlib.nested(*contexts) as (mock, mock_add_to_group):
 
-            def test(assertions, result):
+            def test(assertions, result, **kwargs):
                 self.assertEqual(assertions['request']['status'], result.status)
                 if assertions['request']['status'] == group_containers.APPROVED:
                     self.assertEqual(mock_add_to_group.call_count, 1)
@@ -997,107 +1107,127 @@ class TestGoogleGetGroups(BaseGoogleCase):
         profiles = [mocks.mock_profile(organization_id=self.by_profile.organization_id)]
         test_cases = [
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
+                'provider_func_args:1': 'setup:group:id',
                 'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:has_response': True,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
-                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'provider_func_args:1': 'setup:group:id',
+                'setup:group:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
                 'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:has_response': True,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
-                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'provider_func_args:1': 'setup:group:id',
+                'setup:group:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
                 'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:has_response': False,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
-                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'provider_func_args:1': 'setup:group:id',
+                'setup:group:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
                 'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:has_response': True,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
-                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'provider_func_args:1': 'setup:group:id',
+                'setup:group:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
                 'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:has_response': True,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
-                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'provider_func_args:1': 'setup:group:id',
+                'setup:group:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
                 'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
+                'setup:membership:profile_id': self.by_profile.id,
                 'assertions:has_response': True,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
-                'setup:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'provider_func_args:1': 'setup:group:id',
+                'setup:group:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
                 'assertions:has_response': False,
             },
             {
-                'setup:group:email': 'group@circlehq.co',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'provider_func_args:0': profiles,
-                'provider_func_args:1': 'setup:group:email',
-                'setup:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'provider_func_args:1': 'setup:group:id',
+                'setup:group:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
                 'assertions:has_response': False,
             },
         ]
 
+        expected = [provider_factories.GoogleGroupMemberFactory.create(
+            email=profile.email,
+            role='MEMBER',
+        ).as_dict() for profile in profiles]
         with patch.object(self.provider, '_add_to_group') as mock_add_to_group:
-            def test(assertions, result):
+            mock_add_to_group.return_value = expected
+
+            def test(assertions, result, **kwargs):
                 if assertions.get('has_response'):
+                    test_case = kwargs['test_case']
                     self.assertEqual(mock_add_to_group.call_count, 1)
+                    members = models.GoogleGroupMember.objects.filter(
+                        profile_id__in=[profile.id for profile in profiles],
+                        group_id=test_case['setup']['group']['id'],
+                    )
+                    self.assertEqual(len(members), len(expected))
                 mock_add_to_group.reset_mock()
             self._execute_test_cases('add_profiles_to_group', test_cases, test_func=test)
 
     def test_approve_request_to_join(self, *patches):
-        managers = [
-            factories.GoogleGroupMemberFactory.create(
-                email=self.by_profile.email,
-                role=group_containers.OWNER,
-            ).as_dict(),
-            factories.GoogleGroupMemberFactory.create().as_dict(),
-        ]
-        request = factories.GroupMembershipRequestFactory(
+        request = model_factories.GroupMembershipRequestFactory(
             approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
         )
+
         test_cases = [
             {
-                'setup:managers': managers,
+                'setup:group:id': request.group_id,
+                'setup:members': [{'role': 'OWNER', 'profile_id': self.by_profile.id}],
                 'provider_func_args:0': request,
                 'assertions:result:status': group_containers.APPROVED,
             },
             {
-                'setup:managers': [factories.GoogleGroupMemberFactory.create().as_dict()],
+                'setup:group:id': request.group_id,
+                'setup:members': [{'role': 'MANAGER', 'profile_id': self.by_profile.id}],
+                'provider_func_args:0': request,
+                'assertions:result:status': group_containers.APPROVED,
+            },
+            {
+                'setup:group:id': request.group_id,
+                'setup:members': [{'role': 'MEMBER', 'profile_id': self.by_profile.id}],
                 'provider_func_args:0': request,
                 'assertions:raises': exceptions.Unauthorized,
-            }
+            },
+            {
+                'setup:group:id': request.group_id,
+                'setup:members': [{'role': 'OWNER'}],
+                'provider_func_args:0': request,
+                'assertions:raises': exceptions.Unauthorized,
+            },
         ]
 
-        def test(assertions, result):
+        def test(assertions, result, **kwargs):
             self.assertEqual(result.status, group_containers.APPROVED)
 
         with self.mock_transport() as mock, patch.object(self.provider, '_add_to_group'):
@@ -1111,9 +1241,6 @@ class TestGoogleGetGroups(BaseGoogleCase):
             self._execute_test_cases('approve_request_to_join', test_cases, test_func=test)
 
 
-@patch('group.providers.google.get_redis_client')
-@patch('group.providers.google.service.control.get_object')
-@patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleListMembers(BaseGoogleCase):
 
     def _execute_test(
@@ -1127,266 +1254,201 @@ class TestGoogleListMembers(BaseGoogleCase):
         if provider_func_args is None:
             provider_func_args = tuple()
 
-        patched_get_group_members = patch.object(
-            self.provider,
-            '_get_group_members',
-            return_value=fixtures['members'],
-        )
-        patched_get_groups_settings_and_membership = patch.object(
-            self.provider,
-            '_get_groups_settings_and_membership',
-            return_value=(fixtures['settings'], fixtures['membership']),
-        )
-        with patched_get_group_members, patched_get_groups_settings_and_membership:
+        with self.mock_transport() as mock:
+            mock_profiles = [
+                mocks.mock_profile(id=member.profile_id,) for member in fixtures.get('members', [])
+            ]
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profiles',
+                return_object_path='profiles',
+                return_object=mock_profiles,
+                mock_regex_lookup='profile:get_profiles:.*',
+            )
             members = getattr(self.provider, provider_func_name)(*provider_func_args)
-            if callable(assertions):
-                assertions(members)
+        if callable(assertions):
+            assertions(members)
+        else:
+            if isinstance(assertions, dict):
+                for key, value in assertions.iteritems():
+                    if key == 'members' and callable(value):
+                        value(members)
+                    else:
+                        raise NotImplemented(
+                            'Not sure how to evaluate assertions: %s' % (value,)
+                        )
             else:
-                if isinstance(assertions, dict):
-                    for key, value in assertions.iteritems():
-                        if key == 'members' and callable(value):
-                            value(members)
-                        else:
-                            raise NotImplemented(
-                                'Not sure how to evaluate assertions: %s' % (value,)
-                            )
-                else:
-                    raise NotImplemented('Not sure how to evaluate assertions: %s' % (assertions,))
+                raise NotImplemented('Not sure how to evaluate assertions: %s' % (assertions,))
 
     def test_get_members(self, *patches):
         test_cases = [
             # all in domain can view, not a member
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
-                'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
-                ],
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:members': [{'role': 'MEMBER'}],
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
             # members only can view, not a member
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
-                'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
-                ],
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:members': [{'role': 'MEMBER'}],
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 0),
             },
             # managers only can view, not a member
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
-                'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
-                ],
-                'provider_func_args:0': 'setup:group:email',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:members': [{'role': 'MEMBER'}],
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 0),
             },
             # all in domain can view, a member
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
-                'assertions:members': lambda x: self.assertEqual(len(x), 1),
+                'assertions:members': lambda x: self.assertEqual(len(x), 2),
             },
             # members only can view, a member
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
-                'assertions:members': lambda x: self.assertEqual(len(x), 1),
+                'assertions:members': lambda x: self.assertEqual(len(x), 2),
             },
             # managers only can view, a member
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'MEMBER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
                 'setup:membership:role': 'MEMBER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'setup:membership:profile_id': self.by_profile.id,
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 0),
             },
             # all in domain can view, a manager
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
             # members only can view, a manager
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
             # managers only can view, a manager
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'MANAGER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'MANAGER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
             # all in domain can view, a owner
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_IN_DOMAIN_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
             # members only can view, a owner
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MEMBERS_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
             # managers only can view, a owner
             {
-                'setup:group:email': 'group@circlehq.co',
-                'setup:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
                 'setup:members': [
-                    factories.GoogleGroupMemberFactory.create().as_dict(),
+                    {'role': 'OWNER', 'profile_id': self.by_profile.id},
+                    {'role': 'MEMBER'},
                 ],
-                'setup:membership:role': 'OWNER',
-                'setup:membership:email': self.by_profile.email,
-                'provider_func_args:0': 'setup:group:email',
+                'provider_func_args:0': 'setup:group:id',
                 'provider_func_args:1': group_containers.MEMBER,
                 'assertions:members': lambda x: self.assertEqual(len(x), 1),
             },
         ]
         self._execute_test_cases('get_members_for_group', test_cases)
 
-    def test_get_group_members_called_with_google_group_role(self, *patches):
-        @patch.object(self.provider, '_get_group_members')
-        @patch.object(self.provider, 'is_group_visible')
-        @patch.object(self.provider, '_get_groups_settings_and_membership')
-        def test(container_role, expected_role, mock_settings, mock_visible, mock_members):
-            mock_settings.return_value = ({'group@circlhq.co': {}}, {})
-            mock_visible.return_value = True
-            self.provider.get_members_for_group('group@circlehq.co', container_role)
-            self.assertEqual(mock_members.call_args[0][1], expected_role)
 
-        test(group_containers.MEMBER, 'MEMBER')
-        test(group_containers.OWNER, 'OWNER')
-        test(group_containers.MANAGER, 'MANAGER')
-
-    def test_get_group_members_none(self, *patches):
-
-        @patch('group.providers.google.build')
-        @patch.object(self.provider, 'is_group_visible')
-        @patch.object(self.provider, '_get_groups_settings_and_membership')
-        def test(mock_settings, mock_visible, mock_api_builder):
-            mock_settings.return_value = ({'group@circlhq.co': {}}, {})
-            mock_visible.return_value = True
-            mock_api_builder().members().list().execute.return_value = {
-                'kind': 'admin#directory#members',
-            }
-            members = self.provider.get_members_for_group('group@circlehq.co', 0)
-            self.assertEqual(members, [])
-        test()
-
-
-@patch('group.providers.google.get_redis_client')
 @patch('group.providers.google.service.control.get_object')
 @patch('group.providers.google.SignedJwtAssertionCredentials')
 class TestGoogleGroups(BaseGoogleCase):
 
     def test_leave_group_not_a_member(self, *patches):
+        group = model_factories.GoogleGroupFactory.create(
+            organization_id=self.by_profile.organization_id,
+        )
         with patch('group.providers.google.build') as patched_build_api:
-            patched_build_api().members().delete.execute.side_effect = HttpError('404', 'Error')
-            self.provider.leave_group('group@circlehq.co')
+            patched_build_api().members().delete().execute.side_effect = HttpError('404', 'Error')
+            self.provider.leave_group(group.id)
 
     def test_leave_group(self, *patches):
+        membership = model_factories.GoogleGroupMemberFactory.create(
+            profile_id=self.by_profile.id,
+            organization_id=self.by_profile.organization_id,
+            group__direct_members_count=2,
+        )
         with patch('group.providers.google.build') as patched_build_api:
             patched_build_api().members().delete.execute.return_value = ''
-            self.provider.leave_group('group@circlehq.co')
-            self.assertEqual(patched_build_api().members().delete().execute.call_count, 1)
-
-
-@patch('group.providers.google.service.control.get_object')
-@patch('group.providers.google.SignedJwtAssertionCredentials')
-class TestGoogleGroupsPagination(BaseGoogleCase):
-
-    def test_get_groups_pagination_mapping_first_page(self, *patches):
-        paginator = service_containers.PaginatorV1()
-        patches = [
-            patch('group.providers.google.build'),
-            patch.object(self.provider, '_filter_visible_groups'),
-            patch('group.providers.google.get_redis_client'),
-        ]
-        next_page_token = 'asdfasdfas'
-        with contextlib.nested(*patches) as (mock_build, mock_filter, mock_redis_client):
-            mock_build().groups().list().execute.return_value = {'nextPageToken': next_page_token}
-            mock_redis_client().hincrby.return_value = 2
-            mock_filter.return_value = []
-            self.provider.get_groups_for_organization(paginator=paginator)
-        self.assertEqual(mock_redis_client().hset.call_args[0][1], 2)
-        self.assertEqual(paginator.next_page, 2)
-
-    def test_get_groups_pagination_mapping_next_page(self, *patches):
-        paginator = service_containers.PaginatorV1(page=2, next_page=3)
-        patches = [
-            patch('group.providers.google.build'),
-            patch.object(self.provider, '_filter_visible_groups'),
-            patch('group.providers.google.get_redis_client'),
-        ]
-        with contextlib.nested(*patches) as (mock_build, mock_filter, mock_redis_client):
-            mock_build().groups().list().execute.return_value = {'nextPageToken': 'asdfasdf'}
-            mock_redis_client().hincrby.return_value = 3
-            mock_filter.return_value = []
-            self.provider.get_groups_for_organization(paginator=paginator)
-        self.assertEqual(mock_redis_client().hset.call_args[0][1], 3)
-        self.assertEqual(mock_redis_client().hget.call_args[0][1], 2)
-        self.assertEqual(paginator.next_page, 3)
+            self.provider.leave_group(membership.group_id)
+        self.assertEqual(patched_build_api().members().delete().execute.call_count, 1)
+        self.assertFalse(
+            models.GoogleGroupMember.objects.filter(profile_id=self.by_profile.id).exists()
+        )
+        self.assertEqual(
+            models.GoogleGroup.objects.get(pk=membership.group_id).direct_members_count,
+            1,
+        )

@@ -1,3 +1,4 @@
+from bulk_update.manager import BulkUpdateManager
 from common.db import models
 from common import utils
 from django.contrib.postgres.fields import (
@@ -21,7 +22,7 @@ class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
     )
     requester_profile_id = models.UUIDField(db_index=True)
     approver_profile_ids = ArrayField(models.UUIDField(), null=True, db_index=True)
-    group_key = models.CharField(max_length=255)
+    group_id = models.UUIDField()
     provider = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(group_containers.GroupProviderV1),
     )
@@ -34,4 +35,46 @@ class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
         return meta
 
     class Meta:
-        index_together = ('provider', 'group_key')
+        index_together = ('provider', 'group_id')
+
+
+class GoogleGroup(models.UUIDModel, models.TimestampableModel):
+
+    bulk_update_manager = BulkUpdateManager()
+
+    provider_uid = models.CharField(max_length=255)
+    email = models.CharField(max_length=255, db_index=True)
+    display_name = models.CharField(max_length=255, null=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True)
+    direct_members_count = models.IntegerField(default=0)
+    # XXX should potentially support searching by alias
+    aliases = ArrayField(models.CharField(max_length=255), null=True)
+    settings = HStoreField(null=True)
+    last_sync_id = models.UUIDField(null=True)
+    organization_id = models.UUIDField()
+
+    class Meta:
+        index_together = ('last_sync_id', 'organization_id')
+        unique_together = ('provider_uid', 'organization_id')
+
+
+class GoogleGroupMember(models.TimestampableModel):
+
+    bulk_update_manager = BulkUpdateManager()
+
+    profile_id = models.UUIDField(db_index=True)
+    provider_uid = models.CharField(max_length=255)
+    group = models.ForeignKey(GoogleGroup, db_index=True)
+    # XXX not sure what max_length should be here, google admin can configure custom roles
+    role = models.CharField(max_length=255, db_index=True)
+    organization_id = models.UUIDField()
+    last_sync_id = models.UUIDField(null=True)
+
+    class Meta:
+        index_together = (
+            ('last_sync_id', 'organization_id'),
+            ('profile_id', 'organization_id'),
+            ('group', 'organization_id'),
+        )
+        unique_together = ('profile_id', 'group', 'organization_id')

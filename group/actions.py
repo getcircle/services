@@ -23,26 +23,6 @@ class PreRunParseTokenMixin(object):
 
     def pre_run(self, *args, **kwargs):
         self.parsed_token = parse_token(self.token)
-        self.organization = service.control.get_object(
-            'organization',
-            client_kwargs={'token': self.token},
-            action='get_organization',
-            return_object='organization',
-            organization_id=self.parsed_token.organization_id,
-        )
-        self.profile = service.control.get_object(
-            'profile',
-            client_kwargs={'token': self.token},
-            action='get_profile',
-            return_object='profile',
-            profile_id=self.parsed_token.profile_id,
-        )
-
-
-class PreRunParseTokenFetchProfileMixin(object):
-
-    def pre_run(self, *args, **kwargs):
-        self.parsed_token = parse_token(self.token)
         self.profile = service.control.get_object(
             'profile',
             client_kwargs={'token': self.token},
@@ -78,7 +58,6 @@ class GetGroups(PreRunParseTokenMixin, BaseGroupAction):
         # TODO add a test case to ensure that this is instantiated without the mock
         provider = providers.Google(
             requester_profile=self.profile,
-            organization=self.organization,
             token=self.token,
         )
         if self.request.HasField('profile_id'):
@@ -103,25 +82,32 @@ class GetGroups(PreRunParseTokenMixin, BaseGroupAction):
         self.response.groups.extend(groups)
 
 
-class JoinGroup(PreRunParseTokenFetchProfileMixin, actions.Action):
+class JoinGroup(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('group_key',)
+    required_fields = ('group_id', 'provider')
 
     def _send_notification(self, membership_request):
+        # XXX log to #sentry
+        if not membership_request.approver_profile_ids:
+            return False
+
         if membership_request.status == group_containers.PENDING:
             try:
                 service.control.call_action(
                     service='notification',
                     action='send_notification',
                     client_kwargs={'token': self.token},
-                    to_profile_ids=membership_request.approver_profile_ids,
+                    to_profile_ids=map(str, membership_request.approver_profile_ids),
                     notification={
                         'notification_type_id': (
                             notification_containers.NotificationTypeV1.GOOGLE_GROUPS
                         ),
+                        # TODO write tests around these notifications
                         'group_membership_request': {
-                            'group_key': membership_request.group_key,
+                            'group_id': membership_request.group_id,
+                            'provider': membership_request.provider,
                             'requester_profile_id': membership_request.requester_profile_id,
+                            'request_id': str(membership_request.id),
                         },
                     },
                 )
@@ -130,16 +116,17 @@ class JoinGroup(PreRunParseTokenFetchProfileMixin, actions.Action):
                 pass
 
     def run(self, *args, **kwargs):
+        # TODO switch on self.request.provider
         provider = providers.Google(
             requester_profile=self.profile,
             token=self.token,
         )
-        membership_request = provider.join_group(self.request.group_key)
+        membership_request = provider.join_group(self.request.group_id)
         self._send_notification(membership_request)
         membership_request.to_protobuf(self.response.request, meta=membership_request.get_meta())
 
 
-class RespondToMembershipRequest(PreRunParseTokenFetchProfileMixin, actions.Action):
+class RespondToMembershipRequest(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('action', 'request_id')
     type_validators = {
@@ -163,7 +150,8 @@ class RespondToMembershipRequest(PreRunParseTokenFetchProfileMixin, actions.Acti
                         notification_containers.NotificationTypeV1.GOOGLE_GROUPS
                     ),
                     'group_membership_request_response': {
-                        'group_key': membership_request.group_key,
+                        'group_id': membership_request.group_id,
+                        'provider': membership_request.provider,
                         'group_manager_profile_id': self.profile.id,
                         'approved': membership_request.status == group_containers.APPROVED,
                     },
@@ -189,58 +177,44 @@ class RespondToMembershipRequest(PreRunParseTokenFetchProfileMixin, actions.Acti
 
 class LeaveGroup(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('group_key',)
+    required_fields = ('group_id', 'provider')
 
     def run(self, *args, **kwargs):
+        # XXX switch on self.request.provider
         provider = providers.Google(
             requester_profile=self.profile,
-            organization=self.organization,
             token=self.token,
         )
-        provider.leave_group(self.request.group_key)
+        provider.leave_group(self.request.group_id)
 
 
-class GetMembers(PreRunParseTokenFetchProfileMixin, actions.Action):
+class GetMembers(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('provider', 'group_key')
-
-    def _populate_response_members(self, members):
-        members_dict = dict((member.profile.email, member) for member in members)
-        profiles = service.control.get_object(
-            'profile',
-            client_kwargs={'token': self.token},
-            action='get_profiles',
-            return_object='profiles',
-            emails=[x.profile.email for x in members],
-        )
-        for profile in profiles:
-            member = members_dict.get(profile.email)
-            if not member:
-                # TODO log some error here
-                continue
-            member.profile.CopyFrom(profile)
-            self.response.members.extend([member])
+    required_fields = ('provider', 'group_id')
+    type_validators = {
+        'group_id': (validators.is_uuid4,),
+    }
 
     def run(self, *args, **kwargs):
+        # TODO switch on provider
         provider = providers.Google(requester_profile=self.profile, token=self.token)
-        members = provider.get_members_for_group(self.request.group_key, self.request.role)
-        if members:
-            self._populate_response_members(members)
+        members = provider.get_members_for_group(self.request.group_id, self.request.role)
+        self.response.members.extend(members)
 
 
 class GetGroup(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('group_key',)
+    required_fields = ('group_id', 'provider')
 
     def run(self, *args, **kwargs):
+        # TODO switch on self.request.provider
         provider = providers.Google(
             requester_profile=self.profile,
-            organization=self.organization,
             token=self.token,
         )
-        group = provider.get_group(self.request.group_key)
+        group = provider.get_group(self.request.group_id)
         if not group:
-            raise self.ActionFieldError('group_key', 'DOES_NOT_EXIST')
+            raise self.ActionFieldError('group_id', 'DOES_NOT_EXIST')
         self.response.group.CopyFrom(group)
 
 
@@ -249,7 +223,7 @@ class AddToGroup(PreRunParseTokenMixin, actions.Action):
     type_validators = {
         'profile_ids': [validators.is_uuid4_list],
     }
-    required_fields = ('group_key',)
+    required_fields = ('group_id', 'provider')
 
     def _fetch_profiles(self):
         client = service.control.Client('profile', token=self.token)
@@ -259,17 +233,17 @@ class AddToGroup(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         profiles = self._fetch_profiles()
+        # TODO switch on self.request.provider
         provider = providers.Google(
             requester_profile=self.profile,
-            organization=self.organization,
             token=self.token,
         )
-        members = provider.add_profiles_to_group(profiles, self.request.group_key)
+        members = provider.add_profiles_to_group(profiles, self.request.group_id)
         if members:
             self.response.new_members.extend(members)
 
 
-class GetMembershipRequests(PreRunParseTokenFetchProfileMixin, actions.Action):
+class GetMembershipRequests(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         request_kwargs = {

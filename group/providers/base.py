@@ -2,9 +2,10 @@
 
 class BaseGroupsProvider(object):
 
-    def __init__(self, requester_profile, organization=None, token=None):
-        self.organization = organization
+    def __init__(self, requester_profile, token=None, organization=None):
         self.requester_profile = requester_profile
+        self.organization_id = requester_profile.organization_id
+        self.organization = organization
         self.token = token
         self.write_access = True
 

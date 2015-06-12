@@ -9,10 +9,7 @@ from services.test import (
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.group.actions import respond_to_membership_request_pb2
 
-from .. import (
-    factories,
-    models,
-)
+from ..factories import models as model_factories
 
 
 class TestGoogleGroups(TestCase):
@@ -90,40 +87,40 @@ class TestGoogleGroups(TestCase):
 
     def test_get_members_provider_required(self):
         with self.assertFieldError('provider', 'MISSING'):
-            self.client.call_action('get_members', group_key=fuzzy.FuzzyUUID().fuzz())
+            self.client.call_action('get_members', group_id=fuzzy.FuzzyUUID().fuzz())
 
-    def test_get_members_group_key_required(self):
-        with self.assertFieldError('group_key', 'MISSING'):
+    def test_get_members_group_id_required(self):
+        with self.assertFieldError('group_id', 'MISSING'):
             self.client.call_action('get_members', provider=group_containers.GOOGLE)
+
+    def test_get_members_group_id_invalid(self):
+        with self.assertFieldError('group_id'):
+            self.client.call_action(
+                'get_members',
+                provider=group_containers.GOOGLE,
+                group_id='invalid',
+            )
 
     @patch('group.actions.providers.Google')
     def test_get_members(self, mock_google_provider):
         mock_members = [
             mocks.mock_member(role=group_containers.MEMBER),
             mocks.mock_member(role=group_containers.MEMBER),
-            mocks.mock_member(role=group_containers.MEMBER, should_mock_profile=False),
         ]
         mock_google_provider().get_members_for_group.return_value = mock_members
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
-            mock.instance.register_mock_object(
-                service='profile',
-                action='get_profiles',
-                return_object_path='profiles',
-                return_object=[x.profile for x in mock_members[:-1]],
-                emails=[x.profile.email for x in mock_members],
-            )
             response = self.client.call_action(
                 'get_members',
                 provider=group_containers.GOOGLE,
-                group_key='group@circlehq.co',
+                group_id=fuzzy.FuzzyUUID().fuzz(),
             )
-        self.assertEqual(len(response.result.members), len(mock_members) - 1)
+        self.assertEqual(len(response.result.members), len(mock_members))
         for member in response.result.members:
             self.assertEqual(member.role, group_containers.MEMBER)
 
-    def test_get_group_group_key_required(self):
-        with self.assertFieldError('group_key', 'MISSING'):
+    def test_get_group_group_id_required(self):
+        with self.assertFieldError('group_id', 'MISSING'):
             self.client.call_action('get_group')
 
     @patch('group.actions.providers.Google')
@@ -132,38 +129,62 @@ class TestGoogleGroups(TestCase):
         mock_google_provider().get_group.return_value = mock_group
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
-            response = self.client.call_action('get_group', group_key=mock_group.email)
+            response = self.client.call_action(
+                'get_group',
+                group_id=mock_group.email,
+                provider=group_containers.GOOGLE,
+            )
 
         self.verify_containers(mock_group, response.result.group)
 
     @patch('group.actions.providers.Google')
     def test_get_group_does_not_exist(self, mock_google_provider):
         mock_google_provider().get_group.return_value = None
-        with self.mock_transport() as mock, self.assertFieldError('group_key', 'DOES_NOT_EXIST'):
+        with self.mock_transport() as mock, self.assertFieldError('group_id', 'DOES_NOT_EXIST'):
             self._mock_token_objects(mock)
-            self.client.call_action('get_group', group_key='ghost@circlehq.co')
+            self.client.call_action(
+                'get_group',
+                group_id=fuzzy.FuzzyUUID().fuzz(),
+                provider=group_containers.GOOGLE,
+            )
 
-    def test_leave_group_no_group_key(self):
+    def test_leave_group_no_group_id(self):
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
-            with self.assertFieldError('group_key', 'MISSING'):
+            with self.assertFieldError('group_id', 'MISSING'):
                 self.client.call_action('leave_group')
+
+    def test_leave_group_no_provider(self):
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            with self.assertFieldError('provider', 'MISSING'):
+                self.client.call_action('leave_group', group_id=fuzzy.FuzzyUUID().fuzz())
 
     @patch('group.actions.providers.Google')
     def test_leave_group(self, mock_google_provider):
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
-            self.client.call_action('leave_group', group_key='group@circlehq.co')
+            self.client.call_action(
+                'leave_group',
+                group_id=fuzzy.FuzzyUUID().fuzz(),
+                provider=group_containers.GOOGLE,
+            )
 
-    def test_join_group_group_key_required(self):
+    def test_join_group_group_id_required(self):
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
-            with self.assertFieldError('group_key', 'MISSING'):
+            with self.assertFieldError('group_id', 'MISSING'):
                 self.client.call_action('join_group')
+
+    def test_join_group_provider_required(self):
+        with self.mock_transport() as mock:
+            self._mock_token_objects(mock)
+            with self.assertFieldError('provider', 'MISSING'):
+                self.client.call_action('join_group', group_id=fuzzy.FuzzyUUID().fuzz())
 
     @patch('group.actions.providers.Google')
     def test_join_group_send_notification_when_pending(self, mock_google_provider):
-        expected_request = factories.GroupMembershipRequestFactory.create(
+        expected_request = model_factories.GroupMembershipRequestFactory.create(
             status=group_containers.PENDING,
         )
         mock_google_provider().join_group.return_value = expected_request
@@ -174,18 +195,26 @@ class TestGoogleGroups(TestCase):
                 action='send_notification',
                 mock_regex_lookup='notification:.*',
             )
-            response = self.client.call_action('join_group', group_key='group@circlehq.co')
+            response = self.client.call_action(
+                'join_group',
+                group_id='group@circlehq.co',
+                provider=group_containers.GOOGLE,
+            )
             self.assertEqual(response.result.request.status, expected_request.status)
 
     @patch('group.actions.providers.Google')
     def test_join_group_dont_send_notification_when_approved(self, mock_google_provider):
-        expected_request = factories.GroupMembershipRequestFactory.create(
+        expected_request = model_factories.GroupMembershipRequestFactory.create(
             status=group_containers.APPROVED,
         )
         mock_google_provider().join_group.return_value = expected_request
         with self.mock_transport() as mock:
             self._mock_token_objects(mock)
-            response = self.client.call_action('join_group', group_key='group@circlehq.co')
+            response = self.client.call_action(
+                'join_group',
+                group_id=fuzzy.FuzzyUUID().fuzz(),
+                provider=group_containers.GOOGLE,
+            )
             self.assertEqual(response.result.request.status, expected_request.status)
 
     def test_respond_to_membership_request_request_id_required(self):
@@ -220,7 +249,7 @@ class TestGoogleGroups(TestCase):
 
     @patch('group.actions.providers.Google')
     def test_respond_to_membership_request_approve(self, mock_google_provider):
-        member_request = factories.GroupMembershipRequestFactory.create(
+        member_request = model_factories.GroupMembershipRequestFactory.create(
             status=group_containers.PENDING,
         )
         member_request.status = group_containers.APPROVED
@@ -241,7 +270,7 @@ class TestGoogleGroups(TestCase):
 
     @patch('group.actions.providers.Google')
     def test_respond_to_membership_request_denied(self, mock_google_provider):
-        member_request = factories.GroupMembershipRequestFactory.create(
+        member_request = model_factories.GroupMembershipRequestFactory.create(
             status=group_containers.PENDING,
         )
         member_request.status = group_containers.DENIED
@@ -260,8 +289,8 @@ class TestGoogleGroups(TestCase):
             )
         self.assertEqual(mock_google_provider().deny_request_to_join.call_count, 1)
 
-    def test_add_to_group_group_key_required(self):
-        with self.mock_transport() as mock, self.assertFieldError('group_key', 'MISSING'):
+    def test_add_to_group_group_id_required(self):
+        with self.mock_transport() as mock, self.assertFieldError('group_id', 'MISSING'):
             self._mock_token_objects(mock)
             self.client.call_action(
                 'add_to_group',
@@ -273,7 +302,8 @@ class TestGoogleGroups(TestCase):
             self._mock_token_objects(mock)
             self.client.call_action(
                 'add_to_group',
-                group_key='group@circlehq.co',
+                group_id='group@circlehq.co',
+                provider=group_containers.GOOGLE,
                 profile_ids=['invalid'],
             )
 
@@ -298,19 +328,20 @@ class TestGoogleGroups(TestCase):
             )
             response = self.client.call_action(
                 'add_to_group',
-                group_key='group@circlehq.co',
+                group_id=fuzzy.FuzzyUUID().fuzz(),
+                provider=group_containers.GOOGLE,
                 profile_ids=profile_ids,
             )
             self.assertEqual(len(response.result.new_members), 2)
 
     def test_get_membership_requests(self):
         # Create membership requests where by_profile is an approver
-        factories.GroupMembershipRequestFactory.create_batch(
+        model_factories.GroupMembershipRequestFactory.create_batch(
             size=2,
             approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
         )
         # Create membership requests where by_profile is not an approver
-        factories.GroupMembershipRequestFactory.create_batch(
+        model_factories.GroupMembershipRequestFactory.create_batch(
             size=2,
             approver_profile_ids=[fuzzy.FuzzyUUID().fuzz()],
         )
@@ -321,18 +352,18 @@ class TestGoogleGroups(TestCase):
 
     def test_get_membership_requests_pending_only(self):
         # Create membership requests that are pending
-        factories.GroupMembershipRequestFactory.create_batch(
+        model_factories.GroupMembershipRequestFactory.create_batch(
             size=2,
             approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
             status=group_containers.PENDING,
         )
         # Create membership requests that are approved
-        factories.GroupMembershipRequestFactory.create_batch(
+        model_factories.GroupMembershipRequestFactory.create_batch(
             size=2,
             approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
             status=group_containers.APPROVED,
         )
-        factories.GroupMembershipRequestFactory.create_batch(
+        model_factories.GroupMembershipRequestFactory.create_batch(
             size=2,
             approver_profile_ids=[self.by_profile.id, fuzzy.FuzzyUUID().fuzz()],
             status=group_containers.DENIED,
