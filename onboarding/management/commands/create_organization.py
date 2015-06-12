@@ -1,4 +1,3 @@
-from optparse import make_option
 import subprocess
 
 from django.conf import settings
