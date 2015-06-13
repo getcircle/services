@@ -12,8 +12,6 @@ from protobufs.services.group import containers_pb2 as group_containers
 import service.control
 from service.paginator import Paginator
 
-from services.cache import get_redis_client
-
 from .. import (
     base,
     exceptions,
