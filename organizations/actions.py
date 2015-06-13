@@ -198,6 +198,7 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
         team.update_from_protobuf(self.request.team)
         team.save()
         team.to_protobuf(self.response.team, path=team.get_path())
+        self.response.team.permissions.CopyFrom(permissions)
 
 
 class GetTeam(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):

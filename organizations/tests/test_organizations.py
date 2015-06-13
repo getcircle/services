@@ -818,6 +818,9 @@ class TestOrganizations(TestCase):
             )
             response = self.client.call_action('update_team', team=container)
         self.assertEqual(response.result.team.name, container.name)
+        self.assertTrue(response.result.team.permissions.can_edit)
+        self.assertTrue(response.result.team.permissions.can_add)
+        self.assertTrue(response.result.team.permissions.can_delete)
 
         team = models.Team.objects.get(pk=team.id)
         self.assertEqual(team.name, container.name)
