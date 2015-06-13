@@ -466,14 +466,25 @@ class Provider(base.BaseGroupsProvider):
         return new_members
 
     def join_group(self, group_id, **kwargs):
+        parameters = {
+            'requester_profile_id': self.requester_profile.id,
+            'provider': group_containers.GOOGLE,
+            'group_id': group_id,
+        }
+        if models.GroupMembershipRequest.objects.filter(
+            status=group_containers.PENDING,
+            **parameters
+        ).exists():
+            raise exceptions.AlreadyRequested(
+                'A pending request already exists for: %s' % (group_id,)
+            )
+
         # TODO catch DoesNotExist
         group = models.GoogleGroup.objects.get(pk=group_id)
         membership_request = models.GroupMembershipRequest(
-            requester_profile_id=self.requester_profile.id,
             status=group_containers.DENIED,
-            provider=group_containers.GOOGLE,
-            group_id=group_id,
             meta={'whoCanJoin': group.settings.get('whoCanJoin', '')},
+            **parameters
         )
         can_join, can_request = self.can_join_or_can_request(group)
         if can_join:

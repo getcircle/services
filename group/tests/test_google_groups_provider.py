@@ -1546,3 +1546,12 @@ class TestGoogleGroups(BaseGoogleCase):
             models.GoogleGroup.objects.get(pk=membership.group_id).direct_members_count,
             1,
         )
+
+    def test_join_group_only_on_pending_request_per_group(self, *patches):
+        group = model_factories.GoogleGroupFactory.create(
+            settings={'whoCanJoin': 'CAN_REQUEST_TO_JOIN'},
+        )
+        membership_request = self.provider.join_group(group.id)
+        self.assertEqual(membership_request.status, group_containers.PENDING)
+        with self.assertRaises(exceptions.AlreadyRequested):
+            self.provider.join_group(group.id)
