@@ -318,6 +318,10 @@ class Provider(base.BaseGroupsProvider):
         container.is_manager = states.get('is_manager', False)
         container.can_join = states.get('can_join', False)
         container.can_request = states.get('can_request', False)
+        if container.is_manager:
+            container.permissions.can_edit = True
+            container.permissions.can_add = self.can_add_to_group(group, membership)
+
         return container
 
     def provider_group_to_container(self, provider_group, group_settings, membership):

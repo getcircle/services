@@ -286,6 +286,41 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
                 'setup:group:settings:showInGroupDirectory': 'true',
+                'setup:group:settings:whoCanInvite': 'ALL_MEMBERS_CAN_INVITE',
+                'provider_func_args:0': 'setup:group:id',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.by_profile.id,
+                'assertions:group:can_view': True,
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:has_pending_request': False,
+                'assertions:group:permissions:can_add': True,
+            },
+            {
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'true',
+                'setup:group:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
+                'provider_func_args:0': 'setup:group:id',
+                'setup:membership:role': 'MEMBER',
+                'setup:membership:profile_id': self.by_profile.id,
+                'assertions:group:can_view': True,
+                'assertions:group:can_join': False,
+                'assertions:group:can_request': False,
+                'assertions:group:is_member': True,
+                'assertions:group:is_manager': False,
+                'assertions:group:has_pending_request': False,
+                'assertions:group:permissions:can_add': False,
+            },
+            {
+                'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
+                'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
+                'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
+                'setup:group:settings:showInGroupDirectory': 'true',
+                'setup:group:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
                 'provider_func_args:0': 'setup:group:id',
                 'setup:membership:role': 'MANAGER',
                 'setup:membership:profile_id': self.by_profile.id,
@@ -295,20 +330,23 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 'assertions:group:is_member': True,
                 'assertions:group:is_manager': True,
                 'assertions:group:has_pending_request': False,
+                'assertions:group:permissions:can_add': True,
             },
             {
                 'setup:group:id': fuzzy.FuzzyUUID().fuzz(),
                 'setup:group:settings:whoCanJoin': 'INVITED_CAN_JOIN',
                 'setup:group:settings:whoCanViewMembership': 'ALL_MANAGERS_CAN_VIEW',
                 'setup:group:settings:showInGroupDirectory': 'true',
+                'setup:group:settings:whoCanInvite': 'ALL_MANAGERS_CAN_INVITE',
                 'provider_func_args:0': 'setup:group:id',
-                'setup:membership:role': 'MEMBER',
+                'setup:membership:role': 'OWNER',
                 'setup:membership:profile_id': self.by_profile.id,
                 'assertions:group:can_view': True,
                 'assertions:group:can_join': False,
                 'assertions:group:can_request': False,
                 'assertions:group:is_member': True,
-                'assertions:group:is_manager': False,
+                'assertions:group:is_manager': True,
+                'assertions:group:permissions:can_add': True,
             },
         ]
 
@@ -319,8 +357,31 @@ class TestGoogleGetGroups(BaseGoogleCase):
                 raise AssertionError('Group should be visible')
 
             for key, value in assertions['group'].iteritems():
+                if isinstance(value, dict):
+                    continue
+
                 if hasattr(result, key):
-                    self.assertEqual(getattr(result, key), value)
+                    try:
+                        self.assertEqual(getattr(result, key), value)
+                    except AssertionError:
+                        raise AssertionError('Expected "%s" to equal: %s (got %s)' % (
+                            key,
+                            value,
+                            getattr(result, key),
+                        ))
+
+            if result:
+                is_manager = assertions.get('group', {}).get('is_manager', False)
+                if is_manager:
+                    self.assertTrue(result.permissions.can_edit)
+                    self.assertFalse(result.permissions.can_delete)
+                    can_add = assertions.get('group', {}).get('permissions', {}).get('can_add')
+                    if can_add is not None:
+                        self.assertEqual(result.permissions.can_add, can_add)
+                else:
+                    self.assertFalse(result.permissions.can_edit)
+                    self.assertFalse(result.permissions.can_delete)
+                    self.assertFalse(result.permissions.can_add)
 
         self._execute_test_cases('get_group', test_cases, test_func=test)
 
@@ -1425,7 +1486,7 @@ class TestGoogleGroups(BaseGoogleCase):
         group = model_factories.GoogleGroupFactory.create(
             organization_id=self.by_profile.organization_id,
         )
-        with patch('group.providers.google.build') as patched_build_api:
+        with patch('group.providers.google.provider.build') as patched_build_api:
             patched_build_api().members().delete().execute.side_effect = HttpError('404', 'Error')
             self.provider.leave_group(group.id)
 
@@ -1436,7 +1497,7 @@ class TestGoogleGroups(BaseGoogleCase):
             group__direct_members_count=2,
             group__settings={'whoCanLeaveGroup': 'ALL_MEMBERS_CAN_LEAVE'},
         )
-        with patch('group.providers.google.build') as patched_build_api:
+        with patch('group.providers.google.provider.build') as patched_build_api:
             patched_build_api().members().delete.execute.return_value = ''
             self.provider.leave_group(membership.group_id)
         self.assertEqual(patched_build_api().members().delete().execute.call_count, 1)
@@ -1474,7 +1535,7 @@ class TestGoogleGroups(BaseGoogleCase):
             group__direct_members_count=2,
             group__settings={'whoCanLeaveGroup': 'ALL_MANAGERS_CAN_LEAVE'},
         )
-        with patch('group.providers.google.build') as patched_build_api:
+        with patch('group.providers.google.provider.build') as patched_build_api:
             patched_build_api().members().delete.execute.return_value = ''
             self.provider.leave_group(membership.group_id)
         self.assertEqual(patched_build_api().members().delete().execute.call_count, 1)
