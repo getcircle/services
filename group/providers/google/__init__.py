@@ -1,4 +1,2 @@
-from . import (  # NOQA
-    Provider,
-    Sync,
-)
+from .provider import Provider  # NOQA
+from .sync import Sync  # NOQA

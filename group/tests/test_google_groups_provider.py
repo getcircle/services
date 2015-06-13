@@ -151,8 +151,8 @@ class BaseGoogleCase(TestCase):
                 group.delete()
 
 
-@patch('group.providers.google.service.control.get_object')
-@patch('group.providers.google.SignedJwtAssertionCredentials')
+@patch('group.providers.google.provider.service.control.get_object')
+@patch('group.providers.google.provider.SignedJwtAssertionCredentials')
 class TestGoogleGetGroups(BaseGoogleCase):
 
     def _execute_test(
@@ -1417,8 +1417,8 @@ class TestGoogleListMembers(BaseGoogleCase):
         self._execute_test_cases('get_members_for_group', test_cases)
 
 
-@patch('group.providers.google.service.control.get_object')
-@patch('group.providers.google.SignedJwtAssertionCredentials')
+@patch('group.providers.google.provider.service.control.get_object')
+@patch('group.providers.google.provider.SignedJwtAssertionCredentials')
 class TestGoogleGroups(BaseGoogleCase):
 
     def test_leave_group_not_a_member(self, *patches):
