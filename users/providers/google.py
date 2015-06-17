@@ -1,4 +1,5 @@
 import json
+import logging
 import urllib
 
 import arrow
@@ -58,20 +59,20 @@ class Provider(base.BaseProvider):
         return payload
 
     def _get_credentials_from_code(self, code, identity=None, id_token=None, is_sdk=False):
-        overrides = {}
+        parameters = {
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'client_secret': settings.GOOGLE_CLIENT_SECRET,
+            'scope': settings.GOOGLE_SCOPE,
+            'code': code,
+        }
         # NB: For native app SDKs, Google requires a redirect_uri of an empty string
         if is_sdk:
-            overrides['redirect_uri'] = ''
+            parameters['redirect_uri'] = ''
         else:
-            overrides['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
+            parameters['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
 
-        credentials = credentials_from_code(
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            scope=settings.GOOGLE_SCOPE,
-            code=code,
-            **overrides
-        )
+        logging.getLogger('user:providers:google').info('requesting credentials: %s', parameters)
+        credentials = credentials_from_code(**parameters)
         if id_token is not None:
             credentials.id_token = id_token
         if identity:
