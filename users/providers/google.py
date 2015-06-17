@@ -57,13 +57,20 @@ class Provider(base.BaseProvider):
             raise base.ExchangeError(response)
         return payload
 
-    def _get_credentials_from_code(self, code, identity=None, id_token=None):
+    def _get_credentials_from_code(self, code, identity=None, id_token=None, is_sdk=True):
+        overrides = {}
+        # NB: For native app SDKs, Google requires a redirect_uri of an empty string
+        if is_sdk:
+            overrides['redirect_uri'] = ''
+        else:
+            overrides['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
+
         credentials = credentials_from_code(
             client_id=settings.GOOGLE_CLIENT_ID,
             client_secret=settings.GOOGLE_CLIENT_SECRET,
             scope=settings.GOOGLE_SCOPE,
             code=code,
-            redirect_uri=settings.GOOGLE_REDIRECT_URI,
+            **overrides
         )
         if id_token is not None:
             credentials.id_token = id_token
@@ -105,9 +112,10 @@ class Provider(base.BaseProvider):
         identity, new = self.get_identity(id_token['sub'])
         if new:
             credentials = self._get_credentials_from_code(
-                self._get_credentials_from_code(request),
+                self._get_authorization_code(request),
                 identity=identity,
                 id_token=id_token,
+                is_sdk=True,
             )
         else:
             credentials = self._get_credentials_from_identity(identity)

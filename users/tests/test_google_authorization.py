@@ -92,6 +92,8 @@ class TestGoogleAuthorization(TestCase):
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
         self.assertTrue(response.result.new_user)
+        call_args = mocked_credentials_from_code.call_args[1]
+        self.assertEqual(call_args['redirect_uri'], '')
 
     @patch.object(providers.Google, '_get_profile')
     @patch('users.providers.google.credentials_from_code')
@@ -117,6 +119,8 @@ class TestGoogleAuthorization(TestCase):
         self.assertTrue(response.result.new_user)
         self.assertEqual(response.result.oauth_sdk_details.code, 'some-code')
         self.assertEqual(response.result.oauth_sdk_details.id_token, str(self.id_token))
+        call_args = mocked_credentials_from_code.call_args[1]
+        self.assertEqual(call_args['redirect_uri'], settings.GOOGLE_REDIRECT_URI)
 
     @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
     @patch('users.providers.google.verify_id_token')
