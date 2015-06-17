@@ -86,6 +86,19 @@ class TestUserActions(TestCase):
         self.assertEqual(user.id, response.result.user.id)
         self.assertEqual(user.phone_number, response.result.user.phone_number)
 
+    def test_update_user_duplicate_phone_number(self):
+        other_user = factories.UserFactory.create_protobuf(phone_number='+13109991557')
+        user = factories.UserFactory.create_protobuf()
+        user.phone_number = other_user.phone_number
+        with self.assertFieldError('user.phone_number', 'DUPLICATE'):
+            self.client.call_action('update_user', user=user)
+
+    def test_update_user_phone_number_invalid(self):
+        user = factories.UserFactory.create_protobuf()
+        user.phone_number = 'invalid'
+        with self.assertFieldError('user.phone_number', 'INVALID'):
+            self.client.call_action('update_user', user=user)
+
     def test_bulk_create_users(self):
         users = []
         for _ in range(3):
