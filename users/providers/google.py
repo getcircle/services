@@ -57,7 +57,7 @@ class Provider(base.BaseProvider):
             raise base.ExchangeError(response)
         return payload
 
-    def _get_credentials_from_code(self, code, identity=None, id_token=None, is_sdk=True):
+    def _get_credentials_from_code(self, code, identity=None, id_token=None, is_sdk=False):
         overrides = {}
         # NB: For native app SDKs, Google requires a redirect_uri of an empty string
         if is_sdk:
