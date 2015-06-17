@@ -124,20 +124,25 @@ class Provider(base.BaseProvider):
 
     def complete_authorization(self, request, response):
         authorization_code = self._get_authorization_code(request)
-        if request.HasField('oauth2_details'):
+        is_sdk = request.HasField('oauth_sdk_details')
+        if is_sdk:
+            identity, credentials = self._get_identity_and_credentials_oauth_sdk(request)
+        else:
             identity, credentials = self._get_identity_and_credentials_oauth2(request)
             # include the details to authenticate via the sdk in the response
             response.oauth_sdk_details.code = authorization_code
             response.oauth_sdk_details.id_token = credentials.token_response.get('id_token', '')
-        else:
-            identity, credentials = self._get_identity_and_credentials_oauth_sdk(request)
 
         try:
             token_info = credentials.get_access_token()
         except AccessTokenRefreshError:
             # Token has expired based on expiry time
             # Attempt to fetch new credentials based on the code submitted by the client
-            credentials = self._get_credentials_from_code(authorization_code, identity=identity)
+            credentials = self._get_credentials_from_code(
+                authorization_code,
+                identity=identity,
+                is_sdk=is_sdk,
+            )
             token_info = credentials.get_access_token()
 
         if token_info.access_token != identity.access_token:
@@ -159,6 +164,7 @@ class Provider(base.BaseProvider):
                     credentials = self._get_credentials_from_code(
                         authorization_code,
                         identity=identity,
+                        is_sdk=is_sdk,
                     )
 
                 self._update_identity_access_token(
