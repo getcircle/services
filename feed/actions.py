@@ -8,10 +8,13 @@ from protobufs.services.feed import containers_pb2 as feed_containers
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 
+from services import mixins
 
-class GetProfileFeed(actions.Action):
+
+class GetProfileFeed(mixins.PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
+        # XXX deprecate this field
         'profile_id': [validators.is_uuid4],
     }
 
@@ -22,7 +25,10 @@ class GetProfileFeed(actions.Action):
         self.note_client = service.control.Client('note', token=self.token)
 
     def _get_peers_category(self):
-        response = self.profile_client.call_action('get_peers', profile_id=self.request.profile_id)
+        response = self.profile_client.call_action(
+            'get_peers',
+            profile_id=self.parsed_token.profile_id,
+        )
         if not response.success:
             # XXX handle errors properly
             raise Exception('failed to fetch peers')
@@ -42,7 +48,7 @@ class GetProfileFeed(actions.Action):
     def _get_direct_reports_category(self):
         response = self.profile_client.call_action(
             'get_direct_reports',
-            profile_id=self.request.profile_id,
+            profile_id=self.parsed_token.profile_id,
         )
         if not response.success:
             # XXX handle errors better
@@ -244,7 +250,7 @@ class GetProfileFeed(actions.Action):
     def run(self, *args, **kwargs):
         response = self.profile_client.call_action(
             'get_profile',
-            profile_id=self.request.profile_id,
+            profile_id=self.parsed_token.profile_id,
         )
         if not response.success:
             raise Exception('failed to fetch profile')

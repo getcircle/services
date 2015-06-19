@@ -19,7 +19,12 @@ class TestGetCategories(TestCase):
 
     def setUp(self):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
-        self.client = service.control.Client('feed', token='test-token')
+        self.profile = self._mock_get_profile()
+        self.token = mocks.mock_token(
+            profile_id=self.profile.id,
+            organization_id=self.profile.organization_id,
+        )
+        self.client = service.control.Client('feed', token=self.token)
         self.client.set_transport(local.instance)
 
     def tearDown(self):
@@ -201,19 +206,18 @@ class TestGetCategories(TestCase):
             self.client.call_action('get_profile_feed', profile_id='invalid')
 
     def test_peers_profile_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        self._mock_get_notes(profile.id, notes=0)
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -223,19 +227,18 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.content_key, 'title')
 
     def test_direct_reports_profile_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        self._mock_get_notes(profile.id, notes=0)
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -247,20 +250,19 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.total_count, 3)
 
     def test_anniversaries_profile_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        self._mock_get_notes(profile.id, notes=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -272,19 +274,18 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.total_count, 3)
 
     def test_birthdays_profile_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        self._mock_get_notes(profile.id, notes=0)
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -296,19 +297,18 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.total_count, 3)
 
     def test_recent_hires_profile_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id)
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        self._mock_get_notes(profile.id, notes=0)
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -321,20 +321,19 @@ class TestGetCategories(TestCase):
 
     def test_trending_tags_tag_category_interests(self):
         """Verify that trending interests show if we don't have active skills"""
-        profile = self._mock_get_profile()
         # TODO we should have the mock transport return an error that the mock wasn't registred
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id)
-        self._mock_get_notes(profile.id, notes=0)
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id)
+        self._mock_get_notes(self.profile.id, notes=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -346,19 +345,18 @@ class TestGetCategories(TestCase):
 
     def test_trending_tags_tag_category_skills(self):
         """Verify that trending skills instead of interests if we have them"""
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(profile.organization_id)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        self._mock_get_notes(profile.id, notes=0)
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -369,20 +367,19 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.category_type, feed_containers.CategoryV1.SKILLS)
 
     def test_notes_note_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        notes = self._mock_get_notes(profile.id)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        notes = self._mock_get_notes(self.profile.id)
         self._mock_get_profiles([note.for_profile_id for note in notes])
-        self._mock_get_membership_requests(profile.id, requests=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -394,20 +391,19 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.total_count, 3)
 
     def test_group_membership_requests_category(self):
-        profile = self._mock_get_profile()
-        self._mock_get_peers(profile.id, peers=0)
-        self._mock_get_direct_reports(profile.id, direct_reports=0)
+        self._mock_get_peers(self.profile.id, peers=0)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
         self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(profile.organization_id, tags=0)
-        self._mock_get_notes(profile.id, notes=0)
-        requests = self._mock_get_membership_requests(profile.id)
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
+        requests = self._mock_get_membership_requests(self.profile.id)
         self._mock_get_profiles([request.requester_profile_id for request in requests])
 
-        response = self.client.call_action('get_profile_feed', profile_id=profile.id)
+        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.categories), 1)
 
@@ -420,3 +416,23 @@ class TestGetCategories(TestCase):
             feed_containers.CategoryV1.GROUP_MEMBERSHIP_REQUESTS,
         )
         self.assertEqual(category.total_count, 3)
+
+    def test_get_profile_feed_no_profile_id_required(self):
+        self._mock_get_peers(self.profile.id)
+        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
+        self._mock_get_profile_stats([])
+        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
+        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
+        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
+        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
+        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
+        self._mock_get_notes(self.profile.id, notes=0)
+        self._mock_get_membership_requests(self.profile.id, requests=0)
+
+        response = self.client.call_action('get_profile_feed')
+        self.assertEqual(len(response.result.categories), 1)
+
+        category = response.result.categories[0]
+        self.assertEqual(category.title, 'Peers')
+        self.assertEqual(len(category.profiles), 3)
+        self.assertEqual(category.content_key, 'title')
