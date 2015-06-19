@@ -269,6 +269,7 @@ class GetProfileFeed(mixins.PreRunParseTokenMixin, actions.Action):
 class GetOrganizationFeed(GetProfileFeed):
 
     type_validators = {
+        # XXX deprecate this field
         'organization_id': [validators.is_uuid4],
     }
 
@@ -359,6 +360,6 @@ class GetOrganizationFeed(GetProfileFeed):
             container.CopyFrom(location)
 
     def run(self, *args, **kwargs):
-        top_level_team = self._get_executives(self.request.organization_id)
-        self._get_locations_category(self.request.organization_id)
+        top_level_team = self._get_executives(self.parsed_token.organization_id)
+        self._get_locations_category(self.parsed_token.organization_id)
         self._get_departments(top_level_team)

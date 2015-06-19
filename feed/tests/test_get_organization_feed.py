@@ -15,8 +15,11 @@ class TestGetExtendedOrganization(TestCase):
 
     def setUp(self):
         super(TestGetExtendedOrganization, self).setUp()
+        self.organization = self._mock_get_organization()
+        self.profile = mocks.mock_profile(organization_id=self.organization.id)
         service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
-        self.client = service.control.Client('feed', token='test-token')
+        token = mocks.mock_token(organization_id=self.organization.id, profile_id=self.profile.id)
+        self.client = service.control.Client('feed', token=token)
         self.client.set_transport(local.instance)
 
     def tearDown(self):
@@ -109,17 +112,42 @@ class TestGetExtendedOrganization(TestCase):
             self.client.call_action('get_organization_feed', organization_id='invalid')
 
     def test_get_organization_feed(self):
-        organization = self._mock_get_organization()
-        locations = self._mock_get_locations(organization.id)
-        top_level_team = self._mock_get_top_level_team(organization.id)
+        locations = self._mock_get_locations(self.organization.id)
+        top_level_team = self._mock_get_top_level_team(self.organization.id)
         self._mock_get_team_descendants(top_level_team.id, teams=5)
         owner = self._mock_get_profile_with_user_id(top_level_team.owner_id)
         self._mock_get_direct_reports(owner.id)
 
         response = self.client.call_action(
             'get_organization_feed',
-            organization_id=organization.id,
+            organization_id=self.organization.id,
         )
+        self.assertTrue(response.success)
+
+        category_dict = dict((res.category_type, res) for res in response.result.categories)
+
+        location_category = category_dict[feed_containers.CategoryV1.LOCATIONS]
+        self.assertEqual(len(location_category.locations), len(locations))
+
+        executives = category_dict[feed_containers.CategoryV1.EXECUTIVES]
+        # equal to 4 because we include the owner (the rest are just direct reports)
+        self.assertEqual(len(executives.profiles), 4)
+        self.verify_containers(owner, executives.profiles[0])
+
+        departments = category_dict[feed_containers.CategoryV1.DEPARTMENTS]
+        # top level team should be the first "department" listed
+        self.verify_containers(top_level_team, departments.teams[0])
+        # equal to 6 because we include the top level team
+        self.assertEqual(len(departments.teams), 6)
+
+    def test_get_organization_feed_reference_organization_id_from_token(self):
+        locations = self._mock_get_locations(self.organization.id)
+        top_level_team = self._mock_get_top_level_team(self.organization.id)
+        self._mock_get_team_descendants(top_level_team.id, teams=5)
+        owner = self._mock_get_profile_with_user_id(top_level_team.owner_id)
+        self._mock_get_direct_reports(owner.id)
+
+        response = self.client.call_action('get_organization_feed')
         self.assertTrue(response.success)
 
         category_dict = dict((res.category_type, res) for res in response.result.categories)
