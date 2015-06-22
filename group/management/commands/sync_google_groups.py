@@ -20,13 +20,14 @@ class Command(BaseCommand):
             return_object='organization',
             organization_domain=options['organization_domain'],
         )
+        token = make_admin_token(organization_id=organization.id)
+
+        client.token = token
         integration = client.get_object(
             'get_integration',
             return_object='integration',
             integration_type=integration_pb2.GOOGLE_GROUPS,
         )
-
-        token = make_admin_token(organization_id=organization.id)
         provider = Provider(token=token, organization=organization, integration=integration)
         sync = Sync(provider)
         sync.sync_groups()

@@ -4,7 +4,13 @@ class BaseGroupsProvider(object):
 
     def __init__(self, requester_profile=None, token=None, organization=None, paginator=None):
         self.requester_profile = requester_profile
-        self.organization_id = requester_profile.organization_id
+
+        if self.requester_profile:
+            organization_id = requester_profile.organization_id
+        else:
+            organization_id = organization.id
+
+        self.organization_id = organization_id
         self.organization = organization
         self.token = token
         self.write_access = True
