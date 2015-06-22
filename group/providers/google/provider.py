@@ -536,7 +536,7 @@ class Provider(base.BaseGroupsProvider):
             return_object='profile',
             profile_id=str(request.requester_profile_id),
         )
-        self._add_to_group([profile.email], member[0].group)
+        self._add_profiles_to_group([profile], member[0].group)
         request.status = group_containers.APPROVED
         request.save()
         return request
