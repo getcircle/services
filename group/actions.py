@@ -164,9 +164,9 @@ class RespondToMembershipRequest(PreRunParseTokenMixin, actions.Action):
                         notification_containers.NotificationTypeV1.GOOGLE_GROUPS
                     ),
                     'group_membership_request_response': {
-                        'group_id': membership_request.group_id,
+                        'group_id': str(membership_request.group_id),
                         'provider': membership_request.provider,
-                        'group_manager_profile_id': self.profile.id,
+                        'group_manager_profile_id': str(self.profile.id),
                         'approved': membership_request.status == group_containers.APPROVED,
                     },
                 },
