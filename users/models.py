@@ -91,6 +91,9 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
         "Does the user have permissions to view the app `app_label`?"
         return True
 
+    class Meta:
+        protobuf = user_containers.UserV1
+
 
 class Token(models.UUIDModel):
 
