@@ -192,6 +192,7 @@ class AuthenticateUser(actions.Action):
         elif self._is_google_backend():
             auth_params['code'] = self.request.credentials.key
             auth_params['id_token'] = self.request.credentials.secret
+            auth_params['client_type'] = self.request.client_type
         else:
             raise self.ActionFieldError('backend', 'INVALID')
         return auth_params

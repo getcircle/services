@@ -6,7 +6,7 @@ from . import models
 
 class GoogleAuthenticationBackend(object):
 
-    def authenticate(self, code=None, id_token=None):
+    def authenticate(self, code=None, id_token=None, client_type=None):
         if id_token:
             client = service.control.Client('user')
             try:
@@ -17,6 +17,7 @@ class GoogleAuthenticationBackend(object):
                         'code': code,
                         'id_token': id_token,
                     },
+                    client_type=client_type,
                 )
             except service.control.CallActionError:
                 pass

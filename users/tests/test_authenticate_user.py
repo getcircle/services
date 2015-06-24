@@ -222,3 +222,31 @@ class TestUsersAuthentication(TestCase):
         )
         self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
         self.assertTrue(response.result.new_user)
+
+    @patch.object(google_provider.OAuth2Credentials, '_refresh')
+    @patch('users.providers.google.verify_id_token')
+    @patch.object(providers.Google, '_get_profile')
+    @patch('users.providers.google.credentials_from_code')
+    def test_authenticate_user_google_new_user_web(
+            self,
+            mocked_credentials_from_code,
+            mocked_get_profile,
+            mocked_verify_id_token,
+            *args,
+            **kwargs
+        ):
+        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
+        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_verify_id_token.return_value = self.id_token
+        response = self.client.call_action(
+            self.action,
+            backend=authenticate_user_pb2.RequestV1.GOOGLE,
+            credentials={
+                'key': 'some-code',
+                'secret': 'some-id-token',
+            },
+            client_type=token_pb2.WEB,
+        )
+        self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
+        self.assertTrue(response.result.new_user)
+        self.assertEqual(mocked_credentials_from_code.call_args[1]['redirect_uri'], 'postmessage')

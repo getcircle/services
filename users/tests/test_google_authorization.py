@@ -95,6 +95,36 @@ class TestGoogleAuthorization(TestCase):
         call_args = mocked_credentials_from_code.call_args[1]
         self.assertEqual(call_args['redirect_uri'], '')
 
+    @patch('users.providers.google.verify_id_token')
+    @patch.object(providers.Google, '_get_profile')
+    @patch('users.providers.google.credentials_from_code')
+    def test_complete_authorization_web_sdk(
+            self,
+            mocked_credentials_from_code,
+            mocked_get_profile,
+            mocked_verify_id_token,
+        ):
+
+        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
+        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_verify_id_token.return_value = self.id_token
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=user_containers.IdentityV1.GOOGLE,
+            oauth_sdk_details={
+                'code': 'some-code',
+                'id_token': 'id-token',
+            },
+            client_type=token_pb2.WEB,
+        )
+        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
+        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
+        self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
+        self.assertEqual(response.result.identity.user_id, response.result.user.id)
+        self.assertTrue(response.result.new_user)
+        call_args = mocked_credentials_from_code.call_args[1]
+        self.assertEqual(call_args['redirect_uri'], 'postmessage')
+
     @patch.object(providers.Google, '_get_profile')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_no_user_oauth2_details(

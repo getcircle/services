@@ -15,6 +15,7 @@ from oauth2client.client import (
 )
 from oauth2client.crypt import AppIdentityError
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.user.containers import token_pb2
 import requests
 import service.control
 from service import actions
@@ -58,7 +59,14 @@ class Provider(base.BaseProvider):
             raise base.ExchangeError(response)
         return payload
 
-    def _get_credentials_from_code(self, code, identity=None, id_token=None, is_sdk=False):
+    def _get_credentials_from_code(
+            self,
+            code,
+            identity=None,
+            id_token=None,
+            is_sdk=False,
+            client_type=None,
+        ):
         parameters = {
             'client_id': settings.GOOGLE_CLIENT_ID,
             'client_secret': settings.GOOGLE_CLIENT_SECRET,
@@ -67,7 +75,10 @@ class Provider(base.BaseProvider):
         }
         # NB: For native app SDKs, Google requires a redirect_uri of an empty string
         if is_sdk:
-            parameters['redirect_uri'] = ''
+            if client_type == token_pb2.WEB:
+                parameters['redirect_uri'] = 'postmessage'
+            else:
+                parameters['redirect_uri'] = ''
         else:
             parameters['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
 
@@ -117,6 +128,7 @@ class Provider(base.BaseProvider):
                 identity=identity,
                 id_token=id_token,
                 is_sdk=True,
+                client_type=request.client_type,
             )
         else:
             credentials = self._get_credentials_from_identity(identity)
@@ -142,6 +154,7 @@ class Provider(base.BaseProvider):
                 authorization_code,
                 identity=identity,
                 is_sdk=is_sdk,
+                client_type=request.client_type,
             )
             token_info = credentials.get_access_token()
 
