@@ -12,6 +12,7 @@ from protobufs.services.organization import containers_pb2 as organization_conta
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.resume import containers_pb2 as resume_containers
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.user.containers import token_pb2
 
 
 @contextmanager
@@ -75,6 +76,7 @@ def mock_token(**values):
     token_data = {}
     for field in mock_fields:
         token_data[field] = fuzzy.FuzzyUUID().fuzz()
+    token_data['client_type'] = token_pb2.IOS
 
     token_data.update(values)
     return token.make_token(**token_data)

@@ -232,6 +232,7 @@ class AuthenticateUser(actions.Action):
             auth_token=token.key,
             auth_token_id=token.id,
             user_id=user.id,
+            client_type=self.request.client_type,
         )
         profile = self._get_profile(user.id, temporary_token)
         return make_token(
@@ -240,6 +241,7 @@ class AuthenticateUser(actions.Action):
             profile_id=getattr(profile, 'id', None),
             user_id=user.id,
             organization_id=getattr(profile, 'organization_id', None),
+            client_type=self.request.client_type,
         )
 
     def run(self, *args, **kwargs):

@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from itsdangerous import URLSafeTimedSerializer
+from protobufs.services.user.containers import token_pb2
 
 
 class MissingTokenParameter(Exception):
@@ -15,7 +16,7 @@ class MissingTokenParameter(Exception):
 class ServiceToken(object):
 
     admin_key = 'ADMIN'
-    required_fields = ('auth_token', 'auth_token_id')
+    required_fields = ('auth_token', 'auth_token_id', 'client_type')
     optional_fields = ('profile_id',)
     one_of_fields = ('organization_id', 'user_id')
 
@@ -72,4 +73,5 @@ def parse_token(token):
 def make_admin_token(**values):
     values['auth_token'] = ServiceToken.admin_key
     values['auth_token_id'] = ServiceToken.admin_key
+    values['client_type'] = token_pb2.WEB
     return make_token(**values)

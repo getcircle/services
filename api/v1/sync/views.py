@@ -1,6 +1,7 @@
 import json
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.sync.containers import payload_pb2
+from protobufs.services.user.containers import token_pb2
 from rest_framework import (
     exceptions,
     viewsets,
@@ -29,6 +30,7 @@ class SyncViewSet(viewsets.ViewSet):
         request.token = make_token(
             auth_token=request.auth.key,
             auth_token_id=request.auth.id,
+            client_type=token_pb2.API,
             organization_id=request.organization.id,
         )
 

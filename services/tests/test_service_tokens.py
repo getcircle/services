@@ -1,9 +1,11 @@
 from itsdangerous import BadTimeSignature
+
+from protobufs.services.user.containers import token_pb2
+
 from ..test import (
     fuzzy,
     TestCase,
 )
-
 from .. import token
 
 
@@ -22,6 +24,7 @@ class TestServiceTokens(TestCase):
             user_id=user_id,
             profile_id=profile_id,
             organization_id=organization_id,
+            client_type=token_pb2.IOS,
         )
         self.assertTrue(isinstance(expected, basestring))
 
@@ -33,6 +36,7 @@ class TestServiceTokens(TestCase):
         self.assertEqual(parsed.profile_id, profile_id)
         self.assertEqual(parsed.organization_id, organization_id)
         self.assertEqual(parsed.user_id, user_id)
+        self.assertEqual(parsed.client_type, token_pb2.IOS)
 
     def test_altering_token_raises_error(self):
         auth_token = fuzzy.FuzzyUUID().fuzz()
@@ -42,6 +46,7 @@ class TestServiceTokens(TestCase):
             auth_token=auth_token,
             auth_token_id=fuzzy.FuzzyUUID().fuzz(),
             user_id=user_id,
+            client_type=token_pb2.WEB,
         )
         with self.assertRaises(BadTimeSignature):
             token.parse_token(expected[:-11])
