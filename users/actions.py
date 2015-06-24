@@ -1,3 +1,4 @@
+from cacheops import cached
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core import validators as django_validators
@@ -68,6 +69,16 @@ def get_totp_code(token):
     if len(totp_code) < 6:
         totp_code = '0%s' % (totp_code,)
     return totp_code
+
+
+@cached(timeout=settings.CACHEOPS_FUNC_IS_GOOGLE_DOMAIN_TIMEOUT)
+def is_google_domain(domain):
+    mail_exchangers = DNS.mxlookup(domain)
+
+    def is_google_mx(mx):
+        mx = mx.strip().lower()
+        return mx.endswith('google.com') or mx.endswith('googlemail.com')
+    return any([is_google_mx(mx) for _, mx in mail_exchangers])
 
 
 class CreateUser(actions.Action):
@@ -551,12 +562,7 @@ class GetAuthenticationInstructions(actions.Action):
 
     def _is_google_domain(self):
         domain = self.request.email.split('@', 1)[1]
-        mail_exchangers = DNS.mxlookup(domain)
-
-        def is_google_mx(mx):
-            mx = mx.strip().lower()
-            return mx.endswith('google.com') or mx.endswith('googlemail.com')
-        return any([is_google_mx(mx) for _, mx in mail_exchangers])
+        return is_google_domain(domain)
 
     def _should_force_internal_authentication(self):
         return self.request.email in settings.USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION
