@@ -69,6 +69,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
         for category, values in results_by_category.iteritems():
             container = self.response.results.add()
             container_key = category_to_container_key[category]
+            container.category = category
             for result in values:
                 result_container = getattr(container, container_key).add()
                 self._copy_meta_to_container(result.content_type, result_container, result.meta)
