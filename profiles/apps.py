@@ -26,7 +26,16 @@ class AppConfig(BaseAppConfig):
             Profile,
             ProfileSearchAdapter,
             fields=('title', 'email', 'first_name', 'last_name', 'nickname'),
-            store=('title', 'email', 'first_name', 'last_name', 'nickname', 'email', 'image_url'),
+            store=(
+                'title',
+                'email',
+                'first_name',
+                'last_name',
+                'nickname',
+                'email',
+                'image_url',
+                'full_name',
+            ),
         )
 
         Tag = self.get_model('Tag')
