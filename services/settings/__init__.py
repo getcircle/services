@@ -49,6 +49,7 @@ INSTALLED_APPS = (
     'corsheaders',
     'rest_framework',
     'timezone_field',
+    'watson',
 
     'services',
 
@@ -65,6 +66,7 @@ INSTALLED_APPS = (
     'organizations',
     'profiles',
     'resumes',
+    'search',
     'sync',
     'users',
 )
@@ -118,6 +120,7 @@ LOCALIZED_SERVICES = [
     'organizations.server.Server',
     'profiles.server.Server',
     'resumes.server.Server',
+    'search.server.Server',
     'sync.server.Server',
     'users.server.Server',
 ]
