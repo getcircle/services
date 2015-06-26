@@ -40,6 +40,8 @@ class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
 
 class GoogleGroup(models.UUIDModel, models.TimestampableModel):
 
+    model_to_protobuf_mapping = {'description': 'group_description'}
+
     bulk_update_manager = BulkUpdateManager()
 
     provider_uid = models.CharField(max_length=255)
