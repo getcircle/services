@@ -8,7 +8,7 @@ class GroupSearchAdapter(watson.SearchAdapter):
         return obj.name
 
     def get_description(self, obj):
-        return obj.description
+        return obj.description or ''
 
 
 class AppConfig(DjangoAppConfig):
