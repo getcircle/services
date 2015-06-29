@@ -55,6 +55,8 @@ class Provider(object):
         platform = None
         if device.provider == user_containers.DeviceV1.APPLE:
             platform = notification_containers.NotificationTokenV1.APNS
+        elif device.provider == user_containers.DeviceV1.GOOGLE:
+            platform = notification_containers.NotificationTokenV1.GCM
         else:
             raise exceptions.UnsupportedProvider(device.provider)
         return platform

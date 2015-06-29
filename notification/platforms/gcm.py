@@ -11,18 +11,16 @@ class Platform(BasePlatform):
         # required fields. Potentially a class that has "validate" and
         # "construct_message"?
         return {
-            'aps': {
-                'alert': {
+            'GCM': {
+                'data': {
                     'title': 'Group Membership Request',
                     'body': '%s requested to join group %s' % (
                         ' '.join([profile.first_name, profile.last_name]).strip(),
                         self._get_group_display_name(group),
                     ),
+                    'request_id': notification.request_id,
                 },
-                'sound': 'default',
-                'category': 'GROUP_REQUEST',
             },
-            'request_id': notification.request_id,
         }
 
     def group_membership_request_response_message(self, to_profile_id, notification, **kwargs):
@@ -33,8 +31,8 @@ class Platform(BasePlatform):
         else:
             action = 'denied'
         return {
-            'aps': {
-                'alert': {
+            'GCM': {
+                'data': {
                     'title': 'Group Membership Request Response',
                     'body': '%s %s your request to join %s' % (
                         ' '.join([profile.first_name, profile.last_name]).strip(),
@@ -42,6 +40,5 @@ class Platform(BasePlatform):
                         self._get_group_display_name(group),
                     ),
                 },
-                'sound': 'default',
             },
         }

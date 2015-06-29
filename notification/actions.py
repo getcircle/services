@@ -164,11 +164,22 @@ class SendNotification(actions.Action):
             provider_platform = notification_token.provider_platform
             if provider_platform == notification_containers.NotificationTokenV1.APNS:
                 platform = platforms.APNS(service_token=self.token)
-                message = platform.construct_message(
-                    to_profile_id,
-                    self.request.notification,
+            elif provider_platform == notification_containers.NotificationTokenV1.GCM:
+                platform = platforms.GCM(service_token=self.token)
+            else:
+                raise self.ActionError(
+                    'UNSUPPORTED_PLATFORM',
+                    (
+                        'UNSUPPORTED_PLATFORM',
+                        'Unsupported notification platform: %s' % (provider_platform,),
+                    ),
                 )
-                provider.publish_notification(message, notification_token.provider_token)
+
+            message = platform.construct_message(
+                to_profile_id,
+                self.request.notification,
+            )
+            provider.publish_notification(message, notification_token.provider_token)
 
     def run(self, *args, **kwargs):
         if self.request.to_profile_id:
