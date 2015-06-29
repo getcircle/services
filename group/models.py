@@ -40,7 +40,14 @@ class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
 
 class GoogleGroup(models.UUIDModel, models.TimestampableModel):
 
-    model_to_protobuf_mapping = {'description': 'group_description'}
+    model_to_protobuf_mapping = {
+        'description': 'group_description',
+        'direct_members_count': 'members_count',
+    }
+    as_dict_value_transforms = {
+        'aliases': lambda x: [] if not x else x,
+        'direct_members_count': int,
+    }
 
     bulk_update_manager = BulkUpdateManager()
 
