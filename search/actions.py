@@ -1,5 +1,8 @@
 from base64 import b64decode
 
+from django.utils.module_loading import import_string
+from protobufs.services.group import containers_pb2 as group_containers
+from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import search_pb2
 from service import actions
@@ -23,48 +26,86 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
     def pre_run(self, *args, **kwargs):
         super(Search, self).pre_run(*args, **kwargs)
         self.organization_id = self.parsed_token.organization_id
+        self._container_cache = {}
 
-    def run(self, *args, **kwargs):
-        results = watson.search(
-            self.request.query,
-            models=(
+    def _get_search_kwargs(self):
+        kwargs = {}
+        if not self.request.HasField('category'):
+            kwargs['models'] = (
                 Profile.objects.filter(organization_id=self.organization_id),
                 Location.objects.filter(organization_id=self.organization_id),
                 Team.objects.filter(organization_id=self.organization_id),
                 Tag.objects.filter(organization_id=self.organization_id),
-                GoogleGroup.objects.filter(organization_id=self.organization_id),
-            ),
-        ).select_related('content_type')
+            )
+        else:
+            category = self.request.category
+            category_queryset = None
+            if category == search_pb2.PROFILES:
+                category_queryset = Profile.objects.filter(organization_id=self.organization_id)
+            elif category == search_pb2.TEAMS:
+                category_queryset = Team.objects.filter(organization_id=self.organization_id)
+            elif category == search_pb2.LOCATIONS:
+                category_queryset = Location.objects.filter(organization_id=self.organization_id)
+            elif category == search_pb2.SKILLS:
+                category_queryset = Tag.objects.filter(
+                    organization_id=self.organization_id,
+                    type=profile_containers.TagV1.SKILL,
+                )
+            elif category == search_pb2.INTERESTS:
+                category_queryset = Tag.objects.filter(
+                    organization_id=self.organization_id,
+                    type=profile_containers.TagV1.INTEREST,
+                )
+            elif category == search_pb2.GROUPS:
+                category_queryset = GoogleGroup.objects.filter(
+                    organization_id=self.organization_id,
+                )
+            else:
+                raise self.ActionFieldError('category')
+            kwargs['models'] = (category_queryset,)
+        return kwargs
+
+    def _get_container(self, result):
+        container_path = result.meta['protobuf']
+        if container_path not in self._container_cache:
+            self._container_cache[container_path] = import_string(container_path)
+        return self._container_cache[container_path]
+
+    def run(self, *args, **kwargs):
+        results = watson.search(
+            self.request.query,
+            **self._get_search_kwargs()
+        )
 
         category_to_container_key = {}
         results_by_category = {}
         for result in results:
-            if result.content_type.model == 'profile':
+            container = self._get_container(result)
+            value = container.FromString(b64decode(result.meta['data']))
+            if container is profile_containers.ProfileV1:
                 category = search_pb2.PROFILES
                 container_key = 'profiles'
-            elif result.content_type.model == 'team':
+            elif container is organization_containers.TeamV1:
                 category = search_pb2.TEAMS
                 container_key = 'teams'
-            elif result.content_type.model == 'location':
+            elif container is organization_containers.LocationV1:
                 category = search_pb2.LOCATIONS
                 container_key = 'locations'
-            elif result.content_type.model == 'tag':
+            elif container is profile_containers.TagV1:
                 container_key = 'tags'
-                if result.meta['type'] == profile_containers.TagV1.SKILL:
+                if container.tag_type == profile_containers.TagV1.SKILL:
                     category = search_pb2.SKILLS
                 else:
                     category = search_pb2.INTERESTS
-            elif result.content_type.model == 'googlegroup':
+            elif container is group_containers.GroupV1:
                 category = search_pb2.GROUPS
                 container_key = 'groups'
 
-            results_by_category.setdefault(category, []).append(result)
+            results_by_category.setdefault(category, []).append(value)
             category_to_container_key.setdefault(category, container_key)
 
         for category, values in results_by_category.iteritems():
             container = self.response.results.add()
             container_key = category_to_container_key[category]
             container.category = category
-            for result in values:
-                result_container = getattr(container, container_key).add()
-                result_container.MergeFromString(b64decode(result.meta['data']))
+            getattr(container, container_key).extend(values)
