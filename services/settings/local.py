@@ -56,4 +56,5 @@ SHELL_PLUS_POST_IMPORTS = (
     'service.control',
     ('services.token', 'make_admin_token'),
     ('services.bootstrap', 'Bootstrap'),
+    ('services.test.utils', 'setup_shell'),
 )
