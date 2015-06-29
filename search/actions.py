@@ -59,7 +59,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                     category = search_pb2.SKILLS
                 else:
                     category = search_pb2.INTERESTS
-            elif result.content_type.model == 'group':
+            elif result.content_type.model == 'googlegroup':
                 category = search_pb2.GROUPS
                 container_key = 'groups'
 
