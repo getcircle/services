@@ -1,3 +1,5 @@
+from base64 import b64decode
+
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import search_pb2
 from service import actions
@@ -17,13 +19,6 @@ from profiles.models import (
 
 
 class Search(mixins.PreRunParseTokenMixin, actions.Action):
-
-    def _copy_meta_to_container(self, content_type, container, meta):
-        for key, value in meta.iteritems():
-            mapping = content_type.model_class().model_to_protobuf_mapping
-            key = mapping and mapping.get(key, key) or key
-            if value is not None:
-                setattr(container, key, value)
 
     def pre_run(self, *args, **kwargs):
         super(Search, self).pre_run(*args, **kwargs)
@@ -72,4 +67,4 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
             container.category = category
             for result in values:
                 result_container = getattr(container, container_key).add()
-                self._copy_meta_to_container(result.content_type, result_container, result.meta)
+                result_container.MergeFromString(b64decode(result.meta['data']))

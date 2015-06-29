@@ -57,6 +57,7 @@ class GoogleGroup(models.UUIDModel, models.TimestampableModel):
     organization_id = models.UUIDField()
 
     class Meta:
+        protobuf = group_containers.GroupV1
         index_together = ('last_sync_id', 'organization_id')
         unique_together = ('provider_uid', 'organization_id')
 

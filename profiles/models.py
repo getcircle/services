@@ -19,6 +19,7 @@ class Tag(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('organization_id', 'name', 'type')
+        protobuf = profile_containers.TagV1
 
 
 class Profile(models.UUIDModel, models.TimestampableModel):

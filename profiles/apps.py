@@ -1,8 +1,10 @@
 from django.apps import AppConfig as BaseAppConfig
 import watson
 
+from services.search import SearchAdapter
 
-class ProfileSearchAdapter(watson.SearchAdapter):
+
+class ProfileSearchAdapter(SearchAdapter):
 
     def get_title(self, obj):
         return ' '.join([obj.first_name, obj.last_name])
@@ -11,7 +13,7 @@ class ProfileSearchAdapter(watson.SearchAdapter):
         return obj.title
 
 
-class TagSearchAdapter(watson.SearchAdapter):
+class TagSearchAdapter(SearchAdapter):
 
     def get_title(self, obj):
         return obj.name
@@ -26,17 +28,7 @@ class AppConfig(BaseAppConfig):
             Profile,
             ProfileSearchAdapter,
             fields=('title', 'email', 'first_name', 'last_name', 'nickname'),
-            store=(
-                'title',
-                'email',
-                'first_name',
-                'last_name',
-                'nickname',
-                'email',
-                'image_url',
-                'full_name',
-            ),
         )
 
         Tag = self.get_model('Tag')
-        watson.register(Tag, TagSearchAdapter, fields=('name', 'type'), store=('name', 'type'))
+        watson.register(Tag, TagSearchAdapter, fields=('name', 'type'))
