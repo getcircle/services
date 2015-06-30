@@ -6,6 +6,7 @@ from protobufs.services.organization import containers_pb2 as organization_conta
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import search_pb2
 from service import actions
+import service.control
 import watson
 
 from services import mixins
@@ -27,6 +28,20 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
         super(Search, self).pre_run(*args, **kwargs)
         self.organization_id = self.parsed_token.organization_id
         self._container_cache = {}
+
+    def _get_group_category_queryset(self):
+        try:
+            groups = service.control.get_object(
+                service='group',
+                action='get_groups',
+                client_kwargs={'token': self.token},
+                return_object='groups',
+                provider=group_containers.GOOGLE,
+            )
+        except service.control.CallActionError:
+            return GoogleGroup.objects.none()
+
+        return GoogleGroup.objects.filter(pk__in=[group.id for group in groups])
 
     def _get_search_kwargs(self):
         kwargs = {}
@@ -57,9 +72,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                     type=profile_containers.TagV1.INTEREST,
                 )
             elif category == search_pb2.GROUPS:
-                category_queryset = GoogleGroup.objects.filter(
-                    organization_id=self.organization_id,
-                )
+                category_queryset = self._get_group_category_queryset()
             else:
                 raise self.ActionFieldError('category')
             kwargs['models'] = (category_queryset,)
