@@ -51,6 +51,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 Location.objects.filter(organization_id=self.organization_id),
                 Team.objects.filter(organization_id=self.organization_id),
                 Tag.objects.filter(organization_id=self.organization_id),
+                self._get_group_category_queryset(),
             )
         else:
             category = self.request.category
