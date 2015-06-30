@@ -18,7 +18,10 @@ class TestProfiles(TestCase):
 
     def setUp(self):
         self.profile = factories.ProfileFactory.create_protobuf()
-        token = mocks.mock_token(profile_id=self.profile.id)
+        token = mocks.mock_token(
+            profile_id=self.profile.id,
+            organization_id=self.profile.organization_id,
+        )
         self.client = service.control.Client('profile', token=token)
 
     def test_create_profile_invalid_organization_id(self):
@@ -79,41 +82,26 @@ class TestProfiles(TestCase):
                 organization_id='invalid',
             )
 
-    def test_get_profiles_with_organization_id(self):
-        profile = factories.ProfileFactory.create_protobuf()
-        response = self.client.call_action(
-            'get_profiles',
-            organization_id=profile.organization_id,
-        )
+    def test_get_profiles_organization_id_by_default(self):
+        response = self.client.call_action('get_profiles')
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
-        self.verify_containers(profile, response.result.profiles[0])
+        self.verify_containers(self.profile, response.result.profiles[0])
 
     def test_get_profiles_invalid_tag_id(self):
         with self.assertFieldError('tag_id'):
             self.client.call_action('get_profiles', tag_id='invalid')
 
-    def test_get_profiles_tags_organization_id_required(self):
-        skill = factories.TagFactory.create(type=profile_containers.TagV1.SKILL)
-        factories.ProfileFactory.create_batch(size=2, tags=[skill])
-        with self.assertFieldError('organization_id', 'REQUIRED'):
-            self.client.call_action(
-                'get_profiles',
-                tag_id=str(skill.id),
-            )
-
     def test_get_profiles_skills(self):
-        organization_id = fuzzy.FuzzyUUID().fuzz()
-        skill = factories.TagFactory.create(organization_id=organization_id)
+        skill = factories.TagFactory.create(organization_id=self.profile.organization_id)
         factories.ProfileFactory.create_batch(
             size=4,
             tags=[skill],
-            organization_id=organization_id,
+            organization_id=self.profile.organization_id,
         )
         response = self.client.call_action(
             'get_profiles',
             tag_id=str(skill.id),
-            organization_id=organization_id,
         )
         self.assertEqual(len(response.result.profiles), 4)
 

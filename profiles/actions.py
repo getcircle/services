@@ -16,6 +16,7 @@ from service import (
     validators,
 )
 
+from services.mixins import PreRunParseTokenMixin
 from services.token import parse_token
 from services.utils import matching_uuids
 
@@ -197,7 +198,7 @@ class GetProfile(actions.Action):
         profile.to_protobuf(self.response.profile)
 
 
-class GetProfiles(actions.Action):
+class GetProfiles(PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
         'team_id': [validators.is_uuid4],
@@ -208,19 +209,12 @@ class GetProfiles(actions.Action):
         'location_id': [validators.is_uuid4],
     }
 
-    def validate(self, *args, **kwargs):
-        super(GetProfiles, self).validate(*args, **kwargs)
-        if not self.is_error():
-            if self.request.HasField('tag_id') and not self.request.HasField('organization_id'):
-                raise self.ActionFieldError('organization_id', 'REQUIRED')
-
     def _populate_profiles_with_basic_keys(self):
+        # XXX should add organization_id as a filter to all of these statements
         parameters = {}
         if self.request.tag_id:
-            parameters['organization_id'] = self.request.organization_id
+            parameters['organization_id'] = self.parsed_token.organization_id
             parameters['tags__id'] = self.request.tag_id
-        elif self.request.organization_id:
-            parameters['organization_id'] = self.request.organization_id
         elif self.request.address_id:
             parameters['address_id'] = self.request.address_id
         elif self.request.ids:
@@ -230,7 +224,7 @@ class GetProfiles(actions.Action):
         elif self.request.emails:
             parameters['email__in'] = list(self.request.emails)
         else:
-            raise self.ActionError('missing parameters')
+            parameters['organization_id'] = self.parsed_token.organization_id
 
         profiles = models.Profile.objects.filter(**parameters).order_by(
             'first_name',
