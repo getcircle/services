@@ -1246,6 +1246,8 @@ class TestGoogleGetGroups(BaseGoogleCase):
                         profile_id__in=[profile.id for profile in profiles],
                         group_id=test_case['setup']['group']['id'],
                     )
+                    group = models.GoogleGroup.objects.get(pk=test_case['setup']['group']['id'])
+                    self.assertEqual(group.direct_members_count, len(expected))
                     self.assertEqual(len(members), len(expected))
                 mock_add_to_group.reset_mock()
             self._execute_test_cases('add_profiles_to_group', test_cases, test_func=test)
@@ -1547,7 +1549,7 @@ class TestGoogleGroups(BaseGoogleCase):
             1,
         )
 
-    def test_join_group_only_on_pending_request_per_group(self, *patches):
+    def test_join_group_only_one_pending_request_per_group(self, *patches):
         group = model_factories.GoogleGroupFactory.create(
             settings={'whoCanJoin': 'CAN_REQUEST_TO_JOIN'},
         )

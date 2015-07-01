@@ -234,6 +234,11 @@ class Provider(base.BaseGroupsProvider):
                 # XXX log an error here #sentry
                 continue
             new_members.append(self.google_group_member_to_container(member, profile))
+
+        # Use "provider_members" to try and stay as closely in sync with google groups
+        group.direct_members_count = F('direct_members_count') + len(provider_members)
+        group.save()
+
         return new_members
 
     def can_join_or_can_request(self, group):
