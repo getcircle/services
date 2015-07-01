@@ -45,7 +45,7 @@ class Sync(object):
         self._clear_cacheops()
         end = time.time()
         self.logger.info(
-            'finished groups sync: %s [took %s seconds]',
+            'finished groups sync: %s [took %s minutes]',
             self.sync_id,
             (end - start) / 60,
         )
