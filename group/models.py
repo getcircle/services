@@ -56,7 +56,7 @@ class GoogleGroup(models.UUIDModel, models.TimestampableModel):
     display_name = models.CharField(max_length=255, null=True)
     name = models.CharField(max_length=255)
     description = models.TextField(null=True)
-    direct_members_count = models.IntegerField(default=0)
+    direct_members_count = models.PositiveIntegerField(default=0)
     # XXX should potentially support searching by alias
     aliases = ArrayField(models.CharField(max_length=255), null=True)
     settings = HStoreField(null=True)
