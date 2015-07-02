@@ -11,15 +11,13 @@ class Platform(BasePlatform):
         # required fields. Potentially a class that has "validate" and
         # "construct_message"?
         return {
-            'GCM': {
-                'data': {
-                    'title': 'Group Membership Request',
-                    'body': '%s requested to join group %s' % (
-                        ' '.join([profile.first_name, profile.last_name]).strip(),
-                        self._get_group_display_name(group),
-                    ),
-                    'request_id': notification.request_id,
-                },
+            'data': {
+                'title': 'Group Membership Request',
+                'body': '%s requested to join group %s' % (
+                    ' '.join([profile.first_name, profile.last_name]).strip(),
+                    self._get_group_display_name(group),
+                ),
+                'request_id': notification.request_id,
             },
         }
 
@@ -31,14 +29,12 @@ class Platform(BasePlatform):
         else:
             action = 'denied'
         return {
-            'GCM': {
-                'data': {
-                    'title': 'Group Membership Request Response',
-                    'body': '%s %s your request to join %s' % (
-                        ' '.join([profile.first_name, profile.last_name]).strip(),
-                        action,
-                        self._get_group_display_name(group),
-                    ),
-                },
+            'data': {
+                'title': 'Group Membership Request Response',
+                'body': '%s %s your request to join %s' % (
+                    ' '.join([profile.first_name, profile.last_name]).strip(),
+                    action,
+                    self._get_group_display_name(group),
+                ),
             },
         }
