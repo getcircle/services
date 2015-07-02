@@ -107,7 +107,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 container_key = 'locations'
             elif container is profile_containers.TagV1:
                 container_key = 'tags'
-                if container.tag_type == profile_containers.TagV1.SKILL:
+                if value.tag_type == profile_containers.TagV1.SKILL:
                     category = search_pb2.SKILLS
                 else:
                     category = search_pb2.INTERESTS
