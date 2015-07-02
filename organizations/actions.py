@@ -690,10 +690,22 @@ class EnableIntegration(PreRunParseTokenMixin, actions.Action):
             'https://www.googleapis.com/auth/apps.groups.settings',
         )
 
+    def _read_only_google_group_scopes(self):
+        return (
+            'https://www.googleapis.com/auth/admin.directory.user.readonly',
+            'https://www.googleapis.com/auth/admin.directory.group.readonly',
+            'https://www.googleapis.com/auth/apps.groups.settings',
+        )
+
     def _get_details_object(self):
         details = self.request.integration.google_groups
         if not len(details.scopes):
-            details.scopes.extend(self._default_google_group_scopes())
+            if details.read_only:
+                scopes = self._read_only_google_group_scopes()
+            else:
+                scopes = self._default_google_group_scopes()
+
+            details.scopes.extend(scopes)
         return details
 
     def run(self, *args, **kwargs):

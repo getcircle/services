@@ -22,6 +22,11 @@ class Command(BaseCommand):
             type=str,
             help='Google Admin email account for the organization',
         )
+        parser.add_argument(
+            '--read-only',
+            action='store_true',
+            help='Specify that we only have read access to groups',
+        )
 
     def handle(self, *args, **options):
         organization = organization_models.Organization.objects.get(
@@ -31,6 +36,9 @@ class Command(BaseCommand):
         client = service.control.Client('organization', token=token)
         response = client.call_action('enable_integration', integration={
             'integration_type': integration_pb2.GOOGLE_GROUPS,
-            'google_groups': {'admin_email': options['admin_email']},
+            'google_groups': {
+                'admin_email': options['admin_email'],
+                'read_only': options['read_only'],
+            },
         })
         print protobuf_to_dict(response.result.integration)
