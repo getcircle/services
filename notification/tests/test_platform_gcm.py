@@ -50,9 +50,9 @@ class TestPlatformAPNS(TestCase):
                 notification=notification,
             )
         message = json.loads(payload)
-        self.assertEqual(message['GCM']['data']['title'], 'Group Membership Request')
-        self.assertEqual(message['GCM']['data']['request_id'], group_membership_request.request_id)
-        self.assertIn('requested to join group', message['GCM']['data']['body'])
+        self.assertEqual(message['data']['title'], 'Group Membership Request')
+        self.assertEqual(message['data']['request_id'], group_membership_request.request_id)
+        self.assertIn('requested to join group', message['data']['body'])
 
     def test_gcm_construct_message_group_membership_request_response_notification(self):
         manager_profile = mocks.mock_profile()
@@ -88,8 +88,8 @@ class TestPlatformAPNS(TestCase):
                 notification=notification,
             )
         message = json.loads(payload)
-        self.assertEqual(message['GCM']['data']['title'], 'Group Membership Request Response')
-        self.assertIn('denied', message['GCM']['data']['body'])
+        self.assertEqual(message['data']['title'], 'Group Membership Request Response')
+        self.assertIn('denied', message['data']['body'])
 
     def test_gcm_construct_message_group_membership_request_response_notification_approved(self):
         manager_profile = mocks.mock_profile()
@@ -125,5 +125,5 @@ class TestPlatformAPNS(TestCase):
                 notification=notification,
             )
         message = json.loads(payload)
-        self.assertEqual(message['GCM']['data']['title'], 'Group Membership Request Response')
-        self.assertIn('approved', message['GCM']['data']['body'])
+        self.assertEqual(message['data']['title'], 'Group Membership Request Response')
+        self.assertIn('approved', message['data']['body'])
