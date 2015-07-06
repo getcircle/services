@@ -75,10 +75,9 @@ class Provider(base.BaseProvider):
         }
         # NB: For native app SDKs, Google requires a redirect_uri of an empty string
         if is_sdk:
-            if client_type == token_pb2.WEB:
-                parameters['redirect_uri'] = 'postmessage'
-            else:
-                parameters['redirect_uri'] = ''
+            parameters['redirect_uri'] = ''
+        elif client_type == token_pb2.WEB:
+            parameters['redirect_uri'] = 'postmessage'
         else:
             parameters['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
 
@@ -107,7 +106,10 @@ class Provider(base.BaseProvider):
             return request.oauth_sdk_details.code
 
     def _get_identity_and_credentials_oauth2(self, request):
-        credentials = self._get_credentials_from_code(self._get_authorization_code(request))
+        credentials = self._get_credentials_from_code(
+            self._get_authorization_code(request),
+            client_type=request.client_type,
+        )
         identity, new = self.get_identity(credentials.id_token['sub'])
         self._update_identity_with_credentials(identity, credentials)
         return identity, credentials
@@ -178,6 +180,7 @@ class Provider(base.BaseProvider):
                         authorization_code,
                         identity=identity,
                         is_sdk=is_sdk,
+                        client_type=request.client_type,
                     )
 
                 self._update_identity_access_token(
