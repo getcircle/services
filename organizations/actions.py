@@ -94,6 +94,7 @@ class GetOrganization(actions.Action):
         'organization_id': [validators.is_uuid4],
     }
 
+    # XXX this should be driven by the token
     field_validators = {
         'organization_id': {
             valid_organization: 'DOES_NOT_EXIST',
