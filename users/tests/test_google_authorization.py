@@ -111,9 +111,8 @@ class TestGoogleAuthorization(TestCase):
         response = self.client.call_action(
             'complete_authorization',
             provider=user_containers.IdentityV1.GOOGLE,
-            oauth_sdk_details={
+            oauth2_details={
                 'code': 'some-code',
-                'id_token': 'id-token',
             },
             client_type=token_pb2.WEB,
         )

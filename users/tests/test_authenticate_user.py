@@ -243,7 +243,6 @@ class TestUsersAuthentication(TestCase):
             backend=authenticate_user_pb2.RequestV1.GOOGLE,
             credentials={
                 'key': 'some-code',
-                'secret': 'some-id-token',
             },
             client_type=token_pb2.WEB,
         )
