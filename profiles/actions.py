@@ -489,12 +489,16 @@ class GetTags(actions.Action):
     type_validators = {
         'organization_id': [validators.is_uuid4],
         'profile_id': [validators.is_uuid4],
+        'ids': [validators.is_uuid4_list],
     }
 
     def run(self, *args, **kwargs):
         parameters = {}
         if self.request.HasField('organization_id'):
             parameters['organization_id'] = self.request.organization_id
+        elif self.request.ids:
+            # XXX add organization filter
+            parameters['id__in'] = self.request.ids
         else:
             parameters['profile'] = self.request.profile_id
 

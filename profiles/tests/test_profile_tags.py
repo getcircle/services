@@ -230,3 +230,12 @@ class TestProfileTags(TestCase):
     def test_remove_tags_tags_required(self):
         with self.assertFieldError('tags', 'MISSING'):
             self.client.call_action('remove_tags', profile_id=fuzzy.FuzzyUUID().fuzz())
+
+    def test_get_tags_by_ids_invalid(self):
+        with self.assertFieldError('ids'):
+            self.client.call_action('get_tags', ids=['invalid'])
+
+    def test_get_tags_By_ids(self):
+        tags = factories.TagFactory.create_batch(size=4, organization_id=self.organization.id)
+        response = self.client.call_action('get_tags', ids=[str(tag.id) for tag in tags[:2]])
+        self.assertEqual(len(response.result.tags), 2)
