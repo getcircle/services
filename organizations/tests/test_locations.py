@@ -12,7 +12,11 @@ class OrganizationLocationTests(TestCase):
 
     def setUp(self):
         super(OrganizationLocationTests, self).setUp()
-        self.client = service.control.Client('organization', token=mocks.mock_token())
+        self.organization = factories.OrganizationFactory.create()
+        self.client = service.control.Client(
+            'organization',
+            token=mocks.mock_token(organization_id=str(self.organization.id)),
+        )
 
     def _mock_get_profile_stats(self, mock, location_ids):
         service = 'profile'
@@ -126,19 +130,21 @@ class OrganizationLocationTests(TestCase):
         )
         self.verify_containers(location, response.result.location)
 
-    def test_get_locations_invalid_organization_id(self):
-        with self.assertFieldError('organization_id'):
-            self.client.call_action('get_locations', organization_id='invalid')
+    def test_get_locations_no_locations(self):
+        response = self.client.call_action('get_locations')
+        self.assertEqual(len(response.result.locations), 0)
 
     def test_get_locations(self):
-        organization = factories.OrganizationFactory.create()
-        locations = factories.LocationFactory.create_batch(size=3, organization=organization)
+        locations = factories.LocationFactory.create_batch(
+            size=3,
+            organization=self.organization,
+        )
         factories.LocationFactory.create_batch(size=3)
         with self.mock_transport(self.client) as mock:
             self._mock_get_profile_stats(mock, [str(location.id) for location in locations])
             response = self.client.call_action(
                 'get_locations',
-                organization_id=str(organization.id),
+                organization_id=str(self.organization.id),
             )
         self.assertEqual(len(locations), len(response.result.locations))
         for location in response.result.locations:

@@ -601,16 +601,15 @@ class GetLocation(BaseLocationAction):
         )
 
 
-class GetLocations(BaseLocationAction):
-
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-    }
+class GetLocations(mixins.PreRunParseTokenMixin, BaseLocationAction):
 
     def run(self, *args, **kwargs):
         locations = models.Location.objects.select_related('address').filter(
-            organization_id=self.request.organization_id,
+            organization_id=self.parsed_token.organization_id,
         )
+        if not locations:
+            return
+
         profile_stats = self._fetch_profile_stats(locations)
         for location in locations:
             container = self.response.locations.add()
