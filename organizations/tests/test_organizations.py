@@ -471,30 +471,22 @@ class TestOrganizations(TestCase):
         )
         self.verify_containers(expected, response.result.organization)
 
-    def test_get_teams_invalid_organization_id(self):
-        with self.assertFieldError('organization_id'):
-            self.client.call_action('get_teams', organization_id='invalid')
-
-    def test_get_teams_does_not_exist(self):
-        with self.assertFieldError('organization_id', 'DOES_NOT_EXIST'):
-            self.client.call_action('get_teams', organization_id=fuzzy.FuzzyUUID().fuzz())
-
     def test_get_teams(self):
-        organization = self._create_organization()
-        profile = mocks.mock_profile(organization_id=organization.id, is_admin=True)
+        profile = mocks.mock_profile(organization_id=str(self.organization.id), is_admin=True)
         teams = self._create_team_tree(
-            organization_id=organization.id,
+            organization_id=str(self.organization.id),
             levels=4,
         )
 
-        self.client.token = mocks.mock_token(profile_id=profile.id)
+        self.client.token = mocks.mock_token(
+            profile_id=profile.id,
+            organization_id=str(self.organization.id),
+        )
         with self.mock_transport() as mock:
             self._mock_get_profile_stats(mock, [team.id for team in teams])
             self._mock_get_requester_profile(mock, profile=profile)
-            response = self.client.call_action(
-                'get_teams',
-                organization_id=organization.id,
-            )
+            response = self.client.call_action('get_teams')
+
         self.assertTrue(response.success)
         self.assertTrue(len(response.result.teams), 5)
         for team in response.result.teams:
@@ -765,6 +757,34 @@ class TestOrganizations(TestCase):
 
         response = self.client.call_action('get_top_level_team')
         self.verify_containers(parent_team, response.result.team)
+
+    def test_get_teams_top_level_only(self):
+        profile = mocks.mock_profile(organization_id=str(self.organization.id), is_admin=True)
+        parent_team = self._create_team(organization_id=str(self.organization.id))
+
+        teams = []
+        # create children teams
+        for _ in range(2):
+            child_team = self._create_team(
+                organization_id=parent_team.organization_id,
+                child_of=parent_team.id,
+            )
+            teams.append(child_team)
+
+        # create a grandchild team
+        self._create_team(organization_id=child_team.organization_id, child_of=child_team.id)
+
+        self.client.token = mocks.mock_token(
+            profile_id=profile.id,
+            organization_id=str(self.organization.id),
+        )
+        with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [team.id for team in teams])
+            self._mock_get_requester_profile(mock, profile=profile)
+            response = self.client.call_action('get_teams', top_level_only=True)
+        self.assertEqual(len(response.result.teams), 3)
+        self.verify_containers(parent_team, response.result.teams[0])
 
     def test_get_team_include_permissions_not_admin(self):
         team = factories.TeamFactory.create()

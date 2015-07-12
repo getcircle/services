@@ -351,19 +351,12 @@ class GetTeamDescendants(TeamPermissionsMixin, actions.Action):
 class GetTeams(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
 
     type_validators = {
-        'organization_id': [validators.is_uuid4],
         'location_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'organization_id': {
-            valid_organization: 'DOES_NOT_EXIST',
-        }
     }
 
     def _get_teams_by_organization_id(self):
         return models.Team.objects.filter(
-            organization_id=self.request.organization_id,
+            organization_id=self.parsed_token.organization_id,
         )
 
     def _get_teams_by_location_id(self):
@@ -374,9 +367,27 @@ class GetTeams(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
             distinct=True,
             attributes=['team_id'],
         )
+        # XXX add organization_id filter
         return models.Team.objects.filter(
             id__in=[attribute.value for attribute in response.result.attributes],
         )
+
+    def _get_top_level_teams(self):
+        client = service.control.Client('organization', token=self.token)
+        team = client.get_object('get_top_level_team', 'team')
+        descendants = client.get_object(
+            'get_team_descendants',
+            'descendants',
+            team_ids=[team.id],
+            depth=1,
+            attributes=['id'],
+        )
+        team_ids = [team.id]
+        team_ids.extend([t.id for t in descendants[0].teams])
+        return models.Team.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            id__in=team_ids,
+        ).order_by('path')
 
     def _get_paths_in_bulk(self, teams):
         path_ids = set()
@@ -391,10 +402,12 @@ class GetTeams(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
         return dict((item['id'].hex, item) for item in path_values)
 
     def run(self, *args, **kwargs):
-        if self.request.organization_id:
-            teams = self._get_teams_by_organization_id()
-        else:
+        if self.request.location_id:
             teams = self._get_teams_by_location_id()
+        elif self.request.top_level_only:
+            teams = self._get_top_level_teams()
+        else:
+            teams = self._get_teams_by_organization_id()
 
         paginator = self.get_paginator(teams)
         page = self.get_page(paginator)
