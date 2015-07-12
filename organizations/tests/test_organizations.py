@@ -19,7 +19,10 @@ class TestOrganizations(TestCase):
         self.profile = mocks.mock_profile(organization_id=str(self.organization.id))
         self.client = service.control.Client(
             'organization',
-            token=mocks.mock_token(profile_id=self.profile.id),
+            token=mocks.mock_token(
+                profile_id=str(self.profile.id),
+                organization_id=str(self.organization.id),
+            ),
         )
         self.organization_name = 'RH Labs Inc.'
         self.organization_domain = 'rhlabs.com'
@@ -747,12 +750,8 @@ class TestOrganizations(TestCase):
         self.assertTrue(response.success)
         self.verify_containers(address, response.result.address)
 
-    def test_get_top_level_team_invalid_organization_id(self):
-        with self.assertFieldError('organization_id'):
-            self.client.call_action('get_top_level_team', organization_id='invalid')
-
     def test_get_top_level_team(self):
-        parent_team = self._create_team()
+        parent_team = self._create_team(organization_id=str(self.organization.id))
 
         # create children teams
         for _ in range(2):
@@ -764,10 +763,7 @@ class TestOrganizations(TestCase):
         # create a grandchild team
         self._create_team(organization_id=child_team.organization_id, child_of=child_team.id)
 
-        response = self.client.call_action(
-            'get_top_level_team',
-            organization_id=parent_team.organization_id,
-        )
+        response = self.client.call_action('get_top_level_team')
         self.verify_containers(parent_team, response.result.team)
 
     def test_get_team_include_permissions_not_admin(self):

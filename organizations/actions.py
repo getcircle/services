@@ -504,15 +504,11 @@ class GetAddresses(actions.Action):
             address.to_protobuf(container)
 
 
-class GetTopLevelTeam(actions.Action):
-
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-    }
+class GetTopLevelTeam(mixins.PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         team = models.Team.objects.filter(
-            organization_id=self.request.organization_id,
+            organization_id=self.parsed_token.organization_id,
         ).order_by('path')[0]
         team.to_protobuf(self.response.team, path=team.get_path())
 
