@@ -122,4 +122,5 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
             container = self.response.results.add()
             container_key = category_to_container_key[category]
             container.category = category
-            getattr(container, container_key).extend(values)
+            # XXX need to have a way of fetching more for the particular cateogry
+            getattr(container, container_key).extend(values[:5])
