@@ -155,7 +155,7 @@ def mock_organization(container=None, **overrides):
     mock_dict = {
         fuzzy.FuzzyUUID: ['id'],
         fuzzy.FuzzyText: ['name'],
-        fuzzy.FuzzyText(prefix='.com'): ['domain'],
+        fuzzy.FuzzyText(suffix='.com'): ['domain'],
     }
     return _mock_container(container, mock_dict, **overrides)
 
