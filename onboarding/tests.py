@@ -4,6 +4,7 @@ import unittest
 from mock import patch
 import service.control
 
+from services.token import make_admin_token
 from services.test import (
     mocks,
     TestCase,
@@ -16,11 +17,8 @@ class TestParser(TestCase):
 
     def setUp(self):
         self.profile = mocks.mock_profile()
-        self.token = mocks.mock_token(profile_id=self.profile.id)
-        self.organization_client = service.control.Client('organization', token=self.token)
-        self.profile_client = service.control.Client('profile', token=self.token)
-
-        response = self.organization_client.call_action(
+        client = service.control.Client('organization', token=make_admin_token())
+        response = client.call_action(
             'create_organization',
             organization={
                 'name': 'RH Labs Inc.',
@@ -29,6 +27,12 @@ class TestParser(TestCase):
         )
         self.assertTrue(response.success)
         self.organization = response.result.organization
+        self.token = mocks.mock_token(
+            profile_id=self.profile.id,
+            organization_id=self.organization.id,
+        )
+        self.profile_client = service.control.Client('profile', token=self.token)
+        self.organization_client = service.control.Client('organization', token=self.token)
 
     def _fixture_path(self, fixture_name):
         return os.path.join(
