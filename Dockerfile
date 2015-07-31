@@ -5,7 +5,7 @@ RUN echo LAST UPDATED 2015-01-28
 # Update packages & Install Dependencies
 RUN apt-get update -y && apt-get install -y python-setuptools git python-dev libpq-dev libffi-dev libssl-dev postgresql-client
 
-# Install pip & curdling
+# Install pip
 RUN easy_install pip
 
 # Install python requirements
