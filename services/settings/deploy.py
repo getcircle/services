@@ -25,7 +25,10 @@ DATABASES = {
 
 # NB: Specify 'cacheops' as an installed app only when we define redis
 # connection settings
-INSTALLED_APPS = INSTALLED_APPS + ('cacheops',)
+INSTALLED_APPS = INSTALLED_APPS + (
+    'cacheops',
+    'raven.contrib.django.raven_compat',
+)
 redis_url = urlparse.urlparse(os.environ['REDIS_URL'])
 CACHEOPS_REDIS = {
     'host': redis_url.hostname,
@@ -61,3 +64,7 @@ AWS_SNS_PLATFORM_APPLICATION_APNS = os.environ.get('AWS_SNS_PLATFORM_APPLICATION
 AWS_SNS_PLATFORM_APPLICATION_GCM = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_GCM')
 
 CORS_ORIGIN_WHITELIST = tuple(os.environ.get('CORS_ORIGIN_WHITELIST', '').split(','))
+
+RAVEN_CONFIG = {
+    'dsn': 'https://e763e34a87194b8c9092e4a567805d47:fc44f10cb9914069a1149662c69080b8@app.getsentry.com/49462',
+}
