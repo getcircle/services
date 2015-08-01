@@ -9,7 +9,6 @@ from django.db.models import (
     Count,
     Q,
 )
-from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 from service import (
     actions,
@@ -17,7 +16,6 @@ from service import (
 )
 
 from services.mixins import PreRunParseTokenMixin
-from services.token import parse_token
 from services.utils import matching_uuids
 
 from . import (
@@ -311,18 +309,6 @@ class GetExtendedProfile(GetProfile):
             user_id = response.result.team.owner_id
         return models.Profile.objects.prefetch_related('contactmethod_set').get(user_id=user_id)
 
-    def _get_tags(self, tag_type):
-        return models.Tag.objects.filter(
-            profile=self.request.profile_id,
-            type=tag_type,
-        )
-
-    def _get_skills(self):
-        return self._get_tags(profile_containers.TagV1.SKILL)
-
-    def _get_interests(self):
-        return self._get_tags(profile_containers.TagV1.INTEREST)
-
     def _fetch_direct_reports(self):
         client = service.control.Client('profile', token=self.token)
         response = client.call_action(
@@ -358,16 +344,6 @@ class GetExtendedProfile(GetProfile):
         manager = self._get_manager(profile, team)
         if manager:
             manager.to_protobuf(self.response.manager)
-
-        skills = self._get_skills()
-        for skill in skills:
-            container = self.response.skills.add()
-            skill.to_protobuf(container)
-
-        interests = self._get_interests()
-        for interest in interests:
-            container = self.response.interests.add()
-            interest.to_protobuf(container)
 
 
 class CreateTags(actions.Action):

@@ -107,12 +107,7 @@ class TestGetExtendedProfile(TestCase):
 
     def test_get_extended_profile(self):
         manager = factories.ProfileFactory.create_protobuf()
-        skills = factories.TagFactory.create_batch(size=2, type=profile_containers.TagV1.SKILL)
-        interests = factories.TagFactory.create_batch(
-            size=2,
-            type=profile_containers.TagV1.INTEREST,
-        )
-        profile = factories.ProfileFactory.create_protobuf(tags=skills + interests)
+        profile = factories.ProfileFactory.create_protobuf()
         location = self._mock_get_location(profile)
         team = self._mock_get_team(profile, owner_id=manager.user_id)
         direct_reports = self._mock_get_direct_reports(profile)
@@ -128,8 +123,6 @@ class TestGetExtendedProfile(TestCase):
         self.verify_containers(location, response.result.location)
         self.verify_containers(team, response.result.team)
         self.verify_containers(profile, response.result.profile)
-        self.assertEqual(len(skills), len(response.result.skills))
-        self.assertEqual(len(interests), len(response.result.interests))
         self.assertEqual(len(direct_reports), len(response.result.direct_reports))
         self.assertEqual(len(self.identities), len(response.result.identities))
 
