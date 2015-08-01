@@ -66,5 +66,5 @@ AWS_SNS_PLATFORM_APPLICATION_GCM = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_
 CORS_ORIGIN_WHITELIST = tuple(os.environ.get('CORS_ORIGIN_WHITELIST', '').split(','))
 
 RAVEN_CONFIG = {
-    'dsn': 'https://e763e34a87194b8c9092e4a567805d47:fc44f10cb9914069a1149662c69080b8@app.getsentry.com/49462',
+    'dsn': os.environ.get('SENTRY_DSN'),
 }
