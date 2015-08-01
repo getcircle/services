@@ -323,18 +323,6 @@ class GetExtendedProfile(GetProfile):
     def _get_interests(self):
         return self._get_tags(profile_containers.TagV1.INTEREST)
 
-    def _fetch_notes(self):
-        # XXX error if we don't have profile_id?
-        token = parse_token(self.token)
-        client = service.control.Client('note', token=self.token)
-        response = client.call_action(
-            'get_notes',
-            for_profile_id=self.request.profile_id,
-            owner_profile_id=token.profile_id,
-        )
-        # XXX error if this doesn't succeed
-        return response.result.notes
-
     def _fetch_direct_reports(self):
         client = service.control.Client('profile', token=self.token)
         response = client.call_action(
@@ -388,11 +376,6 @@ class GetExtendedProfile(GetProfile):
         for interest in interests:
             container = self.response.interests.add()
             interest.to_protobuf(container)
-
-        notes = self._fetch_notes()
-        for note in notes:
-            container = self.response.notes.add()
-            container.CopyFrom(note)
 
 
 class CreateTags(actions.Action):

@@ -7,7 +7,6 @@ from . import fuzzy
 from .. import token
 
 from protobufs.services.group import containers_pb2 as group_containers
-from protobufs.services.note import containers_pb2 as note_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.resume import containers_pb2 as resume_containers
@@ -181,17 +180,6 @@ def mock_tag(container=None, **overrides):
         fuzzy.FuzzyUUID: ['id'],
         fuzzy.FuzzyText: ['name'],
         fuzzy.FuzzyChoice(profile_containers.TagV1.TagTypeV1.values()): ['tag_type'],
-    }
-    return _mock_container(container, mock_dict, **overrides)
-
-
-def mock_note(container=None, **overrides):
-    if container is None:
-        container = note_containers.NoteV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'for_profile_id', 'owner_profile_id'],
-        fuzzy.FuzzyText: ['content'],
     }
     return _mock_container(container, mock_dict, **overrides)
 

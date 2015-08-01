@@ -22,7 +22,6 @@ class GetProfileFeed(mixins.PreRunParseTokenMixin, actions.Action):
         super(GetProfileFeed, self).__init__(*args, **kwargs)
         self.profile_client = service.control.Client('profile', token=self.token)
         self.organization_client = service.control.Client('organization', token=self.token)
-        self.note_client = service.control.Client('note', token=self.token)
 
     def _get_peers_category(self):
         response = self.profile_client.call_action(
@@ -163,40 +162,6 @@ class GetProfileFeed(mixins.PreRunParseTokenMixin, actions.Action):
     def _get_profiles_dict(self, profiles):
         return dict((profile.id, profile) for profile in profiles)
 
-    def _get_recent_notes_category(self, profile):
-        response = self.note_client.call_action(
-            'get_notes',
-            owner_profile_id=profile.id,
-        )
-        if not response.success:
-            raise Exception('failed to fetch notes')
-
-        notes = response.result.notes
-        if not len(notes):
-            return
-
-        response = self.profile_client.call_action(
-            'get_profiles',
-            ids=[note.for_profile_id for note in notes],
-        )
-        if not response.success:
-            raise Exception('failed to fetch profiles for notes')
-
-        profile_id_to_profile = self._get_profiles_dict(response.result.profiles)
-
-        category = self.response.categories.add()
-        category.title = 'Notes'
-        category.content_key = 'changed'
-        category.category_type = feed_containers.CategoryV1.NOTES
-        category.total_count = len(notes)
-        for note in notes:
-            note_container = category.notes.add()
-            note_container.CopyFrom(note)
-
-            profile = profile_id_to_profile[note.for_profile_id]
-            profile_container = category.profiles.add()
-            profile_container.CopyFrom(profile)
-
     def _get_group_membership_requests_category(self):
         client = service.control.Client('group', token=self.token)
         try:
@@ -257,7 +222,6 @@ class GetProfileFeed(mixins.PreRunParseTokenMixin, actions.Action):
 
         profile = response.result.profile
         self._get_group_membership_requests_category()
-        self._get_recent_notes_category(profile)
         self._get_peers_category()
         self._get_direct_reports_category()
         self._get_recent_hires_category(profile)

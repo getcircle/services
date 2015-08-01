@@ -61,27 +61,6 @@ class TestGetExtendedProfile(TestCase):
         )
         return mock_response.team
 
-    def _mock_get_notes(self, for_profile_id, owner_profile_id, count=2, **overrides):
-        service = 'note'
-        action = 'get_notes'
-        mock_response = mock.get_mockable_response(service, action)
-        for _ in range(count):
-            container = mock_response.notes.add()
-            mocks.mock_note(
-                container,
-                for_profile_id=for_profile_id,
-                owner_profile_id=owner_profile_id,
-            )
-
-        mock.instance.register_mock_response(
-            service,
-            action,
-            mock_response,
-            for_profile_id=for_profile_id,
-            owner_profile_id=owner_profile_id,
-        )
-        return mock_response.notes
-
     def _mock_get_direct_reports(self, profile, count=3, **overrides):
         service = 'profile'
         action = 'get_direct_reports'
@@ -158,10 +137,6 @@ class TestGetExtendedProfile(TestCase):
         profile = factories.ProfileFactory.create_protobuf(tags=skills + interests)
         location = self._mock_get_location(profile)
         team = self._mock_get_team(profile, owner_id=manager.user_id)
-        notes = self._mock_get_notes(
-            for_profile_id=profile.id,
-            owner_profile_id=self.profile_id,
-        )
         direct_reports = self._mock_get_direct_reports(profile)
 
         # fetch the extended profile
@@ -177,7 +152,6 @@ class TestGetExtendedProfile(TestCase):
         self.verify_containers(profile, response.result.profile)
         self.assertEqual(len(skills), len(response.result.skills))
         self.assertEqual(len(interests), len(response.result.interests))
-        self.assertEqual(len(notes), len(response.result.notes))
         self.assertEqual(len(direct_reports), len(response.result.direct_reports))
         self.assertEqual(len(self.identities), len(response.result.identities))
         self.verify_containers(self.resume, response.result.resume)
@@ -194,7 +168,6 @@ class TestGetExtendedProfile(TestCase):
         profile = factories.ProfileFactory.create_protobuf()
         self._mock_get_location(profile)
         self._mock_get_team(profile, owner_id=profile.user_id, path=[managers_team.path[0]])
-        self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
         self._mock_get_direct_reports(profile)
 
         response = self.client.call_action(
@@ -214,7 +187,6 @@ class TestGetExtendedProfile(TestCase):
         )
 
         self._mock_get_location(profile)
-        self._mock_get_notes(for_profile_id=profile.id, owner_profile_id=self.profile_id, count=0)
         self._mock_get_direct_reports(profile)
 
         response = self.client.call_action(

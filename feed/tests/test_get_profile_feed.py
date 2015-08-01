@@ -138,23 +138,6 @@ class TestGetCategories(TestCase):
     def _mock_get_active_tags_interests(self, organization_id, tags=3):
         self._mock_get_active_tags(organization_id, profile_containers.TagV1.INTEREST, tags=tags)
 
-    def _mock_get_notes(self, profile_id, notes=3):
-        service = 'note'
-        action = 'get_notes'
-
-        mock_response = mock.get_mockable_response(service, action)
-        for _ in range(notes):
-            note = mock_response.notes.add()
-            mocks.mock_note(note, owner_profile_id=profile_id)
-
-        mock.instance.register_mock_response(
-            service,
-            action,
-            mock_response,
-            owner_profile_id=profile_id,
-        )
-        return mock_response.notes
-
     def _mock_get_profiles(self, profile_ids):
         service = 'profile'
         action = 'get_profiles'
@@ -214,7 +197,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
         self._mock_get_membership_requests(self.profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
@@ -235,7 +217,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
         self._mock_get_membership_requests(self.profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
@@ -260,7 +241,6 @@ class TestGetCategories(TestCase):
 
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
         self.assertTrue(response.success)
@@ -282,7 +262,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
         self._mock_get_membership_requests(self.profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
@@ -305,7 +284,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id)
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
         self._mock_get_membership_requests(self.profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
@@ -330,7 +308,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id)
-        self._mock_get_notes(self.profile.id, notes=0)
         self._mock_get_membership_requests(self.profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
@@ -353,7 +330,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
         self._mock_get_active_tags_skills(self.profile.organization_id)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
         self._mock_get_membership_requests(self.profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
@@ -366,30 +342,6 @@ class TestGetCategories(TestCase):
         self.assertEqual(category.content_key, 'name')
         self.assertEqual(category.category_type, feed_containers.CategoryV1.SKILLS)
 
-    def test_notes_note_category(self):
-        self._mock_get_peers(self.profile.id, peers=0)
-        self._mock_get_direct_reports(self.profile.id, direct_reports=0)
-        self._mock_get_profile_stats([])
-        self._mock_get_upcoming_anniversaries(self.profile.organization_id, profiles=0)
-        self._mock_get_upcoming_birthdays(self.profile.organization_id, profiles=0)
-        self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
-        self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
-        self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        notes = self._mock_get_notes(self.profile.id)
-        self._mock_get_profiles([note.for_profile_id for note in notes])
-        self._mock_get_membership_requests(self.profile.id, requests=0)
-
-        response = self.client.call_action('get_profile_feed', profile_id=self.profile.id)
-        self.assertTrue(response.success)
-        self.assertEqual(len(response.result.categories), 1)
-
-        category = response.result.categories[0]
-        self.assertEqual(category.title, 'Notes')
-        self.assertEqual(len(category.notes), 3)
-        self.assertEqual(category.content_key, 'changed')
-        self.assertEqual(category.category_type, feed_containers.CategoryV1.NOTES)
-        self.assertEqual(category.total_count, 3)
-
     def test_group_membership_requests_category(self):
         self._mock_get_peers(self.profile.id, peers=0)
         self._mock_get_direct_reports(self.profile.id, direct_reports=0)
@@ -399,7 +351,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
         requests = self._mock_get_membership_requests(self.profile.id)
         self._mock_get_profiles([request.requester_profile_id for request in requests])
 
@@ -426,7 +377,6 @@ class TestGetCategories(TestCase):
         self._mock_get_recent_hires(self.profile.organization_id, profiles=0)
         self._mock_get_active_tags_skills(self.profile.organization_id, tags=0)
         self._mock_get_active_tags_interests(self.profile.organization_id, tags=0)
-        self._mock_get_notes(self.profile.id, notes=0)
         self._mock_get_membership_requests(self.profile.id, requests=0)
 
         response = self.client.call_action('get_profile_feed')
