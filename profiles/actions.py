@@ -339,11 +339,6 @@ class GetExtendedProfile(GetProfile):
         )
         return response.result.identities
 
-    def _fetch_resume(self, profile):
-        client = service.control.Client('resume', token=self.token)
-        response = client.call_action('get_resume', user_id=str(profile.user_id))
-        return response.result.resume
-
     def run(self, *args, **kwargs):
         profile = self._get_profile()
         profile.to_protobuf(self.response.profile)
@@ -359,9 +354,6 @@ class GetExtendedProfile(GetProfile):
 
         identities = self._fetch_identities(profile)
         self.response.identities.extend(identities)
-
-        resume = self._fetch_resume(profile)
-        self.response.resume.CopyFrom(resume)
 
         manager = self._get_manager(profile, team)
         if manager:

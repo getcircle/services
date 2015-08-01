@@ -9,7 +9,6 @@ from .. import token
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
-from protobufs.services.resume import containers_pb2 as resume_containers
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
 
@@ -198,42 +197,6 @@ def mock_identity(container=None, **overrides):
         fuzzy.FuzzyUUID: ['id', 'access_token', 'provider_uid', 'user_id'],
         fuzzy.FuzzyText: ['full_name'],
         fuzzy.FuzzyText(suffix='@example.com'): ['email'],
-    }
-    return _mock_container(container, mock_dict, **defaults)
-
-
-def mock_company(container=None, **overrides):
-    if container is None:
-        container = resume_containers.CompanyV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'linkedin_id'],
-        fuzzy.FuzzyText: ['name'],
-    }
-    return _mock_container(container, mock_dict, **overrides)
-
-
-def mock_education(container=None, **overrides):
-    if container is None:
-        container = resume_containers.EducationV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'user_id'],
-        fuzzy.FuzzyText: ['school_name', 'notes', 'activities', 'degree', 'field_of_study'],
-    }
-    return _mock_container(container, mock_dict, **overrides)
-
-
-def mock_position(container=None, **overrides):
-    if container is None:
-        container = resume_containers.PositionV1()
-
-    defaults = {'company': mock_company()}
-    defaults.update(overrides)
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'user_id'],
-        fuzzy.FuzzyText: ['title', 'summary'],
     }
     return _mock_container(container, mock_dict, **defaults)
 

@@ -10,7 +10,6 @@ import service.control
 
 from linkedin import linkedin
 from protobufs.services.profile import containers_pb2 as profile_containers
-from protobufs.services.resume import containers_pb2 as resume_containers
 from protobufs.services.user import containers_pb2 as user_containers
 
 from . import base
@@ -124,9 +123,6 @@ class Provider(base.BaseProvider):
         identity.expires_at = arrow.utcnow().timestamp + expires_in
         return identity
 
-    def finalize_authorization(self, identity, user):
-        self._create_resume(user, self.profile)
-
     def _copy_approximate_date_to_container(self, date, container):
         if 'year' in date:
             container.year = date['year']
@@ -134,80 +130,6 @@ class Provider(base.BaseProvider):
             container.month = date['month']
         if 'day' in date:
             container.day = date['day']
-
-    def _create_educations(self, user, data):
-        educations = data.get('educations', {}).get('values', [])
-        containers = []
-        for education in educations:
-            container = resume_containers.EducationV1()
-            container.user_id = str(user.id)
-            end_date = education.get('endDate')
-            if end_date:
-                self._copy_approximate_date_to_container(end_date, container.end_date)
-            start_date = education.get('startDate')
-            if start_date:
-                self._copy_approximate_date_to_container(start_date, container.start_date)
-
-            if 'activities' in education:
-                container.activities = education['activities']
-            if 'notes' in education:
-                container.notes = education['notes']
-            if 'fieldOfStudy' in education:
-                container.field_of_study = education['fieldOfStudy']
-            if 'degree' in education:
-                container.degree = education['degree']
-            if 'schoolName' in education:
-                container.school_name = education['schoolName']
-            containers.append(container)
-
-        client = service.control.Client('resume', token=self.token._token)
-        client.call_action('bulk_create_educations', educations=containers)
-
-    def _create_positions(self, user, data):
-        positions = data.get('positions', {}).get('values', [])
-        companies = []
-        for position in positions:
-            if 'company' in position:
-                company = {
-                    'name': position['company']['name'],
-                }
-                if 'id' in position['company']:
-                    company['linkedin_id'] = str(position['company']['id'])
-                companies.append(company)
-
-        client = service.control.Client('resume', token=self.token._token)
-        response = client.call_action('bulk_create_companies', companies=companies)
-        company_dict = dict((company.name, company) for company in response.result.companies)
-
-        containers = []
-        for position in positions:
-            container = resume_containers.PositionV1()
-            container.user_id = str(user.id)
-            end_date = position.get('endDate')
-            if end_date:
-                self._copy_approximate_date_to_container(end_date, container.end_date)
-            start_date = position.get('startDate')
-            if start_date:
-                self._copy_approximate_date_to_container(start_date, container.start_date)
-
-            if 'title' in position:
-                container.title = position['title']
-
-            if 'summary' in position:
-                container.summary = position['summary']
-
-            if 'company' in position and position['company']['name'] in company_dict:
-                container.company.CopyFrom(company_dict[position['company']['name']])
-
-            containers.append(container)
-        client.call_action('bulk_create_positions', positions=containers)
-
-    def _create_resume(self, user, data):
-        if not self.token:
-            return None
-
-        self._create_educations(user, data)
-        self._create_positions(user, data)
 
     def _add_skills_to_profile(self, data):
         if not self.token or not self.token.profile_id:

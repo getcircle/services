@@ -26,45 +26,9 @@ class TestAuthorization(TestCase):
 
     def setUp(self):
         self.client = service.control.Client('user')
-        self.mock_positions_regex = 'resume:bulk_create_positions:.*'
-        mock.instance.register_mock_response(
-            'resume',
-            'bulk_create_positions',
-            mock.get_mockable_response('resume', 'bulk_create_positions'),
-            mock_regex_lookup=self.mock_positions_regex,
-        )
-        self.mock_educations_regex = 'resume:bulk_create_educations:.*'
-        mock.instance.register_mock_response(
-            'resume',
-            'bulk_create_educations',
-            mock.get_mockable_response('resume', 'bulk_create_educations'),
-            mock_regex_lookup=self.mock_educations_regex,
-        )
-        self.mock_companies_regex = 'resume:bulk_create_companies:.*'
-        mock.instance.register_mock_response(
-            'resume',
-            'bulk_create_companies',
-            mock.get_mockable_response('resume', 'bulk_create_companies'),
-            mock_regex_lookup=self.mock_companies_regex,
-        )
 
     def tearDown(self):
         super(TestAuthorization, self).tearDown()
-        mock.instance.unregister_mock_response(
-            'resume',
-            'bulk_create_educations',
-            self.mock_educations_regex,
-        )
-        mock.instance.unregister_mock_response(
-            'resume',
-            'bulk_create_positions',
-            self.mock_positions_regex,
-        )
-        mock.instance.unregister_mock_response(
-            'resume',
-            'bulk_create_companies',
-            self.mock_companies_regex,
-        )
 
     def test_get_authorization_instructions_linkedin(self):
         response = self.client.call_action(

@@ -26,8 +26,6 @@ class TestGetExtendedProfile(TestCase):
         self.client.set_transport(local.instance)
         # mock identities for all calls
         self.identities = self._mock_get_identities()
-        # mock resume for all calls
-        self.resume = self._mock_get_resume()
 
     def tearDown(self):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
@@ -93,26 +91,6 @@ class TestGetExtendedProfile(TestCase):
         )
         return mock_response.identities
 
-    def _mock_get_resume(self, positions=3, educations=3, **overrides):
-        service = 'resume'
-        action = 'get_resume'
-        mock_response = mock.get_mockable_response(service, action)
-        for _ in range(positions):
-            container = mock_response.resume.positions.add()
-            mocks.mock_position(container)
-
-        for _ in range(educations):
-            container = mock_response.resume.educations.add()
-            mocks.mock_education(container)
-
-        mock.instance.register_mock_response(
-            service,
-            action,
-            mock_response,
-            mock_regex_lookup='%s:%s:.*' % (service, action),
-        )
-        return mock_response.resume
-
     def test_get_extended_profile_invalid_profile_id(self):
         with self.assertFieldError('profile_id'):
             self.client.call_action(
@@ -154,7 +132,6 @@ class TestGetExtendedProfile(TestCase):
         self.assertEqual(len(interests), len(response.result.interests))
         self.assertEqual(len(direct_reports), len(response.result.direct_reports))
         self.assertEqual(len(self.identities), len(response.result.identities))
-        self.verify_containers(self.resume, response.result.resume)
 
     def test_get_extended_profile_of_manager(self):
         manager = factories.ProfileFactory.create_protobuf()

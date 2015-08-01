@@ -109,5 +109,3 @@ class TestUserActions(TestCase):
 
         response = self.client.call_action('bulk_create_users', users=users)
         self.assertEqual(len(response.result.users), len(users))
-
-    # XXX add test cases for duplicates similar to resume service

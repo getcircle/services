@@ -63,7 +63,6 @@ INSTALLED_APPS = (
     'onboarding',
     'organizations',
     'profiles',
-    'resumes',
     'search',
     'sync',
     'users',
@@ -115,7 +114,6 @@ LOCALIZED_SERVICES = [
     'notification.server.Server',
     'organizations.server.Server',
     'profiles.server.Server',
-    'resumes.server.Server',
     'search.server.Server',
     'sync.server.Server',
     'users.server.Server',
@@ -284,7 +282,6 @@ CACHEOPS = {
     'notification.*': {'ops': 'all'},
     'organizations.*': {'ops': 'all'},
     'profiles.*': {'ops': 'all'},
-    'resumes.*': {'ops': 'all'},
     '*.*': {},
 }
 
