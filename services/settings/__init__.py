@@ -54,7 +54,6 @@ INSTALLED_APPS = (
     'services',
 
     'api',
-    'appreciation',
     'feed',
     'glossary',
     'group',
@@ -110,7 +109,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
-    'appreciation.server.Server',
     'feed.server.Server',
     'glossary.server.Server',
     'group.server.Server',
