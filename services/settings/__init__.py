@@ -54,7 +54,6 @@ INSTALLED_APPS = (
     'services',
 
     'api',
-    'feed',
     'glossary',
     'group',
     'media',
@@ -107,7 +106,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
-    'feed.server.Server',
     'glossary.server.Server',
     'group.server.Server',
     'media.server.Server',
@@ -276,7 +274,6 @@ CACHEOPS_DEFAULTS = {
 }
 
 CACHEOPS = {
-    'feed.*': {'ops': 'all'},
     'glossary.*': {'ops': 'all'},
     'group.*': {'ops': 'all'},
     'notification.*': {'ops': 'all'},
