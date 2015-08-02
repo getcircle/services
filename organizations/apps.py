@@ -15,6 +15,11 @@ class TeamSearchAdapter(SearchAdapter):
 
 class LocationSearchAdapter(SearchAdapter):
 
+    def get_protobuf(self, obj):
+        return obj.to_protobuf(
+            address=obj.address.as_dict(),
+        )
+
     def get_title(self, obj):
         return obj.name
 
