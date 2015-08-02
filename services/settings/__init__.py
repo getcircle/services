@@ -37,8 +37,6 @@ ALLOWED_HOSTS = ['api.circlehq.co']
 # Application definition
 
 INSTALLED_APPS = (
-    'grappelli',
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.postgres',
