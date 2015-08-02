@@ -113,6 +113,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
                     contact_method = ContactMethod.objects.get(
                         id=container.id,
                         profile_id=self.id,
+                        organization_id=self.organization_id,
                     )
                     contact_method.update_from_protobuf(container)
                     contact_method.save()
@@ -120,6 +121,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
                     contact_method = ContactMethod.objects.from_protobuf(
                         container,
                         profile_id=self.id,
+                        organization_id=self.organization_id,
                     )
                     contact_method.to_protobuf(container)
             return methods
@@ -151,6 +153,7 @@ class ContactMethod(models.UUIDModel, models.TimestampableModel):
             profile_containers.ContactMethodV1.ContactMethodTypeV1
         ),
     )
+    organization_id = models.UUIDField()
 
     class Meta:
         unique_together = ('profile', 'label', 'value', 'type')

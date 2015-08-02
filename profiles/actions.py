@@ -113,6 +113,7 @@ class BulkCreateProfiles(actions.Action):
                 contact_method = models.ContactMethod.objects.from_protobuf(
                     container,
                     profile_id=profile.id,
+                    organization_id=profile.organization_id,
                     commit=False,
                 )
                 contact_methods.append(contact_method)

@@ -50,7 +50,11 @@ class ProfileFactory(factory.Factory):
 
         if extracted:
             for method in extracted:
-                models.ContactMethod.objects.from_protobuf(method, profile_id=self.id)
+                models.ContactMethod.objects.from_protobuf(
+                    method,
+                    profile_id=self.id,
+                    organization_id=self.organization_id,
+                )
 
 
 class TagFactory(factory.Factory):
