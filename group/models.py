@@ -8,7 +8,6 @@ from django.contrib.postgres.fields import (
 from protobufs.services.group import containers_pb2 as group_containers
 
 
-# XXX look into adding organization_id
 class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
 
     as_dict_value_transforms = {
@@ -23,6 +22,7 @@ class GroupMembershipRequest(models.UUIDModel, models.TimestampableModel):
     requester_profile_id = models.UUIDField(db_index=True)
     approver_profile_ids = ArrayField(models.UUIDField(), null=True, db_index=True)
     group_id = models.UUIDField()
+    organization_id = models.UUIDField()
     provider = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(group_containers.GroupProviderV1),
     )

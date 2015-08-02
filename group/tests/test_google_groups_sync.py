@@ -27,12 +27,14 @@ class TestGoogleGroupsCache(TestCase):
             profile_id=self.profile.id,
         )
         self.provider = Provider(
-            self.profile,
-            organization=self.organization,
             token=token,
+            requester_profile=self.profile,
             integration=MagicMock(),
         )
 
     def test_sync_generates_new_uuid(self):
         self.sync_id = uuid.uuid4()
-        self.assertNotEqual(Sync(self.provider).sync_id, Sync(self.provider).sync_id)
+        self.assertNotEqual(
+            Sync(self.provider, self.organization).sync_id,
+            Sync(self.provider, self.organization).sync_id,
+        )

@@ -13,10 +13,10 @@ from ... import models
 
 class Sync(object):
 
-    def __init__(self, provider, *args, **kwargs):
+    def __init__(self, provider, organization, *args, **kwargs):
         self.sync_id = uuid.uuid4()
         self.provider = provider
-        self.organization_id = self.provider.organization.id
+        self.organization = organization
         super(Sync, self).__init__(*args, **kwargs)
 
     @property
@@ -32,7 +32,7 @@ class Sync(object):
             # XXX should probably have these referencing functions of the
             # provider instead of accessing directory_client driectly
             response = self.provider.directory_client.groups().list(
-                domain=self.provider.organization.domain,
+                domain=self.organization.domain,
                 pageToken=page_token,
             ).execute()
             self._sync_groups(response['groups'])
@@ -62,7 +62,7 @@ class Sync(object):
                 description=provider_group['description'] or None,
                 aliases=provider_group.get('aliases'),
                 last_sync_id=self.sync_id,
-                organization_id=self.organization_id,
+                organization_id=self.organization.id,
                 changed=datetime.datetime.now(),
             )
             groups.append(group)
@@ -96,7 +96,7 @@ class Sync(object):
                 exclude_fields=['settings', 'created', 'organization_id', 'id'],
             )
         return models.GoogleGroup.objects.filter(
-            organization_id=self.organization_id,
+            organization_id=self.organization.id,
             last_sync_id=self.sync_id,
         )
 
@@ -147,7 +147,7 @@ class Sync(object):
     def _clear_stale_groups(self):
         # XXX clear out stale members as well
         stale_groups = models.GoogleGroup.objects.filter(
-            organization_id=self.organization_id,
+            organization_id=self.organization.id,
         ).exclude(last_sync_id=self.sync_id)
         self.logger.info(
             'removing %s stale google groups not matching sync_id: %s',
@@ -177,7 +177,7 @@ class Sync(object):
         ).values_list('email', 'id'))
         existing_members = models.GoogleGroupMember.objects.filter(
             group_id=group.id,
-            organization_id=self.organization_id,
+            organization_id=self.organization.id,
         )
         existing_members_dict = dict((member.profile_id, member) for member in existing_members)
 
@@ -201,7 +201,7 @@ class Sync(object):
                     profile_id=profile_id,
                     group_id=group.id,
                     role=provider_member['role'],
-                    organization_id=self.organization_id,
+                    organization_id=self.organization.id,
                     last_sync_id=self.sync_id,
                     provider_uid=provider_member['id'],
                 )

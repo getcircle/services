@@ -12,6 +12,7 @@ class GroupMembershipRequestFactory(factory.Factory):
     requester_profile_id = factory.FuzzyUUID()
     group_id = factory.FuzzyUUID()
     provider = group_containers.GOOGLE
+    organization_id = factory.FuzzyUUID()
 
 
 class GoogleGroupFactory(factory.Factory):

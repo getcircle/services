@@ -28,6 +28,6 @@ class Command(BaseCommand):
             return_object='integration',
             integration_type=integration_pb2.GOOGLE_GROUPS,
         )
-        provider = Provider(token=token, organization=organization, integration=integration)
-        sync = Sync(provider)
+        provider = Provider(token=token, integration=integration)
+        sync = Sync(provider, organization)
         sync.sync_groups()

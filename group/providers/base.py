@@ -1,20 +1,19 @@
+from services.token import parse_token
 
 
 class BaseGroupsProvider(object):
 
-    def __init__(self, requester_profile=None, token=None, organization=None, paginator=None):
+    def __init__(self, token, requester_profile=None, paginator=None):
         self.requester_profile = requester_profile
-
-        if self.requester_profile:
-            organization_id = requester_profile.organization_id
-        else:
-            organization_id = organization.id
-
-        self.organization_id = organization_id
-        self.organization = organization
         self.token = token
         self.write_access = True
         self.paginator = paginator
+
+    @property
+    def organization_id(self):
+        if not hasattr(self, '_token'):
+            self._token = parse_token(self.token)
+        return self._token.organization_id
 
     def get_groups_for_profile(self, profile, **kwargs):
         raise NotImplementedError('Subclass must implement `get_groups_for_profile`')

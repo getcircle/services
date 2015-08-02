@@ -40,9 +40,8 @@ class BaseGoogleCase(TestCase):
             profile_id=self.by_profile.id,
         )
         self.provider = Provider(
-            self.by_profile,
-            organization=self.organization,
-            token=token,
+            token,
+            requester_profile=self.by_profile,
             integration=MagicMock(),
         )
 

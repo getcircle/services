@@ -475,6 +475,7 @@ class Provider(base.BaseGroupsProvider):
             'requester_profile_id': self.requester_profile.id,
             'provider': group_containers.GOOGLE,
             'group_id': group_id,
+            'organization_id': self.organization_id,
         }
         if models.GroupMembershipRequest.objects.filter(
             status=group_containers.PENDING,
