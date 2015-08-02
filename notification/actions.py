@@ -23,6 +23,7 @@ class GetPreferences(mixins.PreRunParseTokenMixin, actions.Action):
         notification_types = models.NotificationType.objects.filter(**parameters)
         preferences = models.NotificationPreference.objects.filter(
             profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
         )
         notification_type_to_preference = dict((preference.notification_type_id, preference) for
                                                preference in preferences)
@@ -56,6 +57,7 @@ class UpdatePreference(mixins.PreRunParseTokenMixin, actions.Action):
             preference = models.NotificationPreference.objects.from_protobuf(
                 self.request.preference,
                 profile_id=self.parsed_token.profile_id,
+                organization_id=self.parsed_token.organization_id,
             )
         else:
             try:
@@ -107,7 +109,7 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
         notification_token.to_protobuf(self.response.notification_token)
 
 
-class SendNotification(actions.Action):
+class SendNotification(mixins.PreRunParseTokenMixin, actions.Action):
 
     required_fields = (
         'notification',
@@ -193,6 +195,7 @@ class SendNotification(actions.Action):
         preferences = models.NotificationPreference.objects.filter(
             profile_id__in=to_profile_ids,
             notification_type=notification_type,
+            organization_id=self.parsed_token.organization_id,
         )
         preferences_dict = dict(
             (preference.profile_id.hex, preference) for preference in preferences

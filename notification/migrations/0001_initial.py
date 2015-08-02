@@ -21,6 +21,7 @@ class Migration(migrations.Migration):
                 ('changed', models.DateTimeField(auto_now=True)),
                 ('profile_id', models.UUIDField()),
                 ('subscribed', models.BooleanField()),
+                ('organization_id', models.UUIDField()),
             ],
             options={
                 'protobuf': protobufs.services.notification.containers_pb2.NotificationPreferenceV1,
@@ -35,7 +36,8 @@ class Migration(migrations.Migration):
                 ('user_id', models.UUIDField()),
                 ('device_id', models.UUIDField()),
                 ('provider_token', models.CharField(max_length=255)),
-                ('provider', models.SmallIntegerField(choices=[(0, b'SNS'), (1, b'GMS')])),
+                ('provider', models.SmallIntegerField(choices=[(0, b'SNS')])),
+                ('provider_platform', models.SmallIntegerField(null=True, choices=[(0, b'APNS'), (1, b'GCM')])),
             ],
             options={
                 'protobuf': protobufs.services.notification.containers_pb2.NotificationTokenV1,
@@ -46,7 +48,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('changed', models.DateTimeField(auto_now=True)),
-                ('id', models.SmallIntegerField(serialize=False, primary_key=True, choices=[(0, b'GROUP_MEMBERSHIP_REQUEST'), (1, b'UPCOMING_BIRTHDAY_TEAM')])),
+                ('id', models.SmallIntegerField(serialize=False, primary_key=True, choices=[(0, b'GOOGLE_GROUPS')])),
                 ('description', models.CharField(max_length=255)),
                 ('channels', bitfield.models.BitField((b'mobile_push',), default=None)),
                 ('opt_in', models.BooleanField(default=False)),
@@ -62,7 +64,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='notificationpreference',
             name='notification_type',
-            field=models.ForeignKey(to='notification.NotificationType'),
+            field=models.ForeignKey(related_name='preferences', to='notification.NotificationType'),
+        ),
+        migrations.AlterUniqueTogether(
+            name='notificationpreference',
+            unique_together=set([('profile_id', 'notification_type')]),
         ),
         migrations.AlterIndexTogether(
             name='notificationpreference',

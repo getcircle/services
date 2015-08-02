@@ -20,7 +20,10 @@ class TestNotificationPreferences(TestCase):
         self.profile = mocks.mock_profile()
         self.client = service.control.Client(
             'notification',
-            token=mocks.mock_token(profile_id=self.profile.id),
+            token=mocks.mock_token(
+                profile_id=self.profile.id,
+                organization_id=self.profile.organization_id,
+            ),
         )
 
     def test_get_preferences_channel_required(self):
@@ -51,6 +54,7 @@ class TestNotificationPreferences(TestCase):
 
         factories.NotificationPreferenceFactory.create(
             profile_id=self.profile.id,
+            organization_id=self.profile.organization_id,
             notification_type=notification_type,
             subscribed=False,
         )
@@ -72,6 +76,7 @@ class TestNotificationPreferences(TestCase):
 
         factories.NotificationPreferenceFactory.create(
             profile_id=self.profile.id,
+            organization_id=self.profile.organization_id,
             notification_type=notification_type,
             subscribed=True,
         )
@@ -123,6 +128,7 @@ class TestNotificationPreferences(TestCase):
         preference = factories.NotificationPreferenceFactory.create(
             notification_type=notification_type,
             profile_id=self.profile.id,
+            organization_id=self.profile.organization_id,
             subscribed=False,
         )
         updated = preference.to_protobuf()
@@ -169,6 +175,7 @@ class TestNotificationPreferences(TestCase):
         preference = factories.NotificationPreferenceFactory.create(
             notification_type=notification_type,
             profile_id=self.profile.id,
+            organization_id=self.profile.organization_id,
             subscribed=False,
         )
         updated = preference.to_protobuf()

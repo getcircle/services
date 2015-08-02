@@ -19,9 +19,13 @@ class TestSendNotification(TestCase):
     def setUp(self):
         super(TestSendNotification, self).setUp()
         self.profile = mocks.mock_profile()
+        self.organization = mocks.mock_organization()
         self.client = service.control.Client(
             'notification',
-            token=mocks.mock_token(profile_id=self.profile.id),
+            token=mocks.mock_token(
+                profile_id=self.profile.id,
+                organization_id=self.organization.id,
+            ),
         )
 
     def test_send_notification_notification_required(self):
@@ -82,6 +86,7 @@ class TestSendNotification(TestCase):
         factories.NotificationPreferenceFactory.create(
             notification_type=notification_type,
             profile_id=profile_id,
+            organization_id=self.organization.id,
             subscribed=False,
         )
 
@@ -107,6 +112,7 @@ class TestSendNotification(TestCase):
         )
         factories.NotificationPreferenceFactory.create(
             notification_type=notification_type,
+            organization_id=self.organization.id,
             profile_id=profile_id,
             subscribed=False,
         )

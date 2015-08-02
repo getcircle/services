@@ -31,6 +31,7 @@ class NotificationPreference(models.UUIDModel, models.TimestampableModel):
     profile_id = models.UUIDField()
     notification_type = models.ForeignKey(NotificationType, related_name='preferences')
     subscribed = models.BooleanField()
+    organization_id = models.UUIDField()
 
     class Meta:
         index_together = ('profile_id', 'notification_type', 'subscribed')
