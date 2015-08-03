@@ -88,6 +88,7 @@ class Address(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('name', 'organization')
+        protobuf = organization_containers.AddressV1
 
 
 class Location(models.UUIDModel, models.TimestampableModel):

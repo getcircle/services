@@ -13,6 +13,7 @@ class OrganizationLocationTests(TestCase):
     def setUp(self):
         super(OrganizationLocationTests, self).setUp()
         self.organization = factories.OrganizationFactory.create()
+        self.address = factories.AddressFactory.create(organization=self.organization)
         self.client = service.control.Client(
             'organization',
             token=mocks.mock_token(organization_id=str(self.organization.id)),
@@ -40,7 +41,7 @@ class OrganizationLocationTests(TestCase):
                 'create_location',
                 location={
                     'organization_id': 'invalid',
-                    'address': mocks.mock_address(),
+                    'address': self.address.to_protobuf(),
                     'name': fuzzy.FuzzyText().fuzz(),
                 },
             )
@@ -58,18 +59,16 @@ class OrganizationLocationTests(TestCase):
             )
 
     def test_create_location(self):
-        organization_id = fuzzy.FuzzyUUID().fuzz()
-        address = mocks.mock_address(organization_id=organization_id)
         response = self.client.call_action(
             'create_location',
             location={
-                'organization_id': organization_id,
-                'address': address,
+                'organization_id': str(self.organization.id),
+                'address': self.address.to_protobuf(),
                 'name': fuzzy.FuzzyText().fuzz(),
             },
         )
-        self.assertEqual(response.result.location.organization_id, organization_id)
-        self.verify_containers(response.result.location.address, address)
+        self.assertEqual(response.result.location.organization_id, str(self.organization.id))
+        self.verify_containers(response.result.location.address, self.address.to_protobuf())
 
     def test_create_location_duplicate(self):
         location = factories.LocationFactory.create_protobuf()
