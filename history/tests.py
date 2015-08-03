@@ -3,6 +3,11 @@ import copy
 from protobufs.services.history import containers_pb2 as history_containers
 import service.control
 
+from services.history import (
+    action_container,
+    action_container_for_delete,
+    action_container_for_update,
+)
 from services.test import (
     mocks,
     TestCase,
@@ -11,7 +16,6 @@ from services.test import (
 from . import (
     factories,
     models,
-    utils,
 )
 
 
@@ -37,7 +41,6 @@ class TestHistoryRecordAction(TestCase):
         required_fields = [
             'column_name',
             'data_type',
-            'old_value',
             'new_value',
             'action_type',
             'method_type',
@@ -71,9 +74,21 @@ class TestHistoryRecordAction(TestCase):
         self.assertEqualUUID4(actual.by_profile_id, self.profile.id)
         self.assertEqualUUID4(actual.organization_id, self.organization.id)
 
+    def test_record_action_no_old_value(self):
+        self.client.call_action(
+            'record_action',
+            action={
+                'column_name': 'some_column',
+                'data_type': 'varchar(64)',
+                'new_value': 'new',
+                'action_type': history_containers.UPDATE_DESCRIPTION,
+                'method_type': history_containers.UPDATE,
+            },
+        )
+
     def test_history_utils_action_container(self):
         action = factories.ActionFactory.create()
-        container = utils.action_container(
+        container = action_container(
             action,
             'data_type',
             'new',
@@ -89,7 +104,7 @@ class TestHistoryRecordAction(TestCase):
 
     def test_history_utils_action_container_for_update(self):
         action = factories.ActionFactory.create()
-        container = utils.action_container_for_update(
+        container = action_container_for_update(
             action,
             'data_type',
             'new',
@@ -104,7 +119,7 @@ class TestHistoryRecordAction(TestCase):
 
     def test_history_utils_action_container_for_delete(self):
         action = factories.ActionFactory.create()
-        container = utils.action_container_for_delete(
+        container = action_container_for_delete(
             action,
             'data_type',
             history_containers.UPDATE_DESCRIPTION,

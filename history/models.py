@@ -12,7 +12,7 @@ class Action(models.UUIDModel, models.TimestampableModel):
 
     column_name = models.CharField(max_length=64)
     data_type = models.CharField(max_length=32)
-    old_value = models.TextField()
+    old_value = models.TextField(null=True)
     new_value = models.TextField(null=True)
     action_type = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(history_containers.ActionTypeV1),

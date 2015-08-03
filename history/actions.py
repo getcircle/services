@@ -14,7 +14,6 @@ class RecordAction(mixins.PreRunParseTokenMixin, actions.Action):
         'action',
         'action.column_name',
         'action.data_type',
-        'action.old_value',
         'action.action_type',
         'action.method_type',
     )
