@@ -54,6 +54,7 @@ INSTALLED_APPS = (
     'api',
     'glossary',
     'group',
+    'history',
     'media',
     'notification',
     'oauth2',
@@ -106,6 +107,7 @@ STATIC_ROOT = 'static'
 LOCALIZED_SERVICES = [
     'glossary.server.Server',
     'group.server.Server',
+    'history.server.Server',
     'media.server.Server',
     'notification.server.Server',
     'organizations.server.Server',
