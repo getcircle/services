@@ -95,10 +95,19 @@ class OrganizationLocationTests(TestCase):
 
     def test_update_location(self):
         new_name = 'New HQ'
+        new_description = 'updated'
         location = factories.LocationFactory.create_protobuf()
         location.name = new_name
-        response = self.client.call_action('update_location', location=location)
+        location.description = new_description
+        with self.mock_transport(self.client) as mock:
+            mock.instance.register_empty_response(
+                'history',
+                'record_action',
+                mock_regex_lookup='history:record_action:.*',
+            )
+            response = self.client.call_action('update_location', location=location)
         self.assertEqual(response.result.location.name, new_name)
+        self.assertEqual(response.result.location.description, new_description)
 
     def test_get_location_invalid_location_id(self):
         with self.assertFieldError('location_id'):

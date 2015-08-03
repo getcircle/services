@@ -34,6 +34,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
     protobuf_include_fields = ('department',)
 
     name = models.CharField(max_length=255)
+    description = models.TextField(null=True)
     owner_id = models.UUIDField(db_index=True, editable=False)
     organization = models.ForeignKey(Organization, db_index=True, editable=False)
     path = LTreeField(null=True, db_index=True, editable=False)
@@ -97,6 +98,7 @@ class Location(models.UUIDModel, models.TimestampableModel):
     name = models.CharField(max_length=64)
     address = models.ForeignKey(Address)
     image_url = models.URLField(max_length=255, null=True)
+    description = models.TextField(null=True)
 
     class Meta:
         unique_together = ('name', 'organization')

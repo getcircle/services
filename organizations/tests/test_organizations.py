@@ -824,7 +824,13 @@ class TestOrganizations(TestCase):
         team = factories.TeamFactory.create(organization=self.organization)
         container = team.to_protobuf(path=team.get_path())
         container.name = 'new name'
+        container.description = 'new description'
         with self.mock_transport() as mock:
+            mock.instance.register_empty_response(
+                service='history',
+                action='record_action',
+                mock_regex_lookup='history:record_action:.*',
+            )
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profile',

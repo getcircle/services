@@ -25,6 +25,7 @@ class TeamFactory(factory.Factory):
     owner_id = factory.FuzzyUUID()
     path = factory.FuzzyUUID()
     organization = factory.SubFactory(OrganizationFactory)
+    description = factory.FuzzyText()
 
 
 class AddressFactory(factory.Factory):
@@ -58,6 +59,7 @@ class LocationFactory(factory.Factory):
     name = factory.FuzzyText()
     address = factory.SubFactory(AddressFactory)
     organization = factory.SubFactory(OrganizationFactory)
+    description = factory.FuzzyText()
 
     @classmethod
     def create_protobuf(cls, *args, **kwargs):

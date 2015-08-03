@@ -4,6 +4,7 @@ import uuid
 from cacheops import cached_as
 import django.db
 from protobufs.services.common import containers_pb2 as common_containers
+from protobufs.services.history import containers_pb2 as history_containers
 from service import (
     actions,
     validators,
@@ -12,6 +13,7 @@ import service.control
 from service import metrics
 
 from services import mixins
+from services.history import action_container_for_update
 from services.token import parse_token
 from . import models
 
@@ -196,8 +198,24 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
+        action = None
+        if self.request.team.description != team.description:
+            action = action_container_for_update(
+                instance=team,
+                field_name='description',
+                new_value=self.request.team.description,
+                action_type=history_containers.UPDATE_DESCRIPTION,
+            )
+
         team.update_from_protobuf(self.request.team)
         team.save()
+        if action:
+            service.control.call_action(
+                'history',
+                'record_action',
+                client_kwargs={'token': self.token},
+                action=action,
+            )
         team.to_protobuf(self.response.team, path=team.get_path())
         self.response.team.permissions.CopyFrom(permissions)
 
@@ -557,8 +575,24 @@ class UpdateLocation(actions.Action):
 
     def run(self, *args, **kwargs):
         location = models.Location.objects.get(pk=self.request.location.id)
+
+        action = None
+        if self.request.location.description != location.description:
+            action = action_container_for_update(
+                instance=location,
+                field_name='description',
+                new_value=self.request.location.description,
+                action_type=history_containers.UPDATE_DESCRIPTION,
+            )
         location.update_from_protobuf(self.request.location)
         location.save()
+        if action:
+            service.control.call_action(
+                'history',
+                'record_action',
+                client_kwargs={'token': self.token},
+                action=action,
+            )
         location.to_protobuf(self.response.location)
 
 
