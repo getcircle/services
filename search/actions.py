@@ -91,36 +91,16 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
             **self._get_search_kwargs()
         )
 
-        category_to_container_key = {}
-        results_by_category = {}
-        for result in results:
+        for result in results[:15]:
             container = self._get_container(result)
             value = container.FromString(b64decode(result.meta['data']))
             if container is profile_containers.ProfileV1:
-                category = search_pb2.PROFILES
-                container_key = 'profiles'
+                container_key = 'profile'
             elif container is organization_containers.TeamV1:
-                category = search_pb2.TEAMS
-                container_key = 'teams'
+                container_key = 'team'
             elif container is organization_containers.LocationV1:
-                category = search_pb2.LOCATIONS
-                container_key = 'locations'
-            elif container is profile_containers.TagV1:
-                container_key = 'tags'
-                if value.tag_type == profile_containers.TagV1.SKILL:
-                    category = search_pb2.SKILLS
-                else:
-                    category = search_pb2.INTERESTS
+                container_key = 'location'
             elif container is group_containers.GroupV1:
-                category = search_pb2.GROUPS
-                container_key = 'groups'
-
-            results_by_category.setdefault(category, []).append(value)
-            category_to_container_key.setdefault(category, container_key)
-
-        for category, values in results_by_category.iteritems():
-            container = self.response.results.add()
-            container_key = category_to_container_key[category]
-            container.category = category
-            # XXX need to have a way of fetching more for the particular cateogry
-            getattr(container, container_key).extend(values[:5])
+                container_key = 'group'
+            result_container = self.response.results.add()
+            getattr(result_container, container_key).CopyFrom(value)
