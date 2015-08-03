@@ -164,7 +164,7 @@ def mock_profile(container=None, **overrides):
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id', 'user_id', 'address_id', 'team_id'],
-        fuzzy.FuzzyText: ['title', 'full_name', 'about', 'first_name', 'last_name', 'nickname'],
+        fuzzy.FuzzyText: ['title', 'full_name', 'first_name', 'last_name', 'nickname'],
         fuzzy.FuzzyDate(arrow.Arrow(1980, 1, 1)): ['birth_date', 'hire_date'],
         fuzzy.FuzzyText(suffix='@example.com'): ['email'],
     }

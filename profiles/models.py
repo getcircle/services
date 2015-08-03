@@ -26,13 +26,6 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     bulk_manager = BulkUpdateManager()
 
-    # TODO this should really be coming from the "to_python" method of the
-    # field. otherwise its going to get really confusing why importing to a
-    # protobuf has a particular behavior. we should look into how
-    # rest_framework handles this with model serializers
-    from_protobuf_transforms = {
-        'about': lambda x: None if not x else x
-    }
     protobuf_include_fields = ('full_name',)
 
     organization_id = models.UUIDField()
@@ -55,7 +48,6 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         ArrayField(models.CharField(max_length=256, null=True), size=2),
         null=True,
     )
-    about = models.TextField(null=True)
     is_admin = models.BooleanField(default=False)
     # XXX what is this random max_length?
     small_image_url = models.URLField(max_length=256, null=True)
