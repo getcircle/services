@@ -36,10 +36,20 @@ class StartImageUpload(actions.Action):
     def _get_image_identifier(self, key):
         return hashlib.md5(arrow.utcnow().isoformat() + ':' + key).hexdigest()
 
+    # XXX since these are public buckets right now, maybe we don't want to
+    # expose what object it represents?
     def _build_media_key(self):
         media_type = self.request.media_type
         if media_type == media_pb2.PROFILE:
             return 'profiles/%s' % (
+                self._get_image_identifier(uuid.UUID(self.request.media_key, version=4).hex),
+            )
+        elif media_type == media_pb2.TEAM:
+            return 'teams/%s' % (
+                self._get_image_identifier(uuid.UUID(self.request.media_key, version=4).hex),
+            )
+        elif media_type == media_pb2.LOCATION:
+            return 'locations/%s' % (
                 self._get_image_identifier(uuid.UUID(self.request.media_key, version=4).hex),
             )
 
