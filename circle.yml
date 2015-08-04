@@ -6,12 +6,12 @@ machine:
 
 dependencies:
   cache_directories:
-    - "~/wheelhouse/"
+    - "wheelhouse/"
     - "~/docker/"
   override:
     - pip install --no-deps -r dev-requirements.txt
     # ensure cache directories exist
-    - mkdir -p ~/wheelhouse
+    - mkdir -p wheelhouse
     - mkdir -p ~/docker
 
 deployment:
@@ -27,7 +27,7 @@ deployment:
       # setup build images
       - docker build -t mhahn/services-base docker/base
       - docker build -t mhahn/services-build docker/build
-      - docker run -v ~/wheelhouse:/wheelhouse -v `pwd`:/application mhahn/services-build
+      - docker run -v `pwd`/wheelhouse:/wheelhouse -v `pwd`:/application mhahn/services-build
 
       # setup run and manage images
       - docker build -t mhahn/services .
