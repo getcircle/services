@@ -207,7 +207,7 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
                 action_type=history_containers.UPDATE_DESCRIPTION,
             )
 
-        team.update_from_protobuf(self.request.team)
+        team.update_from_protobuf(self.request.team, self.parsed_token.profile_id)
         team.save()
         if action:
             service.control.call_action(

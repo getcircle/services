@@ -27,6 +27,26 @@ class TeamFactory(factory.Factory):
     organization = factory.SubFactory(OrganizationFactory)
     description = factory.FuzzyText()
 
+    @factory.post_generation
+    def status(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            if isinstance(extracted, dict):
+                value = extracted['value']
+                by_profile_id = extracted['by_profile_id']
+            else:
+                value = extracted.value
+                by_profile_id = extracted.by_profile_id
+
+            models.TeamStatus.objects.create(
+                team=self,
+                value=value,
+                organization_id=self.organization_id,
+                by_profile_id=by_profile_id,
+            )
+
 
 class AddressFactory(factory.Factory):
     class Meta:

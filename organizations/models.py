@@ -68,9 +68,58 @@ class Team(models.UUIDModel, models.TimestampableModel):
             pass
         return department_title
 
+    def _update_status(self, team_container, by_profile_id):
+        new_status = None
+        try:
+            current_status = self.teamstatus_set.all().order_by('-created')[0]
+            current_value = current_status.value
+        except IndexError:
+            current_value = None
+
+        value = team_container.status.value if team_container.HasField('status') else None
+        if current_value != value:
+            instance = TeamStatus.objects.create(
+                team=self,
+                value=value,
+                organization_id=self.organization_id,
+                by_profile_id=by_profile_id,
+            )
+            if value is not None:
+                new_status = instance.to_protobuf()
+        return new_status
+
+    def update_from_protobuf(self, protobuf, by_profile_id):
+        status = self._update_status(protobuf, by_profile_id)
+        return super(Team, self).update_from_protobuf(protobuf, status=status)
+
+    def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
+        protobuf = self.new_protobuf_container(protobuf)
+
+        try:
+            status = overrides.pop('status', self.teamstatus_set.all().order_by('-created')[0])
+        except IndexError:
+            status = None
+
+        if status is not None and status.value is not None:
+            overrides['status'] = status.as_dict()
+        return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
+
     class Meta:
         unique_together = ('name', 'organization')
         protobuf = organization_containers.TeamV1
+
+
+class TeamStatus(models.UUIDModel):
+
+    value = models.TextField(null=True)
+    team = models.ForeignKey(Team)
+    created = models.DateTimeField(auto_now_add=True)
+    organization_id = models.UUIDField()
+    by_profile_id = models.UUIDField()
+
+    class Meta:
+        index_together = ('team', 'organization_id', 'created')
+        protobuf = organization_containers.TeamStatusV1
 
 
 class Address(models.UUIDModel, models.TimestampableModel):

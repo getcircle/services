@@ -1,4 +1,6 @@
 import uuid
+
+from protobufs.services.organization import containers_pb2 as organization_containers
 import service.control
 
 from services.test import (
@@ -825,6 +827,8 @@ class TestOrganizations(TestCase):
         container = team.to_protobuf(path=team.get_path())
         container.name = 'new name'
         container.description = 'new description'
+        new_status = 'new status'
+        container.status.CopyFrom(organization_containers.TeamStatusV1(value=new_status))
         with self.mock_transport() as mock:
             mock.instance.register_empty_response(
                 service='history',
@@ -839,13 +843,88 @@ class TestOrganizations(TestCase):
                 profile_id=self.profile.id,
             )
             response = self.client.call_action('update_team', team=container)
+
         self.assertEqual(response.result.team.name, container.name)
         self.assertTrue(response.result.team.permissions.can_edit)
         self.assertTrue(response.result.team.permissions.can_add)
         self.assertTrue(response.result.team.permissions.can_delete)
+        status = response.result.team.status
+        self.assertEqual(status.value, new_status)
+        self.assertEqualUUID4(status.by_profile_id, str(self.profile.id))
+        self.assertTrue(status.created)
 
         team = models.Team.objects.get(pk=team.id)
         self.assertEqual(team.name, container.name)
+        statuses = team.teamstatus_set.all()
+        self.assertTrue(len(statuses), 1)
+        self.assertEqual(statuses[0].value, new_status)
+        self.assertEqualUUID4(statuses[0].by_profile_id, str(self.profile.id))
+
+    def test_update_team_status_didnt_change(self):
+        self.profile.is_admin = True
+        team = factories.TeamFactory.create(
+            organization=self.organization,
+            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
+        )
+        container = team.to_protobuf(path=team.get_path())
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            response = self.client.call_action('update_team', team=container)
+        self.verify_containers(response.result.team.status, container.status)
+
+    def test_update_team_unset_status(self):
+        self.profile.is_admin = True
+        team = factories.TeamFactory.create(
+            organization=self.organization,
+            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
+        )
+        container = team.to_protobuf(path=team.get_path())
+        container.ClearField('status')
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            response = self.client.call_action('update_team', team=container)
+        self.assertFalse(response.result.team.HasField('status'))
+
+    def test_update_team_get_team_only_returns_most_recent_status(self):
+        self.profile.is_admin = True
+        team = factories.TeamFactory.create(
+            organization=self.organization,
+            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
+        )
+        container = team.to_protobuf(path=team.get_path())
+        new_status = 'new status'
+        container.status.CopyFrom(organization_containers.TeamStatusV1(value=new_status))
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            response = self.client.call_action('update_team', team=container)
+            self.assertEqual(response.result.team.status.value, container.status.value)
+
+        with self.mock_transport() as mock:
+            self._mock_get_profile_stats(mock, [str(team.id)])
+            self._mock_get_requester_profile(mock)
+            response = self.client.call_action(
+                'get_team',
+                team_id=str(team.id),
+            )
+        self.assertEqual(response.result.team.status.value, container.status.value)
 
     def test_update_team_profile_non_admin(self):
         self.profile.is_admin = False
