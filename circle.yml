@@ -17,7 +17,7 @@ deployment:
       # setup build images
       - docker build -t mhahn/services-base docker/base
       - docker build -t mhahn/services-build docker/build
-      - docker run --rm -v ~/wheelhouse:/wheelhouse -v `pwd`:/application mhahn/services-build
+      - docker run -v ~/wheelhouse:/wheelhouse -v `pwd`:/application mhahn/services-build
 
       # setup run and manage images
       - docker build -t mhahn/services .
