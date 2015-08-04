@@ -26,6 +26,7 @@ class TeamFactory(factory.Factory):
     path = factory.FuzzyUUID()
     organization = factory.SubFactory(OrganizationFactory)
     description = factory.FuzzyText()
+    image_url = factory.FuzzyText(prefix='http://www.', suffix='.com')
 
     @factory.post_generation
     def status(self, create, extracted, **kwargs):

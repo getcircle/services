@@ -38,6 +38,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
     owner_id = models.UUIDField(db_index=True, editable=False)
     organization = models.ForeignKey(Organization, db_index=True, editable=False)
     path = LTreeField(null=True, db_index=True, editable=False)
+    image_url = models.URLField(max_length=255, null=True)
 
     def get_path(self, path_dict=None):
         if self._path is None:

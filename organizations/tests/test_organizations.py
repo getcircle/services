@@ -827,6 +827,7 @@ class TestOrganizations(TestCase):
         container = team.to_protobuf(path=team.get_path())
         container.name = 'new name'
         container.description = 'new description'
+        container.image_url = 'http://www.newimage.com'
         new_status = 'new status'
         container.status.CopyFrom(organization_containers.TeamStatusV1(value=new_status))
         with self.mock_transport() as mock:
@@ -848,6 +849,7 @@ class TestOrganizations(TestCase):
         self.assertTrue(response.result.team.permissions.can_edit)
         self.assertTrue(response.result.team.permissions.can_add)
         self.assertTrue(response.result.team.permissions.can_delete)
+        self.assertEqual(response.result.team.image_url, container.image_url)
         status = response.result.team.status
         self.assertEqual(status.value, new_status)
         self.assertEqualUUID4(status.by_profile_id, str(self.profile.id))
