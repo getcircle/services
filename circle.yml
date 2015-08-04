@@ -1,19 +1,32 @@
 machine:
-    environment:
-        DJANGO_SETTINGS_MODULE: services.settings.test
-    services:
-        - docker
+  environment:
+    DJANGO_SETTINGS_MODULE: services.settings.test
+  services:
+    - docker
 
 dependencies:
-    override:
-        - pip install --no-deps -r dev-requirements.txt
+  cache_directories:
+    - "~/wheelhouse/"
+  override:
+    - pip install --no-deps -r dev-requirements.txt
 
 deployment:
-    hub:
-        branch: master
-        commands:
-            - docker build -t mhahn/services .
-            - docker tag mhahn/services mhahn/services:$CIRCLE_SHA1
-            - docker tag mhahn/services mhahn/services:$CIRCLE_BRANCH
-            - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-            - docker push mhahn/services
+  hub:
+    branch: master
+    commands:
+      # setup build images
+      - docker build -t mhahn/services-base docker/base
+      - docker build -t mhahn/services-build docker/build
+      - docker run --rm -v ~/wheelhouse:/wheelhouse -v `pwd`:/application mhahn/services-build
+
+      # setup run and manage images
+      - docker build -t mhahn/services .
+      - docker build -t mhahn/services-manage docker/manage
+
+      # tag images and push them to repo
+      - docker tag mhahn/services-manage mhahn/services-manage:$CIRCLE_SHA1
+      - docker tag mhahn/services mhahn/services:$CIRCLE_SHA1
+      - docker tag mhahn/services mhahn/services:$CIRCLE_BRANCH
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push mhahn/services
+      - docker push mhahn/services-manage
