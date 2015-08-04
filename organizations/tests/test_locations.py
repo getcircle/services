@@ -1,3 +1,5 @@
+import arrow
+
 import service.control
 from services.test import (
     fuzzy,
@@ -59,15 +61,18 @@ class OrganizationLocationTests(TestCase):
             )
 
     def test_create_location(self):
+        established_date = str(arrow.utcnow().date())
         response = self.client.call_action(
             'create_location',
             location={
                 'organization_id': str(self.organization.id),
                 'address': self.address.to_protobuf(),
                 'name': fuzzy.FuzzyText().fuzz(),
+                'established_date': established_date,
             },
         )
         self.assertEqual(response.result.location.organization_id, str(self.organization.id))
+        self.assertEqual(established_date, response.result.location.established_date)
         self.verify_containers(response.result.location.address, self.address.to_protobuf())
 
     def test_create_location_duplicate(self):

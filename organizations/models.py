@@ -99,6 +99,7 @@ class Location(models.UUIDModel, models.TimestampableModel):
     address = models.ForeignKey(Address)
     image_url = models.URLField(max_length=255, null=True)
     description = models.TextField(null=True)
+    established_date = models.DateField(null=True)
 
     class Meta:
         unique_together = ('name', 'organization')
