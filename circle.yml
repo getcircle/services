@@ -7,13 +7,23 @@ machine:
 dependencies:
   cache_directories:
     - "~/wheelhouse/"
+    - "~/docker/"
   override:
     - pip install --no-deps -r dev-requirements.txt
+    # ensure cache directories exist
+    - mkdir -p ~/wheelhouse
+    - mkdir -p ~/docker
 
 deployment:
   hub:
     branch: master
     commands:
+      # workaround circleci not caching docker images
+      - if [[ -e ~/docker/services-base.tar ]]; then docker load -i ~/docker/services-base.tar; fi
+      - if [[ -e ~/docker/services-build.tar ]]; then docker load -i ~/docker/services-build.tar; fi
+      - if [[ -e ~/docker/services.tar ]]; then docker load -i ~/docker/services.tar; fi
+      - if [[ -e ~/docker/services-manage.tar ]]; then docker load -i ~/docker/services-manage.tar; fi
+
       # setup build images
       - docker build -t mhahn/services-base docker/base
       - docker build -t mhahn/services-build docker/build
@@ -30,3 +40,9 @@ deployment:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push mhahn/services
       - docker push mhahn/services-manage
+
+      # save docker images for circleci docker caching
+      - docker save mhahn/services-base > ~/docker/services-base.tar
+      - docker save mhahn/services-build > ~/docker/services-build.tar
+      - docker save mhahn/services > ~/docker/services.tar
+      - docker save mhahn/services-manage > ~/docker/services-manage.tar

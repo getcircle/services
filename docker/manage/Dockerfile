@@ -1,5 +1,5 @@
 # mhahn/services-manage
-FROM mhahn/services
+FROM mhahn/services:latest
 
 RUN apt-get install -y \
     postgresql-client

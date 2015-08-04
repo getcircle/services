@@ -1,4 +1,4 @@
-FROM mhahn/services-base
+FROM mhahn/services-base:latest
 
 ADD . /src
 WORKDIR /src

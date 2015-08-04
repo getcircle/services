@@ -1,5 +1,5 @@
 # mhahn/services-build
-FROM mhahn/services-base
+FROM mhahn/services-base:latest
 
 RUN apt-get install -y \
     python-dev libffi-dev libssl-dev
