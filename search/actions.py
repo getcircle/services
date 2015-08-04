@@ -24,6 +24,26 @@ from profiles.models import (
 
 class Search(mixins.PreRunParseTokenMixin, actions.Action):
 
+    def validate(self, *args, **kwargs):
+        super(Search, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if self.request.HasField('attribute') and not self.request.HasField('attribute_value'):
+                raise self.ActionFieldError('attribute_value', 'MISSING')
+            elif (
+                not self.request.HasField('attribute') and
+                self.request.HasField('attribute_value')
+            ):
+                raise self.ActionFieldError('attribute_value', 'MISSING')
+
+            if self.request.HasField('attribute') and not self.request.HasField('category'):
+                raise self.ActionFieldError('category', 'MISSING')
+
+            if self.request.HasField('attribute') and self.request.category != search_pb2.PROFILES:
+                raise self.ActionFieldError(
+                    'attribute',
+                    'attribute is only supported for "PROFILES" category',
+                )
+
     def pre_run(self, *args, **kwargs):
         super(Search, self).pre_run(*args, **kwargs)
         self.organization_id = self.parsed_token.organization_id
@@ -50,27 +70,34 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 Profile.objects.filter(organization_id=self.organization_id),
                 Location.objects.filter(organization_id=self.organization_id),
                 Team.objects.filter(organization_id=self.organization_id),
-                Tag.objects.filter(organization_id=self.organization_id),
-                self._get_group_category_queryset(),
+                # TODO remove these, we aren't supporting searching across them right now
+                #Tag.objects.filter(organization_id=self.organization_id),
+                #self._get_group_category_queryset(),
             )
         else:
             category = self.request.category
             category_queryset = None
+            parameters = {'organization_id': self.organization_id}
             if category == search_pb2.PROFILES:
-                category_queryset = Profile.objects.filter(organization_id=self.organization_id)
+                if self.request.HasField('attribute'):
+                    if self.request.attribute == search_pb2.TEAM_ID:
+                        parameters['team_id'] = self.request.attribute_value
+                    elif self.request.attribute == search_pb2.LOCATION_ID:
+                        parameters['location_id'] = self.request.attribute_value
+                category_queryset = Profile.objects.filter(**parameters)
             elif category == search_pb2.TEAMS:
-                category_queryset = Team.objects.filter(organization_id=self.organization_id)
+                category_queryset = Team.objects.filter(**parameters)
             elif category == search_pb2.LOCATIONS:
-                category_queryset = Location.objects.filter(organization_id=self.organization_id)
+                category_queryset = Location.objects.filter(**parameters)
             elif category == search_pb2.SKILLS:
                 category_queryset = Tag.objects.filter(
-                    organization_id=self.organization_id,
                     type=profile_containers.TagV1.SKILL,
+                    **parameters
                 )
             elif category == search_pb2.INTERESTS:
                 category_queryset = Tag.objects.filter(
-                    organization_id=self.organization_id,
                     type=profile_containers.TagV1.INTEREST,
+                    **parameters
                 )
             elif category == search_pb2.GROUPS:
                 category_queryset = self._get_group_category_queryset()
