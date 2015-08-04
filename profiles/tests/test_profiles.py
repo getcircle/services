@@ -11,7 +11,10 @@ from services.test import (
     TestCase,
 )
 
-from .. import factories
+from .. import (
+    factories,
+    models,
+)
 
 
 class TestProfiles(TestCase):
@@ -188,12 +191,14 @@ class TestProfiles(TestCase):
         self.assertEqual(len(response.result.profiles), 5)
 
     def test_get_profile(self):
-        expected = factories.ProfileFactory.create_protobuf()
+        status = profile_containers.ProfileStatusV1(value='some status')
+        expected = factories.ProfileFactory.create_protobuf(status=status)
         response = self.client.call_action(
             'get_profile',
             profile_id=expected.id,
         )
         self.verify_containers(expected, response.result.profile)
+        self.verify_containers(status, response.result.profile.status)
 
     def test_get_profile_full_name(self):
         profile = factories.ProfileFactory.create_protobuf()
@@ -224,7 +229,7 @@ class TestProfiles(TestCase):
             self.client.call_action('update_profile', profile=self.profile)
 
     def test_update_profile(self):
-        original = factories.ProfileFactory.create_protobuf()
+        original = factories.ProfileFactory.create_protobuf(status={'value': 'old status'})
         profile = profile_containers.ProfileV1()
         profile.CopyFrom(original)
 
@@ -232,11 +237,56 @@ class TestProfiles(TestCase):
         profile.last_name = 'Hahn'
         profile.title = 'Engineer'
 
+        new_status = 'new status'
+        profile.status.CopyFrom(profile_containers.ProfileStatusV1(value=new_status))
+
         # this has no effect, this just makes validating the container easier
         profile.full_name = 'Michael Hahn'
 
         response = self.client.call_action('update_profile', profile=profile)
-        self.verify_containers(profile, response.result.profile)
+        self.verify_containers(profile, response.result.profile, ignore_fields='status')
+        self.assertEqual(new_status, response.result.profile.status.value)
+        self.assertTrue(response.result.profile.status.created)
+        self.assertTrue(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 2)
+
+    def test_update_profile_status_didnt_change(self):
+        original = factories.ProfileFactory.create_protobuf(status={'value': 'old status'})
+        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
+        profile.first_name = 'Michael'
+        self.client.call_action('update_profile', profile=profile)
+        response = self.client.call_action('get_profile', profile_id=profile.id)
+        self.verify_containers(response.result.profile.status, profile.status)
+
+    def test_update_profile_unset_status(self):
+        original = factories.ProfileFactory.create_protobuf(status={'value': 'old status'})
+        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
+        profile.ClearField('status')
+        self.client.call_action('update_profile', profile=profile)
+        response = self.client.call_action('get_profile', profile_id=profile.id)
+        self.assertFalse(response.result.profile.HasField('status'))
+
+        response = self.client.call_action('update_profile', profile=profile)
+        self.assertFalse(response.result.profile.HasField('status'))
+        self.assertEqual(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 2)
+
+    def test_update_profile_get_profile_only_returns_most_recent_status(self):
+        original = factories.ProfileFactory.create_protobuf(status={'value': 'old status'})
+        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
+        new_status = 'new status'
+        profile.status.CopyFrom(profile_containers.ProfileStatusV1(value=new_status))
+
+        self.client.call_action('update_profile', profile=profile)
+        response = self.client.call_action('get_profile', profile_id=profile.id)
+        self.assertEqual(response.result.profile.status.value, new_status)
+
+    def test_update_profile_no_previous_status(self):
+        original = factories.ProfileFactory.create_protobuf()
+        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
+        new_status = 'new status'
+        profile.status.CopyFrom(profile_containers.ProfileStatusV1(value=new_status))
+
+        response = self.client.call_action('update_profile', profile=profile)
+        self.assertEqual(response.result.profile.status.value, new_status)
 
     def test_get_direct_reports_invalid_profile_id(self):
         with self.assertFieldError('profile_id'):

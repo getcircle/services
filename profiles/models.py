@@ -69,8 +69,15 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             container = protobuf.contact_methods.add()
             method.to_protobuf(container)
 
+        try:
+            status = overrides.pop('status', self.profilestatus_set.all().order_by('-created')[0])
+        except IndexError:
+            status = None
+
         overrides['items'] = items
         overrides['contact_methods'] = contact_methods
+        if status is not None and status.value is not None:
+            overrides['status'] = status.as_dict()
         return super(Profile, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
     def update_from_protobuf(self, protobuf):
@@ -82,11 +89,32 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         if protobuf.contact_methods:
             contact_methods = self._update_contact_methods(protobuf.contact_methods)
 
+        status = self._update_status(protobuf)
         return super(Profile, self).update_from_protobuf(
             protobuf,
             items=items,
             contact_methods=contact_methods,
+            status=status,
         )
+
+    def _update_status(self, profile_container):
+        new_status = None
+        try:
+            current_status = self.profilestatus_set.all().order_by('-created')[0]
+            current_value = current_status.value
+        except IndexError:
+            current_value = None
+
+        value = profile_container.status.value if profile_container.HasField('status') else None
+        if current_value != value:
+            instance = ProfileStatus.objects.create(
+                profile=self,
+                value=value,
+                organization_id=self.organization_id,
+            )
+            if value is not None:
+                new_status = instance.to_protobuf()
+        return new_status
 
     def _update_contact_methods(self, methods):
         with django.db.transaction.atomic():
@@ -130,6 +158,18 @@ class ProfileTags(models.TimestampableModel):
 
     class Meta:
         unique_together = ('tag', 'profile')
+
+
+class ProfileStatus(models.UUIDModel):
+
+    value = models.TextField(null=True)
+    profile = models.ForeignKey(Profile)
+    created = models.DateTimeField(auto_now_add=True)
+    organization_id = models.UUIDField()
+
+    class Meta:
+        index_together = ('profile', 'organization_id', 'created')
+        protobuf = profile_containers.ProfileStatusV1
 
 
 class ContactMethod(models.UUIDModel, models.TimestampableModel):

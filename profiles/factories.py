@@ -55,6 +55,23 @@ class ProfileFactory(factory.Factory):
                     organization_id=self.organization_id,
                 )
 
+    @factory.post_generation
+    def status(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            if isinstance(extracted, dict):
+                value = extracted['value']
+            else:
+                value = extracted.value
+
+            models.ProfileStatus.objects.create(
+                profile=self,
+                value=value,
+                organization_id=self.organization_id,
+            )
+
 
 class TagFactory(factory.Factory):
     class Meta:
