@@ -289,3 +289,10 @@ PHONENUMBER_DEFAULT_REGION = 'US'
 
 # Cache timeout in seconds
 CACHEOPS_FUNC_IS_GOOGLE_DOMAIN_TIMEOUT = 3600
+
+SHELL_PLUS_POST_IMPORTS = (
+    'service.control',
+    ('services.token', 'make_admin_token'),
+    ('services.bootstrap', 'Bootstrap'),
+    ('services.test.utils', 'setup_shell'),
+)

@@ -51,10 +51,3 @@ GOOGLE_ADMIN_SDK_JSON_KEY = {
 
 AWS_SNS_PLATFORM_APPLICATION_APNS = 'arn:aws:sns:us-east-1:487220619225:app/APNS_SANDBOX/Circle-Dev'
 AWS_SNS_PLATFORM_APPLICATION_GCM = 'arn:aws:sns:us-east-1:487220619225:app/GCM/Circle-Dev'
-
-SHELL_PLUS_POST_IMPORTS = (
-    'service.control',
-    ('services.token', 'make_admin_token'),
-    ('services.bootstrap', 'Bootstrap'),
-    ('services.test.utils', 'setup_shell'),
-)
