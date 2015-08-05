@@ -53,7 +53,6 @@ class Row(object):
         'birth_date',
         'hire_date',
         'email',
-        'about',
     )
 
     contact_method_fields = (
