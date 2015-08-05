@@ -15,9 +15,6 @@ dependencies:
 
     # workaround circleci not caching docker images
     - if [[ -e ~/docker/services-base.tar ]]; then docker load -i ~/docker/services-base.tar; fi
-    - if [[ -e ~/docker/services-build.tar ]]; then docker load -i ~/docker/services-build.tar; fi
-    - if [[ -e ~/docker/services.tar ]]; then docker load -i ~/docker/services.tar; fi
-    - if [[ -e ~/docker/services-manage.tar ]]; then docker load -i ~/docker/services-manage.tar; fi
 
     # setup build images
     - docker build -t mhahn/services-base docker/base
@@ -30,9 +27,6 @@ dependencies:
 
     # save docker images for circleci docker caching
     - docker save mhahn/services-base > ~/docker/services-base.tar
-    - docker save mhahn/services-build > ~/docker/services-build.tar
-    - docker save mhahn/services > ~/docker/services.tar
-    - docker save mhahn/services-manage > ~/docker/services-manage.tar
 
     # TODO just use docker to run the tests
     - pip install --no-deps -r dev-requirements.txt
