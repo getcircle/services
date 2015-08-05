@@ -1,3 +1,5 @@
+import uuid
+
 import arrow
 
 import service.control
@@ -104,15 +106,25 @@ class OrganizationLocationTests(TestCase):
         location = factories.LocationFactory.create_protobuf()
         location.name = new_name
         location.description = new_description
+        points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
+        location.points_of_contact.extend(points_of_contact)
         with self.mock_transport(self.client) as mock:
             mock.instance.register_empty_response(
                 'history',
                 'record_action',
                 mock_regex_lookup='history:record_action:.*',
             )
+            mock.instance.register_mock_object(
+                'profile',
+                'get_profiles',
+                return_object_path='profiles',
+                return_object=points_of_contact,
+                ids=[profile.id for profile in points_of_contact],
+            )
             response = self.client.call_action('update_location', location=location)
         self.assertEqual(response.result.location.name, new_name)
         self.assertEqual(response.result.location.description, new_description)
+        self.assertEqual(len(response.result.location.points_of_contact), len(points_of_contact))
 
     def test_get_location_invalid_location_id(self):
         with self.assertFieldError('location_id'):
@@ -148,12 +160,21 @@ class OrganizationLocationTests(TestCase):
         self.assertEqual(len(response.result.locations), 0)
 
     def test_get_locations(self):
+        points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
         locations = factories.LocationFactory.create_batch(
             size=3,
             organization=self.organization,
+            points_of_contact_profile_ids=[profile.id for profile in points_of_contact],
         )
         factories.LocationFactory.create_batch(size=3)
         with self.mock_transport(self.client) as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profiles',
+                return_object_path='profiles',
+                return_object=points_of_contact,
+                ids=[str(uuid.UUID(profile.id, version=4)) for profile in points_of_contact],
+            )
             self._mock_get_profile_stats(mock, [str(location.id) for location in locations])
             response = self.client.call_action(
                 'get_locations',
@@ -162,3 +183,4 @@ class OrganizationLocationTests(TestCase):
         self.assertEqual(len(locations), len(response.result.locations))
         for location in response.result.locations:
             self.assertEqual(location.profile_count, 5)
+            self.assertEqual(len(location.points_of_contact), len(points_of_contact))

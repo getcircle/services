@@ -5,6 +5,7 @@ from cacheops import cached_as
 import django.db
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.history import containers_pb2 as history_containers
+from protobuf_to_dict import protobuf_to_dict
 from service import (
     actions,
     validators,
@@ -561,7 +562,33 @@ class CreateLocation(actions.Action):
         location.to_protobuf(self.response.location)
 
 
-class UpdateLocation(actions.Action):
+class BaseLocationAction(actions.Action):
+
+    def _fetch_profile_stats(self, locations):
+        client = service.control.Client('profile', token=self.token)
+        response = client.call_action(
+            'get_profile_stats',
+            location_ids=[str(location.id) for location in locations],
+        )
+        return dict((stat.id, stat.count) for stat in response.result.stats)
+
+    def _fetch_points_of_contact(self, locations):
+        location_to_profiles = {}
+        for location in locations:
+            location_to_profiles.setdefault(str(location.id), [])
+            if location.points_of_contact_profile_ids:
+                profiles = service.control.get_object(
+                    service='profile',
+                    action='get_profiles',
+                    client_kwargs={'token': self.token},
+                    return_object='profiles',
+                    ids=map(str, location.points_of_contact_profile_ids),
+                )
+                location_to_profiles[str(location.id)] = map(protobuf_to_dict, profiles)
+        return location_to_profiles
+
+
+class UpdateLocation(BaseLocationAction):
 
     type_validators = {
         'location.id': [validators.is_uuid4],
@@ -593,18 +620,12 @@ class UpdateLocation(actions.Action):
                 client_kwargs={'token': self.token},
                 action=action,
             )
-        location.to_protobuf(self.response.location)
 
-
-class BaseLocationAction(actions.Action):
-
-    def _fetch_profile_stats(self, locations):
-        client = service.control.Client('profile', token=self.token)
-        response = client.call_action(
-            'get_profile_stats',
-            location_ids=[str(location.id) for location in locations],
+        points_of_contact = self._fetch_points_of_contact([location])
+        location.to_protobuf(
+            self.response.location,
+            points_of_contact=points_of_contact.get(str(location.id), []),
         )
-        return dict((stat.id, stat.count) for stat in response.result.stats)
 
 
 class GetLocation(BaseLocationAction):
@@ -637,10 +658,12 @@ class GetLocation(BaseLocationAction):
 
         location = models.Location.objects.select_related('address').get(**parameters)
         profile_stats = self._fetch_profile_stats([location])
+        points_of_contact = self._fetch_points_of_contact([location])
         location.to_protobuf(
             self.response.location,
             address=location.address.as_dict(),
             profile_count=profile_stats.get(str(location.id), 0),
+            points_of_contact=points_of_contact.get(str(location.id), []),
         )
 
 
@@ -654,12 +677,14 @@ class GetLocations(mixins.PreRunParseTokenMixin, BaseLocationAction):
             return
 
         profile_stats = self._fetch_profile_stats(locations)
+        points_of_contact = self._fetch_points_of_contact(locations)
         for location in locations:
             container = self.response.locations.add()
             location.to_protobuf(
                 container,
                 address=location.address.as_dict(),
                 profile_count=profile_stats.get(str(location.id), 0),
+                points_of_contact=points_of_contact.get(str(location.id), []),
             )
 
 

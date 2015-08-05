@@ -2,6 +2,7 @@ import binascii
 import os
 from common.db import models
 from common import utils
+from django.contrib.postgres.fields import ArrayField
 from protobuf_to_dict import protobuf_to_dict
 
 from protobufs.services.organization import containers_pb2 as organization_containers
@@ -150,10 +151,18 @@ class Location(models.UUIDModel, models.TimestampableModel):
     image_url = models.URLField(max_length=255, null=True)
     description = models.TextField(null=True)
     established_date = models.DateField(null=True)
+    points_of_contact_profile_ids = ArrayField(models.UUIDField(), null=True)
 
     class Meta:
         unique_together = ('name', 'organization')
         protobuf = organization_containers.LocationV1
+
+    def update_from_protobuf(self, protobuf):
+        points_of_contact_profile_ids = [profile.id for profile in protobuf.points_of_contact]
+        return super(Location, self).update_from_protobuf(
+            protobuf,
+            points_of_contact_profile_ids=points_of_contact_profile_ids,
+        )
 
 
 class Token(models.UUIDModel):
