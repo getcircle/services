@@ -430,6 +430,7 @@ class TestOrganizations(TestCase):
     def test_get_team(self):
         expected = self._create_team()
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
             self._mock_get_profile_stats(mock, [expected.id])
             self._mock_get_requester_profile(mock)
             response = self.client.call_action(
@@ -485,6 +486,7 @@ class TestOrganizations(TestCase):
             organization_id=str(self.organization.id),
         )
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
             self._mock_get_profile_stats(mock, [team.id for team in teams])
             self._mock_get_requester_profile(mock, profile=profile)
             response = self.client.call_action('get_teams')
@@ -501,6 +503,7 @@ class TestOrganizations(TestCase):
         organization = factories.OrganizationFactory.create()
         teams = factories.TeamFactory.create_batch(2, organization=organization)
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
             self._mock_get_requester_profile(mock)
             self._mock_get_profile_stats(mock, [str(team.id) for team in teams])
             mock_response = mock.get_mockable_response('profile', 'get_attributes_for_profiles')
@@ -570,6 +573,14 @@ class TestOrganizations(TestCase):
         self.assertEqual(len(descendants.teams), 2)
         self.assertEqual(descendants.teams[0].name, 'a')
         self.assertEqual(descendants.teams[1].name, 'b')
+
+        with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [parent_team.id])
+            self._mock_get_requester_profile(mock)
+            response = self.client.call_action('get_team', team_id=parent_team.id)
+
+        self.assertEqual(response.result.team.child_team_count, 2)
 
     def test_get_team_descendants_invalid_depth(self):
         team = factories.TeamFactory.create()
@@ -708,6 +719,7 @@ class TestOrganizations(TestCase):
     def test_get_team_with_name_and_organization_id(self):
         team = factories.TeamFactory.create()
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
             self._mock_get_profile_stats(mock, [str(team.id)])
             self._mock_get_requester_profile(mock)
             response = self.client.call_action(
@@ -791,6 +803,7 @@ class TestOrganizations(TestCase):
     def test_get_team_include_permissions_not_admin(self):
         team = factories.TeamFactory.create()
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
             self._mock_get_profile_stats(mock, [str(team.id)])
             self._mock_get_requester_profile(mock)
             response = self.client.call_action('get_team', team_id=str(team.id))
@@ -805,6 +818,7 @@ class TestOrganizations(TestCase):
         token = mocks.mock_token(organization_id=team.organization_id, profile_id=profile.id)
         self.client.token = token
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
             self._mock_get_profile_stats(mock, [str(team.id)])
             self._mock_get_requester_profile(mock, profile=profile)
             response = self.client.call_action('get_team', team_id=str(team.id))
@@ -831,6 +845,8 @@ class TestOrganizations(TestCase):
         new_status = 'new status'
         container.status.CopyFrom(organization_containers.TeamStatusV1(value=new_status))
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [str(team.id)])
             mock.instance.register_empty_response(
                 service='history',
                 action='record_action',
@@ -870,6 +886,8 @@ class TestOrganizations(TestCase):
         )
         container = team.to_protobuf(path=team.get_path())
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [str(team.id)])
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profile',
@@ -889,6 +907,8 @@ class TestOrganizations(TestCase):
         container = team.to_protobuf(path=team.get_path())
         container.ClearField('status')
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [str(team.id)])
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profile',
@@ -909,6 +929,8 @@ class TestOrganizations(TestCase):
         new_status = 'new status'
         container.status.CopyFrom(organization_containers.TeamStatusV1(value=new_status))
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [str(team.id)])
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profile',
@@ -953,6 +975,8 @@ class TestOrganizations(TestCase):
         container.owner_id = fuzzy.FuzzyUUID().fuzz()
         container.name = 'new name'
         with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [str(team.id)])
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profile',

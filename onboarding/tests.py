@@ -95,6 +95,11 @@ class TestParser(TestCase):
         parser.parse(commit=True)
         with self.mock_transport() as mock:
             mock.instance.register_empty_response(
+                service='organization',
+                action='get_team_descendants',
+                mock_regex_lookup='organization:get_team_descendants',
+            )
+            mock.instance.register_empty_response(
                 service='profile',
                 action='get_profile_stats',
                 mock_regex_lookup='profile:get_profile_stats.*',
