@@ -18,6 +18,7 @@ from services.token import parse_token
 from . import models
 from .mixins import (
     LocationPermissionsMixin,
+    LocationProfileStatsMixin,
     TeamPermissionsMixin,
     TeamProfileStatsMixin,
 )
@@ -537,15 +538,7 @@ class CreateLocation(actions.Action):
         location.to_protobuf(self.response.location)
 
 
-class BaseLocationAction(LocationPermissionsMixin, actions.Action):
-
-    def _fetch_profile_stats(self, locations):
-        client = service.control.Client('profile', token=self.token)
-        response = client.call_action(
-            'get_profile_stats',
-            location_ids=[str(location.id) for location in locations],
-        )
-        return dict((stat.id, stat.count) for stat in response.result.stats)
+class BaseLocationAction(LocationProfileStatsMixin, LocationPermissionsMixin, actions.Action):
 
     def _fetch_points_of_contact(self, locations):
         location_to_profiles = {}
@@ -636,7 +629,7 @@ class GetLocation(BaseLocationAction):
             raise self.ActionError('FAILURE', ('FAILURE', 'missing parameters'))
 
         location = models.Location.objects.select_related('address').get(**parameters)
-        profile_stats = self._fetch_profile_stats([location])
+        profile_stats = self.fetch_profile_stats([location])
         points_of_contact = self._fetch_points_of_contact([location])
         location.to_protobuf(
             self.response.location,
@@ -656,7 +649,7 @@ class GetLocations(BaseLocationAction):
         if not locations:
             return
 
-        profile_stats = self._fetch_profile_stats(locations)
+        profile_stats = self.fetch_profile_stats(locations)
         points_of_contact = self._fetch_points_of_contact(locations)
         for location in locations:
             container = self.response.locations.add()

@@ -44,6 +44,17 @@ class LocationPermissionsMixin(TeamPermissionsMixin):
         return permissions
 
 
+class LocationProfileStatsMixin(object):
+
+    def fetch_profile_stats(self, locations):
+        client = service.control.Client('profile', token=self.token)
+        response = client.call_action(
+            'get_profile_stats',
+            location_ids=[str(location.id) for location in locations],
+        )
+        return dict((stat.id, stat.count) for stat in response.result.stats)
+
+
 class TeamProfileStatsMixin(object):
 
     def fetch_profile_stats(self, team_ids):
