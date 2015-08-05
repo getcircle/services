@@ -35,9 +35,7 @@ deployment:
   hub:
     branch: master
     commands:
-      - docker tag mhahn/services-manage mhahn/services-manage:$CIRCLE_SHA1
       - docker tag mhahn/services mhahn/services:$CIRCLE_SHA1
       - docker tag mhahn/services mhahn/services:$CIRCLE_BRANCH
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push mhahn/services
-      - docker push mhahn/services-manage

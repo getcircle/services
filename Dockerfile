@@ -1,5 +1,8 @@
 FROM mhahn/services-base:latest
 
+RUN apt-get install -y \
+    postgresql-client
+
 ADD . /src
 WORKDIR /src
 
