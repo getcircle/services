@@ -17,10 +17,14 @@ class OrganizationLocationTests(TestCase):
     def setUp(self):
         super(OrganizationLocationTests, self).setUp()
         self.organization = factories.OrganizationFactory.create()
+        self.profile = mocks.mock_profile(organization_id=str(self.organization.id))
         self.address = factories.AddressFactory.create(organization=self.organization)
         self.client = service.control.Client(
             'organization',
-            token=mocks.mock_token(organization_id=str(self.organization.id)),
+            token=mocks.mock_token(
+                organization_id=str(self.organization.id),
+                profile_id=self.profile.id,
+            ),
         )
 
     def _mock_get_profile_stats(self, mock, location_ids):
@@ -101,6 +105,7 @@ class OrganizationLocationTests(TestCase):
             self.client.call_action('update_location', location=location)
 
     def test_update_location(self):
+        self.profile.is_admin = True
         new_name = 'New HQ'
         new_description = 'updated'
         location = factories.LocationFactory.create_protobuf()
@@ -109,6 +114,13 @@ class OrganizationLocationTests(TestCase):
         points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
         location.points_of_contact.extend(points_of_contact)
         with self.mock_transport(self.client) as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
             mock.instance.register_empty_response(
                 'history',
                 'record_action',
@@ -126,6 +138,20 @@ class OrganizationLocationTests(TestCase):
         self.assertEqual(response.result.location.description, new_description)
         self.assertEqual(len(response.result.location.points_of_contact), len(points_of_contact))
 
+    def test_update_location_non_admin(self):
+        location = factories.LocationFactory.create_protobuf()
+        location.name = 'updated'
+        with self.mock_transport() as mock, self.assertRaisesCallActionError() as expected:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            self.client.call_action('update_location', location=location)
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
     def test_get_location_invalid_location_id(self):
         with self.assertFieldError('location_id'):
             self.client.call_action('get_location', location_id='invalid')
@@ -134,13 +160,45 @@ class OrganizationLocationTests(TestCase):
         with self.assertFieldError('location_id', 'DOES_NOT_EXIST'):
             self.client.call_action('get_location', location_id=fuzzy.FuzzyUUID().fuzz())
 
-    def test_get_location_with_location_id(self):
+    def test_get_location_with_location_id_non_admin(self):
+        self.profile.is_admin = False
         location = factories.LocationFactory.create_protobuf()
         with self.mock_transport(self.client) as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
             self._mock_get_profile_stats(mock, [str(location.id)])
             response = self.client.call_action('get_location', location_id=location.id)
         self.verify_containers(location, response.result.location)
         self.assertEqual(response.result.location.profile_count, 5)
+        permissions = response.result.location.permissions
+        self.assertFalse(permissions.can_edit)
+        self.assertFalse(permissions.can_add)
+        self.assertFalse(permissions.can_delete)
+
+    def test_get_location_with_location_id_admin(self):
+        self.profile.is_admin = True
+        location = factories.LocationFactory.create_protobuf()
+        with self.mock_transport(self.client) as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            self._mock_get_profile_stats(mock, [str(location.id)])
+            response = self.client.call_action('get_location', location_id=location.id)
+        self.verify_containers(location, response.result.location)
+        self.assertEqual(response.result.location.profile_count, 5)
+        permissions = response.result.location.permissions
+        self.assertTrue(permissions.can_edit)
+        self.assertTrue(permissions.can_add)
+        self.assertTrue(permissions.can_delete)
 
     def test_get_location_by_name_organization_id_required(self):
         with self.assertFieldError('organization_id', 'REQUIRED'):
@@ -148,11 +206,20 @@ class OrganizationLocationTests(TestCase):
 
     def test_get_location_by_name(self):
         location = factories.LocationFactory.create_protobuf()
-        response = self.client.call_action(
-            'get_location',
-            name=location.name,
-            organization_id=location.organization_id,
-        )
+        with self.mock_transport() as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            self._mock_get_profile_stats(mock, [str(location.id)])
+            response = self.client.call_action(
+                'get_location',
+                name=location.name,
+                organization_id=location.organization_id,
+            )
         self.verify_containers(location, response.result.location)
 
     def test_get_locations_no_locations(self):
@@ -160,6 +227,7 @@ class OrganizationLocationTests(TestCase):
         self.assertEqual(len(response.result.locations), 0)
 
     def test_get_locations(self):
+        self.profile.is_admin = True
         points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
         locations = factories.LocationFactory.create_batch(
             size=3,
@@ -168,6 +236,13 @@ class OrganizationLocationTests(TestCase):
         )
         factories.LocationFactory.create_batch(size=3)
         with self.mock_transport(self.client) as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profiles',
@@ -184,3 +259,6 @@ class OrganizationLocationTests(TestCase):
         for location in response.result.locations:
             self.assertEqual(location.profile_count, 5)
             self.assertEqual(len(location.points_of_contact), len(points_of_contact))
+            self.assertTrue(location.permissions.can_edit)
+            self.assertTrue(location.permissions.can_add)
+            self.assertTrue(location.permissions.can_delete)

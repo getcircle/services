@@ -967,6 +967,41 @@ class TestOrganizations(TestCase):
 
         self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
 
+    def test_update_team_profile_non_admin_member(self):
+        self.profile.is_admin = False
+        team = factories.TeamFactory.create(organization=self.organization)
+        self.profile.team_id = str(team.id)
+        container = team.to_protobuf(path=team.get_path())
+        container.name = 'new name'
+        with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [str(team.id)])
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            self.client.call_action('update_team', team=container)
+
+    def test_update_team_profile_non_admin_non_member(self):
+        self.profile.is_admin = False
+        team = factories.TeamFactory.create(organization=self.organization)
+        container = team.to_protobuf(path=team.get_path())
+        container.name = 'new name'
+        with self.mock_transport() as mock, self.assertRaisesCallActionError() as expected:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            self.client.call_action('update_team', team=container)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
     def test_update_team_non_editable_fields(self):
         self.profile.is_admin = True
         team = factories.TeamFactory.create(organization=self.organization)

@@ -17,6 +17,7 @@ from services.history import action_container_for_update
 from services.token import parse_token
 from . import models
 from .mixins import (
+    LocationPermissionsMixin,
     TeamPermissionsMixin,
     TeamProfileStatsMixin,
 )
@@ -536,7 +537,7 @@ class CreateLocation(actions.Action):
         location.to_protobuf(self.response.location)
 
 
-class BaseLocationAction(actions.Action):
+class BaseLocationAction(LocationPermissionsMixin, actions.Action):
 
     def _fetch_profile_stats(self, locations):
         client = service.control.Client('profile', token=self.token)
@@ -576,6 +577,10 @@ class UpdateLocation(BaseLocationAction):
 
     def run(self, *args, **kwargs):
         location = models.Location.objects.get(pk=self.request.location.id)
+
+        permissions = self.get_permissions(location)
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
 
         action = None
         if self.request.location.description != location.description:
@@ -639,9 +644,10 @@ class GetLocation(BaseLocationAction):
             profile_count=profile_stats.get(str(location.id), 0),
             points_of_contact=points_of_contact.get(str(location.id), []),
         )
+        self.response.location.permissions.CopyFrom(self.get_permissions(location))
 
 
-class GetLocations(mixins.PreRunParseTokenMixin, BaseLocationAction):
+class GetLocations(BaseLocationAction):
 
     def run(self, *args, **kwargs):
         locations = models.Location.objects.select_related('address').filter(
@@ -660,6 +666,7 @@ class GetLocations(mixins.PreRunParseTokenMixin, BaseLocationAction):
                 profile_count=profile_stats.get(str(location.id), 0),
                 points_of_contact=points_of_contact.get(str(location.id), []),
             )
+            container.permissions.CopyFrom(self.get_permissions(location))
 
 
 class CreateToken(actions.Action):

@@ -1,7 +1,10 @@
 from protobufs.services.common import containers_pb2 as common_containers
 import service.control
 
-from services import mixins
+from services import (
+    mixins,
+    utils,
+)
 
 
 class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
@@ -19,6 +22,20 @@ class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
         return self._requester_profile
 
     def get_permissions(self, team):
+        permissions = common_containers.PermissionsV1()
+        if self.parsed_token.is_admin() or self.requester_profile.is_admin:
+            permissions.can_edit = True
+            permissions.can_add = True
+            permissions.can_delete = True
+        # XXX should really be everyone on the team
+        elif utils.matching_uuids(self.requester_profile.team_id, team.id):
+            permissions.can_edit = True
+        return permissions
+
+
+class LocationPermissionsMixin(TeamPermissionsMixin):
+
+    def get_permissions(self, location):
         permissions = common_containers.PermissionsV1()
         if self.parsed_token.is_admin() or self.requester_profile.is_admin:
             permissions.can_edit = True
