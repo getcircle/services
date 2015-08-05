@@ -4,11 +4,7 @@ FROM mhahn/services-base:latest
 RUN apt-get install -y \
     python-dev libffi-dev libssl-dev
 
-ENV WHEELHOUSE=/wheelhouse
-ENV PIP_WHEEL_DIR=/wheelhouse
-ENV PIP_FIND_LINKS=/wheelhouse
-
-VOLUME /wheelhouse
-VOLUME /application
+ENV WHEELHOUSE=/wheelhouse PIP_WHEEL_DIR=/wheelhouse PIP_FIND_LINKS=/wheelhouse
+VOLUME /wheelhouse /application
 
 ENTRYPOINT pip wheel --no-deps -r /application/requirements.txt
