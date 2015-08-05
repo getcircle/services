@@ -91,6 +91,7 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
             )
         except providers.exceptions.TokenAlreadyRegistered:
             # if a notification token exists for this device_id, delete it
+            # XXX should be logging whats happening here
             try:
                 token = models.NotificationToken.objects.get(device_id=self.request.device.id)
                 provider.delete_token(token.provider_token)
