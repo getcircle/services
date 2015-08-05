@@ -3,7 +3,7 @@ import watson
 
 from services.search import SearchAdapter
 from services.token import make_admin_token
-from .actions import TeamProfileStatsMixin
+from .mixins import TeamProfileStatsMixin
 
 
 class TeamSearchAdapter(SearchAdapter, TeamProfileStatsMixin):
@@ -12,8 +12,8 @@ class TeamSearchAdapter(SearchAdapter, TeamProfileStatsMixin):
         self.token = make_admin_token(organization_id=obj.organization_id)
         team_id = str(obj.id)
         team_ids = [team_id]
-        profile_stats = self._fetch_profile_stats(team_ids)
-        child_team_counts = self._fetch_child_team_counts(team_ids)
+        profile_stats = self.fetch_profile_stats(team_ids)
+        child_team_counts = self.fetch_child_team_counts(team_ids)
         return obj.to_protobuf(
             path=obj.get_path(),
             profile_count=profile_stats.get(team_id, 0),

@@ -3,7 +3,6 @@ import uuid
 
 from cacheops import cached_as
 import django.db
-from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.history import containers_pb2 as history_containers
 from protobuf_to_dict import protobuf_to_dict
 from service import (
@@ -17,6 +16,10 @@ from services import mixins
 from services.history import action_container_for_update
 from services.token import parse_token
 from . import models
+from .mixins import (
+    TeamPermissionsMixin,
+    TeamProfileStatsMixin,
+)
 
 
 def valid_organization(organization_id):
@@ -37,56 +40,6 @@ def valid_address(address_id):
 
 def valid_location(location_id):
     return models.Location.objects.filter(pk=location_id).exists()
-
-
-class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
-
-    @property
-    def requester_profile(self):
-        if not hasattr(self, '_requester_profile'):
-            self._requester_profile = service.control.get_object(
-                service='profile',
-                action='get_profile',
-                return_object='profile',
-                client_kwargs={'token': self.token},
-                profile_id=self.parsed_token.profile_id,
-            )
-        return self._requester_profile
-
-    def get_permissions(self, team):
-        permissions = common_containers.PermissionsV1()
-        if self.parsed_token.is_admin() or self.requester_profile.is_admin:
-            permissions.can_edit = True
-            permissions.can_add = True
-            permissions.can_delete = True
-        return permissions
-
-
-class TeamProfileStatsMixin(object):
-
-    def _fetch_profile_stats(self, team_ids):
-        result = {}
-        if team_ids:
-            client = service.control.Client('profile', token=self.token)
-            response = client.call_action('get_profile_stats', team_ids=team_ids)
-            result = dict((stat.id, stat.count) for stat in response.result.stats)
-        return result
-
-    def _fetch_child_team_counts(self, team_ids):
-        result = {}
-        if team_ids:
-            descendants = service.control.get_object(
-                service='organization',
-                action='get_team_descendants',
-                return_object='descendants',
-                client_kwargs={'token': self.token},
-                team_ids=team_ids,
-                attributes=['id'],
-                depth=1,
-            )
-            for descendant in descendants:
-                result[descendant.parent_team_id] = len(descendant.teams)
-        return result
 
 
 class CreateOrganization(actions.Action):
@@ -267,8 +220,8 @@ class GetTeam(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
 
         # TODO map this error
         team = models.Team.objects.get(**parameters)
-        profile_stats = self._fetch_profile_stats([str(team.id)])
-        child_team_counts = self._fetch_child_team_counts([str(team.id)])
+        profile_stats = self.fetch_profile_stats([str(team.id)])
+        child_team_counts = self.fetch_child_team_counts([str(team.id)])
         team.to_protobuf(
             self.response.team,
             path=team.get_path(),
@@ -450,8 +403,8 @@ class GetTeams(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
         page = self.get_page(paginator)
         path_dict = self._get_paths_in_bulk(page.object_list)
         team_ids = [str(item.id) for item in page.object_list]
-        stats_dict = self._fetch_profile_stats(team_ids)
-        child_team_counts = self._fetch_child_team_counts(team_ids)
+        stats_dict = self.fetch_profile_stats(team_ids)
+        child_team_counts = self.fetch_child_team_counts(team_ids)
 
         def add_team(item, repeated_container):
             container = repeated_container.add()
