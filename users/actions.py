@@ -505,6 +505,7 @@ class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
         client = service.control.Client('notification', token=self.token)
         client.call_action('register_device', device=device)
 
+    # XXX should pull user_id from token
     def run(self, *args, **kwargs):
         try:
             device = models.Device.objects.get(device_uuid=self.request.device.device_uuid)

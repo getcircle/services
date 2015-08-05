@@ -1,5 +1,6 @@
 import json
 
+import boto
 from mock import (
     MagicMock,
     patch,
@@ -41,6 +42,21 @@ class TestProviderSNS(TestCase):
 
         kwargs = patched_boto.connect_sns().create_platform_endpoint.call_args[1]
         self.assertEqual(json.loads(kwargs['custom_user_data'])['user_id'], user_id)
+
+    @patch('notification.providers.sns.boto.connect_sns')
+    def test_provider_register_notification_token_already_registered(self, patched_boto):
+        exception = boto.exception.BotoServerError(
+            400,
+            'Bad Request',
+            body='{"Error":{"Code":"InvalidParameter","Message":"Invalid parameter: Token Reason: Endpoint arn:aws:sns:us-east-1:487220619225:endpoint/APNS_SANDBOX/Circle-Dev/d4999444-0338-3919-9d25-c2ebf0a5b1ad already exists with the same Token, but different attributes.","Type":"Sender"}}',
+        )
+        patched_boto().create_platform_endpoint.side_effect = exception
+        with self.assertRaises(providers.exceptions.TokenAlreadyRegistered):
+            self.provider.register_notification_token(
+                'duplicate',
+                notification_containers.NotificationTokenV1.APNS,
+                fuzzy.FuzzyUUID().fuzz(),
+            )
 
     def test_provider_get_platform_for_device_device_provider_apple(self):
         platform = self.provider.get_platform_for_device(

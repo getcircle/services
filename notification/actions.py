@@ -82,6 +82,29 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
         'device.provider',
     )
 
+    def _register_token(self, provider, provider_platform):
+        try:
+            provider_token = provider.register_notification_token(
+                token=self.request.device.notification_token,
+                platform=provider_platform,
+                user_id=self.parsed_token.user_id,
+            )
+        except providers.exceptions.TokenAlreadyRegistered:
+            # if a notification token exists for this device_id, delete it
+            try:
+                token = models.NotificationToken.objects.get(device_id=self.request.device.id)
+                provider.delete_token(token.provider_token)
+                token.delete()
+            except models.NotificationToken.DoesNotExist:
+                raise
+
+            provider_token = provider.register_notification_token(
+                token=self.request.device.notification_token,
+                platform=provider_platform,
+                user_id=self.parsed_token.user_id,
+            )
+        return provider_token
+
     def run(self, *args, **kwargs):
         provider = providers.SNS()
         provider_platform = provider.get_platform_for_device(self.request.device)
@@ -93,11 +116,7 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
                 provider_platform=provider_platform,
             )
         except models.NotificationToken.DoesNotExist:
-            provider_token = provider.register_notification_token(
-                token=self.request.device.notification_token,
-                platform=provider_platform,
-                user_id=self.parsed_token.user_id,
-            )
+            provider_token = self._register_token(provider, provider_platform)
             notification_token = models.NotificationToken.objects.create(
                 user_id=self.parsed_token.user_id,
                 device_id=self.request.device.id,

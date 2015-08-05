@@ -32,18 +32,26 @@ class Provider(object):
             )
         return self._sns_connection
 
+    def delete_token(self, provider_token):
+        self.sns_connection.delete_endpoint(provider_token)
+
     def register_notification_token(self, token, platform, user_id):
         try:
             platform_application_arn = PLATFORM_APPLICATION_MAP[platform]
         except KeyError:
             raise exceptions.UnsupportedPlatform(platform)
 
-        # XXX catch the BotoServerError
-        response = self.sns_connection.create_platform_endpoint(
-            platform_application_arn=platform_application_arn,
-            token=token,
-            custom_user_data=json.dumps({'user_id': user_id}),
-        )
+        try:
+            response = self.sns_connection.create_platform_endpoint(
+                platform_application_arn=platform_application_arn,
+                token=token,
+                custom_user_data=json.dumps({'user_id': user_id}),
+            )
+        except boto.exception.BotoServerError as e:
+            # attempt to update the attributes if it already exists
+            if e.error_code == 'InvalidParameter' and 'Invalid parameter: Token' in e.message:
+                raise exceptions.TokenAlreadyRegistered()
+
         try:
             return response[
                 'CreatePlatformEndpointResponse'

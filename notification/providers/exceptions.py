@@ -18,3 +18,7 @@ class UnsupportedPlatform(Exception):
 
 class ProviderError(Exception):
     pass
+
+
+class TokenAlreadyRegistered(Exception):
+    pass
