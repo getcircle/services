@@ -114,6 +114,7 @@ class OrganizationLocationTests(TestCase):
         points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
         location.points_of_contact.extend(points_of_contact)
         with self.mock_transport(self.client) as mock:
+            self._mock_get_profile_stats(mock, [str(location.id)])
             mock.instance.register_mock_object(
                 service='profile',
                 action='get_profile',
