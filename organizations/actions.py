@@ -330,6 +330,7 @@ class GetTeamDescendants(TeamPermissionsMixin, actions.Action):
                             parameters['only'] = self.attributes
                         else:
                             parameters['path'] = team.get_path()
+                        # XXX look at why team status is being pulled here
                         team.to_protobuf(team_container, **parameters)
                         if not self.request.attributes or (
                             self.request.attributes and
