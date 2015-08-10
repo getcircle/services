@@ -10,6 +10,7 @@ class Action(models.UUIDModel, models.TimestampableModel):
         'method_type': int,
     }
 
+    table_name = models.CharField(max_length=64)
     column_name = models.CharField(max_length=64)
     data_type = models.CharField(max_length=32)
     old_value = models.TextField(null=True)

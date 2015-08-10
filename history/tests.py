@@ -39,12 +39,14 @@ class TestHistoryRecordAction(TestCase):
 
     def test_record_action_required_fields(self):
         required_fields = [
+            'table_name',
             'column_name',
             'data_type',
             'action_type',
             'method_type',
         ]
         payload = {
+            'table_name': 'some_table',
             'column_name': 'some_column',
             'data_type': 'varchar(64)',
             'old_value': 'old',
@@ -60,6 +62,7 @@ class TestHistoryRecordAction(TestCase):
 
     def test_record_action(self):
         expected = history_containers.ActionV1(**{
+            'table_name': 'some_table',
             'column_name': 'some_column',
             'data_type': 'varchar(64)',
             'old_value': 'old',
@@ -77,6 +80,7 @@ class TestHistoryRecordAction(TestCase):
         self.client.call_action(
             'record_action',
             action={
+                'table_name': 'some_table',
                 'column_name': 'some_column',
                 'data_type': 'varchar(64)',
                 'new_value': 'new',

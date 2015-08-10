@@ -5,13 +5,13 @@ from service import actions
 from services import mixins
 
 from . import models
-from protobufs.services.history import containers_pb2 as history_containers
 
 
 class RecordAction(mixins.PreRunParseTokenMixin, actions.Action):
 
     required_fields = (
         'action',
+        'action.table_name',
         'action.column_name',
         'action.data_type',
         'action.action_type',

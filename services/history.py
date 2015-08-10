@@ -4,10 +4,12 @@ from protobufs.services.history import containers_pb2 as history_containers
 
 def action_container(instance, field_name, new_value, action_type, method_type):
     field = instance._meta._forward_fields_map[field_name]
+    table_name = instance._meta.db_table
     column_name = field.db_column or field.column
     data_type = field.db_type(connection)
     old_value = getattr(instance, field_name)
     kwargs = {
+        'table_name': table_name,
         'column_name': column_name,
         'data_type': data_type,
         'action_type': action_type,
