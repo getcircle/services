@@ -2,7 +2,10 @@ import binascii
 import os
 from common.db import models
 from common import utils
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import (
+    ArrayField,
+    HStoreField,
+)
 from protobuf_to_dict import protobuf_to_dict
 
 from protobufs.services.organization import containers_pb2 as organization_containers
@@ -33,13 +36,19 @@ class Team(models.UUIDModel, models.TimestampableModel):
         self._path = None
 
     protobuf_include_fields = ('department',)
+    model_to_protobuf_mapping = {
+        'description': 'team_description',
+    }
 
     name = models.CharField(max_length=255)
-    description = models.TextField(null=True)
+    description = HStoreField(null=True)
     owner_id = models.UUIDField(db_index=True, editable=False)
     organization = models.ForeignKey(Organization, db_index=True, editable=False)
     path = LTreeField(null=True, db_index=True, editable=False)
     image_url = models.URLField(max_length=255, null=True)
+
+    def get_description(self):
+        return self.description or {}
 
     def get_path(self, path_dict=None):
         if self._path is None:
@@ -96,12 +105,14 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
     def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-
+        description = self.get_description()
         try:
             status = overrides.pop('status', self.teamstatus_set.all().order_by('-created')[0])
         except IndexError:
             status = None
 
+        if 'description' not in overrides:
+            overrides['description'] = description
         if status is not None and status.value is not None:
             overrides['status'] = status.as_dict()
         return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
@@ -145,13 +156,20 @@ class Address(models.UUIDModel, models.TimestampableModel):
 
 class Location(models.UUIDModel, models.TimestampableModel):
 
+    model_to_protobuf_mapping = {
+        'description': 'location_description',
+    }
+
     organization = models.ForeignKey(Organization, db_index=True)
     name = models.CharField(max_length=64)
     address = models.ForeignKey(Address)
     image_url = models.URLField(max_length=255, null=True)
-    description = models.TextField(null=True)
+    description = HStoreField(null=True)
     established_date = models.DateField(null=True)
     points_of_contact_profile_ids = ArrayField(models.UUIDField(), null=True)
+
+    def get_description(self):
+        return self.description or {}
 
     class Meta:
         unique_together = ('name', 'organization')
@@ -163,6 +181,13 @@ class Location(models.UUIDModel, models.TimestampableModel):
             protobuf,
             points_of_contact_profile_ids=points_of_contact_profile_ids,
         )
+
+    def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
+        protobuf = self.new_protobuf_container(protobuf)
+        description = self.get_description()
+        if 'description' not in overrides:
+            overrides['description'] = description
+        return super(Location, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
 
 class Token(models.UUIDModel):

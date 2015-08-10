@@ -25,7 +25,6 @@ class TeamFactory(factory.Factory):
     owner_id = factory.FuzzyUUID()
     path = factory.FuzzyUUID()
     organization = factory.SubFactory(OrganizationFactory)
-    description = factory.FuzzyText()
     image_url = factory.FuzzyText(prefix='http://www.', suffix='.com')
 
     @factory.post_generation
@@ -80,7 +79,6 @@ class LocationFactory(factory.Factory):
     name = factory.FuzzyText()
     address = factory.SubFactory(AddressFactory)
     organization = factory.SubFactory(OrganizationFactory)
-    description = factory.FuzzyText()
 
     @classmethod
     def create_protobuf(cls, *args, **kwargs):

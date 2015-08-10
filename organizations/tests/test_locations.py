@@ -104,15 +104,7 @@ class OrganizationLocationTests(TestCase):
         with self.assertFieldError('location.id'):
             self.client.call_action('update_location', location=location)
 
-    def test_update_location(self):
-        self.profile.is_admin = True
-        new_name = 'New HQ'
-        new_description = 'updated'
-        location = factories.LocationFactory.create_protobuf()
-        location.name = new_name
-        location.description = new_description
-        points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
-        location.points_of_contact.extend(points_of_contact)
+    def _update_location(self, location, points_of_contact=None):
         with self.mock_transport(self.client) as mock:
             self._mock_get_profile_stats(mock, [str(location.id)])
             mock.instance.register_mock_object(
@@ -127,17 +119,44 @@ class OrganizationLocationTests(TestCase):
                 'record_action',
                 mock_regex_lookup='history:record_action:.*',
             )
-            mock.instance.register_mock_object(
-                'profile',
-                'get_profiles',
-                return_object_path='profiles',
-                return_object=points_of_contact,
-                ids=[profile.id for profile in points_of_contact],
-            )
-            response = self.client.call_action('update_location', location=location)
+            if points_of_contact:
+                mock.instance.register_mock_object(
+                    'profile',
+                    'get_profiles',
+                    return_object_path='profiles',
+                    return_object=points_of_contact,
+                    ids=[profile.id for profile in points_of_contact],
+                )
+            return self.client.call_action('update_location', location=location)
+
+    def test_update_location(self):
+        self.profile.is_admin = True
+        new_name = 'New HQ'
+        new_description = 'updated'
+        location = factories.LocationFactory.create_protobuf()
+        location.name = new_name
+        location.location_description.value = new_description
+        points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
+        location.points_of_contact.extend(points_of_contact)
+
+        # update location
+        response = self._update_location(location, points_of_contact)
         self.assertEqual(response.result.location.name, new_name)
-        self.assertEqual(response.result.location.description, new_description)
+        self.assertEqual(response.result.location.location_description.value, new_description)
+        self.assertEqualUUID4(
+            response.result.location.location_description.by_profile_id,
+            self.profile.id,
+        )
+        self.assertTrue(response.result.location.location_description.changed)
         self.assertEqual(len(response.result.location.points_of_contact), len(points_of_contact))
+
+        # update the location again with a new description
+        location = response.result.location
+        location.location_description.value = 'another description'
+        response = self._update_location(location, points_of_contact)
+        location_description = response.result.location.location_description
+        self.assertEqual(location_description.value, location.location_description.value)
+        self.assertNotEqual(location_description.changed, location.location_description.changed)
 
     def test_update_location_non_admin(self):
         location = factories.LocationFactory.create_protobuf()

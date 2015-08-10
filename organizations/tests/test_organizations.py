@@ -701,7 +701,7 @@ class TestOrganizations(TestCase):
     def test_create_team_duplicate_name(self):
         team = factories.TeamFactory.create()
         team_dict = team.as_dict()
-        clear_keys = ['id', 'created', 'changed', 'path']
+        clear_keys = ['id', 'created', 'changed', 'path', 'description']
         for key in clear_keys:
             team_dict.pop(key)
 
@@ -840,7 +840,6 @@ class TestOrganizations(TestCase):
         team = factories.TeamFactory.create(organization=self.organization)
         container = team.to_protobuf(path=team.get_path())
         container.name = 'new name'
-        container.description = 'new description'
         container.image_url = 'http://www.newimage.com'
         new_status = 'new status'
         container.status.CopyFrom(organization_containers.TeamStatusV1(value=new_status))
@@ -1025,3 +1024,46 @@ class TestOrganizations(TestCase):
         self.assertNotEqual(updated_team.organization_id, container.organization_id)
         self.assertNotEqual(updated_team.owner_id, container.owner_id)
         self.assertEqual(updated_team.name, container.name)
+
+    def _test_update_team(self, team):
+        with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('organization')
+            self._mock_get_profile_stats(mock, [str(team.id)])
+            mock.instance.register_empty_response(
+                service='history',
+                action='record_action',
+                mock_regex_lookup='history:record_action:.*',
+            )
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            return self.client.call_action('update_team', team=team)
+
+    def test_update_team_description(self):
+        self.profile.is_admin = True
+        team = factories.TeamFactory.create(organization=self.organization)
+        container = team.to_protobuf(path=team.get_path())
+        container.team_description.value = 'new description'
+
+        # update the team once
+        response = self._test_update_team(container)
+        expected_description = container.team_description
+        actual_description = response.result.team.team_description
+        self.assertEqual(actual_description.value, expected_description.value)
+        self.assertEqualUUID4(
+            actual_description.by_profile_id,
+            self.profile.id,
+        )
+        self.assertTrue(actual_description.changed)
+
+        # update the description again
+        team = response.result.team
+        team.team_description.value = 'newer description'
+        response = self._test_update_team(team)
+        team_description = response.result.team.team_description
+        self.assertEqual(team_description.value, team.team_description.value)
+        self.assertNotEqual(team_description.changed, team.team_description.changed)

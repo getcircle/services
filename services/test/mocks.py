@@ -114,7 +114,7 @@ def mock_team(container=None, **overrides):
     team_id = overrides.pop('id', fuzzy.FuzzyUUID().fuzz())
     mock_dict = {
         fuzzy.FuzzyUUID: ['owner_id', 'organization_id'],
-        fuzzy.FuzzyText: ['name', 'department', 'description'],
+        fuzzy.FuzzyText: ['name', 'department'],
     }
     path = overrides.pop('path', [])
     path_part_overrides = {}
@@ -210,7 +210,7 @@ def mock_location(container=None, **overrides):
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id'],
-        fuzzy.FuzzyText: ['name', 'description',],
+        fuzzy.FuzzyText: ['name'],
     }
     return _mock_container(container, mock_dict, **defaults)
 

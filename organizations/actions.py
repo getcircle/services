@@ -3,6 +3,7 @@ import uuid
 
 from cacheops import cached_as
 import django.db
+from django.utils import timezone
 from protobufs.services.history import containers_pb2 as history_containers
 from protobuf_to_dict import protobuf_to_dict
 from service import (
@@ -163,6 +164,23 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
         },
     }
 
+    def _get_update_description_action(self, team):
+        action = None
+        request_description = self.request.team.team_description
+        if not request_description.value and not team.description:
+            return action
+
+        if request_description.value != (team.description and team.description['value']):
+            request_description.by_profile_id = self.parsed_token.profile_id
+            request_description.changed = str(timezone.now())
+            action = action_container_for_update(
+                instance=team,
+                field_name='description',
+                new_value=protobuf_to_dict(request_description),
+                action_type=history_containers.UPDATE_DESCRIPTION,
+            )
+        return action
+
     def run(self, *args, **kwargs):
         team = models.Team.objects.get(pk=self.request.team.id)
 
@@ -170,15 +188,7 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
-        action = None
-        if self.request.team.description != team.description:
-            action = action_container_for_update(
-                instance=team,
-                field_name='description',
-                new_value=self.request.team.description,
-                action_type=history_containers.UPDATE_DESCRIPTION,
-            )
-
+        action = self._get_update_description_action(team)
         team.update_from_protobuf(self.request.team, self.parsed_token.profile_id)
         team.save()
         if action:
@@ -569,6 +579,23 @@ class UpdateLocation(BaseLocationAction):
         }
     }
 
+    def _get_update_description_action(self, location):
+        action = None
+        request_description = self.request.location.location_description
+        if not request_description.value and not location.description:
+            return action
+
+        if request_description.value != (location.description and location.description['value']):
+            request_description.changed = str(timezone.now())
+            request_description.by_profile_id = self.parsed_token.profile_id
+            action = action_container_for_update(
+                instance=location,
+                field_name='description',
+                new_value=protobuf_to_dict(request_description),
+                action_type=history_containers.UPDATE_DESCRIPTION,
+            )
+        return action
+
     def run(self, *args, **kwargs):
         location = models.Location.objects.get(pk=self.request.location.id)
 
@@ -576,14 +603,7 @@ class UpdateLocation(BaseLocationAction):
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
-        action = None
-        if self.request.location.description != location.description:
-            action = action_container_for_update(
-                instance=location,
-                field_name='description',
-                new_value=self.request.location.description,
-                action_type=history_containers.UPDATE_DESCRIPTION,
-            )
+        action = self._get_update_description_action(location)
         location.update_from_protobuf(self.request.location)
         location.save()
         if action:

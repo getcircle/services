@@ -1,3 +1,5 @@
+import json
+
 from django.db import connection
 from protobufs.services.history import containers_pb2 as history_containers
 
@@ -17,9 +19,13 @@ def action_container(instance, field_name, new_value, action_type, method_type):
     }
 
     if old_value is not None:
+        if isinstance(old_value, dict):
+            old_value = json.dumps(old_value)
         kwargs['old_value'] = old_value
 
     if new_value is not None:
+        if isinstance(new_value, dict):
+            new_value = json.dumps(new_value)
         kwargs['new_value'] = new_value
 
     return history_containers.ActionV1(**kwargs)
