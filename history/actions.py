@@ -18,15 +18,6 @@ class RecordAction(mixins.PreRunParseTokenMixin, actions.Action):
         'action.method_type',
     )
 
-    def validate(self, *args, **kwargs):
-        super(RecordAction, self).validate(*args, **kwargs)
-        if not self.is_error():
-            if (
-                self.request.action.method_type != history_containers.DELETE
-                and not self.request.action.new_value
-            ):
-                raise self.ActionFieldError('action.new_value', 'MISSING')
-
     def run(self, *args, **kwargs):
         models.Action.objects.from_protobuf(
             self.request.action,

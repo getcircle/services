@@ -41,7 +41,6 @@ class TestHistoryRecordAction(TestCase):
         required_fields = [
             'column_name',
             'data_type',
-            'new_value',
             'action_type',
             'method_type',
         ]
@@ -129,4 +128,14 @@ class TestHistoryRecordAction(TestCase):
         self.assertEqual(container.old_value, action.data_type)
         self.assertEqual(container.action_type, history_containers.UPDATE_DESCRIPTION)
         self.assertEqual(container.method_type, history_containers.DELETE)
+        self.client.call_action('record_action', action=container)
+
+    def test_history_utils_action_container_for_update_no_new_value(self):
+        action = factories.ActionFactory.create()
+        container = action_container_for_update(
+            action,
+            'data_type',
+            None,
+            history_containers.UPDATE_DESCRIPTION,
+        )
         self.client.call_action('record_action', action=container)
