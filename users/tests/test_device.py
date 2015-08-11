@@ -43,18 +43,17 @@ class TestUserDevices(TestCase):
         self.assertEqual(len(expected.exception.response.error_details), 5)
 
     def test_record_device(self):
+        user = factories.UserFactory.create()
+        device = factories.DeviceFactory.build_protobuf(id=None, user=user)
         with self.mock_transport() as mock:
             mock.instance.register_empty_response(
                 service='notification',
                 action='register_device',
                 mock_regex_lookup='notification:.*',
             )
-
-            user = factories.UserFactory.create()
-            device = factories.DeviceFactory.build_protobuf(id=None, user=user)
             response = self.client.call_action('record_device', device=device)
-            self.verify_containers(device, response.result.device)
 
+            self.verify_containers(device, response.result.device)
             # verify that auth_token was recorded on the device
             self.assertFalse(hasattr(response.result.device, 'last_token_id'))
             result = models.Device.objects.get(id=response.result.device.id)
@@ -67,6 +66,16 @@ class TestUserDevices(TestCase):
             self.client.call_action('record_device', device=device)
             result = models.Device.objects.get(id=response.result.device.id)
             self.assertEqualUUID4(result.last_token_id, parsed_token.auth_token_id)
+
+    def test_record_device_no_notification_token_doesnt_register_device(self):
+        user = factories.UserFactory.create()
+        device = factories.DeviceFactory.build_protobuf(
+            id=None,
+            user=user,
+            notification_token=None,
+        )
+        response = self.client.call_action('record_device', device=device)
+        self.verify_containers(device, response.result.device)
 
     def test_user_record_multiple_devices(self):
         user = factories.UserFactory.create()

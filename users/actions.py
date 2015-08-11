@@ -502,8 +502,9 @@ class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
     }
 
     def _register_device_for_notifications(self, device):
-        client = service.control.Client('notification', token=self.token)
-        client.call_action('register_device', device=device)
+        if device.notification_token:
+            client = service.control.Client('notification', token=self.token)
+            client.call_action('register_device', device=device)
 
     # XXX should pull user_id from token
     def run(self, *args, **kwargs):
