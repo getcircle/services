@@ -200,6 +200,27 @@ class OrganizationLocationTests(TestCase):
         self.assertFalse(permissions.can_add)
         self.assertFalse(permissions.can_delete)
 
+    def test_get_location_with_location_id_non_admin_member_of_location(self):
+        self.profile.is_admin = False
+        location = factories.LocationFactory.create_protobuf()
+        self.profile.location_id = str(location.id)
+        with self.mock_transport(self.client) as mock:
+            mock.instance.register_mock_object(
+                service='profile',
+                action='get_profile',
+                return_object_path='profile',
+                return_object=self.profile,
+                profile_id=self.profile.id,
+            )
+            self._mock_get_profile_stats(mock, [str(location.id)])
+            response = self.client.call_action('get_location', location_id=location.id)
+        self.verify_containers(location, response.result.location)
+        self.assertEqual(response.result.location.profile_count, 5)
+        permissions = response.result.location.permissions
+        self.assertTrue(permissions.can_edit)
+        self.assertFalse(permissions.can_add)
+        self.assertFalse(permissions.can_delete)
+
     def test_get_location_with_location_id_admin(self):
         self.profile.is_admin = True
         location = factories.LocationFactory.create_protobuf()
