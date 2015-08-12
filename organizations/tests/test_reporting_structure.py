@@ -175,3 +175,62 @@ class OrganizationTeamTests(MockedTestCase):
             response.result.manages_team,
             ignore_fields=('profile_count'),
         )
+
+    def test_get_team_reporting_details_team_id_required(self):
+        with self.assertFieldError('team_id', 'MISSING'):
+            self.client.call_action('get_team_reporting_details')
+
+    def test_get_team_reporting_details_team_id_invalid(self):
+        with self.assertFieldError('team_id'):
+            self.client.call_action(
+                'get_team_reporting_details',
+                team_id='invalid',
+            )
+
+    def test_get_team_reporting_details_team_id_does_not_exist(self):
+        with self.assertFieldError('team_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_team_reporting_details',
+                team_id=fuzzy.FuzzyUUID().fuzz(),
+            )
+
+    def test_get_team_reporting_details(self):
+        # create a team, manager, and direct_report
+        team = factories.TeamFactory.create_protobuf(organization=self.organization)
+        manager = models.ReportingStructure.objects.get(profile_id=team.manager_profile_id)
+        # create another team whose manager is the above direct report
+        sub_team = factories.TeamFactory.create_protobuf(
+            organization=self.organization,
+            manager_profile_id=manager.get_children()[0].profile_id,
+        )
+        # add a peer to the sub team's manager
+        factories.ReportingStructureFactory.create(
+            organization=self.organization,
+            manager=manager,
+        )
+
+        # create mocks for all the profiles
+        mock_profile_ids = models.ReportingStructure.objects.all().values_list(
+            'profile_id',
+            flat=True,
+        )
+        mock_profiles = [mocks.mock_profile(id=str(profile_id)) for profile_id in mock_profile_ids]
+        self.mock.instance.register_mock_object(
+            'profile',
+            'get_profiles',
+            return_object_path='profiles',
+            return_object=mock_profiles,
+            mock_regex_lookup='profile:get_profiles:.*',
+        )
+        response = self.client.call_action('get_team_reporting_details', team_id=team.id)
+        self.assertEqual(len(response.result.members), 3)
+        self.assertEqual(len(response.result.child_teams), 1)
+        self.verify_containers(
+            sub_team,
+            response.result.child_teams[0],
+            ignore_fields=(
+                'profile_count',
+                'chid_team_count',
+            ),
+        )
+        self.assertEqualUUID4(manager.profile_id, response.result.manager.id)

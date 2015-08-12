@@ -1,5 +1,3 @@
-import uuid
-
 import django.db
 from django.db.models import Count
 from django.utils import timezone
@@ -13,6 +11,7 @@ import service.control
 
 from services.history import action_container_for_update
 from services.token import parse_token
+from services import utils
 from . import models
 from .mixins import (
     LocationPermissionsMixin,
@@ -549,3 +548,59 @@ class GetProfileReportingDetails(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
         ).values_list('profile_id', flat=True)
         self.response.peers_profile_ids.extend(map(str, peers))
+
+
+class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('team_id',)
+    type_validators = {
+        'team_id': (validators.is_uuid4,),
+    }
+    field_validators = {
+        'team_id': {
+            valid_team: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        team = models.Team.objects.get(
+            pk=self.request.team_id,
+            organization_id=self.parsed_token.organization_id,
+        )
+        manager = models.ReportingStructure.objects.get(
+            profile_id=team.manager_profile_id,
+            organization_id=self.parsed_token.organization_id,
+        )
+        members = manager.get_descendants().filter(
+            organization_id=self.parsed_token.organization_id,
+        )
+
+        member_profile_ids = [member.profile_id for member in members]
+        profiles = service.control.get_object(
+            'profile',
+            'get_profiles',
+            client_kwargs={'token': self.token},
+            return_object='profiles',
+            ids=map(str, member_profile_ids + [manager.profile_id]),
+        )
+
+        # filter out the manager from the members
+        for profile in profiles:
+            if utils.matching_uuids(profile.id, manager.profile_id):
+                self.response.manager.CopyFrom(profile)
+                profiles.remove(profile)
+
+        self.response.members.extend(profiles)
+
+        child_team_manager_ids = [member.profile_id for member in members if (
+            member.manager_id == manager.profile_id and
+            member.get_descendant_count()
+        )]
+        if child_team_manager_ids:
+            teams = models.Team.objects.filter(
+                organization_id=self.parsed_token.organization_id,
+                manager_profile_id__in=child_team_manager_ids,
+            )
+            for team in teams:
+                container = self.response.child_teams.add()
+                team.to_protobuf(container)

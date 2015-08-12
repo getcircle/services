@@ -23,4 +23,5 @@ class Server(service.control.Server):
         'add_direct_reports': actions.AddDirectReports,
         'set_manager': actions.SetManager,
         'get_profile_reporting_details': actions.GetProfileReportingDetails,
+        'get_team_reporting_details': actions.GetTeamReportingDetails,
     }
