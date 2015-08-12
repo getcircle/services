@@ -506,3 +506,46 @@ class SetManager(ReportingStructureAction):
             [self.request.profile_id],
         )
         team.to_protobuf(self.response.team)
+
+
+class GetProfileReportingDetails(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('profile_id',)
+    type_validators = {
+        'profile_id': (validators.is_uuid4,),
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            position = models.ReportingStructure.objects.get(
+                profile_id=self.request.profile_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except models.ReportingStructure.DoesNotExist:
+            return
+
+        # get the team the profile is on if applicable (only a root node wouldn't have a team)
+        if not position.is_root_node():
+            team = models.Team.objects.get(
+                manager_profile_id=position.manager_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+            team.to_protobuf(self.response.team)
+            self.response.manager_profile_id = str(position.manager_id)
+
+        # if the profile has direct reports, export the team and reports they manage
+        if position.get_descendant_count():
+            team = models.Team.objects.get(
+                manager_profile_id=position.profile_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+            team.to_protobuf(self.response.manages_team)
+            direct_reports = position.get_children().filter(
+                organization_id=self.parsed_token.organization_id,
+            ).values_list('profile_id', flat=True)
+            self.response.direct_reports_profile_ids.extend(map(str, direct_reports))
+
+        peers = position.get_siblings().filter(
+            organization_id=self.parsed_token.organization_id,
+        ).values_list('profile_id', flat=True)
+        self.response.peers_profile_ids.extend(map(str, peers))

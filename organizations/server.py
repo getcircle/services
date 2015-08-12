@@ -22,4 +22,5 @@ class Server(service.control.Server):
         'disable_integration': actions.DisableIntegration,
         'add_direct_reports': actions.AddDirectReports,
         'set_manager': actions.SetManager,
+        'get_profile_reporting_details': actions.GetProfileReportingDetails,
     }
