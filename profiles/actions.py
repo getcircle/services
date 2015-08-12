@@ -1,14 +1,7 @@
-import uuid
-
 import arrow
 from cacheops import cached_as
-from django.core.exceptions import FieldError
 import django.db
 from django.db import connection
-from django.db.models import (
-    Count,
-    Q,
-)
 import service.control
 from service import (
     actions,
@@ -16,7 +9,6 @@ from service import (
 )
 
 from services.mixins import PreRunParseTokenMixin
-from services.utils import matching_uuids
 
 from . import (
     models,
@@ -150,13 +142,15 @@ class UpdateProfile(actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        profile = models.Profile.objects.get(pk=self.request.profile.id)
+        profile = models.Profile.objects.get(
+            pk=self.request.profile.id,
+        )
         profile.update_from_protobuf(self.request.profile)
         profile.save()
         profile.to_protobuf(self.response.profile)
 
 
-class GetProfile(actions.Action):
+class GetProfile(PreRunParseTokenMixin, actions.Action):
     # XXX add some concept of "oneof"
 
     type_validators = {
@@ -183,168 +177,144 @@ class GetProfile(actions.Action):
                     ('MISSING', '`user_id` or `profile_id` must be provided'),
                 )
 
-    def _get_profile(self):
-        parameters = {}
+    def run(self, *args, **kwargs):
+        parameters = {
+            'organization_id': self.parsed_token.organization_id,
+        }
         if self.request.profile_id:
             parameters['pk'] = self.request.profile_id
         else:
             parameters['user_id'] = self.request.user_id
 
-        return models.Profile.objects.prefetch_related('contactmethod_set').get(**parameters)
-
-    def run(self, *args, **kwargs):
-        profile = self._get_profile()
+        profile = models.Profile.objects.prefetch_related('contact_methods').get(**parameters)
         profile.to_protobuf(self.response.profile)
 
 
 class GetProfiles(PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
-        'team_id': [validators.is_uuid4],
-        'organization_id': [validators.is_uuid4],
         'tag_id': [validators.is_uuid4],
-        'address_id': [validators.is_uuid4],
         'ids': [validators.is_uuid4_list],
         'location_id': [validators.is_uuid4],
     }
 
-    def _populate_profiles_with_basic_keys(self):
-        # XXX should add organization_id as a filter to all of these statements
-        parameters = {}
+    def run(self, *args, **kwargs):
+        parameters = {
+            'organization_id': self.parsed_token.organization_id,
+        }
         if self.request.tag_id:
-            parameters['organization_id'] = self.parsed_token.organization_id
             parameters['tags__id'] = self.request.tag_id
-        elif self.request.address_id:
-            parameters['address_id'] = self.request.address_id
         elif self.request.ids:
             parameters['id__in'] = list(self.request.ids)
         elif self.request.location_id:
-            parameters['location_id'] = self.request.location_id
-        elif self.request.emails:
-            parameters['email__in'] = list(self.request.emails)
-        else:
-            parameters['organization_id'] = self.parsed_token.organization_id
+            member_profile_ids = service.control.get_object(
+                'organization',
+                'get_location_members',
+                return_object='member_profile_ids',
+                client_kwargs={'token': self.token},
+                location_id=self.request.location_id,
+            )
+            if not member_profile_ids:
+                return
+            parameters['id__in'] = member_profile_ids
 
         profiles = models.Profile.objects.filter(**parameters).order_by(
             'first_name',
             'last_name',
-        ).prefetch_related('contactmethod_set')
+        ).prefetch_related('contact_methods')
         self.paginated_response(
             self.response.profiles,
             profiles,
             lambda item, container: item.to_protobuf(container.add()),
         )
 
-    def _populate_profiles_by_team_id(self):
-        # fetch the team to get the owner
-        client = service.control.Client('organization', token=self.token)
+
+class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
+
+    type_validators = {
+        'profile_id': (validators.is_uuid4,),
+    }
+    field_validators = {
+        'profile_id': {
+            valid_profile: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def _export_profiles_list(self, profile_ids, response_container, profile_dict):
+        for profile_id in profile_ids:
+            container = response_container.add()
+            profile = profile_dict.get(profile_id)
+            if profile:
+                profile.to_protobuf(container, contact_methods=None, status=None)
+
+    def _populate_reporting_details(self, client):
         response = client.call_action(
-            'get_team',
-            team_id=self.request.team_id,
-            on_error=self.ActionFieldError('team_id', 'INVALID'),
-        )
-        team = response.result.team
-
-        client = service.control.Client('profile', token=self.token)
-        response = client.call_action(
-            'get_direct_reports',
-            user_id=team.owner_id,
-            on_error=self.ActionError('ERROR_FETCHING_DIRECT_REPORTS'),
-        )
-        profiles = list(response.result.profiles)
-
-        team_profiles = models.Profile.objects.filter(team_id=self.request.team_id).exclude(
-            id__in=[profile.id for profile in profiles],
-        ).prefetch_related('contactmethod_set')
-        profiles.extend(team_profiles)
-        profiles = sorted(profiles, key=lambda x: (x.first_name.lower(), x.last_name.lower()))
-        for profile in profiles:
-            container = self.response.profiles.add()
-            if isinstance(profile, models.Profile):
-                profile.to_protobuf(container)
-            else:
-                container.CopyFrom(profile)
-
-    def run(self, *args, **kwargs):
-        if self.request.team_id:
-            self._populate_profiles_by_team_id()
-        else:
-            self._populate_profiles_with_basic_keys()
-
-
-class GetExtendedProfile(GetProfile):
-
-    def __init__(self, *args, **kwargs):
-        super(GetExtendedProfile, self).__init__(*args, **kwargs)
-        self.organization_client = service.control.Client('organization', token=self.token)
-
-    def _fetch_location(self, location_id):
-        # TODO this should raise an error if it doesn't succeed
-        response = self.organization_client.call_action(
-            'get_location',
-            location_id=location_id,
-        )
-        return response.result.location
-
-    def _fetch_team(self, team_id):
-        # TODO this should raise an error if it doesn't succeed
-        response = self.organization_client.call_action(
-            'get_team',
-            team_id=team_id,
-        )
-        return response.result.team
-
-    def _get_manager(self, profile, team):
-        user_id = team.owner_id
-        if matching_uuids(team.owner_id, profile.user_id):
-            try:
-                manager_team = team.path[-2]
-            except IndexError:
-                return None
-
-            response = self.organization_client.call_action(
-                'get_team',
-                team_id=manager_team.id,
-                on_error=self.ActionError('ERROR_FETCHING_MANAGER_TEAM'),
-            )
-            user_id = response.result.team.owner_id
-        return models.Profile.objects.prefetch_related('contactmethod_set').get(user_id=user_id)
-
-    def _fetch_direct_reports(self):
-        client = service.control.Client('profile', token=self.token)
-        response = client.call_action(
-            'get_direct_reports',
+            'get_profile_reporting_details',
             profile_id=self.request.profile_id,
         )
-        return response.result.profiles
+        reporting_details = response.result
+        profile_ids = []
+        for container in (
+            reporting_details.peers_profile_ids,
+            reporting_details.direct_reports_profile_ids,
+        ):
+            profile_ids.extend(container)
 
-    def _fetch_identities(self, profile):
-        client = service.control.Client('user', token=self.token)
-        response = client.call_action(
-            'get_identities',
-            user_id=str(profile.user_id),
+        if reporting_details.HasField('manager_profile_id'):
+            profile_ids.append(reporting_details.manager_profile_id)
+
+        if profile_ids:
+            profiles = models.Profile.objects.filter(
+                id__in=profile_ids,
+                organization_id=self.parsed_token.organization_id,
+            )
+            profile_dict = dict((str(profile.id), profile) for profile in profiles)
+            self._export_profiles_list(
+                reporting_details.peers_profile_ids,
+                self.response.peers,
+                profile_dict,
+            )
+            self._export_profiles_list(
+                reporting_details.direct_reports_profile_ids,
+                self.response.direct_reports,
+                profile_dict,
+            )
+            manager = profile_dict.get(reporting_details.manager_profile_id)
+            if manager:
+                manager.to_protobuf(self.response.manager, contact_methods=None, status=None)
+
+        if reporting_details.HasField('team'):
+            self.response.team.CopyFrom(reporting_details.team)
+        if reporting_details.HasField('manages_team'):
+            self.response.manages_team.CopyFrom(reporting_details.manages_team)
+
+    def _populate_locations(self, client):
+        locations = client.get_object(
+            'get_locations',
+            return_object='locations',
+            profile_id=self.request.profile_id,
         )
-        return response.result.identities
+        self.response.locations.extend(locations)
 
     def run(self, *args, **kwargs):
-        profile = self._get_profile()
+        profile = models.Profile.objects.prefetch_related('contact_methods').get(
+            pk=self.request.profile_id,
+            organization_id=self.parsed_token.organization_id,
+        )
         profile.to_protobuf(self.response.profile)
 
-        location = self._fetch_location(str(profile.location_id))
-        self.response.location.CopyFrom(location)
-
-        team = self._fetch_team(str(profile.team_id))
-        self.response.team.CopyFrom(team)
-
-        direct_reports = self._fetch_direct_reports()
-        self.response.direct_reports.extend(direct_reports)
-
-        identities = self._fetch_identities(profile)
+        identities = service.control.get_object(
+            'user',
+            'get_identities',
+            client_kwargs={'token': self.token},
+            return_object='identities',
+            user_id=str(profile.user_id),
+        )
         self.response.identities.extend(identities)
 
-        manager = self._get_manager(profile, team)
-        if manager:
-            manager.to_protobuf(self.response.manager)
+        organization_client = service.control.Client('organization', token=self.token)
+        self._populate_reporting_details(organization_client)
+        self._populate_locations(organization_client)
 
 
 class CreateTags(actions.Action):
@@ -463,207 +433,6 @@ class GetTags(actions.Action):
             tag.to_protobuf(container)
 
 
-class GetDirectReports(actions.Action):
-
-    type_validators = {
-        'profile_id': [validators.is_uuid4],
-        'user_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'profile_id': {
-            valid_profile: 'DOES_NOT_EXIST',
-        },
-    }
-
-    def __init__(self, *args, **kwargs):
-        super(GetDirectReports, self).__init__(*args, **kwargs)
-        self.organization_client = service.control.Client('organization', token=self.token)
-
-    def _get_child_team_owner_ids(self, team):
-        response = self.organization_client.call_action(
-            'get_team_descendants',
-            team_ids=[team.id],
-            on_error=self.ActionError('ERROR_FETCHING_TEAM_CHILDREN'),
-            attributes=['owner_id'],
-            depth=1,
-        )
-        owner_ids = []
-        if response.result.descendants:
-            descendants = response.result.descendants[0]
-            owner_ids = [item.owner_id for item in descendants.teams]
-        return owner_ids
-
-    def run(self, *args, **kwargs):
-        parameters = {}
-        if self.request.profile_id:
-            parameters['pk'] = self.request.profile_id
-        else:
-            # TODO this assumes that we only have 1 profile per user_id
-            parameters['user_id'] = self.request.user_id
-
-        try:
-            profile = models.Profile.objects.get(**parameters)
-        except models.Profile.DoesNotExist:
-            # TODO need to check the parameters, this could be "profile_id" doesn't exist
-            raise self.ActionFieldError('user_id', 'DOES_NOT_EXIST')
-
-        response = self.organization_client.call_action(
-            'get_team',
-            team_id=str(profile.team_id),
-            on_error=self.ActionError('ERROR_FETCHING_TEAM'),
-        )
-        team = response.result.team
-        user_ids = []
-        if matching_uuids(team.owner_id, profile.user_id):
-            user_ids.extend(self._get_child_team_owner_ids(team))
-            profiles = models.Profile.objects.filter(
-                Q(user_id__in=user_ids) | Q(team_id=team.id),
-                organization_id=profile.organization_id,
-            ).exclude(pk=profile.id).extra(
-                select={
-                    'case_insensitive_first_name': 'lower(first_name)',
-                    'case_insensitive_last_name': 'lower(last_name)',
-                }
-            ).order_by(
-                'case_insensitive_first_name',
-                'case_insensitive_last_name',
-            ).prefetch_related('contactmethod_set')
-            for profile in profiles:
-                container = self.response.profiles.add()
-                profile.to_protobuf(container)
-
-
-class GetPeers(actions.Action):
-
-    type_validators = {
-        'profile_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'profile_id': {
-            valid_profile: 'DOES_NOT_EXIST',
-        },
-    }
-
-    def run(self, *args, **kwargs):
-        profile = models.Profile.objects.get(pk=self.request.profile_id)
-        client = service.control.Client('organization', token=self.token)
-        response = client.call_action(
-            'get_team',
-            team_id=str(profile.team_id),
-            on_error=self.ActionError('ERROR_FETCHING_TEAM'),
-        )
-        team = response.result.team
-
-        # handle CEO -- no peers
-        if matching_uuids(team.owner_id, profile.user_id) and len(team.path) < 2:
-            return
-
-        if matching_uuids(team.owner_id, profile.user_id):
-            client = service.control.Client('profile', token=self.token)
-            response = client.call_action(
-                'get_direct_reports',
-                user_id=team.path[-2].owner_id,
-                on_error=self.ActionError('ERROR_FETCHING_DIRECT_REPORTS'),
-            )
-            for item in response.result.profiles:
-                if str(item.id) == str(profile.pk):
-                    continue
-
-                container = self.response.profiles.add()
-                container.CopyFrom(item)
-        else:
-            profiles = models.Profile.objects.filter(team_id=profile.team_id).exclude(
-                user_id=team.owner_id,
-            ).exclude(pk=profile.id).extra(
-                select={
-                    'case_insensitive_first_name': 'lower(first_name)',
-                    'case_insensitive_last_name': 'lower(last_name)',
-                }
-            ).order_by(
-                'case_insensitive_first_name',
-                'case_insensitive_last_name',
-            ).prefetch_related('contactmethod_set')
-            for item in profiles:
-                if item.pk == profile.pk:
-                    continue
-
-                container = self.response.profiles.add()
-                item.to_protobuf(container)
-
-
-class GetProfileStats(actions.Action):
-
-    type_validators = {
-        'address_ids': [validators.is_uuid4_list],
-        'location_ids': [validators.is_uuid4_list],
-        'team_ids': [validators.is_uuid4_list],
-    }
-
-    def _get_profile_stats_for_address_ids(self, address_ids):
-        stats = models.Profile.objects.filter(address_id__in=address_ids).values(
-            'address_id',
-        ).annotate(profiles=Count('id'))
-        return dict((stat['address_id'], stat['profiles']) for stat in stats)
-
-    def _get_profile_stats_for_location_ids(self, location_ids):
-        stats = models.Profile.objects.filter(location_id__in=location_ids).values(
-            'location_id',
-        ).annotate(profiles=Count('id'))
-        return dict((stat['location_id'], stat['profiles']) for stat in stats)
-
-    def _get_profile_stats_for_team_ids(self, team_ids):
-        stats = models.Profile.objects.filter(team_id__in=team_ids).values(
-            'team_id',
-        ).annotate(profiles=Count('id'))
-        stats_dict = dict((stat['team_id'], stat['profiles']) for stat in stats)
-
-        client = service.control.Client('organization', token=self.token)
-        response = client.call_action(
-            'get_team_descendants',
-            team_ids=team_ids,
-            attributes=['id'],
-        )
-        filter_ids = set()
-        for descendants in response.result.descendants:
-            filter_ids.update([item.id for item in descendants.teams])
-
-        stats = models.Profile.objects.filter(
-            team_id__in=filter_ids,
-        ).values('team_id').annotate(profiles=Count('id'))
-        for stat in stats:
-            stats_dict[uuid.UUID(descendants.parent_team_id, version=4)] += stat['profiles']
-
-        return stats_dict
-
-    def run(self, *args, **kwargs):
-        lookup_ids = []
-        if self.request.address_ids:
-            lookup_ids = self.request.address_ids
-            stats_dict = self._get_profile_stats_for_address_ids(lookup_ids)
-        elif self.request.location_ids:
-            lookup_ids = self.request.location_ids
-            stats_dict = self._get_profile_stats_for_location_ids(lookup_ids)
-        elif self.request.team_ids:
-            lookup_ids = self.request.team_ids
-            stats_dict = self._get_profile_stats_for_team_ids(lookup_ids)
-        else:
-            raise self.ActionError(
-                'FAILURE',
-                ('FAILURE', 'Must specify filter parameter'),
-            )
-
-        for lookup_id in lookup_ids:
-            # TODO type validators should check type and then transform to that
-            # type so we're working with consistent values. ie. if we validate
-            # uuid, we should have "uuid" type, not string
-            lookup_id = uuid.UUID(lookup_id, version=4)
-            container = self.response.stats.add()
-            container.id = str(lookup_id)
-            container.count = stats_dict.get(lookup_id, 0)
-
-
 class GetUpcomingAnniversaries(actions.Action):
 
     required_fields = ('organization_id',)
@@ -754,7 +523,7 @@ class GetRecentHires(actions.Action):
         profiles = models.Profile.objects.filter(
             organization_id=self.request.organization_id,
             hire_date__gte=now.replace(days=-7).date,
-        ).prefetch_related('contactmethod_set')
+        ).prefetch_related('contact_methods')
         for profile in profiles:
             container = self.response.profiles.add()
             profile.to_protobuf(container)
@@ -825,27 +594,3 @@ class GetActiveTags(actions.Action):
             lambda item, container: item.to_protobuf(container.add()),
             count=count,
         )
-
-
-class GetAttributesForProfiles(actions.Action):
-
-    required_fields = ('attributes', 'location_id')
-    type_validators = {
-        'location_id': [validators.is_uuid4],
-    }
-
-    def run(self, *args, **kwargs):
-        try:
-            items = models.Profile.objects.filter(location_id=self.request.location_id).values(
-                *self.request.attributes
-            )
-            if self.request.distinct:
-                items = items.distinct(*self.request.attributes)
-        except FieldError:
-            raise self.ActionFieldError('attributes', 'INVALID')
-
-        for item in items:
-            for name in self.request.attributes:
-                container = self.response.attributes.add()
-                container.name = name
-                container.value = str(item[name])

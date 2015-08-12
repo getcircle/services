@@ -39,7 +39,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     birth_date = models.DateField(null=True)
     hire_date = models.DateField(null=True)
     verified = models.BooleanField(default=False)
-    #tags = models.ManyToManyField(Tag, through='ProfileTags')
+    tags = models.ManyToManyField(Tag, through='ProfileTags')
     items = ArrayField(
         ArrayField(models.CharField(max_length=255, null=True), size=2),
         null=True,
@@ -60,7 +60,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             container.value = item[1]
 
         contact_methods = []
-        for method in overrides.get('contact_methods', self.contactmethod_set.all()) or []:
+        for method in overrides.get('contact_methods', self.contact_methods.all()) or []:
             container = protobuf.contact_methods.add()
             method.to_protobuf(container)
 
@@ -113,7 +113,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     def _update_contact_methods(self, methods):
         with django.db.transaction.atomic():
-            existing_ids = map(str, self.contactmethod_set.all().values_list('id', flat=True))
+            existing_ids = map(str, self.contact_methods.all().values_list('id', flat=True))
             new_ids = filter(None, [method.id for method in methods])
             to_delete = []
             for method_id in existing_ids:
@@ -121,7 +121,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
                     to_delete.append(method_id)
 
             if to_delete:
-                self.contactmethod_set.filter(id__in=to_delete).delete()
+                self.contact_methods.filter(id__in=to_delete).delete()
 
             for container in methods:
                 if container.id:
@@ -172,7 +172,7 @@ class ContactMethod(models.UUIDModel, models.TimestampableModel):
     model_to_protobuf_mapping = {'type': 'contact_method_type'}
     as_dict_value_transforms = {'type': int}
 
-    profile = models.ForeignKey(Profile)
+    profile = models.ForeignKey(Profile, related_name='contact_methods')
     label = models.CharField(max_length=64)
     value = models.CharField(max_length=64)
     type = models.SmallIntegerField(

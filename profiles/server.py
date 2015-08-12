@@ -17,12 +17,8 @@ class Server(service.control.Server):
         'add_tags': actions.AddTags,
         'remove_tags': actions.RemoveTags,
         'get_tags': actions.GetTags,
-        'get_direct_reports': actions.GetDirectReports,
-        'get_peers': actions.GetPeers,
-        'get_profile_stats': actions.GetProfileStats,
         'get_upcoming_anniversaries': actions.GetUpcomingAnniversaries,
         'get_upcoming_birthdays': actions.GetUpcomingBirthdays,
         'get_recent_hires': actions.GetRecentHires,
         'get_active_tags': actions.GetActiveTags,
-        'get_attributes_for_profiles': actions.GetAttributesForProfiles,
     }
