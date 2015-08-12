@@ -26,6 +26,38 @@ class OrganizationTeamTests(MockedTestCase):
         )
         self.mock.instance.dont_mock_service('organization')
 
+    def test_add_direct_reports_invalid_manager_profile_id(self):
+        direct_reports_profile_ids = [fuzzy.FuzzyUUID().fuzz() for _ in range(2)]
+        with self.assertFieldError('manager_profile_id'):
+            self.client.call_action(
+                'add_direct_reports',
+                manager_profile_id='invalid',
+                direct_reports_profile_ids=direct_reports_profile_ids,
+            )
+
+    def test_add_direct_reports_manager_profile_id_required(self):
+        direct_reports_profile_ids = [fuzzy.FuzzyUUID().fuzz() for _ in range(2)]
+        with self.assertFieldError('manager_profile_id', 'MISSING'):
+            self.client.call_action(
+                'add_direct_reports',
+                direct_reports_profile_ids=direct_reports_profile_ids,
+            )
+
+    def test_add_direct_reports_direct_reports_profile_ids_required(self):
+        with self.assertFieldError('direct_reports_profile_ids', 'MISSING'):
+            self.client.call_action(
+                'add_direct_reports',
+                manager_profile_id=fuzzy.FuzzyUUID().fuzz(),
+            )
+
+    def test_add_direct_reports_invalid_direct_reports_profile_ids(self):
+        with self.assertFieldError('direct_reports_profile_ids'):
+            self.client.call_action(
+                'add_direct_reports',
+                manager_profile_id=fuzzy.FuzzyUUID().fuzz(),
+                direct_reports_profile_ids=['invalid'],
+            )
+
     def test_add_direct_reports_no_existing_team(self):
         direct_reports_profile_ids = [fuzzy.FuzzyUUID().fuzz() for _ in range(2)]
         manager_profile_id = fuzzy.FuzzyUUID().fuzz()
@@ -48,6 +80,30 @@ class OrganizationTeamTests(MockedTestCase):
         self.verify_containers(team, response.result.team, ignore_fields=('profile_count',))
         manager = models.ReportingStructure.objects.get(profile_id=team.manager_profile_id)
         self.assertEqual(manager.get_descendant_count(), 2)
+
+    def test_set_manager_manager_profile_id_required(self):
+        with self.assertFieldError('manager_profile_id', 'MISSING'):
+            self.client.call_action('set_manager', profile_id=fuzzy.FuzzyUUID().fuzz())
+
+    def test_set_manager_manager_profile_id_invalid(self):
+        with self.assertFieldError('manager_profile_id'):
+            self.client.call_action(
+                'set_manager',
+                profile_id=fuzzy.FuzzyUUID().fuzz(),
+                manager_profile_id='invalid',
+            )
+
+    def test_set_manager_profile_id_required(self):
+        with self.assertFieldError('profile_id', 'MISSING'):
+            self.client.call_action('set_manager', manager_profile_id=fuzzy.FuzzyUUID().fuzz())
+
+    def test_set_manager_profile_id_invalid(self):
+        with self.assertFieldError('profile_id'):
+            self.client.call_action(
+                'set_manager',
+                manager_profile_id=fuzzy.FuzzyUUID().fuzz(),
+                profile_id='invalid',
+            )
 
     def test_set_manager(self):
         team = factories.TeamFactory.create_protobuf(organization=self.organization)

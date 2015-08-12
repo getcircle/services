@@ -469,6 +469,15 @@ class ReportingStructureAction(PreRunParseTokenMixin, actions.Action):
 
 class AddDirectReports(ReportingStructureAction):
 
+    required_fields = (
+        'manager_profile_id',
+        'direct_reports_profile_ids',
+    )
+    type_validators = {
+        'manager_profile_id': (validators.is_uuid4,),
+        'direct_reports_profile_ids': (validators.is_uuid4_list,),
+    }
+
     def run(self, *args, **kwargs):
         team = self._update_tree(
             self._add_direct_reports,
@@ -479,6 +488,16 @@ class AddDirectReports(ReportingStructureAction):
 
 
 class SetManager(ReportingStructureAction):
+
+    required_fields = (
+        'manager_profile_id',
+        'profile_id',
+    )
+
+    type_validators = {
+        'manager_profile_id': (validators.is_uuid4,),
+        'profile_id': (validators.is_uuid4,),
+    }
 
     def run(self, *args, **kwargs):
         team = self._update_tree(
