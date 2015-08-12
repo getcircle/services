@@ -50,6 +50,7 @@ django-watson==1.1.8
 raven==5.5.0
 simplejson==3.8.0
 decorator==4.0.2
+django-mptt==0.7.4
 
 # more recent version of bitfield for 1.8 compatibility
 git+https://git@github.com/disqus/django-bitfield.git#24126a01

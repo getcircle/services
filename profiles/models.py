@@ -30,27 +30,22 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     organization_id = models.UUIDField()
     user_id = models.UUIDField()
-    address_id = models.UUIDField(null=True, db_index=True)
-    location_id = models.UUIDField(null=True, db_index=True)
-    team_id = models.UUIDField(db_index=True)
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, null=True)
     email = models.EmailField()
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     nickname = models.CharField(max_length=64, null=True)
-    # XXX what is this random max_length?
-    image_url = models.URLField(max_length=256, null=True)
+    image_url = models.URLField(max_length=255, null=True)
     birth_date = models.DateField(null=True)
     hire_date = models.DateField(null=True)
     verified = models.BooleanField(default=False)
-    tags = models.ManyToManyField(Tag, through='ProfileTags')
+    #tags = models.ManyToManyField(Tag, through='ProfileTags')
     items = ArrayField(
-        ArrayField(models.CharField(max_length=256, null=True), size=2),
+        ArrayField(models.CharField(max_length=255, null=True), size=2),
         null=True,
     )
     is_admin = models.BooleanField(default=False)
-    # XXX what is this random max_length?
-    small_image_url = models.URLField(max_length=256, null=True)
+    small_image_url = models.URLField(max_length=255, null=True)
 
     @property
     def full_name(self):

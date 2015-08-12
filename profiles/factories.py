@@ -13,9 +13,6 @@ class ProfileFactory(factory.Factory):
 
     organization_id = factory.FuzzyUUID()
     user_id = factory.FuzzyUUID()
-    address_id = factory.FuzzyUUID()
-    location_id = factory.FuzzyUUID()
-    team_id = factory.FuzzyUUID()
     title = factory.FuzzyText()
     first_name = factory.FuzzyText()
     last_name = factory.FuzzyText()

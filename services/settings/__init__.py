@@ -48,6 +48,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'timezone_field',
     'watson',
+    'mptt',
 
     'services',
 

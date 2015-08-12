@@ -1,11 +1,13 @@
 import binascii
 import os
+
 from common.db import models
 from common import utils
 from django.contrib.postgres.fields import (
     ArrayField,
     HStoreField,
 )
+from mptt.models import MPTTModel, TreeForeignKey
 from protobuf_to_dict import protobuf_to_dict
 
 from protobufs.services.organization import containers_pb2 as organization_containers
@@ -29,55 +31,29 @@ class Organization(models.UUIDModel, models.TimestampableModel):
     image_url = models.URLField(max_length=255, null=True)
 
 
+class ReportingStructure(MPTTModel, models.TimestampableModel):
+
+    profile_id = models.UUIDField(primary_key=True)
+    manager = TreeForeignKey('self', null=True, related_name='reports', db_index=True)
+    organization_id = models.UUIDField(db_index=True, editable=False)
+    added_by_profile_id = models.UUIDField(null=True, editable=False)
+
+
 class Team(models.UUIDModel, models.TimestampableModel):
 
-    def __init__(self, *args, **kwargs):
-        super(Team, self).__init__(*args, **kwargs)
-        self._path = None
-
-    protobuf_include_fields = ('department',)
-    model_to_protobuf_mapping = {
-        'description': 'team_description',
-    }
-
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True)
     description = HStoreField(null=True)
-    owner_id = models.UUIDField(db_index=True, editable=False)
-    organization = models.ForeignKey(Organization, db_index=True, editable=False)
-    path = LTreeField(null=True, db_index=True, editable=False)
+    manager_profile_id = models.UUIDField(editable=False)
+    created_by_profile_id = models.UUIDField(editable=False)
+    organization = models.ForeignKey(Organization, editable=False)
     image_url = models.URLField(max_length=255, null=True)
+
+    class Meta:
+        index_together = ('manager_profile_id', 'organization')
+        protobuf = organization_containers.TeamV1
 
     def get_description(self):
         return self.description or {}
-
-    def get_path(self, path_dict=None):
-        if self._path is None:
-            path_parts = self.path.split('.')
-            if path_dict is None:
-                path = Team.objects.filter(pk__in=path_parts).values(
-                    'id',
-                    'name',
-                    'owner_id',
-                )
-            else:
-                path = filter(None, [path_dict.get(part) for part in path_parts])
-
-            # XXX see if we can have the client handle this for us
-            for item in path:
-                item['id'] = str(item['id'])
-                item['owner_id'] = str(item['owner_id'])
-            self._path = path
-        return self._path
-
-    @property
-    def department(self):
-        department_title = None
-        path = self.get_path()
-        try:
-            department_title = path[1]['name']
-        except IndexError:
-            pass
-        return department_title
 
     def _update_status(self, team_container, by_profile_id):
         new_status = None
@@ -117,63 +93,45 @@ class Team(models.UUIDModel, models.TimestampableModel):
             overrides['status'] = status.as_dict()
         return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
-    class Meta:
-        unique_together = ('name', 'organization')
-        protobuf = organization_containers.TeamV1
-
 
 class TeamStatus(models.UUIDModel):
 
     value = models.TextField(null=True)
     team = models.ForeignKey(Team)
     created = models.DateTimeField(auto_now_add=True)
-    organization_id = models.UUIDField()
-    by_profile_id = models.UUIDField()
+    organization_id = models.UUIDField(editable=False)
+    by_profile_id = models.UUIDField(editable=False)
 
     class Meta:
         index_together = ('team', 'organization_id', 'created')
         protobuf = organization_containers.TeamStatusV1
 
 
-class Address(models.UUIDModel, models.TimestampableModel):
+class Location(models.UUIDModel, models.TimestampableModel):
 
-    organization = models.ForeignKey(Organization, db_index=True)
+    organization = models.ForeignKey(Organization, db_index=True, editable=False)
     name = models.CharField(max_length=64)
     address_1 = models.CharField(max_length=128)
-    address_2 = models.CharField(max_length=128, blank=True)
+    address_2 = models.CharField(max_length=128, null=True)
     city = models.CharField(max_length=64)
     region = models.CharField(max_length=64)
     postal_code = models.CharField(max_length=64)
-    country_code = models.CharField(max_length=64)
+    # ISO 3166-1 alpha-3
+    country_code = models.CharField(max_length=3)
     latitude = models.DecimalField(max_digits=10, decimal_places=6)
     longitude = models.DecimalField(max_digits=10, decimal_places=6)
     timezone = TimeZoneField()
-
-    class Meta:
-        unique_together = ('name', 'organization')
-        protobuf = organization_containers.AddressV1
-
-
-class Location(models.UUIDModel, models.TimestampableModel):
-
-    model_to_protobuf_mapping = {
-        'description': 'location_description',
-    }
-
-    organization = models.ForeignKey(Organization, db_index=True)
-    name = models.CharField(max_length=64)
-    address = models.ForeignKey(Address)
     image_url = models.URLField(max_length=255, null=True)
     description = HStoreField(null=True)
     established_date = models.DateField(null=True)
     points_of_contact_profile_ids = ArrayField(models.UUIDField(), null=True)
 
-    def get_description(self):
-        return self.description or {}
-
     class Meta:
         unique_together = ('name', 'organization')
         protobuf = organization_containers.LocationV1
+
+    def get_description(self):
+        return self.description or {}
 
     def update_from_protobuf(self, protobuf):
         points_of_contact_profile_ids = [profile.id for profile in protobuf.points_of_contact]
@@ -188,6 +146,21 @@ class Location(models.UUIDModel, models.TimestampableModel):
         if 'description' not in overrides:
             overrides['description'] = description
         return super(Location, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
+
+
+class LocationMember(models.UUIDModel):
+
+    location = models.ForeignKey(Location, related_name='members')
+    profile_id = models.UUIDField()
+    organization_id = models.UUIDField(editable=False)
+    added_by_profile_id = models.UUIDField(editable=False, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        index_together = (
+            ('profile_id', 'organization_id'),
+            ('location', 'organization_id',),
+        )
 
 
 class Token(models.UUIDModel):
