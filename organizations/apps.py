@@ -11,7 +11,7 @@ from .mixins import (
 class TeamSearchAdapter(SearchAdapter, TeamProfileStatsMixin):
 
     def get_title(self, obj):
-        return obj.name
+        return obj.name or ''
 
 
 class LocationSearchAdapter(SearchAdapter, LocationProfileStatsMixin):

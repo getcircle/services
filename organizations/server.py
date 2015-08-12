@@ -20,4 +20,6 @@ class Server(service.control.Server):
         'enable_integration': actions.EnableIntegration,
         'get_integration': actions.GetIntegration,
         'disable_integration': actions.DisableIntegration,
+        'add_direct_reports': actions.AddDirectReports,
+        'set_manager': actions.SetManager,
     }

@@ -419,3 +419,71 @@ class GetIntegration(DisableIntegration):
     def run(self, *args, **kwargs):
         integration = self._get_integration()
         integration.to_protobuf(self.response.integration)
+
+
+class ReportingStructureAction(PreRunParseTokenMixin, actions.Action):
+
+    def _add_direct_reports(self, manager_profile_id, direct_reports_profile_ids):
+        manager, created = models.ReportingStructure.objects.get_or_create(
+            profile_id=manager_profile_id,
+            organization_id=self.parsed_token.organization_id,
+            defaults={
+                'added_by_profile_id': self.parsed_token.profile_id,
+            },
+        )
+        # move any existing reports to the new manager
+        existing_reports = models.ReportingStructure.objects.filter(
+            profile_id__in=direct_reports_profile_ids,
+            organization_id=self.parsed_token.organization_id,
+        )
+        if existing_reports:
+            existing_reports.update(manager=manager)
+
+        existing_ids = [report.profile_id for report in existing_reports]
+        # NB: django-mptt doesn't support bulk_update. creating objects handles
+        # creating the default fields we need and we don't expect to add many
+        # direct reports so this should be acceptable
+        for profile_id in direct_reports_profile_ids:
+            if profile_id not in existing_ids:
+                models.ReportingStructure.objects.create(
+                    profile_id=profile_id,
+                    manager=manager,
+                    organization_id=self.parsed_token.organization_id,
+                    added_by_profile_id=self.parsed_token.profile_id,
+                )
+
+        team, created = models.Team.objects.get_or_create(
+            manager_profile_id=manager_profile_id,
+            organization_id=self.parsed_token.organization_id,
+            defaults={
+                'created_by_profile_id': self.parsed_token.profile_id,
+            },
+        )
+        return team
+
+    def _update_tree(self, method, *args, **kwargs):
+        with django.db.transaction.atomic():
+            with models.ReportingStructure.trees.delay_mptt_updates():
+                return method(*args, **kwargs)
+
+
+class AddDirectReports(ReportingStructureAction):
+
+    def run(self, *args, **kwargs):
+        team = self._update_tree(
+            self._add_direct_reports,
+            self.request.manager_profile_id,
+            self.request.direct_reports_profile_ids,
+        )
+        team.to_protobuf(self.response.team)
+
+
+class SetManager(ReportingStructureAction):
+
+    def run(self, *args, **kwargs):
+        team = self._update_tree(
+            self._add_direct_reports,
+            self.request.manager_profile_id,
+            [self.request.profile_id],
+        )
+        team.to_protobuf(self.response.team)

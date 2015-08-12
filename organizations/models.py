@@ -4,7 +4,11 @@ import os
 from common.db import models
 from common import utils
 from django.contrib.postgres.fields import ArrayField
-from mptt.models import MPTTModel, TreeForeignKey
+from mptt.models import (
+    MPTTModel,
+    TreeForeignKey,
+)
+from mptt.managers import TreeManager
 from protobuf_to_dict import protobuf_to_dict
 
 from protobufs.services.organization import containers_pb2 as organization_containers
@@ -31,6 +35,8 @@ class Organization(models.UUIDModel, models.TimestampableModel):
 
 
 class ReportingStructure(MPTTModel, models.TimestampableModel):
+
+    trees = TreeManager()
 
     profile_id = models.UUIDField(primary_key=True)
     manager = TreeForeignKey('self', null=True, related_name='reports', db_index=True)
