@@ -10,6 +10,7 @@ from service import (
 import service.control
 
 from services.history import action_container_for_update
+from services.mixins import PreRunParseTokenMixin
 from services.token import parse_token
 from services import utils
 from . import models
@@ -293,6 +294,30 @@ class GetLocations(BaseLocationAction):
             container.permissions.CopyFrom(self.get_permissions(location))
 
 
+class GetLocationMembers(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('location_id',)
+    type_validators = {
+        'location_id': (validators.is_uuid4,),
+    }
+    field_validators = {
+        'location_id': {
+            valid_location: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        member_profile_ids = models.LocationMember.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            location_id=self.request.location_id,
+        ).values_list('profile_id', flat=True)
+        self.paginated_response(
+            self.response.member_profile_ids,
+            member_profile_ids,
+            lambda item, container: container.append(str(item)),
+        )
+
+
 class CreateToken(actions.Action):
 
     def validate(self, *args, **kwargs):
@@ -344,12 +369,6 @@ class GetTokens(actions.Action):
             tokens,
             lambda item, container: item.to_protobuf(container.add()),
         )
-
-
-class PreRunParseTokenMixin(object):
-
-    def pre_run(self, *args, **kwargs):
-        self.parsed_token = parse_token(self.token)
 
 
 class EnableIntegration(PreRunParseTokenMixin, actions.Action):

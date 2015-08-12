@@ -24,4 +24,5 @@ class Server(service.control.Server):
         'set_manager': actions.SetManager,
         'get_profile_reporting_details': actions.GetProfileReportingDetails,
         'get_team_reporting_details': actions.GetTeamReportingDetails,
+        'get_location_members': actions.GetLocationMembers,
     }

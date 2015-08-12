@@ -98,7 +98,7 @@ class LocationMemberFactory(factory.Factory):
     location = factory.SubFactory(LocationFactory)
     profile_id = factory.FuzzyUUID()
     added_by_profile_id = factory.FuzzyUUID()
-    organization_id = factory.FuzzyUUID()
+    organization = factory.SubFactory(OrganizationFactory)
 
 
 class TokenFactory(factory.Factory):

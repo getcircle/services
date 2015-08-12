@@ -48,10 +48,10 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, serialize=False, primary_key=True)),
                 ('profile_id', models.UUIDField()),
-                ('organization_id', models.UUIDField(editable=False)),
                 ('added_by_profile_id', models.UUIDField(null=True, editable=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('location', models.ForeignKey(related_name='members', to='organizations.Location')),
+                ('organization', models.ForeignKey(editable=False, to='organizations.Organization')),
             ],
         ),
         migrations.CreateModel(
@@ -113,7 +113,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterIndexTogether(
             name='locationmember',
-            index_together=set([('profile_id', 'organization_id'), ('location', 'organization_id')]),
+            index_together=set([('location', 'organization'), ('profile_id', 'organization')]),
         ),
         migrations.AlterUniqueTogether(
             name='location',

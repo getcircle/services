@@ -209,7 +209,7 @@ class OrganizationLocationTests(MockedTestCase):
             factories.LocationMemberFactory.create_batch(
                 size=3,
                 location=location,
-                organization_id=location.organization_id,
+                organization=self.organization,
             )
 
         factories.LocationFactory.create_batch(size=3)
@@ -236,3 +236,29 @@ class OrganizationLocationTests(MockedTestCase):
             self.assertTrue(location.permissions.can_edit)
             self.assertTrue(location.permissions.can_add)
             self.assertTrue(location.permissions.can_delete)
+
+    def test_get_location_members_invalid_location_id(self):
+        with self.assertFieldError('location_id'):
+            self.client.call_action('get_location_members', location_id='invalid')
+
+    def test_get_location_members_location_id_required(self):
+        with self.assertFieldError('location_id', 'MISSING'):
+            self.client.call_action('get_location_members')
+
+    def test_get_location_members_does_not_exist(self):
+        with self.assertFieldError('location_id', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_location_members', location_id=fuzzy.FuzzyUUID().fuzz())
+
+    def test_get_location_members(self):
+        location = factories.LocationFactory.create(organization=self.organization)
+        # create members for this location
+        factories.LocationMemberFactory.create_batch(
+            size=3,
+            location=location,
+            organization=self.organization,
+        )
+
+        # create members for other locations
+        factories.LocationMemberFactory.create_batch(size=3, organization=self.organization)
+        response = self.client.call_action('get_location_members', location_id=str(location.id))
+        self.assertEqual(len(response.result.member_profile_ids), 3)

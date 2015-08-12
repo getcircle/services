@@ -167,14 +167,14 @@ class LocationMember(models.UUIDModel):
 
     location = models.ForeignKey(Location, related_name='members')
     profile_id = models.UUIDField()
-    organization_id = models.UUIDField(editable=False)
+    organization = models.ForeignKey(Organization, editable=False)
     added_by_profile_id = models.UUIDField(editable=False, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         index_together = (
-            ('profile_id', 'organization_id'),
-            ('location', 'organization_id',),
+            ('profile_id', 'organization'),
+            ('location', 'organization'),
         )
 
 
