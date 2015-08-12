@@ -6,6 +6,8 @@ from services import (
     utils,
 )
 
+from . import models
+
 
 class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
 
@@ -21,14 +23,28 @@ class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
             )
         return self._requester_profile
 
+    def _get_team_id(self):
+        try:
+            reporting = models.ReportingStructure.objects.values('manager_id').get(
+                profile_id=self.requester_profile.id,
+                organization_id=self.requester_profile.organization_id,
+            )
+            team = models.Team.objects.values('id').get(
+                manager_profile_id=reporting['manager_id'],
+                organization_id=self.requester_profile.organization_id,
+            )
+        except (models.ReportingStructure.DoesNotExist, models.Team.DoesNotExist):
+            return ''
+        else:
+            return team['id']
+
     def get_permissions(self, team):
         permissions = common_containers.PermissionsV1()
         if self.parsed_token.is_admin() or self.requester_profile.is_admin:
             permissions.can_edit = True
             permissions.can_add = True
             permissions.can_delete = True
-        # XXX should really be everyone on the team
-        elif utils.matching_uuids(self.requester_profile.team_id, team.id):
+        elif utils.matching_uuids(self._get_team_id(), team.id):
             permissions.can_edit = True
         return permissions
 

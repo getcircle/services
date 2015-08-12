@@ -34,8 +34,11 @@ class ReportingStructure(MPTTModel, models.TimestampableModel):
 
     profile_id = models.UUIDField(primary_key=True)
     manager = TreeForeignKey('self', null=True, related_name='reports', db_index=True)
-    organization_id = models.UUIDField(db_index=True, editable=False)
+    organization = models.ForeignKey(Organization, db_index=True, editable=False)
     added_by_profile_id = models.UUIDField(null=True, editable=False)
+
+    class MPTTMeta:
+        parent_attr = 'manager'
 
 
 class Team(models.UUIDModel, models.TimestampableModel):
@@ -80,16 +83,27 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
     def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-        description = self.get_description()
         try:
             status = overrides.pop('status', self.teamstatus_set.all().order_by('-created')[0])
         except IndexError:
             status = None
 
-        if 'description' not in overrides:
-            overrides['description'] = description
         if status is not None and status.value is not None:
             overrides['status'] = status.as_dict()
+
+        if 'profile_count' not in overrides:
+            manager = ReportingStructure.objects.get(
+                pk=self.manager_profile_id,
+                organization_id=self.organization_id,
+            )
+            descendant_count = manager.get_descendant_count()
+            # NB: We want to include the manager in the profile_count
+            overrides['profile_count'] = descendant_count + 1
+            if descendant_count > 0:
+                children = manager.get_children()
+                overrides['child_team_count'] = len(
+                    [child for child in children if child.get_descendant_count() > 0]
+                )
         return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
 

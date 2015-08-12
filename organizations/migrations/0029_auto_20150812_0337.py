@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 import protobufs.services.organization.containers_pb2
+import services.fields
 import timezone_field.fields
 import mptt.fields
 import django.contrib.postgres.fields
-import django.contrib.postgres.fields.hstore
 import uuid
 
 
@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                 ('longitude', models.DecimalField(max_digits=10, decimal_places=6)),
                 ('timezone', timezone_field.fields.TimeZoneField()),
                 ('image_url', models.URLField(max_length=255, null=True)),
-                ('description', django.contrib.postgres.fields.hstore.HStoreField(null=True)),
+                ('description', services.fields.DescriptionField(null=True)),
                 ('established_date', models.DateField(null=True)),
                 ('points_of_contact_profile_ids', django.contrib.postgres.fields.ArrayField(null=True, base_field=models.UUIDField(), size=None)),
                 ('organization', models.ForeignKey(editable=False, to='organizations.Organization')),
@@ -60,13 +60,13 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('changed', models.DateTimeField(auto_now=True)),
                 ('profile_id', models.UUIDField(serialize=False, primary_key=True)),
-                ('organization_id', models.UUIDField(editable=False, db_index=True)),
                 ('added_by_profile_id', models.UUIDField(null=True, editable=False)),
                 ('lft', models.PositiveIntegerField(editable=False, db_index=True)),
                 ('rght', models.PositiveIntegerField(editable=False, db_index=True)),
                 ('tree_id', models.PositiveIntegerField(editable=False, db_index=True)),
                 ('level', models.PositiveIntegerField(editable=False, db_index=True)),
                 ('manager', mptt.fields.TreeForeignKey(related_name='reports', to='organizations.ReportingStructure', null=True)),
+                ('organization', models.ForeignKey(editable=False, to='organizations.Organization')),
             ],
             options={
                 'abstract': False,
@@ -79,7 +79,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('changed', models.DateTimeField(auto_now=True)),
                 ('name', models.CharField(max_length=255, null=True)),
-                ('description', django.contrib.postgres.fields.hstore.HStoreField(null=True)),
+                ('description', services.fields.DescriptionField(null=True)),
                 ('manager_profile_id', models.UUIDField(editable=False)),
                 ('created_by_profile_id', models.UUIDField(editable=False)),
                 ('image_url', models.URLField(max_length=255, null=True)),

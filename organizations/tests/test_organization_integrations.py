@@ -1,5 +1,3 @@
-import json
-
 import service.control
 from protobufs.services.organization.containers import integration_pb2
 from services.test import (

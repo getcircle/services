@@ -47,6 +47,31 @@ class TeamFactory(factory.Factory):
                 by_profile_id=by_profile_id,
             )
 
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        # NB: If we're creating a team from scratch, ensure we create a manager
+        # and a direct report since that is our requirement for a team. If one
+        # already exists, we don't want to add anything.
+        manager = models.ReportingStructure.objects.filter(
+            organization=kwargs['organization'],
+            profile_id=kwargs['manager_profile_id'],
+        )
+        if not manager:
+            manager = ReportingStructureFactory.create(
+                manager_id=None,
+                organization=kwargs['organization'],
+                profile_id=kwargs['manager_profile_id'],
+            )
+        else:
+            manager = manager[0]
+
+        if not manager.get_descendant_count():
+            ReportingStructureFactory.create(
+                manager_id=kwargs['manager_profile_id'],
+                organization=kwargs['organization'],
+            )
+        return super(TeamFactory, cls)._create(model_class, *args, **kwargs)
+
 
 class LocationFactory(factory.Factory):
     class Meta:
@@ -97,6 +122,7 @@ class IntegrationFactory(factory.Factory):
 class ReportingStructureFactory(factory.Factory):
     class Meta:
         model = models.ReportingStructure
+        django_get_or_create = ('profile_id',)
 
     organization = factory.SubFactory(OrganizationFactory)
     profile_id = factory.FuzzyUUID()
