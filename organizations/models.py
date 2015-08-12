@@ -3,16 +3,15 @@ import os
 
 from common.db import models
 from common import utils
-from django.contrib.postgres.fields import (
-    ArrayField,
-    HStoreField,
-)
+from django.contrib.postgres.fields import ArrayField
 from mptt.models import MPTTModel, TreeForeignKey
 from protobuf_to_dict import protobuf_to_dict
 
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.containers import integration_pb2
 from timezone_field import TimeZoneField
+
+from services.fields import DescriptionField
 
 
 class LTreeField(models.Field):
@@ -42,7 +41,7 @@ class ReportingStructure(MPTTModel, models.TimestampableModel):
 class Team(models.UUIDModel, models.TimestampableModel):
 
     name = models.CharField(max_length=255, null=True)
-    description = HStoreField(null=True)
+    description = DescriptionField(null=True)
     manager_profile_id = models.UUIDField(editable=False)
     created_by_profile_id = models.UUIDField(editable=False)
     organization = models.ForeignKey(Organization, editable=False)
@@ -122,16 +121,13 @@ class Location(models.UUIDModel, models.TimestampableModel):
     longitude = models.DecimalField(max_digits=10, decimal_places=6)
     timezone = TimeZoneField()
     image_url = models.URLField(max_length=255, null=True)
-    description = HStoreField(null=True)
+    description = DescriptionField(null=True)
     established_date = models.DateField(null=True)
     points_of_contact_profile_ids = ArrayField(models.UUIDField(), null=True)
 
     class Meta:
         unique_together = ('name', 'organization')
         protobuf = organization_containers.LocationV1
-
-    def get_description(self):
-        return self.description or {}
 
     def update_from_protobuf(self, protobuf):
         points_of_contact_profile_ids = [profile.id for profile in protobuf.points_of_contact]
@@ -142,9 +138,8 @@ class Location(models.UUIDModel, models.TimestampableModel):
 
     def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-        description = self.get_description()
-        if 'description' not in overrides:
-            overrides['description'] = description
+        if 'profile_count' not in overrides:
+            overrides['profile_count'] = self.members.count()
         return super(Location, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
 

@@ -88,6 +88,18 @@ class TestCase(DjangoTestCase):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
 
 
+class MockedTestCase(TestCase):
+
+    def setUp(self, *args, **kwargs):
+        service.settings.DEFAULT_TRANSPORT = 'service.transports.mock.instance'
+        self.mock = mock
+        super(MockedTestCase, self).setUp(*args, **kwargs)
+
+    def tearDown(self, *args, **kwargs):
+        service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
+        super(MockedTestCase, self).setUp(*args, **kwargs)
+
+
 class TestAuthView(APIView):
 
     def get(self, request, *args, **kwargs):

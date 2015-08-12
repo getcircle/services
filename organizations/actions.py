@@ -3,6 +3,7 @@ import uuid
 
 from cacheops import cached_as
 import django.db
+from django.db.models import Count
 from django.utils import timezone
 from protobufs.services.history import containers_pb2 as history_containers
 from protobuf_to_dict import protobuf_to_dict
@@ -536,7 +537,6 @@ class CreateLocation(actions.Action):
 
     type_validators = {
         'location.organization_id': [validators.is_uuid4],
-        'location.address.id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
@@ -581,7 +581,7 @@ class UpdateLocation(BaseLocationAction):
 
     def _get_update_description_action(self, location):
         action = None
-        request_description = self.request.location.location_description
+        request_description = self.request.location.description
         if not request_description.value and not location.description:
             return action
 
@@ -633,29 +633,11 @@ class GetLocation(BaseLocationAction):
         },
     }
 
-    def validate(self, *args, **kwargs):
-        super(GetLocation, self).validate(*args, **kwargs)
-        if not self.is_error():
-            if self.request.HasField('name') and not self.request.HasField('organization_id'):
-                raise self.ActionFieldError('organization_id', 'REQUIRED')
-
     def run(self, *args, **kwargs):
-        parameters = {}
-        if self.request.location_id:
-            parameters['pk'] = self.request.location_id
-        elif self.request.name:
-            parameters['name'] = self.request.name
-            parameters['organization_id'] = self.request.organization_id
-        else:
-            raise self.ActionError('FAILURE', ('FAILURE', 'missing parameters'))
-
-        location = models.Location.objects.select_related('address').get(**parameters)
-        profile_stats = self.fetch_profile_stats([location])
+        location = models.Location.objects.get(pk=self.request.location_id)
         points_of_contact = self._fetch_points_of_contact([location])
         location.to_protobuf(
             self.response.location,
-            address=location.address.as_dict(),
-            profile_count=profile_stats.get(str(location.id), 0),
             points_of_contact=points_of_contact.get(str(location.id), []),
         )
         self.response.location.permissions.CopyFrom(self.get_permissions(location))
@@ -664,20 +646,24 @@ class GetLocation(BaseLocationAction):
 class GetLocations(BaseLocationAction):
 
     def run(self, *args, **kwargs):
-        locations = models.Location.objects.select_related('address').filter(
+        locations = models.Location.objects.filter(
             organization_id=self.parsed_token.organization_id,
         )
         if not locations:
             return
 
-        profile_stats = self.fetch_profile_stats(locations)
+        member_stats = models.LocationMember.objects.filter(
+            location_id__in=[location.id for location in locations],
+            organization_id=self.parsed_token.organization_id,
+        ).values('location_id').annotate(profiles=Count('id'))
+        member_stats = dict((d['location_id'], d['profiles']) for d in member_stats)
+
         points_of_contact = self._fetch_points_of_contact(locations)
         for location in locations:
             container = self.response.locations.add()
             location.to_protobuf(
                 container,
-                address=location.address.as_dict(),
-                profile_count=profile_stats.get(str(location.id), 0),
+                profile_count=member_stats.get(location.id, 0),
                 points_of_contact=points_of_contact.get(str(location.id), []),
             )
             container.permissions.CopyFrom(self.get_permissions(location))

@@ -41,7 +41,7 @@ class LocationPermissionsMixin(TeamPermissionsMixin):
             permissions.can_edit = True
             permissions.can_add = True
             permissions.can_delete = True
-        elif utils.matching_uuids(self.requester_profile.location_id, location.id):
+        elif location.members.filter(profile_id=self.parsed_token.profile_id).exists():
             permissions.can_edit = True
         return permissions
 

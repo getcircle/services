@@ -68,11 +68,12 @@ class LocationFactory(factory.Factory):
 
 class LocationMemberFactory(factory.Factory):
     class Meta:
-        model = models.Location
+        model = models.LocationMember
 
     location = factory.SubFactory(LocationFactory)
     profile_id = factory.FuzzyUUID()
     added_by_profile_id = factory.FuzzyUUID()
+    organization_id = factory.FuzzyUUID()
 
 
 class TokenFactory(factory.Factory):

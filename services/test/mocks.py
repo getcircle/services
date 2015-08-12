@@ -80,70 +80,15 @@ def mock_token(**values):
     return token.make_token(**token_data)
 
 
-def mock_address(container=None, **overrides):
-    if container is None:
-        container = organization_containers.AddressV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'organization_id'],
-        fuzzy.FuzzyText: ['address_1', 'address_2', 'city', 'region'],
-    }
-    extra = {
-        'postal_code': '94010',
-        'country_code': 'US',
-    }
-    extra.update(overrides)
-    return _mock_container(container, mock_dict, **extra)
-
-
-def mock_team_path_part(container=None, **overrides):
-    if container is None:
-        container = organization_containers.PathPartV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'owner_id'],
-        fuzzy.FuzzyText: ['name'],
-    }
-    return _mock_container(container, mock_dict, **overrides)
-
-
 def mock_team(container=None, **overrides):
     if container is None:
         container = organization_containers.TeamV1()
 
-    team_id = overrides.pop('id', fuzzy.FuzzyUUID().fuzz())
     mock_dict = {
-        fuzzy.FuzzyUUID: ['owner_id', 'organization_id'],
-        fuzzy.FuzzyText: ['name', 'department'],
+        fuzzy.FuzzyUUID: ['id', 'manager_profile_id', 'organization_id'],
+        fuzzy.FuzzyText: ['name'],
     }
-    path = overrides.pop('path', [])
-    path_part_overrides = {}
-    if 'owner_id' in overrides:
-        path_part_overrides['owner_id'] = overrides['owner_id']
-
-    path.extend([mock_team_path_part(id=team_id, **path_part_overrides)])
-    extra = {
-        'path': path,
-        'id': team_id,
-    }
-    extra.update(overrides)
-    return _mock_container(container, mock_dict, **extra)
-
-
-def mock_team_descendants(container=None, **overrides):
-    if container is None:
-        container = organization_containers.TeamDescendantsV1()
-
-    defaults = {
-        'depth': 1,
-        'teams': [mock_team()],
-    }
-    defaults.update(overrides)
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['parent_team_id'],
-    }
-    return _mock_container(container, mock_dict, **defaults)
+    return _mock_container(container, mock_dict, **overrides)
 
 
 def mock_organization(container=None, **overrides):
@@ -163,7 +108,7 @@ def mock_profile(container=None, **overrides):
         container = profile_containers.ProfileV1()
 
     mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'organization_id', 'user_id', 'address_id', 'team_id'],
+        fuzzy.FuzzyUUID: ['id', 'organization_id', 'user_id'],
         fuzzy.FuzzyText: ['title', 'full_name', 'first_name', 'last_name', 'nickname'],
         fuzzy.FuzzyDate(arrow.Arrow(1980, 1, 1)): ['birth_date', 'hire_date'],
         fuzzy.FuzzyText(suffix='@example.com'): ['email'],
@@ -205,13 +150,15 @@ def mock_location(container=None, **overrides):
     if container is None:
         container = organization_containers.LocationV1()
 
-    defaults = {'address': mock_address()}
-    defaults.update(overrides)
-
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'organization_id'],
-        fuzzy.FuzzyText: ['name'],
+        fuzzy.FuzzyText: ['name', 'address_1', 'address_2', 'city', 'region'],
     }
+    defaults = {
+        'postal_code': '94010',
+        'country_code': 'US',
+    }
+    defaults.update(overrides)
     return _mock_container(container, mock_dict, **defaults)
 
 
