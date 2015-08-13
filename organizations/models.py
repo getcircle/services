@@ -52,7 +52,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
     name = models.CharField(max_length=255, null=True)
     description = DescriptionField(null=True)
     manager_profile_id = models.UUIDField(editable=False)
-    created_by_profile_id = models.UUIDField(editable=False)
+    created_by_profile_id = models.UUIDField(editable=False, null=True)
     organization = models.ForeignKey(Organization, editable=False)
     image_url = models.URLField(max_length=255, null=True)
 
