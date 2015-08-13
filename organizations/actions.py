@@ -482,7 +482,7 @@ class ReportingStructureAction(PreRunParseTokenMixin, actions.Action):
         if existing_reports:
             existing_reports.update(manager=manager)
 
-        existing_ids = [report.profile_id for report in existing_reports]
+        existing_ids = [str(report.profile_id) for report in existing_reports]
         # NB: django-mptt doesn't support bulk_update. creating objects handles
         # creating the default fields we need and we don't expect to add many
         # direct reports so this should be acceptable
@@ -513,18 +513,18 @@ class ReportingStructureAction(PreRunParseTokenMixin, actions.Action):
 class AddDirectReports(ReportingStructureAction):
 
     required_fields = (
-        'manager_profile_id',
+        'profile_id',
         'direct_reports_profile_ids',
     )
     type_validators = {
-        'manager_profile_id': (validators.is_uuid4,),
+        'profile_id': (validators.is_uuid4,),
         'direct_reports_profile_ids': (validators.is_uuid4_list,),
     }
 
     def run(self, *args, **kwargs):
         team = self._update_tree(
             self._add_direct_reports,
-            self.request.manager_profile_id,
+            self.request.profile_id,
             self.request.direct_reports_profile_ids,
         )
         team.to_protobuf(self.response.team)

@@ -26,18 +26,18 @@ class OrganizationTeamTests(MockedTestCase):
         )
         self.mock.instance.dont_mock_service('organization')
 
-    def test_add_direct_reports_invalid_manager_profile_id(self):
+    def test_add_direct_reports_invalid_profile_id(self):
         direct_reports_profile_ids = [fuzzy.FuzzyUUID().fuzz() for _ in range(2)]
-        with self.assertFieldError('manager_profile_id'):
+        with self.assertFieldError('profile_id'):
             self.client.call_action(
                 'add_direct_reports',
-                manager_profile_id='invalid',
+                profile_id='invalid',
                 direct_reports_profile_ids=direct_reports_profile_ids,
             )
 
-    def test_add_direct_reports_manager_profile_id_required(self):
+    def test_add_direct_reports_profile_id_required(self):
         direct_reports_profile_ids = [fuzzy.FuzzyUUID().fuzz() for _ in range(2)]
-        with self.assertFieldError('manager_profile_id', 'MISSING'):
+        with self.assertFieldError('profile_id', 'MISSING'):
             self.client.call_action(
                 'add_direct_reports',
                 direct_reports_profile_ids=direct_reports_profile_ids,
@@ -47,23 +47,23 @@ class OrganizationTeamTests(MockedTestCase):
         with self.assertFieldError('direct_reports_profile_ids', 'MISSING'):
             self.client.call_action(
                 'add_direct_reports',
-                manager_profile_id=fuzzy.FuzzyUUID().fuzz(),
+                profile_id=fuzzy.FuzzyUUID().fuzz(),
             )
 
     def test_add_direct_reports_invalid_direct_reports_profile_ids(self):
         with self.assertFieldError('direct_reports_profile_ids'):
             self.client.call_action(
                 'add_direct_reports',
-                manager_profile_id=fuzzy.FuzzyUUID().fuzz(),
+                profile_id=fuzzy.FuzzyUUID().fuzz(),
                 direct_reports_profile_ids=['invalid'],
             )
 
     def test_add_direct_reports_no_existing_team(self):
         direct_reports_profile_ids = [fuzzy.FuzzyUUID().fuzz() for _ in range(2)]
-        manager_profile_id = fuzzy.FuzzyUUID().fuzz()
+        profile_id = fuzzy.FuzzyUUID().fuzz()
         response = self.client.call_action(
             'add_direct_reports',
-            manager_profile_id=manager_profile_id,
+            profile_id=profile_id,
             direct_reports_profile_ids=direct_reports_profile_ids,
         )
         self.assertEqual(response.result.team.profile_count, 3)
@@ -74,7 +74,7 @@ class OrganizationTeamTests(MockedTestCase):
         team = factories.TeamFactory.create_protobuf(organization=self.organization)
         response = self.client.call_action(
             'add_direct_reports',
-            manager_profile_id=team.manager_profile_id,
+            profile_id=team.manager_profile_id,
             direct_reports_profile_ids=[fuzzy.FuzzyUUID().fuzz()],
         )
         self.verify_containers(team, response.result.team, ignore_fields=('profile_count',))
