@@ -24,6 +24,8 @@ class Action(models.UUIDModel, models.TimestampableModel):
     organization_id = models.UUIDField(db_index=True)
     correlation_id = models.UUIDField()
     by_profile_id = models.UUIDField()
+    primary_key_name = models.CharField(max_length=64)
+    primary_key_value = models.CharField(max_length=255)
 
     class Meta:
         protobuf = history_containers.ActionV1

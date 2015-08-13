@@ -69,6 +69,8 @@ class TestHistoryRecordAction(TestCase):
             'new_value': 'new',
             'action_type': history_containers.UPDATE_DESCRIPTION,
             'method_type': history_containers.UPDATE,
+            'primary_key_name': 'id',
+            'primary_key_value': '123',
         })
         self.client.call_action('record_action', action=expected)
         actual = models.Action.objects.all()[0].to_protobuf()
@@ -86,6 +88,8 @@ class TestHistoryRecordAction(TestCase):
                 'new_value': 'new',
                 'action_type': history_containers.UPDATE_DESCRIPTION,
                 'method_type': history_containers.UPDATE,
+                'primary_key_name': 'id',
+                'primary_key_value': '123',
             },
         )
 

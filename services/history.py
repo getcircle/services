@@ -5,6 +5,9 @@ from protobufs.services.history import containers_pb2 as history_containers
 
 
 def action_container(instance, field_name, new_value, action_type, method_type):
+    primary_key = instance._meta.pk
+    primary_key_name = primary_key.db_column or primary_key.column
+    primary_key_value = instance.pk
     field = instance._meta._forward_fields_map[field_name]
     table_name = instance._meta.db_table
     column_name = field.db_column or field.column
@@ -16,6 +19,8 @@ def action_container(instance, field_name, new_value, action_type, method_type):
         'data_type': data_type,
         'action_type': action_type,
         'method_type': method_type,
+        'primary_key_name': primary_key_name,
+        'primary_key_value': str(primary_key_value),
     }
 
     if old_value is not None:

@@ -16,6 +16,8 @@ class RecordAction(mixins.PreRunParseTokenMixin, actions.Action):
         'action.data_type',
         'action.action_type',
         'action.method_type',
+        'action.primary_key_name',
+        'action.primary_key_value',
     )
 
     def run(self, *args, **kwargs):
