@@ -25,4 +25,5 @@ class Server(service.control.Server):
         'get_profile_reporting_details': actions.GetProfileReportingDetails,
         'get_team_reporting_details': actions.GetTeamReportingDetails,
         'get_location_members': actions.GetLocationMembers,
+        'add_location_members': actions.AddLocationMembers,
     }

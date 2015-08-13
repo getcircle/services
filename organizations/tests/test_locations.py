@@ -262,3 +262,57 @@ class OrganizationLocationTests(MockedTestCase):
         factories.LocationMemberFactory.create_batch(size=3, organization=self.organization)
         response = self.client.call_action('get_location_members', location_id=str(location.id))
         self.assertEqual(len(response.result.member_profile_ids), 3)
+
+    def test_add_location_members_invalid_location_id(self):
+        with self.assertFieldError('location_id'):
+            self.client.call_action(
+                'add_location_members',
+                location_id='invalid',
+                profile_ids=[fuzzy.FuzzyUUID().fuzz()],
+            )
+
+    def test_add_location_members_location_id_required(self):
+        with self.assertFieldError('location_id', 'MISSING'):
+            self.client.call_action(
+                'add_location_members',
+                profile_ids=[fuzzy.FuzzyUUID().fuzz()],
+            )
+
+    def test_add_location_members_location_id_does_not_exist(self):
+        with self.assertFieldError('location_id', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'add_location_members',
+                location_id=fuzzy.FuzzyUUID().fuzz(),
+                profile_ids=[fuzzy.FuzzyUUID().fuzz()],
+            )
+
+    def test_add_location_members_profile_ids_required(self):
+        location = factories.LocationFactory.create_protobuf(organization=self.organization)
+        with self.assertFieldError('profile_ids', 'MISSING'):
+            self.client.call_action('add_location_members', location_id=location.id)
+
+    def test_add_location_members_profile_ids_invalid(self):
+        location = factories.LocationFactory.create_protobuf(organization=self.organization)
+        with self.assertFieldError('profile_ids'):
+            self.client.call_action(
+                'add_location_members',
+                location_id=location.id,
+                profile_ids=['invalid'],
+            )
+
+    def test_add_location_members(self):
+        location = factories.LocationFactory.create_protobuf(organization=self.organization)
+        self.client.call_action(
+            'add_location_members',
+            location_id=location.id,
+            profile_ids=[fuzzy.FuzzyUUID().fuzz(), fuzzy.FuzzyUUID().fuzz()],
+        )
+        self.mock.instance.register_mock_object(
+            'profile',
+            'get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+        )
+        response = self.client.call_action('get_location', location_id=location.id)
+        self.assertEqual(response.result.location.profile_count, 2)

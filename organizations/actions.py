@@ -318,6 +318,31 @@ class GetLocationMembers(PreRunParseTokenMixin, actions.Action):
         )
 
 
+class AddLocationMembers(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = (
+        'location_id',
+        'profile_ids',
+    )
+    type_validators = {
+        'location_id': (validators.is_uuid4,),
+        'profile_ids': (validators.is_uuid4_list,),
+    }
+    field_validators = {
+        'location_id': {
+            valid_location: 'DOES_NOT_EXIST',
+        },
+    }
+
+    def run(self, *args, **kwargs):
+        objects = [models.LocationMember(
+            organization_id=self.parsed_token.organization_id,
+            profile_id=profile_id,
+            location_id=self.request.location_id,
+        ) for profile_id in self.request.profile_ids]
+        models.LocationMember.objects.bulk_create(objects)
+
+
 class CreateToken(actions.Action):
 
     def validate(self, *args, **kwargs):
