@@ -65,9 +65,12 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             method.to_protobuf(container)
 
         try:
-            status = overrides.pop('status', self.profilestatus_set.all().order_by('-created')[0])
-        except IndexError:
-            status = None
+            status = overrides.pop('status')
+        except KeyError:
+            try:
+                status = self.statuses.all().order_by('-created')[0]
+            except IndexError:
+                status = None
 
         overrides['items'] = items
         overrides['contact_methods'] = contact_methods
@@ -95,7 +98,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     def _update_status(self, profile_container):
         new_status = None
         try:
-            current_status = self.profilestatus_set.all().order_by('-created')[0]
+            current_status = self.statuses.all().order_by('-created')[0]
             current_value = current_status.value
         except IndexError:
             current_value = None
@@ -158,7 +161,7 @@ class ProfileTags(models.TimestampableModel):
 class ProfileStatus(models.UUIDModel):
 
     value = models.TextField(null=True)
-    profile = models.ForeignKey(Profile)
+    profile = models.ForeignKey(Profile, related_name='statuses')
     created = models.DateTimeField(auto_now_add=True)
     organization_id = models.UUIDField()
 
