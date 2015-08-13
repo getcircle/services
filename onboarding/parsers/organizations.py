@@ -1,5 +1,4 @@
 from csv import DictReader
-import logging
 
 from django.contrib.auth.hashers import make_password
 from django.utils.encoding import smart_text
@@ -10,40 +9,6 @@ from services.utils import get_timezone_for_location
 from .base import OrganizationParser
 
 DEFAULT_PASSWORD = make_password('rhlabs123')
-
-
-class TeamStore(object):
-
-    def __init__(self):
-        self.owner_email_to_team = {}
-        self.team_to_owner_email = {}
-        self.team_to_parent_owner_email = {}
-        self.logger = logging.getLogger(__file__)
-
-    def store(self, team, owner_email, parent_owner_email):
-        try:
-            self.logger.info(
-                'storing team: %s, owner: %s, parent email: %s',
-                smart_text(team),
-                smart_text(owner_email),
-                smart_text(parent_owner_email),
-            )
-        except Exception as e:
-            self.logger.error(e)
-            raise
-        self.owner_email_to_team[owner_email] = team
-        self.team_to_owner_email[team] = owner_email
-        self.team_to_parent_owner_email[team] = parent_owner_email
-
-    def get_parent_team(self, team):
-        parent_team = None
-        parent_owner_email = self.team_to_parent_owner_email[team]
-        if parent_owner_email:
-            parent_team = self.owner_email_to_team[parent_owner_email]
-        return parent_team
-
-    def get_team_owner(self, team):
-        return self.team_to_owner_email[team]
 
 
 class Row(object):
@@ -63,7 +28,7 @@ class Row(object):
         'cell_phone',
     )
 
-    address_fields = (
+    location_fields = (
         'office_name',
         'office_address_1',
         'office_city',
@@ -85,16 +50,16 @@ class Row(object):
         return super(Row, self).__getattr__(key)
 
     @property
-    def address(self):
-        address = {}
-        for key in self.address_fields:
-            address_part = key.split('office_')[1]
-            address[address_part] = self.data[key]
-        return address
+    def location(self):
+        location = {}
+        for key in self.location_fields:
+            location_part = key.split('office_')[1]
+            location[location_part] = self.data[key]
+        return location
 
     @property
-    def address_composite_key(self):
-        values = self.address.values()
+    def location_composite_key(self):
+        values = self.location.values()
         return ':'.join(sorted(values))
 
     @property
@@ -122,51 +87,29 @@ class Parser(OrganizationParser):
 
     def __init__(self, *args, **kwargs):
         super(Parser, self).__init__(*args, **kwargs)
-        self.rows = []
-        self.addresses = {}
-        self.teams = set()
-        self.team_store = TeamStore()
-        self.saved_locations = {}
-        self.saved_teams = {}
+        self.locations = {}
+        self.direct_reports = {}
+        self.saved_profiles = {}
         self.saved_users = {}
+        self.saved_locations = {}
 
     def _save_location(self, data):
-        address = {
+        location = {
             'organization_id': self.organization.id,
             'timezone': get_timezone_for_location(data['latitude'], data['longitude']),
         }
-        address.update(data)
-        address.pop('image_url')
-        self.debug_log('saving address: %s' % (address,))
+        location.update(data)
+        location.pop('image_url')
+        self.debug_log('saving location: %s' % (location,))
         try:
             response = self.organization_client.call_action(
-                'create_address',
-                address=address,
+                'create_location',
+                location=location,
             )
-            address = response.result.address
         except service.control.CallActionError:
-            response = self.organization_client.call_action(
-                'get_address',
-                name=address['name'],
-                organization_id=address['organization_id'],
-            )
-            address = response.result.address
-
-        location = {
-            'name': address.name,
-            'organization_id': address.organization_id,
-            'address': address,
-            'image_url': data.get('image_url'),
-        }
-        try:
-            response = self.organization_client.call_action('create_location', location=location)
-        except service.control.CallActionError:
-            response = self.organization_client.call_action(
-                'get_location',
-                name=location['name'],
-                organization_id=location['organization_id'],
-            )
-        return response.result.location.id
+            # XXX make `get_location` take name
+            response = self.organization_client.call_action('get_location', name=location['name'])
+        return response.result.location
 
     def _save_users(self, rows):
         users = []
@@ -178,115 +121,78 @@ class Parser(OrganizationParser):
         response = client.call_action('bulk_create_users', users=users)
         return response.result.users
 
-    def _save_team(self, team):
-        self.debug_log('saving team: %s' % (team,))
-        if team in self.saved_teams:
-            return self.saved_teams[team]
-
-        child_of = None
-        parent_team_name = self.team_store.get_parent_team(team)
-        if parent_team_name is not None:
-            child_of = self._save_team(parent_team_name)
-
-        owner_id = self.saved_users[self.team_store.get_team_owner(team)]
-        parameters = {
-            'team': {
-                'name': team,
-                'owner_id': owner_id,
-                'organization_id': self.organization.id,
-            },
-            'child_of': child_of,
-        }
-        self.debug_log('creating team: %s' % (parameters,))
-        try:
-            response = self.organization_client.call_action(
-                'create_team',
-                **parameters
-            )
-            team = response.result.team
-        except service.control.CallActionError:
-            response = self.organization_client.call_action(
-                'get_team',
-                name=team,
-                organization_id=self.organization.id,
-            )
-            team = response.result.team
-
-        self.saved_teams[team.name] = team.id
-        return self.saved_teams[team.name]
-
     def _save_profiles(self, rows):
         profiles = []
         for row in rows:
             profile_data = {
                 'organization_id': self.organization.id,
-                'team_id': self.saved_teams[row.team],
-                'location_id': self.saved_locations.get(row.address_composite_key),
-                'user_id': self.saved_users[row.email],
+                'user_id': self.saved_users[row.email].id,
             }
             profile_data.update(row.profile)
             self.debug_log('creating profile: %s' % (profile_data,))
             profiles.append(profile_data)
 
         client = service.control.Client('profile', token=self.token)
-        #try:
-            #response = client.call_action('create_profile', profile=profile_data)
-            #profile = response.result.profile
-        #except service.control.CallActionError as e:
-            #self.debug_log('error creating profile: %s' % (e,))
-            ## fetch the profile
-            #response = client.call_action('get_profile', user_id=self.saved_users[row.email])
-            #profile = response.result.profile
-
-            ## update the profile
-            #for key, value in profile_data.iteritems():
-                #setattr(profile, key, value)
-            #response = client.call_action('update_profile', profile=profile)
-            #profile = response.result.profile
-        #return profile
         response = client.call_action('bulk_create_profiles', profiles=profiles)
         return response.result.profiles
 
-    def _parse_address(self, row):
-        if row.address_composite_key not in self.addresses:
-            self.addresses[row.address_composite_key] = row.address
+    def _parse_location(self, row):
+        if row.location_composite_key not in self.locations:
+            self.locations[row.location_composite_key] = row.location
 
-    def _parse_team(self, row):
-        self.teams.add(row.team)
-        if row.is_team_owner():
-            self.team_store.store(
-                row.team,
-                row.email,
-                row.manager_email,
-            )
-
-    def _save(self):
-        for composite_key, address in self.addresses.iteritems():
-            if any(address.values()):
-                self.saved_locations[composite_key] = self._save_location(address)
+    def _save(self, rows):
+        for composite_key, location in self.locations.iteritems():
+            if any(location.values()):
+                self.saved_locations[composite_key] = self._save_location(location)
 
         # create users for all the rows
-        users = self._save_users(self.rows)
+        users = self._save_users(rows)
         for user in users:
-            self.saved_users[user.primary_email] = user.id
-
-        for team in self.teams:
-            self.saved_teams[team] = self._save_team(team)
+            self.saved_users[user.primary_email] = user
 
         # create the profiles
-        self._save_profiles(self.rows)
+        profiles = self._save_profiles(rows)
+        for profile in profiles:
+            self.saved_profiles[profile.email] = profile
 
-    def _parse_row(self, row):
-        self._parse_address(row)
-        self._parse_team(row)
+        direct_reports = {}
+        teams = {}
+        locations = {}
+        for row in rows:
+            profile = self.saved_profiles[row.email]
+            manager = self.saved_profiles.get(row.manager_email)
+            location = self.saved_locations[row.location_composite_key]
+            locations.setdefault(location.id, []).append(profile.id)
+            if row.is_team_owner():
+                teams[profile.id] = row.team
+            if manager:
+                direct_reports.setdefault(manager.id, []).append(profile.id)
+
+        for profile_id, profile_ids in direct_reports.iteritems():
+            response = self.organization_client.call_action(
+                'add_direct_reports',
+                profile_id=profile_id,
+                direct_reports_profile_ids=profile_ids,
+            )
+            team = response.result.team
+            team.name = teams[profile_id]
+            self.organization_client.call_action('update_team', team=team)
+
+        for location_id, profile_ids in locations.iteritems():
+            self.organization_client.call_action(
+                'add_location_members',
+                location_id=location_id,
+                profile_ids=profile_ids,
+            )
 
     def parse(self, *args, **kwargs):
+        rows = []
         with open(self.filename) as csvfile:
             reader = DictReader(csvfile)
             for row_data in reader:
                 row = Row(row_data)
-                self._parse_row(row)
-                self.rows.append(row)
+                self._parse_location(row)
+                rows.append(row)
 
         if kwargs.get('commit'):
-            self._save()
+            self._save(rows)
