@@ -60,28 +60,20 @@ class CreateOrganization(actions.Action):
             model.to_protobuf(self.response.organization)
 
 
-class GetOrganization(actions.Action):
+class GetOrganization(PreRunParseTokenMixin, actions.Action):
 
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-    }
-
-    # XXX this should be driven by the token
     field_validators = {
-        'organization_id': {
-            valid_organization: 'DOES_NOT_EXIST',
-        },
-        'organization_domain': {
+        'domain': {
             valid_organization_with_domain: 'DOES_NOT_EXIST',
         },
     }
 
     def _get_organization(self):
         parameters = {}
-        if self.request.HasField('organization_id'):
-            parameters['pk'] = self.request.organization_id
+        if self.request.HasField('domain'):
+            parameters['domain'] = self.request.domain
         else:
-            parameters['domain'] = self.request.organization_domain
+            parameters['pk'] = self.parsed_token.organization_id
         return models.Organization.objects.get(**parameters)
 
     def run(self, *args, **kwargs):

@@ -26,14 +26,15 @@ class OrganizationTests(MockedTestCase):
 
     def test_get_organization(self):
         organization = factories.OrganizationFactory.create_protobuf()
-        response = self.client.call_action('get_organization', organization_id=organization.id)
+        self.client.token = make_admin_token(organization_id=organization.id)
+        response = self.client.call_action('get_organization')
         self.verify_containers(organization, response.result.organization)
 
     def test_get_organization_with_domain_does_not_exist(self):
-        with self.assertFieldError('organization_domain', 'DOES_NOT_EXIST'):
-            self.client.call_action('get_organization', organization_domain='doesnotexist.com')
+        with self.assertFieldError('domain', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_organization', domain='doesnotexist.com')
 
     def test_get_organization_with_domain(self):
         expected = factories.OrganizationFactory.create_protobuf()
-        response = self.client.call_action('get_organization', organization_domain=expected.domain)
+        response = self.client.call_action('get_organization', domain=expected.domain)
         self.verify_containers(expected, response.result.organization)

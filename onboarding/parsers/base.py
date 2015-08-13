@@ -22,7 +22,7 @@ class OrganizationParser(object):
     def _fetch_organization(self, organization_domain):
         response = self.organization_client.call_action(
             'get_organization',
-            organization_domain=organization_domain,
+            domain=organization_domain,
         )
         return response.result.organization
 
