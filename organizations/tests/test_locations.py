@@ -98,12 +98,10 @@ class OrganizationLocationTests(MockedTestCase):
         response = self._update_location(location, points_of_contact)
         self.assertEqual(response.result.location.name, new_name)
         self.assertEqual(response.result.location.description.value, new_description)
-        self.assertEqualUUID4(
-            response.result.location.description.by_profile_id,
-            self.profile.id,
-        )
+        self.assertEqualUUID4(response.result.location.description.by_profile_id, self.profile.id)
         self.assertTrue(response.result.location.description.changed)
         self.assertEqual(len(response.result.location.points_of_contact), len(points_of_contact))
+        self.verify_containers(self.profile, response.result.location.description.by_profile)
 
         # update the location again with a new description
         location = response.result.location

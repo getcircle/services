@@ -181,10 +181,22 @@ class Location(models.UUIDModel, models.TimestampableModel):
             points_of_contact_profile_ids=points_of_contact_profile_ids,
         )
 
-    def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
+    def to_protobuf(self, protobuf=None, strict=False, extra=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         if 'profile_count' not in overrides:
             overrides['profile_count'] = self.members.count()
+
+        if self.description and self.description.by_profile_id:
+            if token:
+                by_profile = service.control.get_object(
+                    'profile',
+                    'get_profile',
+                    client_kwargs={'token': token},
+                    return_object='profile',
+                    profile_id=str(self.description.by_profile_id),
+                )
+                self.description.by_profile.CopyFrom(by_profile)
+
         return super(Location, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
 

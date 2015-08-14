@@ -235,6 +235,7 @@ class UpdateLocation(BaseLocationAction):
         location.to_protobuf(
             self.response.location,
             points_of_contact=points_of_contact.get(str(location.id), []),
+            token=self.token,
         )
 
 
@@ -256,6 +257,7 @@ class GetLocation(BaseLocationAction):
         location.to_protobuf(
             self.response.location,
             points_of_contact=points_of_contact.get(str(location.id), []),
+            token=self.token,
         )
         self.response.location.permissions.CopyFrom(self.get_permissions(location))
 
