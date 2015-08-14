@@ -17,6 +17,7 @@ from protobufs.services.organization.containers import integration_pb2
 from timezone_field import TimeZoneField
 
 from services.fields import DescriptionField
+from services.utils import should_inflate_field
 
 
 class LTreeField(models.Field):
@@ -181,22 +182,33 @@ class Location(models.UUIDModel, models.TimestampableModel):
             points_of_contact_profile_ids=points_of_contact_profile_ids,
         )
 
-    def to_protobuf(self, protobuf=None, strict=False, extra=None, token=None, **overrides):
-        protobuf = self.new_protobuf_container(protobuf)
-        if 'profile_count' not in overrides:
+    def _inflate(self, protobuf, inflations, overrides, token):
+        if 'profile_count' not in overrides and should_inflate_field('profile_count', inflations):
             overrides['profile_count'] = self.members.count()
 
         if self.description and self.description.by_profile_id:
-            if token:
+            if token and should_inflate_field('description.by_profile_id', inflations):
                 by_profile = service.control.get_object(
                     'profile',
                     'get_profile',
                     client_kwargs={'token': token},
                     return_object='profile',
                     profile_id=str(self.description.by_profile_id),
+                    inflations={'enabled': False},
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 
+    def to_protobuf(
+            self,
+            protobuf=None,
+            strict=False,
+            extra=None,
+            token=None,
+            inflations=None,
+            **overrides
+        ):
+        protobuf = self.new_protobuf_container(protobuf)
+        self._inflate(protobuf, inflations, overrides, token)
         return super(Location, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
 

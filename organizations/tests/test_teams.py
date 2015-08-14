@@ -26,6 +26,23 @@ class OrganizationTeamTests(MockedTestCase):
         )
         self.mock.instance.dont_mock_service('organization')
 
+    def _mock_requester_profile(self):
+        self.mock.instance.register_mock_object(
+            'profile',
+            'get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+            inflations={'enabled': False},
+        )
+        self.mock.instance.register_mock_object(
+            'profile',
+            'get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+        )
+
     def test_get_team_invalid_team_id(self):
         with self.assertFieldError('team_id'):
             self.client.call_action('get_team', team_id='invalid')
@@ -37,13 +54,7 @@ class OrganizationTeamTests(MockedTestCase):
     def test_get_team(self):
         team = factories.TeamFactory.create_protobuf(organization=self.organization)
         manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -78,13 +89,7 @@ class OrganizationTeamTests(MockedTestCase):
             organization=self.organization,
             manager_profile_id=middle_manager.profile_id,
         )
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -112,13 +117,7 @@ class OrganizationTeamTests(MockedTestCase):
     def test_get_team_include_permissions_not_admin(self):
         team = factories.TeamFactory.create_protobuf(organization=self.organization)
         manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -136,13 +135,7 @@ class OrganizationTeamTests(MockedTestCase):
         self.profile.is_admin = True
         team = factories.TeamFactory.create_protobuf(organization=self.organization)
         manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -164,13 +157,7 @@ class OrganizationTeamTests(MockedTestCase):
             organization=self.organization,
             profile_id=self.profile.id,
         )
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -191,13 +178,7 @@ class OrganizationTeamTests(MockedTestCase):
         team.name = 'new name'
         team.image_url = 'http://www.newimage.com'
         team.status.value = 'new status'
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -226,13 +207,7 @@ class OrganizationTeamTests(MockedTestCase):
 
     def test_update_team_status_didnt_change(self):
         self.profile.is_admin = True
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         team = factories.TeamFactory.create_protobuf(
             organization=self.organization,
             status={'value': 'status', 'by_profile_id': str(self.profile.id)},
@@ -250,13 +225,7 @@ class OrganizationTeamTests(MockedTestCase):
 
     def test_update_team_unset_status(self):
         self.profile.is_admin = True
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         team = factories.TeamFactory.create_protobuf(
             organization=self.organization,
             status={'value': 'status', 'by_profile_id': str(self.profile.id)},
@@ -275,13 +244,7 @@ class OrganizationTeamTests(MockedTestCase):
 
     def test_update_team_get_team_only_returns_most_recent_status(self):
         self.profile.is_admin = True
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
 
         team = factories.TeamFactory.create_protobuf(
             organization=self.organization,
@@ -308,14 +271,7 @@ class OrganizationTeamTests(MockedTestCase):
         self.profile.is_admin = False
         team = factories.TeamFactory.create_protobuf(organization=self.organization)
         team.name = 'new name'
-
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action('update_team', team=team)
 
@@ -331,13 +287,7 @@ class OrganizationTeamTests(MockedTestCase):
             profile_id=self.profile.id,
         )
         team.name = 'new name'
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -356,13 +306,7 @@ class OrganizationTeamTests(MockedTestCase):
         team.organization_id = fuzzy.FuzzyUUID().fuzz()
         team.manager_profile_id = fuzzy.FuzzyUUID().fuzz()
         team.name = 'new name'
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -383,13 +327,7 @@ class OrganizationTeamTests(MockedTestCase):
             action='record_action',
             mock_regex_lookup='history:record_action:.*',
         )
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
-        )
+        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',

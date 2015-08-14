@@ -188,7 +188,7 @@ class BaseLocationAction(LocationPermissionsMixin, actions.Action):
                     client_kwargs={'token': self.token},
                     return_object='profiles',
                     ids=map(str, location.points_of_contact_profile_ids),
-                    inflations={'only': 'contact_methods'},
+                    inflations={'only': ['contact_methods']},
                 )
                 location_to_profiles[str(location.id)] = map(protobuf_to_dict, profiles)
         return location_to_profiles
@@ -284,13 +284,19 @@ class GetLocations(BaseLocationAction):
         if not locations:
             return
 
-        member_stats = models.LocationMember.objects.filter(
-            location_id__in=[location.id for location in locations],
-            organization_id=self.parsed_token.organization_id,
-        ).values('location_id').annotate(profiles=Count('id'))
-        member_stats = dict((d['location_id'], d['profiles']) for d in member_stats)
+        if utils.should_inflate_field('profile_count', self.request.inflations):
+            member_stats = models.LocationMember.objects.filter(
+                location_id__in=[location.id for location in locations],
+                organization_id=self.parsed_token.organization_id,
+            ).values('location_id').annotate(profiles=Count('id'))
+            member_stats = dict((d['location_id'], d['profiles']) for d in member_stats)
+        else:
+            member_stats = {}
 
-        points_of_contact = self._fetch_points_of_contact(locations)
+        points_of_contact = {}
+        if utils.should_inflate_field('points_of_contact', self.request.inflations):
+            points_of_contact = self._fetch_points_of_contact(locations)
+
         for location in locations:
             container = self.response.locations.add()
             location.to_protobuf(
@@ -298,7 +304,8 @@ class GetLocations(BaseLocationAction):
                 profile_count=member_stats.get(location.id, 0),
                 points_of_contact=points_of_contact.get(str(location.id), []),
             )
-            container.permissions.CopyFrom(self.get_permissions(location))
+            if utils.should_inflate_field('permissions', self.request.inflations):
+                container.permissions.CopyFrom(self.get_permissions(location))
 
 
 class GetLocationMembers(PreRunParseTokenMixin, actions.Action):
