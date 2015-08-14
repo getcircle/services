@@ -284,7 +284,7 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
             'get_locations',
             return_object='locations',
             profile_id=self.request.profile_id,
-            inflations={'enabled': False},
+            inflations={'only': ['profile_count']},
         )
         self.response.locations.extend(locations)
 

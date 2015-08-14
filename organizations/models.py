@@ -112,7 +112,11 @@ class Team(models.UUIDModel, models.TimestampableModel):
                 status_dict['by_profile'] = protobuf_to_dict(by_profile)
             overrides['status'] = status_dict
 
-        if self.description and self.description.by_profile_id:
+        if (
+            'description' not in overrides and
+            self.description and
+            self.description.by_profile_id
+        ):
             if token:
                 by_profile = service.control.get_object(
                     'profile',

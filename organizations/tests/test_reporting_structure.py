@@ -209,21 +209,15 @@ class OrganizationTeamTests(MockedTestCase):
             manager=manager,
         )
 
-        # create mocks for all the profiles
-        mock_profile_ids = models.ReportingStructure.objects.all().values_list(
-            'profile_id',
-            flat=True,
-        )
-        mock_profiles = [mocks.mock_profile(id=str(profile_id)) for profile_id in mock_profile_ids]
         self.mock.instance.register_mock_object(
             'profile',
-            'get_profiles',
-            return_object_path='profiles',
-            return_object=mock_profiles,
-            mock_regex_lookup='profile:get_profiles:.*',
+            'get_profile',
+            return_object_path='profile',
+            return_object=mocks.mock_profile(id=str(manager.profile_id)),
+            profile_id=str(manager.profile_id),
+            inflations={'enabled': False},
         )
         response = self.client.call_action('get_team_reporting_details', team_id=team.id)
-        self.assertEqual(len(response.result.members), 3)
         self.assertEqual(len(response.result.child_teams), 1)
         self.verify_containers(
             sub_team,

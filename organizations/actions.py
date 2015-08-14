@@ -581,8 +581,13 @@ class GetProfileReportingDetails(PreRunParseTokenMixin, actions.Action):
                 manager_profile_id=position.manager_id,
                 organization_id=self.parsed_token.organization_id,
             )
-            team.to_protobuf(self.response.team)
+            team.to_protobuf(self.response.team, status=None, description=None)
             self.response.manager_profile_id = str(position.manager_id)
+
+            peers = position.get_siblings().filter(
+                organization_id=self.parsed_token.organization_id,
+            ).values_list('profile_id', flat=True)
+            self.response.peers_profile_ids.extend(map(str, peers))
 
         # if the profile has direct reports, export the team and reports they manage
         if position.get_descendant_count():
@@ -590,16 +595,11 @@ class GetProfileReportingDetails(PreRunParseTokenMixin, actions.Action):
                 manager_profile_id=position.profile_id,
                 organization_id=self.parsed_token.organization_id,
             )
-            team.to_protobuf(self.response.manages_team)
+            team.to_protobuf(self.response.manages_team, status=None, description=None)
             direct_reports = position.get_children().filter(
                 organization_id=self.parsed_token.organization_id,
             ).values_list('profile_id', flat=True)
             self.response.direct_reports_profile_ids.extend(map(str, direct_reports))
-
-        peers = position.get_siblings().filter(
-            organization_id=self.parsed_token.organization_id,
-        ).values_list('profile_id', flat=True)
-        self.response.peers_profile_ids.extend(map(str, peers))
 
 
 class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
@@ -623,29 +623,20 @@ class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
             profile_id=team.manager_profile_id,
             organization_id=self.parsed_token.organization_id,
         )
-        members = manager.get_descendants().filter(
-            organization_id=self.parsed_token.organization_id,
-        )
-
-        member_profile_ids = [member.profile_id for member in members]
-        profiles = service.control.get_object(
+        manager_profile = service.control.get_object(
             'profile',
-            'get_profiles',
+            'get_profile',
             client_kwargs={'token': self.token},
-            return_object='profiles',
-            ids=map(str, member_profile_ids + [manager.profile_id]),
+            return_object='profile',
+            profile_id=str(manager.profile_id),
             inflations={'enabled': False},
         )
+        self.response.manager.CopyFrom(manager_profile)
 
-        # filter out the manager from the members
-        for profile in profiles:
-            if utils.matching_uuids(profile.id, manager.profile_id):
-                self.response.manager.CopyFrom(profile)
-                profiles.remove(profile)
-
-        self.response.members.extend(profiles)
-
-        child_team_manager_ids = [member.profile_id for member in members if (
+        children = manager.get_children().filter(
+            organization_id=self.parsed_token.organization_id,
+        )
+        child_team_manager_ids = [member.profile_id for member in children if (
             member.manager_id == manager.profile_id and
             member.get_descendant_count()
         )]
@@ -656,4 +647,4 @@ class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
             )
             for team in teams:
                 container = self.response.child_teams.add()
-                team.to_protobuf(container)
+                team.to_protobuf(container, status=None, description=None)
