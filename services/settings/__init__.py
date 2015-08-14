@@ -280,6 +280,7 @@ CACHEOPS = {
     'notification.*': {'ops': 'all'},
     'organizations.*': {'ops': 'all'},
     'profiles.*': {'ops': 'all'},
+    'organizations.reportingstructure': {},
     '*.*': {},
 }
 
