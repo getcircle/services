@@ -9,6 +9,7 @@ from service import (
 )
 
 from services.mixins import PreRunParseTokenMixin
+from services.utils import should_inflate_field
 
 from . import (
     models,
@@ -205,11 +206,17 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
         profiles = models.Profile.objects.filter(**parameters).order_by(
             'first_name',
             'last_name',
-        ).prefetch_related('contact_methods')
+        )
+        if should_inflate_field('contact_methods', self.request.inflations):
+            profiles = profiles.prefetch_related('contact_methods')
+
         self.paginated_response(
             self.response.profiles,
             profiles,
-            lambda item, container: item.to_protobuf(container.add()),
+            lambda item, container: item.to_protobuf(
+                container.add(),
+                inflations=self.request.inflations,
+            ),
         )
 
 

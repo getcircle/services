@@ -5,6 +5,8 @@ from django.contrib.postgres.fields import ArrayField
 import django.db
 from protobufs.services.profile import containers_pb2 as profile_containers
 
+from services.utils import should_inflate_field
+
 
 class Tag(models.UUIDModel, models.TimestampableModel):
 
@@ -51,31 +53,37 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     def full_name(self):
         return ' '.join([self.first_name, self.last_name])
 
-    def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
+    def _inflate(self, protobuf, inflations, overrides):
+        if 'contact_methods' not in overrides:
+            if should_inflate_field('contact_methods', inflations):
+                overrides['contact_methods'] = self.contact_methods.all()
+
+        for method in overrides.pop('contact_methods', None) or []:
+            container = protobuf.contact_methods.add()
+            method.to_protobuf(container)
+
+        if 'status' not in overrides:
+            if should_inflate_field('status', inflations):
+                try:
+                    overrides['status'] = self.statuses.all().order_by('-created')[0]
+                except IndexError:
+                    pass
+
+        status = overrides.pop('status', None)
+        if status is not None and status.value is not None:
+            overrides['status'] = status.as_dict()
+
+    def to_protobuf(self, protobuf=None, strict=False, extra=None, inflations=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
+        self._inflate(protobuf, inflations, overrides)
+
         items = []
         for item in overrides.get('items', self.items) or []:
             container = protobuf.items.add()
             container.key = item[0]
             container.value = item[1]
 
-        contact_methods = []
-        for method in overrides.get('contact_methods', self.contact_methods.all()) or []:
-            container = protobuf.contact_methods.add()
-            method.to_protobuf(container)
-
-        try:
-            status = overrides.pop('status')
-        except KeyError:
-            try:
-                status = self.statuses.all().order_by('-created')[0]
-            except IndexError:
-                status = None
-
         overrides['items'] = items
-        overrides['contact_methods'] = contact_methods
-        if status is not None and status.value is not None:
-            overrides['status'] = status.as_dict()
         return super(Profile, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
     def update_from_protobuf(self, protobuf):

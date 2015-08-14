@@ -28,3 +28,15 @@ def get_timezone_for_location(latitude, longitude):
     if not response.ok:
         raise ValueError('Failed to update timezone: %s' % (response.content,))
     return response.json()['timeZoneId']
+
+
+def should_inflate_field(field_name, inflations):
+    should_inflate = True
+    if inflations:
+        if (
+            not inflations.enabled or
+            (inflations.exclude and field_name in inflations.exclude) or
+            (inflations.only and field_name not in inflations.only)
+        ):
+            should_inflate = False
+    return should_inflate

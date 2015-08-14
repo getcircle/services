@@ -533,3 +533,78 @@ class TestProfiles(MockedTestCase):
     def test_get_profiles_with_location_id_invalid_location_id(self):
         with self.assertFieldError('location_id'):
             self.client.call_action('get_profiles', location_id='invalid')
+
+    def test_get_profile_inflation_options(self):
+        profile = factories.ProfileFactory.create_protobuf(
+            status={'value': 'status'},
+            organization_id=self.organization.id,
+            contact_methods=[mocks.mock_contact_method(), mocks.mock_contact_method()],
+        )
+        response = self.client.call_action('get_profile', profile_id=profile.id)
+        # verify objects are expanded by default
+        self.assertEqual(response.result.profile.status.value, 'status')
+        self.assertEqual(len(response.result.profile.contact_methods), 2)
+
+        response = self.client.call_action(
+            'get_profile',
+            profile_id=profile.id,
+            inflations={'enabled': False},
+        )
+        self.assertFalse(response.result.profile.HasField('status'))
+        self.assertFalse(response.result.profile.contact_methods)
+
+        response = self.client.call_action(
+            'get_profile',
+            profile_id=profile.id,
+            inflations={'only': ['status']},
+        )
+        self.assertEqual(response.result.profile.status.value, 'status')
+        self.assertFalse(response.result.profile.contact_methods)
+
+        response = self.client.call_action(
+            'get_profile',
+            profile_id=profile.id,
+            inflations={'exclude': ['status']},
+        )
+        self.assertEqual(len(response.result.profile.contact_methods), 2)
+        self.assertFalse(response.result.profile.HasField('status'))
+
+    def test_get_profiles_inflation_options(self):
+        factories.ProfileFactory.create_batch(
+            size=3,
+            status={'value': 'status'},
+            organization_id=self.organization.id,
+            contact_methods=[
+                mocks.mock_contact_method(id=None),
+                mocks.mock_contact_method(id=None),
+            ],
+        )
+        response = self.client.call_action('get_profiles')
+        for profile in response.result.profiles:
+            if profile.id != self.profile.id:
+                self.assertEqual(len(profile.contact_methods), 2)
+                self.assertEqual(profile.status.value, 'status')
+
+        response = self.client.call_action('get_profiles', inflations={'enabled': False})
+        for profile in response.result.profiles:
+            if profile.id != self.profile.id:
+                self.assertFalse(profile.contact_methods)
+                self.assertFalse(profile.HasField('status'))
+
+        response = self.client.call_action(
+            'get_profiles',
+            inflations={'only': ['status']},
+        )
+        for profile in response.result.profiles:
+            if profile.id != self.profile.id:
+                self.assertFalse(profile.contact_methods)
+                self.assertEqual(profile.status.value, 'status')
+
+        response = self.client.call_action(
+            'get_profiles',
+            inflations={'exclude': ['status']},
+        )
+        for profile in response.result.profiles:
+            if profile.id != self.profile.id:
+                self.assertEqual(len(profile.contact_methods), 2)
+                self.assertFalse(profile.HasField('status'))
