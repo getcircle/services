@@ -228,3 +228,47 @@ class OrganizationTeamTests(MockedTestCase):
             ),
         )
         self.assertEqualUUID4(manager.profile_id, response.result.manager.id)
+
+    def test_get_descendants_profile_id_invalid(self):
+        with self.assertFieldError('profile_id'):
+            self.client.call_action('get_descendants', profile_id='invalid')
+
+    def test_get_descendants_profile_id_required(self):
+        with self.assertFieldError('profile_id', 'MISSING'):
+            self.client.call_action('get_descendants')
+
+    def test_get_descendants_profile_id_does_not_exist(self):
+        with self.assertFieldError('profile_id', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_descendants', profile_id=fuzzy.FuzzyUUID().fuzz())
+
+    def test_get_descendants(self):
+        manager = factories.ReportingStructureFactory.create(
+            manager=None,
+            organization=self.organization,
+        )
+        # create some middle managers
+        factories.ReportingStructureFactory.create_batch(
+            size=3,
+            manager=manager,
+            organization=self.organization,
+        )
+        # create the middle manager who will query about
+        middle_manager = factories.ReportingStructureFactory.create(
+            manager=manager,
+            organization=self.organization,
+        )
+        # create children
+        child = factories.ReportingStructureFactory.create_batch(
+            size=3,
+            manager=middle_manager,
+            organization=self.organization,
+        )[0]
+        # create grandchildren
+        factories.ReportingStructureFactory.create_batch(
+            size=3,
+            manager=child,
+            organization=self.organization,
+        )
+
+        response = self.client.call_action('get_descendants', profile_id=middle_manager.profile_id)
+        self.assertEqual(len(response.result.profile_ids), 6)

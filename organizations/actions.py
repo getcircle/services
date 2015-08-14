@@ -648,3 +648,27 @@ class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
             for team in teams:
                 container = self.response.child_teams.add()
                 team.to_protobuf(container, status=None, description=None)
+
+
+class GetDescendants(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = (
+        'profile_id',
+    )
+    type_validators = {
+        'profile_id': (validators.is_uuid4,),
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            node = models.ReportingStructure.objects.get(
+                pk=self.request.profile_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except models.ReportingStructure.DoesNotExist:
+            raise self.ActionFieldError('profile_id', 'DOES_NOT_EXIST')
+
+        profile_ids = node.get_descendants().filter(
+            organization_id=self.parsed_token.organization_id,
+        ).values_list('profile_id', flat=True)
+        self.response.profile_ids.extend(map(str, profile_ids))
