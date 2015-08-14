@@ -18,7 +18,11 @@ class DescriptionField(HStoreField):
     def get_prep_value(self, value):
         if value is None:
             return value
-        return protobuf_to_dict(value)
+        output = protobuf_to_dict(value)
+        output.pop('by_profile', None)
+        return output
 
     def as_dict_value_transform(self, value):
-        return self.get_prep_value(value)
+        if value is None:
+            return value
+        return protobuf_to_dict(value)

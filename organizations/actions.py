@@ -125,7 +125,7 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
                 client_kwargs={'token': self.token},
                 action=action,
             )
-        team.to_protobuf(self.response.team)
+        team.to_protobuf(self.response.team, token=self.token)
         self.response.team.permissions.CopyFrom(permissions)
 
 
@@ -146,7 +146,7 @@ class GetTeam(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
             pk=self.request.team_id,
             organization_id=self.parsed_token.organization_id,
         )
-        team.to_protobuf(self.response.team)
+        team.to_protobuf(self.response.team, token=self.token)
         self.response.team.permissions.CopyFrom(self.get_permissions(team))
 
 

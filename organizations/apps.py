@@ -2,6 +2,7 @@ from django.apps import AppConfig as DjangoAppConfig
 import watson
 
 from services.search import SearchAdapter
+from services.token import make_admin_token
 from .mixins import (
     LocationProfileStatsMixin,
     TeamProfileStatsMixin,
@@ -9,6 +10,9 @@ from .mixins import (
 
 
 class TeamSearchAdapter(SearchAdapter, TeamProfileStatsMixin):
+
+    def get_protobuf(self, obj):
+        return obj.to_protobuf(token=make_admin_token(organization_id=obj.organization_id))
 
     def get_title(self, obj):
         return obj.name or ''

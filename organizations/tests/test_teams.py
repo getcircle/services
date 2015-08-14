@@ -226,11 +226,6 @@ class OrganizationTeamTests(MockedTestCase):
 
     def test_update_team_status_didnt_change(self):
         self.profile.is_admin = True
-        team = factories.TeamFactory.create_protobuf(
-            organization=self.organization,
-            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
-        )
-        manager = mocks.mock_profile(id=str(team.manager_profile_id))
         self.mock.instance.register_mock_object(
             service='profile',
             action='get_profile',
@@ -238,6 +233,11 @@ class OrganizationTeamTests(MockedTestCase):
             return_object=self.profile,
             profile_id=self.profile.id,
         )
+        team = factories.TeamFactory.create_protobuf(
+            organization=self.organization,
+            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
+        )
+        manager = mocks.mock_profile(id=str(team.manager_profile_id))
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -246,16 +246,10 @@ class OrganizationTeamTests(MockedTestCase):
             profile_id=team.manager_profile_id,
         )
         response = self.client.call_action('update_team', team=team)
-        self.verify_containers(response.result.team.status, team.status)
+        self.verify_containers(team.status, response.result.team.status)
 
     def test_update_team_unset_status(self):
         self.profile.is_admin = True
-        team = factories.TeamFactory.create_protobuf(
-            organization=self.organization,
-            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
-        )
-        manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        team.ClearField('status')
         self.mock.instance.register_mock_object(
             service='profile',
             action='get_profile',
@@ -263,6 +257,12 @@ class OrganizationTeamTests(MockedTestCase):
             return_object=self.profile,
             profile_id=self.profile.id,
         )
+        team = factories.TeamFactory.create_protobuf(
+            organization=self.organization,
+            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
+        )
+        manager = mocks.mock_profile(id=str(team.manager_profile_id))
+        team.ClearField('status')
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -275,13 +275,6 @@ class OrganizationTeamTests(MockedTestCase):
 
     def test_update_team_get_team_only_returns_most_recent_status(self):
         self.profile.is_admin = True
-        team = factories.TeamFactory.create_protobuf(
-            organization=self.organization,
-            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
-        )
-        manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        new_status = 'new status'
-        team.status.value = new_status
         self.mock.instance.register_mock_object(
             service='profile',
             action='get_profile',
@@ -289,6 +282,14 @@ class OrganizationTeamTests(MockedTestCase):
             return_object=self.profile,
             profile_id=self.profile.id,
         )
+
+        team = factories.TeamFactory.create_protobuf(
+            organization=self.organization,
+            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
+        )
+        manager = mocks.mock_profile(id=str(team.manager_profile_id))
+        new_status = 'new status'
+        team.status.value = new_status
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
@@ -301,6 +302,7 @@ class OrganizationTeamTests(MockedTestCase):
 
         response = self.client.call_action('get_team', team_id=team.id)
         self.assertEqual(response.result.team.status.value, team.status.value)
+        self.verify_containers(self.profile, response.result.team.status.by_profile)
 
     def test_update_team_profile_non_admin(self):
         self.profile.is_admin = False
@@ -408,11 +410,9 @@ class OrganizationTeamTests(MockedTestCase):
         expected_description = team.description
         actual_description = response.result.team.description
         self.assertEqual(actual_description.value, expected_description.value)
-        self.assertEqualUUID4(
-            actual_description.by_profile_id,
-            self.profile.id,
-        )
+        self.assertEqualUUID4(actual_description.by_profile_id, self.profile.id)
         self.assertTrue(actual_description.changed)
+        self.verify_containers(self.profile, actual_description.by_profile)
 
         # update the description again
         team = response.result.team

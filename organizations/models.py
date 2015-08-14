@@ -10,6 +10,7 @@ from mptt.models import (
 )
 from mptt.managers import TreeManager
 from protobuf_to_dict import protobuf_to_dict
+import service.control
 
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.containers import integration_pb2
@@ -87,15 +88,39 @@ class Team(models.UUIDModel, models.TimestampableModel):
         status = self._update_status(protobuf, by_profile_id)
         return super(Team, self).update_from_protobuf(protobuf, status=status)
 
-    def to_protobuf(self, protobuf=None, strict=False, extra=None, **overrides):
+    def to_protobuf(self, protobuf=None, strict=False, extra=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         try:
-            status = overrides.pop('status', self.teamstatus_set.all().order_by('-created')[0])
-        except IndexError:
-            status = None
+            status = overrides.pop('status')
+        except KeyError:
+            try:
+                status = self.teamstatus_set.all().order_by('-created')[0]
+            except IndexError:
+                status = None
 
         if status is not None and status.value is not None:
-            overrides['status'] = status.as_dict()
+            status_dict = status.as_dict()
+            if token:
+                by_profile = service.control.get_object(
+                    'profile',
+                    'get_profile',
+                    client_kwargs={'token': token},
+                    return_object='profile',
+                    profile_id=str(status.by_profile_id),
+                )
+                status_dict['by_profile'] = protobuf_to_dict(by_profile)
+            overrides['status'] = status_dict
+
+        if self.description and self.description.by_profile_id:
+            if token:
+                by_profile = service.control.get_object(
+                    'profile',
+                    'get_profile',
+                    client_kwargs={'token': token},
+                    return_object='profile',
+                    profile_id=str(self.description.by_profile_id),
+                )
+                self.description.by_profile.CopyFrom(by_profile)
 
         if 'profile_count' not in overrides:
             manager = ReportingStructure.objects.get(
