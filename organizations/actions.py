@@ -148,6 +148,17 @@ class GetTeam(TeamPermissionsMixin, actions.Action):
         self.response.team.permissions.CopyFrom(self.get_permissions(team))
 
 
+class GetTeams(TeamPermissionsMixin, actions.Action):
+
+    def run(self, *args, **kwargs):
+        teams = models.Team.objects.filter(organization_id=self.parsed_token.organization_id)
+        self.paginated_response(
+            self.response.teams,
+            teams,
+            lambda item, container: item.to_protobuf(container.add()),
+        )
+
+
 class CreateLocation(actions.Action):
 
     type_validators = {

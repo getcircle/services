@@ -421,3 +421,14 @@ class OrganizationTeamTests(MockedTestCase):
         team_description = response.result.team.description
         self.assertEqual(team_description.value, team.description.value)
         self.assertNotEqual(team_description.changed, team.description.changed)
+
+    def test_get_teams(self):
+        teams = factories.TeamFactory.create_protobufs(size=3, organization=self.organization)
+        team_dict = dict((team.id, team) for team in teams)
+        # create teams in other locations
+        factories.TeamFactory.create_batch(size=3)
+
+        response = self.client.call_action('get_teams')
+        self.assertEqual(len(response.result.teams), 3)
+        for team in response.result.teams:
+            self.verify_containers(team_dict.get(team.id), team)
