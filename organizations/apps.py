@@ -20,6 +20,9 @@ class TeamSearchAdapter(SearchAdapter, TeamProfileStatsMixin):
 
 class LocationSearchAdapter(SearchAdapter, LocationProfileStatsMixin):
 
+    def get_protobuf(self, obj):
+        return obj.to_protobuf(token=make_admin_token(organization_id=obj.organization_id))
+
     def get_title(self, obj):
         return obj.name
 
