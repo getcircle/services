@@ -218,7 +218,7 @@ class SendNotification(mixins.PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
         )
         preferences_dict = dict(
-            (preference.profile_id.hex, preference) for preference in preferences
+            (str(preference.profile_id), preference) for preference in preferences
         )
         for to_profile_id in to_profile_ids:
             self._send_notification(

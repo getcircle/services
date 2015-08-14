@@ -22,5 +22,5 @@ class BetterJSONEncoder(DjangoJSONEncoder):
 
     def default(self, obj):
         if isinstance(obj, uuid.UUID):
-            return obj.hex
+            return str(obj)
         return super(BetterJSONEncoder, self).default(obj)
