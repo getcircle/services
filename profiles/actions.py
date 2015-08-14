@@ -151,10 +151,8 @@ class UpdateProfile(actions.Action):
 
 
 class GetProfile(PreRunParseTokenMixin, actions.Action):
-    # XXX add some concept of "oneof"
 
     type_validators = {
-        'user_id': [validators.is_uuid4],
         'profile_id': [validators.is_uuid4],
     }
 
@@ -162,32 +160,18 @@ class GetProfile(PreRunParseTokenMixin, actions.Action):
         'profile_id': {
             valid_profile: 'DOES_NOT_EXIST',
         },
-        # TODO we should require organization_id here
-        'user_id': {
-            valid_profile_with_user_id: 'DOES_NOT_EXIST',
-        },
     }
 
-    def validate(self, *args, **kwargs):
-        super(GetProfile, self).validate(*args, **kwargs)
-        if not self.is_error():
-            if not any([self.request.user_id, self.request.profile_id]):
-                self.note_error(
-                    'INVALID',
-                    ('MISSING', '`user_id` or `profile_id` must be provided'),
-                )
-
     def run(self, *args, **kwargs):
-        parameters = {
-            'organization_id': self.parsed_token.organization_id,
-        }
+        parameters = {}
         if self.request.profile_id:
             parameters['pk'] = self.request.profile_id
+            parameters['organization_id'] = self.parsed_token.organization_id,
         else:
-            parameters['user_id'] = self.request.user_id
+            parameters['user_id'] = self.parsed_token.user_id
 
-        profile = models.Profile.objects.prefetch_related('contact_methods').get(**parameters)
-        profile.to_protobuf(self.response.profile)
+        profile = models.Profile.objects.get(**parameters)
+        profile.to_protobuf(self.response.profile, inflations=self.request.inflations)
 
 
 class GetProfiles(PreRunParseTokenMixin, actions.Action):
