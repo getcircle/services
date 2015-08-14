@@ -485,8 +485,9 @@ class ReportingStructureAction(PreRunParseTokenMixin, actions.Action):
             profile_id__in=direct_reports_profile_ids,
             organization_id=self.parsed_token.organization_id,
         )
-        if existing_reports:
-            existing_reports.update(manager=manager)
+        for report in existing_reports:
+            report.manager = manager
+            report.save()
 
         existing_ids = [str(report.profile_id) for report in existing_reports]
         # NB: django-mptt doesn't support bulk_update. creating objects handles
@@ -510,11 +511,6 @@ class ReportingStructureAction(PreRunParseTokenMixin, actions.Action):
         )
         return team
 
-    def _update_tree(self, method, *args, **kwargs):
-        with django.db.transaction.atomic():
-            with models.ReportingStructure.trees.delay_mptt_updates():
-                return method(*args, **kwargs)
-
 
 class AddDirectReports(ReportingStructureAction):
 
@@ -528,8 +524,7 @@ class AddDirectReports(ReportingStructureAction):
     }
 
     def run(self, *args, **kwargs):
-        team = self._update_tree(
-            self._add_direct_reports,
+        team = self._add_direct_reports(
             self.request.profile_id,
             self.request.direct_reports_profile_ids,
         )
@@ -549,8 +544,7 @@ class SetManager(ReportingStructureAction):
     }
 
     def run(self, *args, **kwargs):
-        team = self._update_tree(
-            self._add_direct_reports,
+        team = self._add_direct_reports(
             self.request.manager_profile_id,
             [self.request.profile_id],
         )
