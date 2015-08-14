@@ -16,9 +16,7 @@ from services import utils
 from . import models
 from .mixins import (
     LocationPermissionsMixin,
-    LocationProfileStatsMixin,
     TeamPermissionsMixin,
-    TeamProfileStatsMixin,
 )
 
 
@@ -129,7 +127,7 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
         self.response.team.permissions.CopyFrom(permissions)
 
 
-class GetTeam(TeamPermissionsMixin, TeamProfileStatsMixin, actions.Action):
+class GetTeam(TeamPermissionsMixin, actions.Action):
 
     type_validators = {
         'team_id': [validators.is_uuid4],
@@ -166,7 +164,7 @@ class CreateLocation(actions.Action):
         location.to_protobuf(self.response.location)
 
 
-class BaseLocationAction(LocationProfileStatsMixin, LocationPermissionsMixin, actions.Action):
+class BaseLocationAction(LocationPermissionsMixin, actions.Action):
 
     def _fetch_points_of_contact(self, locations):
         location_to_profiles = {}

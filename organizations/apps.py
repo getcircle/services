@@ -3,13 +3,9 @@ import watson
 
 from services.search import SearchAdapter
 from services.token import make_admin_token
-from .mixins import (
-    LocationProfileStatsMixin,
-    TeamProfileStatsMixin,
-)
 
 
-class TeamSearchAdapter(SearchAdapter, TeamProfileStatsMixin):
+class TeamSearchAdapter(SearchAdapter):
 
     def get_protobuf(self, obj):
         return obj.to_protobuf(token=make_admin_token(organization_id=obj.organization_id))
@@ -18,7 +14,7 @@ class TeamSearchAdapter(SearchAdapter, TeamProfileStatsMixin):
         return obj.name or ''
 
 
-class LocationSearchAdapter(SearchAdapter, LocationProfileStatsMixin):
+class LocationSearchAdapter(SearchAdapter):
 
     def get_protobuf(self, obj):
         return obj.to_protobuf(token=make_admin_token(organization_id=obj.organization_id))
