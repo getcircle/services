@@ -184,33 +184,46 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
         'team_id': [validators.is_uuid4],
     }
 
+    def _get_remote_profile_ids(self, return_object, **parameters):
+        response = service.control.call_action(
+            client_kwargs={'token': self.token},
+            control={'paginator': self.control.paginator},
+            **parameters
+        )
+        profile_ids = getattr(response.result, return_object)
+        self.control.paginator.CopyFrom(response.control.paginator)
+        return profile_ids
+
+    def _get_parameters_from_remote_object(self):
+        profile_ids = None
+        if self.request.location_id:
+            profile_ids = self._get_remote_profile_ids(
+                'member_profile_ids',
+                service='organization',
+                action_name='get_location_members',
+                location_id=self.request.location_id,
+            )
+        elif self.request.team_id:
+            profile_ids = self._get_remote_profile_ids(
+                'profile_ids',
+                service='organization',
+                action_name='get_descendants',
+                team_id=self.request.team_id,
+            )
+        return profile_ids
+
     def run(self, *args, **kwargs):
         parameters = {
             'organization_id': self.parsed_token.organization_id,
         }
+        should_paginate = True
         if self.request.tag_id:
             parameters['tags__id'] = self.request.tag_id
         elif self.request.ids:
             parameters['id__in'] = list(self.request.ids)
-        elif self.request.location_id:
-            profile_ids = service.control.get_object(
-                'organization',
-                'get_location_members',
-                return_object='member_profile_ids',
-                client_kwargs={'token': self.token},
-                location_id=self.request.location_id,
-            )
-            if not profile_ids:
-                return
-            parameters['id__in'] = profile_ids
-        elif self.request.team_id:
-            profile_ids = service.control.get_object(
-                'organization',
-                'get_descendants',
-                return_object='profile_ids',
-                client_kwargs={'token': self.token},
-                team_id=self.request.team_id,
-            )
+        elif self.request.team_id or self.request.location_id:
+            should_paginate = False
+            profile_ids = self._get_parameters_from_remote_object()
             if not profile_ids:
                 return
             parameters['id__in'] = profile_ids
@@ -222,14 +235,22 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
         if should_inflate_field('contact_methods', self.request.inflations):
             profiles = profiles.prefetch_related('contact_methods')
 
-        self.paginated_response(
-            self.response.profiles,
-            profiles,
-            lambda item, container: item.to_protobuf(
-                container.add(),
-                inflations=self.request.inflations,
-            ),
-        )
+        # remote calls have already been paginated, we don't want to overwrite their pagination
+        if should_paginate:
+            self.paginated_response(
+                self.response.profiles,
+                profiles,
+                lambda item, container: item.to_protobuf(
+                    container.add(),
+                    inflations=self.request.inflations,
+                ),
+            )
+        else:
+            for profile in profiles:
+                profile.to_protobuf(
+                    self.response.profiles.add(),
+                    inflations=self.request.inflations,
+                )
 
 
 class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):

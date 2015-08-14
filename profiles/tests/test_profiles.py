@@ -3,6 +3,7 @@ import datetime
 from freezegun import freeze_time
 from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
+from service_protobufs import soa_pb2
 
 from services.test import (
     fuzzy,
@@ -637,3 +638,44 @@ class TestProfiles(MockedTestCase):
             inflations={'enabled': False},
         )
         self.assertEqual(len(response.result.profiles), 3)
+
+    def test_get_profiles_team_id_pagination_preserved(self):
+        # create profiles not associated with our mock team
+        factories.ProfileFactory.create_batch(size=3, organization_id=self.organization.id)
+
+        # create profiles we'll return with the mock
+        profiles = factories.ProfileFactory.create_batch(
+            size=3,
+            organization_id=self.organization.id,
+        )
+        team_id = fuzzy.FuzzyUUID().fuzz()
+
+        # simulate the get_descendants call returning its own paginator
+        response, extension = self.mock.get_mockable_action_response_and_extension(
+            'organization',
+            'get_descendants',
+        )
+        mock_paginator = soa_pb2.PaginatorV1(
+            next_page=10,
+            previous_page=9,
+            total_pages=20,
+        )
+        response.control.paginator.CopyFrom(mock_paginator)
+        response.result.success = True
+        extension.profile_ids.extend([str(profile.id) for profile in profiles])
+        self.mock.instance.register_mock_response(
+            'organization',
+            'get_descendants',
+            response,
+            mock_regex_lookup='organization:get_descendants:.*',
+            is_action_response=True,
+        )
+
+        # make the call and ensure the paginator from the remote call was preserved
+        response = self.client.call_action(
+            'get_profiles',
+            team_id=team_id,
+            inflations={'enabled': False},
+        )
+        self.assertEqual(len(response.result.profiles), 3)
+        self.assertEqual(response.control.paginator.next_page, 10)
