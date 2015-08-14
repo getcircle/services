@@ -44,7 +44,7 @@ class OrganizationLocationTests(MockedTestCase):
         self.verify_containers(location, response.result.location)
 
     def test_create_location_duplicate(self):
-        location = factories.LocationFactory.create_protobuf()
+        location = factories.LocationFactory.create_protobuf(organization=self.organization)
         location.ClearField('id')
         with self.assertFieldError('location', 'DUPLICATE'):
             self.client.call_action('create_location', location=location)
@@ -88,7 +88,7 @@ class OrganizationLocationTests(MockedTestCase):
         self.profile.is_admin = True
         new_name = 'New HQ'
         new_description = 'updated'
-        location = factories.LocationFactory.create_protobuf()
+        location = factories.LocationFactory.create_protobuf(organization=self.organization)
         location.name = new_name
         location.description.value = new_description
         points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
@@ -135,8 +135,12 @@ class OrganizationLocationTests(MockedTestCase):
 
     def test_get_location_with_location_id_non_admin(self):
         self.profile.is_admin = False
-        location = factories.LocationFactory.create()
-        factories.LocationMemberFactory.create_batch(size=5, location=location)
+        location = factories.LocationFactory.create(organization=self.organization)
+        factories.LocationMemberFactory.create_batch(
+            size=5,
+            location=location,
+            organization=self.organization,
+        )
         with self.mock_transport(self.client) as mock:
             mock.instance.register_mock_object(
                 service='profile',
@@ -155,8 +159,12 @@ class OrganizationLocationTests(MockedTestCase):
 
     def test_get_location_with_location_id_non_admin_member_of_location(self):
         self.profile.is_admin = False
-        location = factories.LocationFactory.create()
-        factories.LocationMemberFactory.create(profile_id=self.profile.id, location=location)
+        location = factories.LocationFactory.create(organization=self.organization)
+        factories.LocationMemberFactory.create(
+            profile_id=self.profile.id,
+            location=location,
+            organization=self.organization,
+        )
         with self.mock_transport(self.client) as mock:
             mock.instance.register_mock_object(
                 service='profile',
@@ -175,7 +183,7 @@ class OrganizationLocationTests(MockedTestCase):
 
     def test_get_location_with_location_id_admin(self):
         self.profile.is_admin = True
-        location = factories.LocationFactory.create_protobuf()
+        location = factories.LocationFactory.create_protobuf(organization=self.organization)
         with self.mock_transport(self.client) as mock:
             mock.instance.register_mock_object(
                 service='profile',

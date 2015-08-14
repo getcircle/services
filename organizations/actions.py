@@ -261,7 +261,10 @@ class GetLocation(BaseLocationAction):
     }
 
     def run(self, *args, **kwargs):
-        location = models.Location.objects.get(pk=self.request.location_id)
+        location = models.Location.objects.get(
+            pk=self.request.location_id,
+            organization_id=self.parsed_token.organization_id,
+        )
         points_of_contact = self._fetch_points_of_contact([location])
         location.to_protobuf(
             self.response.location,
