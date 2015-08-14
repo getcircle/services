@@ -20,6 +20,7 @@ class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
                 return_object='profile',
                 client_kwargs={'token': self.token},
                 profile_id=self.parsed_token.profile_id,
+                inflations={'enabled': False},
             )
         return self._requester_profile
 

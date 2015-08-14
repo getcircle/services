@@ -188,6 +188,7 @@ class BaseLocationAction(LocationPermissionsMixin, actions.Action):
                     client_kwargs={'token': self.token},
                     return_object='profiles',
                     ids=map(str, location.points_of_contact_profile_ids),
+                    inflations={'only': 'contact_methods'},
                 )
                 location_to_profiles[str(location.id)] = map(protobuf_to_dict, profiles)
         return location_to_profiles
@@ -626,6 +627,7 @@ class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
             client_kwargs={'token': self.token},
             return_object='profiles',
             ids=map(str, member_profile_ids + [manager.profile_id]),
+            inflations={'enabled': False},
         )
 
         # filter out the manager from the members
