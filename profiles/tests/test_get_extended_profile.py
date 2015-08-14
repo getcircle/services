@@ -116,6 +116,7 @@ class TestGetExtendedProfile(MockedTestCase):
             return_object_path='locations',
             return_object=locations,
             profile_id=profile.id,
+            inflations={'enabled': False},
         )
         self._mock_get_profile_reporting_structure(
             profile=profile,
@@ -140,6 +141,7 @@ class TestGetExtendedProfile(MockedTestCase):
             'organization',
             'get_locations',
             profile_id=self.profile.id,
+            inflations={'enabled': False},
         )
         self.mock.instance.register_empty_response(
             'organization',
