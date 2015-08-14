@@ -339,10 +339,12 @@ class OrganizationLocationTests(MockedTestCase):
     def test_get_locations_inflations(self):
         self.profile.is_admin = True
         points_of_contact = [mocks.mock_profile(), mocks.mock_profile()]
+        self._mock_requester_profile()
         locations = factories.LocationFactory.create_batch(
             size=3,
             organization=self.organization,
             points_of_contact_profile_ids=[profile.id for profile in points_of_contact],
+            description=mocks.mock_description(by_profile_id=str(self.profile.id)),
         )
         for location in locations:
             factories.LocationMemberFactory.create_batch(
@@ -352,7 +354,6 @@ class OrganizationLocationTests(MockedTestCase):
             )
 
         factories.LocationFactory.create_batch(size=3)
-        self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             service='profile',
             action='get_profiles',
@@ -371,7 +372,6 @@ class OrganizationLocationTests(MockedTestCase):
             self.assertTrue(location.permissions.can_add)
             self.assertTrue(location.permissions.can_delete)
 
-        self.mock.instance.clear()
         self.mock.instance.dont_mock_service('organization')
         self.mock.instance.register_mock_object(
             service='profile',

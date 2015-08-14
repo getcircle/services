@@ -1,6 +1,7 @@
 import json
 
 from django.db import connection
+from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.history import containers_pb2 as history_containers
 
 
@@ -13,6 +14,10 @@ def action_container(instance, field_name, new_value, action_type, method_type):
     column_name = field.db_column or field.column
     data_type = field.db_type(connection)
     old_value = getattr(instance, field_name)
+    if hasattr(old_value, 'SerializeToString'):
+        old_value = protobuf_to_dict(old_value)
+    if hasattr(new_value, 'SerializeToString'):
+        new_value = protobuf_to_dict(new_value)
     kwargs = {
         'table_name': table_name,
         'column_name': column_name,

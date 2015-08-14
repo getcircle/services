@@ -6,6 +6,7 @@ from service.transports import local
 from . import fuzzy
 from .. import token
 
+from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
@@ -237,3 +238,15 @@ def mock_device(container=None, **overrides):
         fuzzy.FuzzyText: ['platform', 'os_version', 'app_version', 'language_preference'],
     }
     return _mock_container(container, mock_dict, **defaults)
+
+
+def mock_description(container=None, **overrides):
+    if container is None:
+        container = common_containers.DescriptionV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['by_profile_id'],
+        fuzzy.FuzzyText: ['value'],
+        fuzzy.FuzzyDate(arrow.utcnow()): ['changed'],
+    }
+    return _mock_container(container, mock_dict, **overrides)

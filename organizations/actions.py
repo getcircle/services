@@ -95,13 +95,13 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
         if not request_description.value and not team.description:
             return action
 
-        if request_description.value != (team.description and team.description['value']):
+        if request_description.value != (team.description and team.description.value):
             request_description.by_profile_id = self.parsed_token.profile_id
             request_description.changed = str(timezone.now())
             action = action_container_for_update(
                 instance=team,
                 field_name='description',
-                new_value=protobuf_to_dict(request_description),
+                new_value=request_description,
                 action_type=history_containers.UPDATE_DESCRIPTION,
             )
         return action
@@ -212,13 +212,13 @@ class UpdateLocation(BaseLocationAction):
         if not request_description.value and not location.description:
             return action
 
-        if request_description.value != (location.description and location.description['value']):
+        if request_description.value != (location.description and location.description.value):
             request_description.changed = str(timezone.now())
             request_description.by_profile_id = self.parsed_token.profile_id
             action = action_container_for_update(
                 instance=location,
                 field_name='description',
-                new_value=protobuf_to_dict(request_description),
+                new_value=request_description,
                 action_type=history_containers.UPDATE_DESCRIPTION,
             )
         return action

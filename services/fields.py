@@ -9,11 +9,17 @@ from protobufs.services.common import containers_pb2 as common_containers
 
 class DescriptionField(HStoreField):
 
-    def to_python(self, value):
-        value = super(DescriptionField, self).to_python(value)
+    def _to_protobuf(self, value):
         if value is None or hasattr(value, 'SerializeToString'):
             return value
         return dict_to_protobuf(value, common_containers.DescriptionV1)
+
+    def from_db_value(self, value, expression, connection, context):
+        return self._to_protobuf(value)
+
+    def to_python(self, value):
+        value = super(DescriptionField, self).to_python(value)
+        return self._to_protobuf(value)
 
     def get_prep_value(self, value):
         if value is None:
