@@ -608,3 +608,32 @@ class TestProfiles(MockedTestCase):
             if profile.id != self.profile.id:
                 self.assertEqual(len(profile.contact_methods), 2)
                 self.assertFalse(profile.HasField('status'))
+
+    def test_get_profiles_team_id_invalid(self):
+        with self.assertFieldError('team_id'):
+            self.client.call_action('get_profiles', team_id='invalid')
+
+    def test_get_profiles_team_id(self):
+        # create profiles not associated with our mock team
+        factories.ProfileFactory.create_batch(size=3, organization_id=self.organization.id)
+
+        # create profiles we'll return with the mock
+        profiles = factories.ProfileFactory.create_batch(
+            size=3,
+            organization_id=self.organization.id,
+        )
+        team_id = fuzzy.FuzzyUUID().fuzz()
+        self.mock.instance.register_mock_object(
+            'organization',
+            'get_descendants',
+            return_object_path='profile_ids',
+            return_object=[str(profile.id) for profile in profiles],
+            team_id=team_id,
+        )
+
+        response = self.client.call_action(
+            'get_profiles',
+            team_id=team_id,
+            inflations={'enabled': False},
+        )
+        self.assertEqual(len(response.result.profiles), 3)

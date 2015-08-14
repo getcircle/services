@@ -181,6 +181,7 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
         'tag_id': [validators.is_uuid4],
         'ids': [validators.is_uuid4_list],
         'location_id': [validators.is_uuid4],
+        'team_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
@@ -192,16 +193,27 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
         elif self.request.ids:
             parameters['id__in'] = list(self.request.ids)
         elif self.request.location_id:
-            member_profile_ids = service.control.get_object(
+            profile_ids = service.control.get_object(
                 'organization',
                 'get_location_members',
                 return_object='member_profile_ids',
                 client_kwargs={'token': self.token},
                 location_id=self.request.location_id,
             )
-            if not member_profile_ids:
+            if not profile_ids:
                 return
-            parameters['id__in'] = member_profile_ids
+            parameters['id__in'] = profile_ids
+        elif self.request.team_id:
+            profile_ids = service.control.get_object(
+                'organization',
+                'get_descendants',
+                return_object='profile_ids',
+                client_kwargs={'token': self.token},
+                team_id=self.request.team_id,
+            )
+            if not profile_ids:
+                return
+            parameters['id__in'] = profile_ids
 
         profiles = models.Profile.objects.filter(**parameters).order_by(
             'first_name',

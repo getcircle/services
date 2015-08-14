@@ -652,14 +652,23 @@ class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
 
 class GetDescendants(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = (
-        'profile_id',
-    )
     type_validators = {
         'profile_id': (validators.is_uuid4,),
+        'team_id': (validators.is_uuid4,),
     }
 
-    def run(self, *args, **kwargs):
+    def validate(self, *args, **kwargs):
+        super(GetDescendants, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if not self.request.profile_id and not self.request.team_id:
+                raise self.ActionFieldError('profile_id', 'MISSING')
+
+    def _get_profile_ids_with_node(self, node):
+        return list(node.get_descendants().filter(
+            organization_id=self.parsed_token.organization_id,
+        ).values_list('profile_id', flat=True))
+
+    def _populate_with_profile_id(self):
         try:
             node = models.ReportingStructure.objects.get(
                 pk=self.request.profile_id,
@@ -668,7 +677,30 @@ class GetDescendants(PreRunParseTokenMixin, actions.Action):
         except models.ReportingStructure.DoesNotExist:
             raise self.ActionFieldError('profile_id', 'DOES_NOT_EXIST')
 
-        profile_ids = node.get_descendants().filter(
+        profile_ids = self._get_profile_ids_with_node(node)
+        return profile_ids
+
+    def _populate_with_team_id(self):
+        try:
+            team = models.Team.objects.values('manager_profile_id').get(
+                pk=self.request.team_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except models.Team.DoesNotExist:
+            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
+
+        node = models.ReportingStructure.objects.get(
+            profile_id=team['manager_profile_id'],
             organization_id=self.parsed_token.organization_id,
-        ).values_list('profile_id', flat=True)
+        )
+        profile_ids = self._get_profile_ids_with_node(node)
+        # add the manager profile id
+        profile_ids.append(node.profile_id)
+        return profile_ids
+
+    def run(self, *args, **kwargs):
+        if self.request.team_id:
+            profile_ids = self._populate_with_team_id()
+        else:
+            profile_ids = self._populate_with_profile_id()
         self.response.profile_ids.extend(map(str, profile_ids))

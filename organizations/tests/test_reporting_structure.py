@@ -272,3 +272,49 @@ class OrganizationTeamTests(MockedTestCase):
 
         response = self.client.call_action('get_descendants', profile_id=middle_manager.profile_id)
         self.assertEqual(len(response.result.profile_ids), 6)
+
+    def test_get_descendants_team_id_invalid(self):
+        with self.assertFieldError('team_id'):
+            self.client.call_action('get_descendants', team_id='invalid')
+
+    def test_get_descendants_team_id_does_not_exist(self):
+        with self.assertFieldError('team_id', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_descendants', team_id=fuzzy.FuzzyUUID().fuzz())
+
+    def test_get_descendants_team_id(self):
+        manager = factories.ReportingStructureFactory.create(
+            manager=None,
+            organization=self.organization,
+        )
+        # create some middle managers
+        factories.ReportingStructureFactory.create_batch(
+            size=3,
+            manager=manager,
+            organization=self.organization,
+        )
+        # create the middle manager who will query about
+        middle_manager = factories.ReportingStructureFactory.create(
+            manager=manager,
+            organization=self.organization,
+        )
+        # create the team we'll query for (implicitly creates 1 direct report)
+        team = factories.TeamFactory.create(
+            manager_profile_id=middle_manager.profile_id,
+            organization=self.organization,
+        )
+        # create children
+        child = factories.ReportingStructureFactory.create_batch(
+            size=3,
+            manager=middle_manager,
+            organization=self.organization,
+        )[0]
+        # create grandchildren
+        factories.ReportingStructureFactory.create_batch(
+            size=3,
+            manager=child,
+            organization=self.organization,
+        )
+
+        response = self.client.call_action('get_descendants', team_id=str(team.id))
+        # results should include the manager + 6 descendants
+        self.assertEqual(len(response.result.profile_ids), 8)
