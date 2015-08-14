@@ -217,7 +217,7 @@ class AuthenticateUser(actions.Action):
         profile = None
         client = service.control.Client('profile', token=token)
         try:
-            response = client.call_action('get_profile', user_id=str(user_id))
+            response = client.call_action('get_profile')
             profile = response.result.profile
         except service.control.CallActionError:
             profile = None
