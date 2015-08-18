@@ -570,7 +570,7 @@ class GetAuthenticationInstructions(actions.Action):
         return is_google_domain(domain)
 
     def _should_force_internal_authentication(self):
-        return self.request.email in settings.USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION
+        return self.request.email not in settings.USER_SERVICE_FORCE_GOOGLE_AUTH
 
     def run(self, *args, **kwargs):
         self.response.user_exists = models.User.objects.filter(
