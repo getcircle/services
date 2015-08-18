@@ -37,10 +37,12 @@ class TestUsersGetAuthenticationInstructions(TestCase):
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_new_user_google_domain(self, mocked_dns):
         self._mock_dns(mocked_dns, is_google=True)
-        response = self.client.call_action(
-            'get_authentication_instructions',
-            email='example@example.com',
-        )
+        email = 'example@example.com'
+        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)):
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                email=email,
+            )
         self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
@@ -49,10 +51,11 @@ class TestUsersGetAuthenticationInstructions(TestCase):
     def test_get_authentication_instructions_existing_user(self, mocked_dns):
         self._mock_dns(mocked_dns, is_google=True)
         user = factories.UserFactory.create(primary_email='example@example.com')
-        response = self.client.call_action(
-            'get_authentication_instructions',
-            email=user.primary_email,
-        )
+        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(user.primary_email,)):
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                email=user.primary_email,
+            )
         self.assertTrue(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
@@ -60,10 +63,12 @@ class TestUsersGetAuthenticationInstructions(TestCase):
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_new_user_non_google_domain(self, mocked_dns):
         self._mock_dns(mocked_dns, is_google=False)
-        response = self.client.call_action(
-            'get_authentication_instructions',
-            email='example@example.com',
-        )
+        email = 'example@example.com'
+        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)):
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                email=email,
+            )
         self.assertFalse(response.result.user_exists)
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
