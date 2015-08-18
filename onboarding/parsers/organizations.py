@@ -92,6 +92,7 @@ class Parser(OrganizationParser):
         self.saved_profiles = {}
         self.saved_users = {}
         self.saved_locations = {}
+        self.profile_id_to_profile = {}
 
     def _save_location(self, data):
         location = {
@@ -154,6 +155,7 @@ class Parser(OrganizationParser):
         profiles = self._save_profiles(rows)
         for profile in profiles:
             self.saved_profiles[profile.email] = profile
+            self.profile_id_to_profile[profile.id] = profile
 
         direct_reports = {}
         teams = {}
@@ -174,9 +176,13 @@ class Parser(OrganizationParser):
                 profile_id=profile_id,
                 direct_reports_profile_ids=profile_ids,
             )
+
             team = response.result.team
-            team.name = teams[profile_id]
-            self.organization_client.call_action('update_team', team=team)
+            try:
+                team.name = teams[profile_id]
+                self.organization_client.call_action('update_team', team=team)
+            except KeyError:
+                pass
 
         for location_id, profile_ids in locations.iteritems():
             self.organization_client.call_action(
