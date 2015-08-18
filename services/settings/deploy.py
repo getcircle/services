@@ -54,7 +54,7 @@ _force_internal = os.environ.get('USER_SERVICE_FORCE_INTERNAL_AUTHENTICATION')
 if isinstance(_force_internal, basestring):
     _force_internal = _force_internal.split(',')
 
-_force_google - os.environ.get('USER_SERVICE_FORCE_GOOGLE_AUTH')
+_force_google = os.environ.get('USER_SERVICE_FORCE_GOOGLE_AUTH')
 if isinstance(_force_google, basestring):
     _force_google = _force_google.split(',')
 
