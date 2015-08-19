@@ -297,7 +297,14 @@ class OrganizationTeamTests(MockedTestCase):
         )
         response = self.client.call_action('update_team', team=team)
         # ignore profile_count since we add the user as a member manually
-        self.verify_containers(team, response.result.team, ignore_fields=('profile_count',))
+        self.verify_containers(
+            team,
+            response.result.team,
+            ignore_fields=(
+                'display_name',
+                'profile_count',
+            ),
+        )
 
     def test_update_team_non_editable_fields(self):
         self.profile.is_admin = True
