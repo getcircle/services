@@ -76,7 +76,17 @@ class GetOrganization(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         model = self._get_organization()
-        model.to_protobuf(self.response.organization)
+        # XXX THIS IS REALLY BAD!!! XXX
+        from profiles import models as profile_models
+        team_count = models.Team.objects.filter(organization_id=model.id).count()
+        profile_count = profile_models.Profile.objects.filter(organization_id=model.id).count()
+        location_count = models.Location.objects.filter(organization_id=model.id).count()
+        model.to_protobuf(
+            self.response.organization,
+            team_count=team_count,
+            profile_count=profile_count,
+            location_count=location_count,
+        )
 
 
 class UpdateTeam(TeamPermissionsMixin, actions.Action):
