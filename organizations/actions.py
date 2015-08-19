@@ -703,4 +703,8 @@ class GetDescendants(PreRunParseTokenMixin, actions.Action):
             profile_ids = self._populate_with_team_id()
         else:
             profile_ids = self._populate_with_profile_id()
-        self.response.profile_ids.extend(map(str, profile_ids))
+        self.paginated_response(
+            self.response.profile_ids,
+            profile_ids,
+            lambda item, container: container.append(str(item)),
+        )
