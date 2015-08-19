@@ -140,6 +140,24 @@ class Team(models.UUIDModel, models.TimestampableModel):
                 overrides['child_team_count'] = len(
                     [child for child in children if child.get_descendant_count() > 0]
                 )
+
+        if not self.name and 'name' not in overrides:
+            # XXX REALLY BAD!!! XXX
+            from profiles import models as profile_models
+            try:
+                manager_name = profile_models.Profile.objects.filter(
+                    organization_id=self.organization_id,
+                    id=self.manager_profile_id,
+                ).values_list('first_name', flat=True)[0]
+            except IndexError:
+                pass
+            else:
+                overrides['display_name'] = '%s\'s Nameless Team' % (manager_name,)
+        elif self.name:
+            overrides['display_name'] = self.name
+        elif 'name' in overrides:
+            overrides['display_name'] = overrides['name']
+
         return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
 
