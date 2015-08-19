@@ -8,7 +8,7 @@ django-phonenumber-field==0.6
 djangorestframework==3.0.0
 factory-boy==2.4.1
 phonenumbers==7.0.1
-protobuf==2.6.1
+protobuf==3.0.0a3
 psycopg2==2.5.4
 pycparser==2.10
 six==1.9.0
@@ -65,4 +65,4 @@ git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/ge
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@0.2.1
 
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@0.17.3
-git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@2.37.3
+git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@2.38.4

@@ -684,7 +684,12 @@ class GetDescendants(PreRunParseTokenMixin, actions.Action):
                 raise self.ActionFieldError('profile_id', 'MISSING')
 
     def _get_profile_ids_with_node(self, node):
-        return list(node.get_descendants().filter(
+        if self.request.direct:
+            queryset = node.get_children()
+        else:
+            queryset = node.get_descendants()
+
+        return list(queryset.filter(
             organization_id=self.parsed_token.organization_id,
         ).values_list('profile_id', flat=True))
 
@@ -714,8 +719,9 @@ class GetDescendants(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
         )
         profile_ids = self._get_profile_ids_with_node(node)
-        # add the manager profile id
-        profile_ids.append(node.profile_id)
+        if not self.request.direct:
+            # add the manager profile id
+            profile_ids.append(node.profile_id)
         return profile_ids
 
     def run(self, *args, **kwargs):

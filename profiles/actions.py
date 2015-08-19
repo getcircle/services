@@ -210,6 +210,15 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
                 action_name='get_descendants',
                 team_id=self.request.team_id,
             )
+        # XXX add tests for this
+        elif self.request.manager_id:
+            profile_ids = self._get_remote_profile_ids(
+                'profile_ids',
+                service='organization',
+                action_name='get_descendants',
+                profile_id=self.request.manager_id,
+                direct=True,
+            )
         return profile_ids
 
     def run(self, *args, **kwargs):
