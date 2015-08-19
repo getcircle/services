@@ -256,6 +256,33 @@ class OrganizationLocationTests(MockedTestCase):
             self.assertTrue(location.permissions.can_add)
             self.assertTrue(location.permissions.can_delete)
 
+    def test_get_locations_profile_id_invalid(self):
+        with self.assertFieldError('profile_id'):
+            self.client.call_action('get_locations', profile_id='invalid')
+
+    def test_get_locations_profile_id(self):
+        # create some locations for an org
+        locations = factories.LocationFactory.create_batch(
+            size=3,
+            organization=self.organization,
+        )
+        factories.LocationMemberFactory.create(
+            organization=self.organization,
+            location=locations[0],
+            profile_id=self.profile.id,
+        )
+        response = self.client.call_action('get_locations', profile_id=self.profile.id)
+        self.assertEqual(len(response.result.locations), 1)
+        self.verify_containers(locations[0].to_protobuf(), response.result.locations[0])
+
+        factories.LocationMemberFactory.create(
+            organization=self.organization,
+            location=locations[1],
+            profile_id=self.profile.id,
+        )
+        response = self.client.call_action('get_locations', profile_id=self.profile.id)
+        self.assertEqual(len(response.result.locations), 2)
+
     def test_get_location_members_invalid_location_id(self):
         with self.assertFieldError('location_id'):
             self.client.call_action('get_location_members', location_id='invalid')

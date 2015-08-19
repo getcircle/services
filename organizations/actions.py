@@ -277,10 +277,20 @@ class GetLocation(BaseLocationAction):
 
 class GetLocations(BaseLocationAction):
 
+    type_validators = {
+        'profile_id': (validators.is_uuid4,)
+    }
+
     def run(self, *args, **kwargs):
         locations = models.Location.objects.filter(
             organization_id=self.parsed_token.organization_id,
         )
+        if self.request.profile_id:
+            locations = locations.filter(
+                members__profile_id=self.request.profile_id,
+                members__organization_id=self.parsed_token.organization_id,
+            )
+
         if not locations:
             return
 
