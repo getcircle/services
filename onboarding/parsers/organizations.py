@@ -8,7 +8,7 @@ import service.control
 from services.utils import get_timezone_for_location
 from .base import OrganizationParser
 
-DEFAULT_PASSWORD = make_password('rhlabs123')
+DEFAULT_PASSWORD = make_password('rhlabs')
 
 
 class Row(object):
