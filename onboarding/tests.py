@@ -13,6 +13,7 @@ from services.test import (
 from .parsers.organizations import Parser
 
 
+@unittest.skip
 class TestParser(TestCase):
 
     def setUp(self):
