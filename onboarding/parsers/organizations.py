@@ -11,6 +11,43 @@ from .base import OrganizationParser
 DEFAULT_PASSWORD = make_password('rhlabs')
 
 
+class LocationRow(object):
+
+    location_fields = (
+        'office_name',
+        'office_address_1',
+        'office_city',
+        'office_region',
+        'office_postal_code',
+        'office_country_code',
+        'office_latitude',
+        'office_longitude',
+        'office_image_url',
+    )
+
+    def __init__(self, data):
+        self.data = data
+
+    def __getattr__(self, key):
+        if key in self.data:
+            return smart_text(self.data[key])
+
+        return super(LocationRow, self).__getattr__(key)
+
+    @property
+    def location(self):
+        location = {}
+        for key in self.location_fields:
+            location_part = key.split('office_')[1]
+            location[location_part] = self.data[key]
+        return location
+
+    @property
+    def location_composite_key(self):
+        values = self.location.values()
+        return ':'.join(sorted(values))
+
+
 class Row(object):
 
     profile_fields = (
@@ -40,15 +77,6 @@ class Row(object):
         'office_image_url',
     )
 
-    def __init__(self, data):
-        self.data = data
-
-    def __getattr__(self, key):
-        if key in self.data:
-            return smart_text(self.data[key])
-
-        return super(Row, self).__getattr__(key)
-
     @property
     def location(self):
         location = {}
@@ -61,6 +89,15 @@ class Row(object):
     def location_composite_key(self):
         values = self.location.values()
         return ':'.join(sorted(values))
+
+    def __init__(self, data):
+        self.data = data
+
+    def __getattr__(self, key):
+        if key in self.data:
+            return smart_text(self.data[key])
+
+        return super(Row, self).__getattr__(key)
 
     @property
     def profile(self):
@@ -138,13 +175,13 @@ class Parser(OrganizationParser):
         return response.result.profiles
 
     def _parse_location(self, row):
-        if row.location_composite_key not in self.locations:
-            self.locations[row.location_composite_key] = row.location
+        if row.office_name not in self.locations:
+            self.locations[row.office_name] = row.location
 
     def _save(self, rows):
         for composite_key, location in self.locations.iteritems():
             if any(location.values()):
-                self.saved_locations[composite_key] = self._save_location(location)
+                self.saved_locations[location['name']] = self._save_location(location)
 
         # create users for all the rows
         users = self._save_users(rows)
@@ -163,10 +200,11 @@ class Parser(OrganizationParser):
         for row in rows:
             profile = self.saved_profiles[row.email]
             manager = self.saved_profiles.get(row.manager_email)
-            location = self.saved_locations[row.location_composite_key]
-            locations.setdefault(location.id, []).append(profile.id)
-            if row.is_team_owner():
-                teams[profile.id] = row.team
+            location = self.saved_locations.get(row.office_name)
+            if location:
+                locations.setdefault(location.id, []).append(profile.id)
+            if row.name_of_team_they_manage != '':
+                teams[profile.id] = row.name_of_team_they_manage
             if manager:
                 direct_reports.setdefault(manager.id, []).append(profile.id)
 
@@ -198,6 +236,25 @@ class Parser(OrganizationParser):
             for row_data in reader:
                 row = Row(row_data)
                 self._parse_location(row)
+                rows.append(row)
+
+        if kwargs.get('commit'):
+            self._save(rows)
+
+
+class ParserV2(Parser):
+
+    def parse(self, *args, **kwargs):
+        rows = []
+        with open(self.filename) as people, open(self.locations_filename) as locations:
+            locations_reader = DictReader(locations)
+            for row_data in locations_reader:
+                row = LocationRow(row_data)
+                self._parse_location(row)
+
+            people_reader = DictReader(people)
+            for row_data in people_reader:
+                row = Row(row_data)
                 rows.append(row)
 
         if kwargs.get('commit'):

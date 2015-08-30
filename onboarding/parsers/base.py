@@ -8,8 +8,16 @@ from services.token import (
 
 class OrganizationParser(object):
 
-    def __init__(self, organization_domain, filename, token, verbose=False):
+    def __init__(
+            self,
+            organization_domain,
+            filename,
+            token,
+            verbose=False,
+            locations_filename=None,
+        ):
         self.filename = filename
+        self.locations_filename = locations_filename
         self.verbose = verbose
         self.organization_client = service.control.Client('organization', token=token)
 

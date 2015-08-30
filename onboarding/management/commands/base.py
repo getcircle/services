@@ -1,4 +1,3 @@
-from optparse import make_option
 import os
 
 from onboarding.parsers.exceptions import ParseError
@@ -35,6 +34,10 @@ class BaseOrganizationParserCommand(BaseCommand):
             '--filename',
             help='Filename to load if it isn\'t the companies name',
         )
+        parser.add_argument(
+            '--locations-filename',
+            help='Filename with locations to load',
+        )
 
     def handle(self, *args, **options):
         if self.parser_class is None:
@@ -46,12 +49,21 @@ class BaseOrganizationParserCommand(BaseCommand):
             filename = os.path.join(
                 'onboarding',
                 'fixtures',
-                '%s.csv' % (organization_domain.split('.')[0],),
+                '%s_employee_import.csv' % (organization_domain.split('.')[0],),
+            )
+
+        locations_filename = options.get('locations_filename')
+        if not locations_filename:
+            locations_filename = os.path.join(
+                'onboarding',
+                'fixtures',
+                '%s_office_import.csv' % (organization_domain.split('.')[0],),
             )
 
         parser = self.parser_class(
             organization_domain=organization_domain,
             filename=filename,
+            locations_filename=locations_filename,
             token=make_admin_token(),
             verbose=options['verbose'],
         )
