@@ -14,6 +14,7 @@ from services import mixins
 from group.models import GoogleGroup
 from organizations.models import (
     Location,
+    LocationMember,
     ReportingStructure,
     Team,
 )
@@ -91,7 +92,10 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                             flat=True,
                         )
                     elif self.request.attribute == search_pb2.LOCATION_ID:
-                        parameters['location_id'] = self.request.attribute_value
+                        parameters['id__in'] = LocationMember.objects.filter(
+                            location_id=self.request.attribute_value,
+                            organization_id=self.organization_id,
+                        ).values_list('profile_id', flat=True)
                 category_queryset = Profile.objects.filter(**parameters)
             elif category == search_pb2.TEAMS:
                 category_queryset = Team.objects.filter(**parameters)
