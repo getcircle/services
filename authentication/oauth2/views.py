@@ -68,3 +68,8 @@ class OAuth2LinkedIn(APIView):
 class ConnectionSuccessView(TemplateView):
 
     template_name = 'connection-success.html'
+
+
+class ConnectionErrorView(TemplateView):
+
+    template_name = 'connection-error.html'
