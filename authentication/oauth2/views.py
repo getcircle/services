@@ -1,24 +1,36 @@
 import urllib
 
-from django.views.generic.base import TemplateView
+from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
+from django.views.generic.base import TemplateView
 from protobufs.services.user import containers_pb2 as user_containers
 from rest_framework.views import APIView
 import service.control
 
 
-class OAuth2LinkedIn(APIView):
+def redirect_with_query_params(name, query_params=None, *args, **kwargs):
+    url = reverse(name, *args, kwargs=kwargs)
+    if query_params:
+        url = '%s?%s' % (
+            url,
+            urllib.urlencode(query_params),
+        )
+    return redirect(url)
+
+
+class OAuth2Handler(APIView):
 
     def _handle_error(self, error_or_request):
         error = error_or_request
         if hasattr(error, 'GET'):
             error = error.GET.get('error_description', 'invalid_request')
 
-        params = {'error': error}
-        return redirect('/oauth2/%s/error/?%s' % (
-            self.provider_name,
-            urllib.urlencode(params),
-        ))
+        parameters = {'error': error}
+        return redirect_with_query_params(
+            'oauth2-error',
+            provider=self.provider_name,
+            query_params=parameters,
+        )
 
     def _complete_authorization(self, code, state):
         client = service.control.Client('user')
@@ -38,10 +50,11 @@ class OAuth2LinkedIn(APIView):
                 response.result.oauth_sdk_details.SerializeToString()
             ),
         }
-        return redirect('/oauth2/%s/success/?%s' % (
-            self.provider_name,
-            urllib.urlencode(parameters),
-        ))
+        return redirect_with_query_params(
+            'oauth2-success',
+            provider=self.provider_name,
+            query_params=parameters,
+        )
 
     def _parse_provider(self):
         self.provider_name = self.kwargs['provider']
