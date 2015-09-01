@@ -398,6 +398,7 @@ class CompleteAuthorization(actions.Action):
             else:
                 self.payload = {}
 
+    # XXX if this is SAML, we should be referencing those values
     def _get_or_create_user(self, identity, token):
         user_id = identity.user_id or getattr(token, 'user_id', None)
         if not user_id:

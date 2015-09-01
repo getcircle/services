@@ -53,12 +53,12 @@ INSTALLED_APPS = (
     'services',
 
     'api',
+    'authentication',
     'glossary',
     'group',
     'history',
     'media',
     'notification',
-    'oauth2',
     'onboarding',
     'organizations',
     'profiles',
