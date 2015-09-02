@@ -7,5 +7,5 @@ from . import views
 
 urlpatterns = patterns(
     '',
-    url(r'^(?P<provider>\w+)/$', views.OAuth2Handler.as_view(), name='oauth2-handler'),
+    url('^(?P<domain>\w+)/$', views.SAMLHandler.as_view(), name='saml-handler'),
 )
