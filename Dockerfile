@@ -1,7 +1,7 @@
 FROM mhahn/services-base:latest
 
 RUN apt-get install -y \
-    postgresql-client
+    postgresql-client xmlsec1
 
 ADD . /src
 WORKDIR /src
