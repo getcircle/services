@@ -127,3 +127,13 @@ class ReportingStructureFactory(factory.Factory):
     organization = factory.SubFactory(OrganizationFactory)
     profile_id = factory.FuzzyUUID()
     added_by_profile_id = factory.FuzzyUUID()
+
+
+class SSOFactory(factory.Factory):
+    class Meta:
+        model = models.SSO
+        protobuf = organization_containers.SSOV1
+
+    organization = factory.SubFactory(OrganizationFactory)
+    metadata_url = factory.FuzzyText(prefix='http://sso.metadata.', suffix='.com')
+    metadata = factory.FuzzyText()

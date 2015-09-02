@@ -6,6 +6,10 @@ from . import actions
 class Server(service.control.Server):
     service_name = 'organization'
 
+    auth_exempt_actions = (
+        'get_sso_metadata',
+    )
+
     actions = {
         'create_organization': actions.CreateOrganization,
         'get_team': actions.GetTeam,
@@ -28,4 +32,5 @@ class Server(service.control.Server):
         'get_location_members': actions.GetLocationMembers,
         'add_location_members': actions.AddLocationMembers,
         'get_descendants': actions.GetDescendants,
+        'get_sso_metadata': actions.GetSSOMetadata,
     }

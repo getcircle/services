@@ -268,6 +268,16 @@ class Token(models.UUIDModel):
         return self.key
 
 
+class SSO(models.UUIDModel, models.Model):
+
+    organization = models.ForeignKey(Organization, related_name='sso', db_index=True)
+    metadata_url = models.CharField(max_length=255, null=True)
+    metadata = models.TextField(null=True)
+
+    class Meta:
+        protobuf = organization_containers.SSOV1
+
+
 class Integration(models.UUIDModel, models.Model):
 
     model_to_protobuf_mapping = {'type': 'integration_type'}

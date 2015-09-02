@@ -73,3 +73,5 @@ CORS_ORIGIN_WHITELIST = tuple(os.environ.get('CORS_ORIGIN_WHITELIST', '').split(
 RAVEN_CONFIG = {
     'dsn': os.environ.get('SENTRY_DSN'),
 }
+
+HOSTNAME = os.environ.get('HOSTNAME', 'api.circlehq.co')

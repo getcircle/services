@@ -33,6 +33,7 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = ['api.circlehq.co']
 
+HOSTNAME = 'localhost:8000'
 
 # Application definition
 
