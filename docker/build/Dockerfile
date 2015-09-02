@@ -2,7 +2,7 @@
 FROM mhahn/services-base:latest
 
 RUN apt-get install -y \
-    python-dev libffi-dev libssl-dev
+    python-dev libffi-dev libssl-dev xmlsec1
 
 ENV WHEELHOUSE=/wheelhouse PIP_WHEEL_DIR=/wheelhouse PIP_FIND_LINKS=/wheelhouse
 VOLUME /wheelhouse /application
