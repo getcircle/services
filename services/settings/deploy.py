@@ -75,3 +75,10 @@ RAVEN_CONFIG = {
 }
 
 HOSTNAME = os.environ.get('HOSTNAME', 'api.circlehq.co')
+
+# Disable the browsable API
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+}
