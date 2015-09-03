@@ -238,7 +238,7 @@ LINKEDIN_AUTHORIZATION_URL = 'https://www.linkedin.com/uas/oauth2/authorization'
 LINKEDIN_ACCESS_TOKEN_URL = 'https://www.linkedin.com/uas/oauth2/accessToken'
 LINKEDIN_CLIENT_ID = '75ob8lid33ecuv'
 LINKEDIN_CLIENT_SECRET = 'vZsCybgJMvZ0rPEj'
-LINKEDIN_REDIRECT_URI = 'http://localhost:8000/oauth2/linkedin/'
+LINKEDIN_REDIRECT_URI = 'http://localhost:8000/auth/oauth2/linkedin/'
 LINKEDIN_SCOPE = 'r_basicprofile r_emailaddress'
 
 # Sign In With Google
@@ -252,7 +252,7 @@ GOOGLE_SCOPE = (
     'https://www.googleapis.com/auth/plus.profile.emails.read '
     'https://www.google.com/m8/feeds '
 )
-GOOGLE_REDIRECT_URI = 'http://localhost:8000/oauth2/google/'
+GOOGLE_REDIRECT_URI = 'http://localhost:8000/auth/oauth2/google/'
 GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 
 # Google Maps API
