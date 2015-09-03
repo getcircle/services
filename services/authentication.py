@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import exceptions
 from rest_framework.authentication import (
     BaseAuthentication,
@@ -7,6 +9,8 @@ from rest_framework.authentication import (
 from users.models import Token as UserToken
 from organizations.models import Token as OrganizationToken
 from .token import parse_token
+
+logger = logging.getLogger('services:authentication')
 
 
 class ServiceTokenAuthentication(BaseAuthentication):
@@ -24,20 +28,25 @@ class ServiceTokenAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
         auth = get_authorization_header(request).split()
+        logger.info(auth)
 
         if not auth or auth[0].lower() != b'token':
+            logger.info('non-token auth: %s', auth)
             return None
 
         if len(auth) == 1:
             msg = 'Invalid token header. No credentials provided.'
+            logger.error(msg)
             raise exceptions.AuthenticationFailed(msg)
         elif len(auth) > 2:
             msg = 'Invalid token header. Token string should not contain spaces.'
+            logger.error(msg)
             raise exceptions.AuthenticationFailed(msg)
 
         try:
             token = parse_token(auth[1])
         except Exception:
+            logger.error(auth[1])
             raise exceptions.AuthenticationFailed('Invalid token.')
         return self.authenticate_credentials(token.auth_token)
 
@@ -45,9 +54,11 @@ class ServiceTokenAuthentication(BaseAuthentication):
         try:
             token = self.model.objects.get(key=key)
         except self.model.DoesNotExist:
+            logger.error('token doesn\'t exist: %s', key)
             raise exceptions.AuthenticationFailed('Invalid token')
 
         if not token.user.is_active:
+            logger.error('user is inactive')
             raise exceptions.AuthenticationFailed('User inactive or deleted')
 
         return (token.user, token)
