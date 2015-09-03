@@ -10,6 +10,8 @@ from users.models import Token as UserToken
 from organizations.models import Token as OrganizationToken
 from .token import parse_token
 
+logger = logging.getLogger('services:authentication')
+
 
 class ServiceTokenAuthentication(BaseAuthentication):
     """
@@ -24,33 +26,27 @@ class ServiceTokenAuthentication(BaseAuthentication):
     # TODO this should be a service call
     model = UserToken
 
-    @property
-    def logger(self):
-        if not hasattr(self, '_logger'):
-            self._logger = logging.getLogger('services:authentication')
-        return self._logger
-
     def authenticate(self, request):
         auth = get_authorization_header(request).split()
-        self.logger.info('auth header: %s', auth)
+        logger.info(auth)
 
         if not auth or auth[0].lower() != b'token':
-            self.logger.info('non-token auth: %s', auth)
+            logger.info('non-token auth: %s', auth)
             return None
 
         if len(auth) == 1:
             msg = 'Invalid token header. No credentials provided.'
-            self.logger.error(msg)
+            logger.error(msg)
             raise exceptions.AuthenticationFailed(msg)
         elif len(auth) > 2:
             msg = 'Invalid token header. Token string should not contain spaces.'
-            self.logger.error(msg)
+            logger.error(msg)
             raise exceptions.AuthenticationFailed(msg)
 
         try:
             token = parse_token(auth[1])
         except Exception:
-            self.logger.error(auth[1])
+            logger.error(auth[1])
             raise exceptions.AuthenticationFailed('Invalid token.')
         return self.authenticate_credentials(token.auth_token)
 
@@ -58,11 +54,11 @@ class ServiceTokenAuthentication(BaseAuthentication):
         try:
             token = self.model.objects.get(key=key)
         except self.model.DoesNotExist:
-            self.logger.error('token doesn\'t exist: %s', key)
+            logger.error('token doesn\'t exist: %s', key)
             raise exceptions.AuthenticationFailed('Invalid token')
 
         if not token.user.is_active:
-            self.logger.error('user is inactive')
+            logger.error('user is inactive')
             raise exceptions.AuthenticationFailed('User inactive or deleted')
 
         return (token.user, token)
