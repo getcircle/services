@@ -12,12 +12,12 @@ dependencies:
     - mkdir -p wheelhouse
 
     # setup build images
-    - docker build -t mhahn/services-base docker/base
-    - docker build -t mhahn/services-build docker/build
-    - docker run -v `pwd`/wheelhouse:/wheelhouse -v `pwd`:/application mhahn/services-build
+    - docker build -t lunohq/services-base docker/base
+    - docker build -t lunohq/services-build docker/build
+    - docker run -v `pwd`/wheelhouse:/wheelhouse -v `pwd`:/application lunohq/services-build
 
     # setup run and manage images
-    - docker build -t mhahn/services .
+    - docker build -t lunohq/services .
 
     # TODO just use docker to run the tests
     - pip install --no-deps -r dev-requirements.txt
@@ -26,6 +26,6 @@ deployment:
   hub:
     branch: master
     commands:
-      - docker tag mhahn/services mhahn/services:$CIRCLE_SHA1
+      - docker tag lunohq/services lunohq/services:$CIRCLE_SHA1
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker push mhahn/services
+      - docker push lunohq/services
