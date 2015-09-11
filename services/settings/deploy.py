@@ -74,6 +74,7 @@ RAVEN_CONFIG = {
     'dsn': os.environ.get('SENTRY_DSN'),
 }
 
+# XXX default to api.lunohq.com in the future
 HOSTNAME = os.environ.get('HOSTNAME', 'api.circlehq.co')
 
 # Disable the browsable API
@@ -87,3 +88,6 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ),
 }
+
+# XXX default to api.lunohq.com in the future
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'api.circlehq.co').split(',')
