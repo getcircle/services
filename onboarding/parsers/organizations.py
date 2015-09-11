@@ -109,7 +109,11 @@ class Row(object):
 
         contact_methods = []
         for key in self.contact_method_fields:
-            contact_method = {'value': smart_text(self.data[key])}
+            value = smart_text(self.data[key]).strip()
+            if not value:
+                continue
+
+            contact_method = {'value': value}
             contact_method['label'] = 'Cell Phone'
             contact_method['contact_method_type'] = profile_containers.ContactMethodV1.CELL_PHONE
             contact_methods.append(contact_method)
