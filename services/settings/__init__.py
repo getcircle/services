@@ -302,4 +302,4 @@ SHELL_PLUS_POST_IMPORTS = (
     ('services.test.utils', 'setup_shell'),
 )
 
-STRIPE_API_KEY = 'stripe_key'
+STRIPE_API_KEY = 'sk_test_egjGFfpd8I06ZN05Xbh4HZQI'
