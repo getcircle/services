@@ -1,0 +1,22 @@
+first_name,last_name,title,hire_date,name_of_team_they_manage,office_name,birth_date,image_url,cell_phone,email,manager_email
+Stephen,Sylvester,"Senior Engineer, JE-JV",2009-08-24,,Indian Land SC,2015-02-07,https://s3.amazonaws.com/otterbots-media/profiles/9ee026f1a6e8d0892b8f0b490174a2be,,ssylvester@redventures.net,fdebs@redventures.net
+Jason,Persinger,"Sr. Associate, JE-JV",2010-10-04,,Indian Land SC,2015-05-07,https://s3.amazonaws.com/otterbots-media/profiles/908d13cc19505c10e0776fc112eb886a,,jpersinger@redventures.net,fdebs@redventures.net
+Francisco,Debs,"Director, JE-JV",2007-07-23,,Indian Land SC,2015-01-28,https://s3.amazonaws.com/otterbots-media/profiles/ed89c4872cccaa3e72e1250421eb50a5,,fdebs@redventures.net,jsutton@redventures.net
+Heather,Bailey,"Senior Copy Editor, JE-JV",2011-09-06,,Indian Land SC,2015-02-26,https://s3.amazonaws.com/otterbots-media/profiles/1857eba2912254121547a6f1bfce24f9,,hbailey@redventures.net,jpersinger@redventures.net
+William,Ray,"Associate, JE-JV",2012-06-04,,Indian Land SC,2015-01-21,https://s3.amazonaws.com/otterbots-media/profiles/11ec36beebd387707454754d601e87f7,,sray@redventures.net,fdebs@redventures.net
+Sydney,Schreiner,"Associate, JE-JV",2014-08-11,,Indian Land SC,2015-06-19,https://s3.amazonaws.com/otterbots-media/profiles/86d109fce14bb1c192d2731aec85aca9,,sschreiner@redventures.com,fdebs@redventures.net
+Taylor,Jones,"Associate, JE-JV",2013-06-10,,Indian Land SC,2015-12-06,https://s3.amazonaws.com/otterbots-media/profiles/3c3d9cda9014137db77594a44cb05cc1,,tajones@redventures.com,jpersinger@redventures.net
+Benjamin,Jackowitz,"Associate, JE-JV",2013-06-10,,Indian Land SC,2015-06-19,https://s3.amazonaws.com/otterbots-media/profiles/049d2e945d155949e826aac084793334,,bjackowitz@redventures.net,jpersinger@redventures.net
+Garra,Brown-Bartley,"Outreach Associate, JE-JV",2013-07-15,,Indian Land SC,2015-03-17,https://s3.amazonaws.com/otterbots-media/profiles/9055e35b0376418d16374f0853a37254,,gbartley@redventures.net,tajones@redventures.com
+Jennifer,Koniuk,"Web Copywriter, JE-JV",2014-07-21,,Indian Land SC,2015-01-17,https://s3.amazonaws.com/otterbots-media/profiles/ee85c4466b9dcff942521805f457eb74,,jkoniuk@redventures.net,hbailey@redventures.net
+Charles,Jenkins,"Associate, JE-JV",2014-08-11,,Indian Land SC,2015-05-05,https://s3.amazonaws.com/otterbots-media/profiles/05818c926d0eb5e55fb5a69415f8ca38,,tjenkins@redventures.net,tajones@redventures.com
+Nathaniel,Johnson,"Engineer, JE-JV",2014-10-13,,Indian Land SC,2015-03-20,https://s3.amazonaws.com/otterbots-media/profiles/7d67feba273d4325fc12fe8e1e8d0f14,,najohnson@redventures.net,ssylvester@redventures.net
+Jennifer,Bement,"Copy Writer, JE-JV",2014-10-20,,Indian Land SC,2015-05-03,https://s3.amazonaws.com/otterbots-media/profiles/92e7ea4022dfe1c19a1c09b870354a08,,jbement@redventures.net,hbailey@redventures.net
+Margaret,Smith,"Copy Writer, JE-JV",2015-06-22,,Indian Land SC,2015-08-31,https://s3.amazonaws.com/otterbots-media/profiles/2bec01227eb94674846343243a76cd4a,,msmith@redventures.net,hbailey@redventures.net
+Steven,Auslander,"Associate, JE-JV",2015-06-22,,Indian Land SC,2015-10-27,https://s3.amazonaws.com/otterbots-media/profiles/9b0cdf2085769c143b3f0c9fe1d43c01,,sauslander@redventures.net,tajones@redventures.com
+Ross,Gelber,"Associate, JE-JV",2015-07-20,,Indian Land SC,2015-04-05,https://s3.amazonaws.com/otterbots-media/profiles/2f8147b54b836e9a3763211e4713e3f2,,rgelber@redventures.net,fdebs@redventures.net
+Elizabeth,Segarra,"Copy Writer, JE-JV",2015-07-20,,Indian Land SC,2015-10-07,https://s3.amazonaws.com/otterbots-media/profiles/77eae8a9ff4ad4f0d93bae9e171fe4ae,,esegarra@redventures.net,hbailey@redventures.net
+Jillian,Shuster,"Associate, JE-JV",2015-07-20,,Indian Land SC,2015-12-05,https://s3.amazonaws.com/otterbots-media/profiles/fab7d45fd985b330ab618ce0f51ceec5,,jshuster@redventures.net,jpersinger@redventures.net
+Kaylee,Bates,"Associate, JE-JV",2015-08-03,,Indian Land SC,2015-04-11,https://s3.amazonaws.com/otterbots-media/profiles/4a812391bb4ca82ae779a08c9a269873,,kbates@redventures.net,fdebs@redventures.net
+Brianna,Therkelsen,"Outreach Associate, BEG-Business Energy Group",2014-06-02,,Indian Land SC,2015-08-21,https://s3.amazonaws.com/otterbots-media/profiles/401357a328158a5124d6ab3cbf93b2c7,,btherkelsen@redventures.net,tajones@redventures.com
+James,Mitchell,"Outreach Associate, JE-JV",2014-06-16,,Indian Land SC,2015-07-19,https://s3.amazonaws.com/otterbots-media/profiles/6181a9936ca7a9a684739b62be8d98fb,,rmitchell@redventures.net,tajones@redventures.com
