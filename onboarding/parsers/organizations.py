@@ -1,4 +1,5 @@
 from csv import DictReader
+import os
 
 from django.contrib.auth.hashers import make_password
 from django.utils.encoding import smart_text
@@ -246,16 +247,19 @@ class ParserV2(Parser):
 
     def parse(self, *args, **kwargs):
         rows = []
-        with open(self.filename) as people, open(self.locations_filename) as locations:
-            locations_reader = DictReader(locations)
-            for row_data in locations_reader:
-                row = LocationRow(row_data)
-                self._parse_location(row)
+        if os.path.exists(self.locations_filename or ''):
+            with open(self.locations_filename) as locations:
+                locations_reader = DictReader(locations)
+                for row_data in locations_reader:
+                    row = LocationRow(row_data)
+                    self._parse_location(row)
 
-            people_reader = DictReader(people)
-            for row_data in people_reader:
-                row = Row(row_data)
-                rows.append(row)
+        if os.path.exists(self.filename or ''):
+            with open(self.filename) as people:
+                people_reader = DictReader(people)
+                for row_data in people_reader:
+                    row = Row(row_data)
+                    rows.append(row)
 
         if kwargs.get('commit'):
             self._save(rows)
