@@ -256,7 +256,7 @@ GOOGLE_REDIRECT_URI = 'http://localhost:8000/auth/oauth2/google/'
 GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 
 # Google Maps API
-GOOGLE_USER_AGENT = 'circlehq-v1.0'
+GOOGLE_USER_AGENT = 'lunohq-v1.0'
 GOOGLE_API_KEY = 'AIzaSyAM0Kl2eU_nyo4OnL529-TEocozCiE_HY8'
 GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'
 
