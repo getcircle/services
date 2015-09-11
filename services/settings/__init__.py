@@ -113,6 +113,7 @@ LOCALIZED_SERVICES = [
     'media.server.Server',
     'notification.server.Server',
     'organizations.server.Server',
+    'payment.server.Server',
     'profiles.server.Server',
     'search.server.Server',
     'sync.server.Server',
@@ -300,3 +301,5 @@ SHELL_PLUS_POST_IMPORTS = (
     ('services.bootstrap', 'Bootstrap'),
     ('services.test.utils', 'setup_shell'),
 )
+
+STRIPE_API_KEY = 'stripe_key'

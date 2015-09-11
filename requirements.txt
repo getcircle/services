@@ -58,6 +58,7 @@ pyOpenSSL==0.15.1
 pysaml2==2.4.0
 repoze.who==2.2
 zope.interface==4.1.2
+stripe==1.26.0
 
 # more recent version of bitfield for 1.8 compatibility
 git+https://git@github.com/disqus/django-bitfield.git#24126a01
@@ -72,4 +73,4 @@ git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/ge
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@0.2.1
 
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@0.17.3
-git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@2.39.1
+git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-registry.git@2.39.3

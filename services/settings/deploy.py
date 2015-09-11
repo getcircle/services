@@ -91,3 +91,5 @@ REST_FRAMEWORK = {
 
 # XXX default to api.lunohq.com in the future
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'api.circlehq.co').split(',')
+
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
