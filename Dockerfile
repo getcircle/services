@@ -1,4 +1,4 @@
-FROM mhahn/services-base:latest
+FROM lunohq/services-base:latest
 
 RUN apt-get install -y \
     postgresql-client xmlsec1

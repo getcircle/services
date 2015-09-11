@@ -1,5 +1,4 @@
-# mhahn/services-build
-FROM mhahn/services-base:latest
+FROM lunohq/services-base:latest
 
 RUN apt-get install -y \
     python-dev libffi-dev libssl-dev xmlsec1
