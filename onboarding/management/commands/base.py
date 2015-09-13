@@ -52,18 +52,18 @@ class BaseOrganizationParserCommand(BaseCommand):
                 '%s_employee_import.csv' % (organization_domain.split('.')[0],),
             )
 
-        #locations_filename = options.get('locations_filename')
-        #if not locations_filename:
-            #locations_filename = os.path.join(
-                #'onboarding',
-                #'fixtures',
-                #'%s_office_import.csv' % (organization_domain.split('.')[0],),
-            #)
+        locations_filename = options.get('locations_filename')
+        if not locations_filename:
+            locations_filename = os.path.join(
+                'onboarding',
+                'fixtures',
+                '%s_office_import.csv' % (organization_domain.split('.')[0],),
+            )
 
         parser = self.parser_class(
             organization_domain=organization_domain,
             filename=filename,
-            #locations_filename=locations_filename,
+            locations_filename=locations_filename,
             token=make_admin_token(),
             verbose=options['verbose'],
         )
