@@ -216,7 +216,7 @@ AWS_SECRET_ACCESS_KEY = "+D7EMNyPKOCPI959HiheMVRHKs5QN4lM+MhNK5JR"
 AWS_SNS_PLATFORM_APPLICATION_APNS = ''
 AWS_SNS_PLATFORM_APPLICATION_GCM = ''
 
-AWS_S3_MEDIA_BUCKET = 'otterbots-media'
+AWS_S3_MEDIA_BUCKET = 'lunohq-media'
 
 # XXX temporary db cache until we setup memcache
 CACHES = {
