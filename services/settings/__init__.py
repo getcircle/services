@@ -247,8 +247,8 @@ LINKEDIN_SCOPE = 'r_basicprofile r_emailaddress'
 GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/auth'
 GOOGLE_ACCESS_TOKEN_URL = 'https://www.googleapis.com/oauth2/v3/token'
 GOOGLE_REVOKE_TOKEN_URL = 'https://accounts.google.com/o/oauth2/revoke'
-GOOGLE_CLIENT_ID = '1057892432577-im3kndbpr8k14dkefm91hb5qth134nb0.apps.googleusercontent.com'
-GOOGLE_CLIENT_SECRET = 'CHtAGDMrP7GJ_NQQBUIixNNP'
+GOOGLE_CLIENT_ID = '1090169577912-57r89ml43udqthb050v57kim3vddlrvu.apps.googleusercontent.com'
+GOOGLE_CLIENT_SECRET = 'nSWzmajmO9vjDuyebn65Y0l9'
 GOOGLE_SCOPE = (
     'https://www.googleapis.com/auth/plus.login '
     'https://www.googleapis.com/auth/plus.profile.emails.read '
@@ -259,7 +259,7 @@ GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 
 # Google Maps API
 GOOGLE_USER_AGENT = 'lunohq-v1.0'
-GOOGLE_API_KEY = 'AIzaSyBODCeofYALXqc7eeCbygwiJqlIafoD_5A'
+GOOGLE_API_KEY = 'AIzaSyBvkJcNxomtXZeLnN4PwB3Vz90MObqDO-E'
 GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'
 
 # User Service Settings
