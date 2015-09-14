@@ -18,6 +18,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
+# TODO set this in vault
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '5rvaf1tsov&kdz!xp-x3785dc0xdmd+gh+#%-nl3ep-!e+ngot'
 
@@ -246,8 +247,8 @@ LINKEDIN_SCOPE = 'r_basicprofile r_emailaddress'
 GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/auth'
 GOOGLE_ACCESS_TOKEN_URL = 'https://www.googleapis.com/oauth2/v3/token'
 GOOGLE_REVOKE_TOKEN_URL = 'https://accounts.google.com/o/oauth2/revoke'
-GOOGLE_CLIENT_ID = '1077014421904-1a697ks3qvtt6975qfqhmed8529en8s2.apps.googleusercontent.com'
-GOOGLE_CLIENT_SECRET = 'lIjknz85LXHAQGMWM7A8QtPx'
+GOOGLE_CLIENT_ID = '1057892432577-im3kndbpr8k14dkefm91hb5qth134nb0.apps.googleusercontent.com'
+GOOGLE_CLIENT_SECRET = 'CHtAGDMrP7GJ_NQQBUIixNNP'
 GOOGLE_SCOPE = (
     'https://www.googleapis.com/auth/plus.login '
     'https://www.googleapis.com/auth/plus.profile.emails.read '
@@ -258,7 +259,7 @@ GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 
 # Google Maps API
 GOOGLE_USER_AGENT = 'lunohq-v1.0'
-GOOGLE_API_KEY = 'AIzaSyAM0Kl2eU_nyo4OnL529-TEocozCiE_HY8'
+GOOGLE_API_KEY = 'AIzaSyBODCeofYALXqc7eeCbygwiJqlIafoD_5A'
 GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'
 
 # User Service Settings
