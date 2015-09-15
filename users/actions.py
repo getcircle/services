@@ -367,6 +367,7 @@ class GetAuthorizationInstructions(actions.Action):
             self.response.authorization_url = providers.google.Provider.get_authorization_url(
                 token=self.token,
                 login_hint=self.request.login_hint,
+                redirect_uri=self.request.redirect_uri,
             )
 
 
@@ -429,7 +430,11 @@ class CompleteAuthorization(actions.Action):
             token = parse_token(token)
 
         provider = self.provider_class(token)
-        identity = provider.complete_authorization(self.request, self.response)
+        identity = provider.complete_authorization(
+            self.request,
+            self.response,
+            redirect_uri=self.payload.get('redirect_uri'),
+        )
         user = self._get_or_create_user(identity, token)
         identity.user_id = user.id
         identity.save()
@@ -556,6 +561,10 @@ class GetAuthenticationInstructions(actions.Action):
     }
 
     def _populate_google_instructions(self):
+        redirect_uri = self.request.redirect_uri
+        if redirect_uri not in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS:
+            redirect_uri = None
+
         self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
         self.response.authorization_url = service.control.get_object(
             service='user',
@@ -564,6 +573,7 @@ class GetAuthenticationInstructions(actions.Action):
             client_kwargs={'token': self.token},
             provider=user_containers.IdentityV1.GOOGLE,
             login_hint=self.request.email,
+            redirect_uri=redirect_uri,
         )
 
     def _is_google_domain(self):

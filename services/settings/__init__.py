@@ -265,6 +265,7 @@ GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'
 # User Service Settings
 USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state token
 USER_SERVICE_FORCE_GOOGLE_AUTH = tuple()
+USER_SERVICE_ALLOWED_REDIRECT_URIS = tuple()
 
 # Data Dog API Key
 DATADOG_API_KEY = ''

@@ -53,9 +53,15 @@ METRICS_HANDLER_KWARGS = {'api_key': DATADOG_API_KEY}
 _force_google = os.environ.get('USER_SERVICE_FORCE_GOOGLE_AUTH')
 if isinstance(_force_google, basestring):
     _force_google = _force_google.split(',')
-
 USER_SERVICE_FORCE_GOOGLE_AUTH = (
     _force_google or USER_SERVICE_FORCE_GOOGLE_AUTH
+)
+
+_allowed_redirect_uris = os.environ.get('USER_SERVICE_ALLOWED_REDIRECT_URIS')
+if isinstance(_allowed_redirect_uris, basestring):
+    _allowed_redirect_uris = _allowed_redirect_uris.split(',')
+USER_SERVICE_ALLOWED_REDIRECT_URIS = (
+    _allowed_redirect_uris or USER_SERVICE_ALLOWED_REDIRECT_URIS
 )
 
 AWS_SNS_PLATFORM_APPLICATION_APNS = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_APNS')

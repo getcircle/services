@@ -95,7 +95,7 @@ class Provider(base.BaseProvider):
             urllib.urlencode(parameters),
         )
 
-    def complete_authorization(self, request, response):
+    def complete_authorization(self, request, response, **kwargs):
         url = self.get_exchange_url(request.oauth2_details)
         token, expires_in = self._get_access_token(url)
         application = linkedin.LinkedInApplication(token=token)
