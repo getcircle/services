@@ -184,6 +184,9 @@ class AuthenticateUser(actions.Action):
     def _is_google_backend(self):
         return self.request.backend == self.request.GOOGLE
 
+    def _is_saml_backend(self):
+        return self.request.backend == self.request.SAML
+
     def _get_auth_params(self):
         auth_params = {}
         if self._is_internal_backend():
@@ -193,6 +196,8 @@ class AuthenticateUser(actions.Action):
             auth_params['code'] = self.request.credentials.key
             auth_params['id_token'] = self.request.credentials.secret
             auth_params['client_type'] = self.request.client_type
+        elif self._is_saml_backend():
+            auth_params['state'] = self.request.credentials.secret
         else:
             raise self.ActionFieldError('backend', 'INVALID')
         return auth_params
