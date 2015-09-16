@@ -576,18 +576,50 @@ class GetAuthenticationInstructions(actions.Action):
             redirect_uri=redirect_uri,
         )
 
+    def _get_organization_authentication_instructions(self):
+        try:
+            domain = self.request.email.split('@', 1)[1].split('.', 1)[0]
+        except IndexError:
+            return None
+
+        try:
+            response = service.control.call_action(
+                'organization',
+                'get_authentication_instructions',
+                domain=domain,
+            )
+        except service.control.CallActionError:
+            return None
+
+        if not response.result.ListFields():
+            return None
+
+        return response.result
+
     def _is_google_domain(self):
         domain = self.request.email.split('@', 1)[1]
         return is_google_domain(domain)
 
     def _should_force_internal_authentication(self):
-        return self.request.email not in settings.USER_SERVICE_FORCE_GOOGLE_AUTH
+        return self.request.email in settings.USER_SERVICE_FORCE_INTERNAL_AUTH
+
+    def _should_force_google_authentication(self):
+        return self.request.email in settings.USER_SERVICE_FORCE_GOOGLE_AUTH
 
     def run(self, *args, **kwargs):
         self.response.user_exists = models.User.objects.filter(
             primary_email=self.request.email,
         ).exists()
-        if not self._should_force_internal_authentication() and self._is_google_domain():
+
+        organization_auth = self._get_organization_authentication_instructions()
+        if self._should_force_internal_authentication():
+            self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
+        elif self._should_force_google_authentication() and self._is_google_domain():
+            self._populate_google_instructions()
+        elif organization_auth:
+            self.response.backend = organization_auth.backend
+            self.response.authorization_url = organization_auth.authorization_url
+        elif self._is_google_domain():
             self._populate_google_instructions()
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL

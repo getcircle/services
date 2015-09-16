@@ -12,7 +12,7 @@ class OrganizationFactory(factory.Factory):
         protobuf = organization_containers.OrganizationV1
 
     name = factory.FuzzyText()
-    domain = factory.FuzzyText(suffix='.com')
+    domain = factory.FuzzyText()
     image_url = factory.FuzzyText(prefix='http://www.', suffix='.com')
 
 
@@ -136,4 +136,4 @@ class SSOFactory(factory.Factory):
 
     organization = factory.SubFactory(OrganizationFactory)
     metadata_url = factory.FuzzyText(prefix='http://sso.metadata.', suffix='.com')
-    metadata = factory.FuzzyText()
+    metadata = '<?xml version="1.0" encoding="UTF-8"?><md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="http://www.okta.com/exk4ucst4sA1qzof90h7"><md:IDPSSODescriptor WantAuthnRequestsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><md:KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIDpDCCAoygAwIBAgIGAU+F5WdaMA0GCSqGSIb3DQEBBQUAMIGSMQswCQYDVQQGEwJVUzETMBEG\nA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzENMAsGA1UECgwET2t0YTEU\nMBIGA1UECwwLU1NPUHJvdmlkZXIxEzARBgNVBAMMCmRldi00MTAzNjIxHDAaBgkqhkiG9w0BCQEW\nDWluZm9Ab2t0YS5jb20wHhcNMTUwODMxMjIzMzA4WhcNNDUwODMxMjIzNDA4WjCBkjELMAkGA1UE\nBhMCVVMxEzARBgNVBAgMCkNhbGlmb3JuaWExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28xDTALBgNV\nBAoMBE9rdGExFDASBgNVBAsMC1NTT1Byb3ZpZGVyMRMwEQYDVQQDDApkZXYtNDEwMzYyMRwwGgYJ\nKoZIhvcNAQkBFg1pbmZvQG9rdGEuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA\ngeRZrc+svHeBVdVDsZX2lvvKLPPKWxWAWrGENqeQuXe8iomXgiyOHROf78eSke7nXUzdLFrjCUPP\na5m+LXTTDUEqfVIloZHiQZWq2hkp4JO0K3ksAdpNHcVeh9nKHOuHHznVvm+namP4PBRaz/yG43yN\n+Bl2XiyQjrSvG/6m7KmuLU1YL5IICeoYwU+r6WI4rCfoDoH+w7tgqyGBdqu38UiUc48/fWMqq1PW\n7tjS8B/ayFZnCdKclDPSCMoChtb95wbEgF2/w4PygYyb1GmjHxzjLGtxcSyvcyBC2w1CEHAq8ZWw\nRmyQ/2B6omz8EdXy92Q0rWIG/JYezOEki6FnjwIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQBzT+7o\nh1WvkLZ4P6LUS6CMntzgIJ7rB1JA85/kYc6pWu6Z8lIveG0Z4X1DXh4koVEcMXphzIUlXjduMFTG\nDn2i0nn0r4bcXhtKpyFUHqTPH6jhteQsjMnsi7vBzAstvWT2O14claCjxvG+YQN2ZSx4sX1dnZtU\nPdRdvkFD01680+WApwKOhlLf0vUd0s4TsM64QliN/WFwNeV3K5wAJ07XiDYVhoQ10QSPiG4DZEqb\n/CLouBrX5b0LxPMgQtdtOWM9eeRvNG8KCPZ4cPKLUh9kahI7g5xLDhQJhEfaKc+C5dcQ0HzoqXb+\nvlTMzJldSQEgQT5Lfikn7rL8ZuuZxLyD</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</md:NameIDFormat><md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://dev-410362.oktapreview.com/app/rhlabsdev410362_circle_2/exk4ucst4sA1qzof90h7/sso/saml"/><md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://dev-410362.oktapreview.com/app/rhlabsdev410362_circle_2/exk4ucst4sA1qzof90h7/sso/saml"/></md:IDPSSODescriptor></md:EntityDescriptor>'

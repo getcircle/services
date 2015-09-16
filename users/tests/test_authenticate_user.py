@@ -26,6 +26,19 @@ class TestUsersGetAuthenticationInstructions(TestCase):
         else:
             mock_dns.return_value = [(10, 'yahoo-smtp.yahoo.com')]
 
+    def _mock_organization_sso(self, mock, domain):
+        service = 'organization'
+        action = 'get_authentication_instructions'
+        mock_response = mock.get_mockable_response(service, action)
+        mock_response.authorization_url = 'http://saml-url'
+        mock_response.backend = authenticate_user_pb2.RequestV1.SAML
+        mock.instance.register_mock_response(
+            service,
+            action,
+            mock_response,
+            domain=domain,
+        )
+
     def test_get_authentication_instructions_email_required(self):
         with self.assertFieldError('email', 'MISSING'):
             self.client.call_action('get_authentication_instructions')
@@ -33,6 +46,19 @@ class TestUsersGetAuthenticationInstructions(TestCase):
     def test_get_authentication_instructions_email_invalid(self):
         with self.assertFieldError('email'):
             self.client.call_action('get_authentication_instructions', email='invalid@invalid')
+
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_organization_sso(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=True)
+        email = 'example@example.com'
+        with self.mock_transport() as mock:
+            self._mock_organization_sso(mock, 'example')
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                email=email,
+            )
+        self.assertTrue(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.SAML)
 
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_new_user_google_domain(self, mocked_dns):
@@ -122,10 +148,11 @@ class TestUsersGetAuthenticationInstructions(TestCase):
     def test_get_authentication_instructions_google_domain_force_to_password(self, mocked_dns):
         self._mock_dns(mocked_dns, is_google=True)
         user = factories.UserFactory.create(primary_email='demo@circlehq.co')
-        response = self.client.call_action(
-            'get_authentication_instructions',
-            email=user.primary_email,
-        )
+        with self.settings(USER_SERVICE_FORCE_INTERNAL_AUTH=(user.primary_email,)):
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                email=user.primary_email,
+            )
         self.assertTrue(response.result.user_exists)
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)

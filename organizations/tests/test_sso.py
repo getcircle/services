@@ -4,10 +4,10 @@ from services.test import MockedTestCase
 from .. import factories
 
 
-class OrganizationTeamTests(MockedTestCase):
+class OrganizationSSOTests(MockedTestCase):
 
     def setUp(self):
-        super(OrganizationTeamTests, self).setUp()
+        super(OrganizationSSOTests, self).setUp()
         self.organization = factories.OrganizationFactory.create()
         self.client = service.control.Client('organization')
         self.mock.instance.dont_mock_service('organization')
