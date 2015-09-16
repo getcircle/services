@@ -276,6 +276,8 @@ ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS = (
     'http://local.lunohq.com:9110/auth',
 )
 
+AUTH_SUCCESS_REDIRECT_URI = 'http://local.lunohq.com:9110/auth'
+
 # Data Dog API Key
 DATADOG_API_KEY = ''
 

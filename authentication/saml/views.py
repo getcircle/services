@@ -1,7 +1,6 @@
 import urllib
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import redirect
 from itsdangerous import (
@@ -32,7 +31,7 @@ class SAMLHandler(APIView):
                 redirect_uri = None
 
         if redirect_uri is None:
-            redirect_uri = reverse('auth-success')
+            redirect_uri = settings.AUTH_SUCCESS_REDIRECT_URI
 
         if query_parameters:
             redirect_uri = '%s?%s' % (
