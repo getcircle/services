@@ -57,11 +57,22 @@ USER_SERVICE_FORCE_GOOGLE_AUTH = (
     _force_google or USER_SERVICE_FORCE_GOOGLE_AUTH
 )
 
-_allowed_redirect_uris = os.environ.get('USER_SERVICE_ALLOWED_REDIRECT_URIS')
-if isinstance(_allowed_redirect_uris, basestring):
-    _allowed_redirect_uris = _allowed_redirect_uris.split(',')
+_user_service_allowed_redirect_uris = os.environ.get('USER_SERVICE_ALLOWED_REDIRECT_URIS')
+if isinstance(_user_service_allowed_redirect_uris, basestring):
+    _user_service_allowed_redirect_uris = _user_service_allowed_redirect_uris.split(',')
 USER_SERVICE_ALLOWED_REDIRECT_URIS = (
-    _allowed_redirect_uris or USER_SERVICE_ALLOWED_REDIRECT_URIS
+    _user_service_allowed_redirect_uris or USER_SERVICE_ALLOWED_REDIRECT_URIS
+)
+
+_organization_service_allowed_redirect_uris = os.environ.get(
+    'ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS',
+)
+if isinstance(_organization_service_allowed_redirect_uris, basestring):
+    _organization_service_allowed_redirect_uris = (
+        _organization_service_allowed_redirect_uris.split(',')
+    )
+ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS = (
+    _organization_service_allowed_redirect_uris or ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS
 )
 
 AWS_SNS_PLATFORM_APPLICATION_APNS = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_APNS')
