@@ -560,11 +560,15 @@ class GetAuthenticationInstructions(actions.Action):
         'email': [validate_email],
     }
 
-    def _populate_google_instructions(self):
-        redirect_uri = self.request.redirect_uri
-        if redirect_uri not in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS:
-            redirect_uri = None
+    def validate(self, *args, **kwargs):
+        super(GetAuthenticationInstructions, self).validate(*args, **kwargs)
+        if (
+            self.request.redirect_uri and
+            self.request.redirect_uri not in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS
+        ):
+            self.request.ClearField('redirect_uri')
 
+    def _populate_google_instructions(self):
         self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
         self.response.authorization_url = service.control.get_object(
             service='user',
@@ -573,7 +577,7 @@ class GetAuthenticationInstructions(actions.Action):
             client_kwargs={'token': self.token},
             provider=user_containers.IdentityV1.GOOGLE,
             login_hint=self.request.email,
-            redirect_uri=redirect_uri,
+            redirect_uri=self.request.redirect_uri,
         )
 
     def _get_organization_authentication_instructions(self):
@@ -587,6 +591,7 @@ class GetAuthenticationInstructions(actions.Action):
                 'organization',
                 'get_authentication_instructions',
                 domain=domain,
+                redirect_uri=self.request.redirect_uri,
             )
         except service.control.CallActionError:
             return None

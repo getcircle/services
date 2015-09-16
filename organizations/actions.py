@@ -1,6 +1,8 @@
+from django.conf import settings
 import django.db
 from django.db.models import Count
 from django.utils import timezone
+from itsdangerous import Signer
 from protobufs.services.history import containers_pb2 as history_containers
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobuf_to_dict import protobuf_to_dict
@@ -763,9 +765,16 @@ class GetAuthenticationInstructions(actions.Action):
         },
     }
 
+    def _get_redirect_uri(self):
+        signer = Signer(settings.SECRET_KEY)
+        redirect_uri = None
+        if self.request.redirect_uri in settings.ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS:
+            redirect_uri = signer.sign(self.request.redirect_uri)
+        return redirect_uri
+
     def _populate_sso_data(self, sso):
         saml_client = get_saml_client(self.request.domain, sso.metadata)
-        _, info = saml_client.prepare_for_authenticate()
+        _, info = saml_client.prepare_for_authenticate(relay_state=self._get_redirect_uri())
         authorization_url = None
         # info['headers'] is an array of key, value tuples
         for key, value in info['headers']:

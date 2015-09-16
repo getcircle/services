@@ -267,7 +267,12 @@ USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state toke
 USER_SERVICE_FORCE_GOOGLE_AUTH = tuple()
 USER_SERVICE_FORCE_INTERNAL_AUTH = tuple()
 USER_SERVICE_ALLOWED_REDIRECT_URIS = (
-    'http://local.lunohq.com:9110/auth/oauth2/google',
+    'http://local.lunohq.com:9110/auth',
+)
+
+# Organization Service Settings
+ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS = (
+    'http://local.lunohq.com:9110/auth',
 )
 
 # Data Dog API Key

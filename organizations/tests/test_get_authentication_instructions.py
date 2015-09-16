@@ -36,3 +36,28 @@ class OrganizationGetAuthenticationInstructionsTests(MockedTestCase):
         )
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, AuthenticateRequest.SAML)
+
+    def test_get_authentication_instructions_sso_redirect_uri_invalid(self):
+        factories.SSOFactory.create(organization=self.organization)
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            domain=self.organization.domain,
+            redirect_uri='http://notwhitelisted.com',
+        )
+        self.assertTrue(response.result.authorization_url)
+        self.assertEqual(response.result.backend, AuthenticateRequest.SAML)
+        self.assertNotIn('notwhitelisted', response.result.authorization_url)
+
+    def test_get_authentication_instructions_sso_redirect_uri(self):
+        factories.SSOFactory.create(organization=self.organization)
+        redirect_uri = 'http://whitelisted.com'
+
+        with self.settings(ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS=(redirect_uri,)):
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                domain=self.organization.domain,
+                redirect_uri=redirect_uri,
+            )
+        self.assertTrue(response.result.authorization_url)
+        self.assertEqual(response.result.backend, AuthenticateRequest.SAML)
+        self.assertIn('whitelisted', response.result.authorization_url)
