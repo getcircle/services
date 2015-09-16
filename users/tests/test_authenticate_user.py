@@ -37,6 +37,7 @@ class TestUsersGetAuthenticationInstructions(TestCase):
             action,
             mock_response,
             domain=domain,
+            redirect_uri='',
         )
 
     def test_get_authentication_instructions_email_required(self):
