@@ -789,5 +789,7 @@ class GetAuthenticationInstructions(actions.Action):
         sso = models.SSO.objects.get_or_none(
             organization__domain=self.request.domain,
         )
-        if sso:
+        if self.request.domain in settings.ORGANIZATION_SERVICE_FORCE_INTERNAL_AUTH:
+            self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
+        elif sso:
             self._populate_sso_data(sso)

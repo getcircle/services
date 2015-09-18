@@ -8,6 +8,13 @@ from service import settings
 settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 100)
 settings.DEFAULT_METRICS_HANDLER = 'service.metrics.datadog.instance'
 
+
+def _get_setting_from_environment(key, default, comma_delmited=True):
+    value = os.environ.get(key)
+    if comma_delmited and isinstance(value, basestring):
+        value = value.split(',')
+    return value or default
+
 DEBUG = False
 TEMPLATE_DEBUG = False
 
@@ -50,30 +57,25 @@ GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 DATADOG_API_KEY = os.environ.get('DATADOG_API_KEY', '')
 METRICS_HANDLER_KWARGS = {'api_key': DATADOG_API_KEY}
 
-_force_google = os.environ.get('USER_SERVICE_FORCE_GOOGLE_AUTH')
-if isinstance(_force_google, basestring):
-    _force_google = _force_google.split(',')
-USER_SERVICE_FORCE_GOOGLE_AUTH = (
-    _force_google or USER_SERVICE_FORCE_GOOGLE_AUTH
+USER_SERVICE_FORCE_GOOGLE_AUTH = _get_setting_from_environment(
+    'USER_SERVICE_FORCE_GOOGLE_AUTH',
+    USER_SERVICE_FORCE_GOOGLE_AUTH,
 )
 
-_user_service_allowed_redirect_uris = os.environ.get('USER_SERVICE_ALLOWED_REDIRECT_URIS')
-if isinstance(_user_service_allowed_redirect_uris, basestring):
-    _user_service_allowed_redirect_uris = _user_service_allowed_redirect_uris.split(',')
-USER_SERVICE_ALLOWED_REDIRECT_URIS = (
-    _user_service_allowed_redirect_uris or USER_SERVICE_ALLOWED_REDIRECT_URIS
+USER_SERVICE_ALLOWED_REDIRECT_URIS = _get_setting_from_environment(
+    'USER_SERVICE_ALLOWED_REDIRECT_URIS',
+    USER_SERVICE_ALLOWED_REDIRECT_URIS,
 )
 
-_organization_service_allowed_redirect_uris = os.environ.get(
+ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS = _get_setting_from_environment(
     'ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS',
+    ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS,
 )
-if isinstance(_organization_service_allowed_redirect_uris, basestring):
-    _organization_service_allowed_redirect_uris = (
-        _organization_service_allowed_redirect_uris.split(',')
-    )
-ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS = (
-    _organization_service_allowed_redirect_uris or ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS
+ORGANIZATION_SERVICE_FORCE_INTERNAL_AUTH = _get_setting_from_environment(
+    'ORGANIZATION_SERVICE_FORCE_INTERNAL_AUTH',
+    ORGANIZATION_SERVICE_FORCE_INTERNAL_AUTH,
 )
+
 
 AWS_SNS_PLATFORM_APPLICATION_APNS = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_APNS')
 AWS_SNS_PLATFORM_APPLICATION_GCM = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_GCM')

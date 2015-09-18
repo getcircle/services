@@ -61,3 +61,13 @@ class OrganizationGetAuthenticationInstructionsTests(MockedTestCase):
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, AuthenticateRequest.SAML)
         self.assertIn('whitelisted', response.result.authorization_url)
+
+    def test_get_authentication_instructions_force_internal_auth(self):
+        factories.SSOFactory.create(organization=self.organization)
+        with self.settings(ORGANIZATION_SERVICE_FORCE_INTERNAL_AUTH=(self.organization.domain,)):
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                domain=self.organization.domain,
+            )
+        self.assertFalse(response.result.authorization_url)
+        self.assertEqual(response.result.backend, AuthenticateRequest.INTERNAL)
