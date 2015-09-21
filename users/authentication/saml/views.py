@@ -31,7 +31,7 @@ class SAMLHandler(APIView):
                 redirect_uri = None
 
         if redirect_uri is None:
-            redirect_uri = settings.AUTH_SUCCESS_REDIRECT_URI
+            redirect_uri = settings.USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI
 
         if query_parameters:
             redirect_uri = '%s?%s' % (

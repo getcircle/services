@@ -262,8 +262,7 @@ USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = tuple()
 USER_SERVICE_ALLOWED_REDIRECT_URIS = (
     'http://local.lunohq.com:9110/user/auth',
 )
-
-AUTH_SUCCESS_REDIRECT_URI = 'http://local.lunohq.com:9110/user/auth'
+USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI = 'http://local.lunohq.com:9110/user/auth'
 
 # Data Dog API Key
 DATADOG_API_KEY = ''
