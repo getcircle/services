@@ -9,5 +9,5 @@ from . import views
 urlpatterns = patterns('',
     url(r'^$', views.ServicesView.as_view()),
     url(r'^p/', include('api.urls')),
-    url(r'^auth/', include('authentication.urls')),
+    url(r'^user/', include('users.urls')),
 )

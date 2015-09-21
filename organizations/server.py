@@ -7,7 +7,6 @@ class Server(service.control.Server):
     service_name = 'organization'
 
     auth_exempt_actions = (
-        'get_authentication_instructions',
         'get_sso_metadata',
     )
 
@@ -34,5 +33,4 @@ class Server(service.control.Server):
         'add_location_members': actions.AddLocationMembers,
         'get_descendants': actions.GetDescendants,
         'get_sso_metadata': actions.GetSSOMetadata,
-        'get_authentication_instructions': actions.GetAuthenticationInstructions,
     }

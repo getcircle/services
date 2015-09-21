@@ -3,7 +3,10 @@ from mock import patch
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user.containers import token_pb2
-from services.test import TestCase
+from services.test import (
+    mocks,
+    TestCase,
+)
 from services.token import parse_token
 
 from . import MockCredentials
@@ -26,20 +29,6 @@ class TestUsersGetAuthenticationInstructions(TestCase):
         else:
             mock_dns.return_value = [(10, 'yahoo-smtp.yahoo.com')]
 
-    def _mock_organization_sso(self, mock, domain):
-        service = 'organization'
-        action = 'get_authentication_instructions'
-        mock_response = mock.get_mockable_response(service, action)
-        mock_response.authorization_url = 'http://saml-url'
-        mock_response.backend = authenticate_user_pb2.RequestV1.SAML
-        mock.instance.register_mock_response(
-            service,
-            action,
-            mock_response,
-            domain=domain,
-            redirect_uri='',
-        )
-
     def test_get_authentication_instructions_email_required(self):
         with self.assertFieldError('email', 'MISSING'):
             self.client.call_action('get_authentication_instructions')
@@ -53,13 +42,40 @@ class TestUsersGetAuthenticationInstructions(TestCase):
         self._mock_dns(mocked_dns, is_google=True)
         email = 'example@example.com'
         with self.mock_transport() as mock:
-            self._mock_organization_sso(mock, 'example')
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_sso_metadata',
+                return_object_path='sso',
+                return_object=mocks.mock_sso(),
+                organization_domain='example',
+            )
             response = self.client.call_action(
                 'get_authentication_instructions',
                 email=email,
             )
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.SAML)
+
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_organization_sso_force_internal(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=False)
+        email = 'example@example.com'
+        with self.mock_transport() as mock, self.settings(
+            USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH=('example',)
+        ):
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_sso_metadata',
+                return_object_path='sso',
+                return_object=mocks.mock_sso(),
+                organization_domain='example',
+            )
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                email=email,
+            )
+        self.assertFalse(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
 
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_new_user_google_domain(self, mocked_dns):

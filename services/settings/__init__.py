@@ -55,7 +55,6 @@ INSTALLED_APPS = (
     'services',
 
     'api',
-    'authentication',
     'glossary',
     'group',
     'history',
@@ -241,7 +240,7 @@ LINKEDIN_AUTHORIZATION_URL = 'https://www.linkedin.com/uas/oauth2/authorization'
 LINKEDIN_ACCESS_TOKEN_URL = 'https://www.linkedin.com/uas/oauth2/accessToken'
 LINKEDIN_CLIENT_ID = '75ob8lid33ecuv'
 LINKEDIN_CLIENT_SECRET = 'vZsCybgJMvZ0rPEj'
-LINKEDIN_REDIRECT_URI = 'http://localhost:8000/auth/oauth2/linkedin/'
+LINKEDIN_REDIRECT_URI = 'http://localhost:8000/user/auth/oauth2/linkedin/'
 LINKEDIN_SCOPE = 'r_basicprofile r_emailaddress'
 
 # Sign In With Google
@@ -255,7 +254,7 @@ GOOGLE_SCOPE = (
     'https://www.googleapis.com/auth/plus.profile.emails.read '
     'https://www.google.com/m8/feeds '
 )
-GOOGLE_REDIRECT_URI = 'http://localhost:8000/auth/oauth2/google/'
+GOOGLE_REDIRECT_URI = 'http://localhost:8000/user/auth/oauth2/google/'
 GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 
 # Google Maps API
@@ -267,17 +266,12 @@ GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'
 USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state token
 USER_SERVICE_FORCE_GOOGLE_AUTH = tuple()
 USER_SERVICE_FORCE_INTERNAL_AUTH = tuple()
+USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = tuple()
 USER_SERVICE_ALLOWED_REDIRECT_URIS = (
-    'http://local.lunohq.com:9110/auth',
+    'http://local.lunohq.com:9110/user/auth',
 )
 
-# Organization Service Settings
-ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS = (
-    'http://local.lunohq.com:9110/auth',
-)
-ORGANIZATION_SERVICE_FORCE_INTERNAL_AUTH = tuple()
-
-AUTH_SUCCESS_REDIRECT_URI = 'http://local.lunohq.com:9110/auth'
+AUTH_SUCCESS_REDIRECT_URI = 'http://local.lunohq.com:9110/user/auth'
 
 # Data Dog API Key
 DATADOG_API_KEY = ''

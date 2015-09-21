@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.core import validators as django_validators
 import django.db
 import DNS
+from itsdangerous import Signer
 from phonenumber_field.validators import validate_international_phonenumber
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
@@ -26,6 +27,7 @@ from . import (
     models,
     providers,
 )
+from .authentication.utils import get_saml_client
 
 
 def validate_new_password_min_length(value):
@@ -430,6 +432,7 @@ class CompleteAuthorization(actions.Action):
         return self.response.user
 
     def run(self, *args, **kwargs):
+        # XXX unused code?
         token = self.token or self.payload.get('token')
         if token:
             token = parse_token(token)
@@ -585,26 +588,43 @@ class GetAuthenticationInstructions(actions.Action):
             redirect_uri=self.request.redirect_uri,
         )
 
-    def _get_organization_authentication_instructions(self):
-        try:
-            domain = self.request.email.split('@', 1)[1].split('.', 1)[0]
-        except IndexError:
-            return None
+    def _get_redirect_uri(self):
+        signer = Signer(settings.SECRET_KEY)
+        return signer.sign(self.request.redirect_uri)
 
+    def _populate_saml_instructions(self, sso, domain):
+        saml_client = get_saml_client(domain, sso.metadata)
+        _, info = saml_client.prepare_for_authenticate(relay_state=self._get_redirect_uri())
+        authorization_url = None
+        # info['headers'] is an array of key, value tuples
+        for key, value in info['headers']:
+            if key == 'Location':
+                authorization_url = value
+
+        if authorization_url:
+            self.response.authorization_url = authorization_url
+            self.response.backend = authenticate_user_pb2.RequestV1.SAML
+
+    def _get_organization_sso(self, domain):
         try:
             response = service.control.call_action(
                 'organization',
-                'get_authentication_instructions',
-                domain=domain,
-                redirect_uri=self.request.redirect_uri,
+                'get_sso_metadata',
+                organization_domain=domain,
             )
         except service.control.CallActionError:
             return None
 
-        if not response.result.ListFields():
+        if not response.result.HasField('sso'):
             return None
 
-        return response.result
+        return response.result.sso
+
+    def _get_domain(self):
+        try:
+            return self.request.email.split('@', 1)[1].split('.', 1)[0]
+        except IndexError:
+            return None
 
     def _is_google_domain(self):
         domain = self.request.email.split('@', 1)[1]
@@ -616,19 +636,22 @@ class GetAuthenticationInstructions(actions.Action):
     def _should_force_google_authentication(self):
         return self.request.email in settings.USER_SERVICE_FORCE_GOOGLE_AUTH
 
+    def _should_force_organization_internal_auth(self, domain):
+        return domain in settings.USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH
+
     def run(self, *args, **kwargs):
         self.response.user_exists = models.User.objects.filter(
             primary_email=self.request.email,
         ).exists()
+        domain = self._get_domain()
 
-        organization_auth = self._get_organization_authentication_instructions()
+        sso = self._get_organization_sso(domain)
         if self._should_force_internal_authentication():
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif self._should_force_google_authentication() and self._is_google_domain():
             self._populate_google_instructions()
-        elif organization_auth:
-            self.response.backend = organization_auth.backend
-            self.response.authorization_url = organization_auth.authorization_url
+        elif sso and not self._should_force_organization_internal_auth(domain):
+            self._populate_saml_instructions(sso, domain)
         elif self._is_google_domain():
             self._populate_google_instructions()
         else:

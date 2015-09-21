@@ -1,10 +1,7 @@
-from django.conf import settings
 import django.db
 from django.db.models import Count
 from django.utils import timezone
-from itsdangerous import Signer
 from protobufs.services.history import containers_pb2 as history_containers
-from protobufs.services.user.actions import authenticate_user_pb2
 from protobuf_to_dict import protobuf_to_dict
 from service import (
     actions,
@@ -12,7 +9,6 @@ from service import (
 )
 import service.control
 
-from authentication.utils import get_saml_client
 from services.history import action_container_for_update
 from services.mixins import PreRunParseTokenMixin
 from services.token import parse_token
@@ -753,43 +749,3 @@ class GetSSOMetadata(actions.Action):
             raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
 
         sso.to_protobuf(self.response.sso)
-
-
-class GetAuthenticationInstructions(actions.Action):
-
-    required_fields = ('domain',)
-
-    field_validators = {
-        'domain': {
-            valid_organization_with_domain: 'DOES_NOT_EXIST',
-        },
-    }
-
-    def _get_redirect_uri(self):
-        signer = Signer(settings.SECRET_KEY)
-        redirect_uri = None
-        if self.request.redirect_uri in settings.ORGANIZATION_SERVICE_ALLOWED_REDIRECT_URIS:
-            redirect_uri = signer.sign(self.request.redirect_uri)
-        return redirect_uri
-
-    def _populate_sso_data(self, sso):
-        saml_client = get_saml_client(self.request.domain, sso.metadata)
-        _, info = saml_client.prepare_for_authenticate(relay_state=self._get_redirect_uri())
-        authorization_url = None
-        # info['headers'] is an array of key, value tuples
-        for key, value in info['headers']:
-            if key == 'Location':
-                authorization_url = value
-
-        if authorization_url:
-            self.response.authorization_url = authorization_url
-            self.response.backend = authenticate_user_pb2.RequestV1.SAML
-
-    def run(self, *args, **kwargs):
-        sso = models.SSO.objects.get_or_none(
-            organization__domain=self.request.domain,
-        )
-        if self.request.domain in settings.ORGANIZATION_SERVICE_FORCE_INTERNAL_AUTH:
-            self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
-        elif sso:
-            self._populate_sso_data(sso)
