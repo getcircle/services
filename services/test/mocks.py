@@ -134,7 +134,7 @@ def mock_identity(container=None, **overrides):
         container = user_containers.IdentityV1()
 
     defaults = {
-        'provider': user_containers.IdentityV1.LINKEDIN,
+        'provider': user_containers.IdentityV1.GOOGLE,
         'expires_at': str(arrow.utcnow().timestamp),
     }
     defaults.update(overrides)

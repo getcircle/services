@@ -51,7 +51,6 @@ SERVICES_REDIS = {
     'socket_timeout': os.environ.get('SERVICES_REDIS_SOCKET_TIMEOUT', 3),
 }
 
-LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 
 DATADOG_API_KEY = os.environ.get('DATADOG_API_KEY', '')

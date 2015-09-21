@@ -39,7 +39,7 @@ class IdentityFactory(factory.Factory):
         model = models.Identity
         protobuf = user_containers.IdentityV1
 
-    provider = user_containers.IdentityV1.LINKEDIN
+    provider = user_containers.IdentityV1.GOOGLE
     user = factory.SubFactory(UserFactory)
     full_name = fuzzy.FuzzyText()
     email = fuzzy.FuzzyText(suffix='@example.com')

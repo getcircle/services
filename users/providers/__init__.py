@@ -7,4 +7,3 @@ from .base import (  # NOQA
 )
 
 from .google import Provider as Google  # NOQA
-from .linkedin import Provider as LinkedIn  # NOQA

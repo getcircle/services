@@ -235,14 +235,6 @@ REST_FRAMEWORK = {
     )
 }
 
-# Connect With LinkedIn
-LINKEDIN_AUTHORIZATION_URL = 'https://www.linkedin.com/uas/oauth2/authorization'
-LINKEDIN_ACCESS_TOKEN_URL = 'https://www.linkedin.com/uas/oauth2/accessToken'
-LINKEDIN_CLIENT_ID = '75ob8lid33ecuv'
-LINKEDIN_CLIENT_SECRET = 'vZsCybgJMvZ0rPEj'
-LINKEDIN_REDIRECT_URI = 'http://localhost:8000/user/auth/oauth2/linkedin/'
-LINKEDIN_SCOPE = 'r_basicprofile r_emailaddress'
-
 # Sign In With Google
 GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/auth'
 GOOGLE_ACCESS_TOKEN_URL = 'https://www.googleapis.com/oauth2/v3/token'

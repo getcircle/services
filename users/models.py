@@ -125,14 +125,10 @@ class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
 class Identity(models.UUIDModel, models.TimestampableModel):
 
-    # TODO: We should be using user_containers.ProviderV1.items() and reversing
-    # the tuples within the list
-    providers = (
-        (user_containers.IdentityV1.LINKEDIN, 'LinkedIn'),
-    )
-
     user = models.ForeignKey(User)
-    provider = models.PositiveSmallIntegerField(choices=providers)
+    provider = models.PositiveSmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(user_containers.IdentityV1.ProviderV1),
+    )
     full_name = models.CharField(max_length=255)
     email = models.EmailField()
     access_token = models.CharField(max_length=255)

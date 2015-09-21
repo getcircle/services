@@ -366,11 +366,7 @@ class VerifyVerificationCode(actions.Action):
 class GetAuthorizationInstructions(actions.Action):
 
     def run(self, *args, **kwargs):
-        if self.request.provider == user_containers.IdentityV1.LINKEDIN:
-            self.response.authorization_url = providers.linkedin.Provider.get_authorization_url(
-                token=self.token,
-            )
-        elif self.request.provider == user_containers.IdentityV1.GOOGLE:
+        if self.request.provider == user_containers.IdentityV1.GOOGLE:
             self.response.authorization_url = providers.google.Provider.get_authorization_url(
                 token=self.token,
                 login_hint=self.request.login_hint,
@@ -382,9 +378,7 @@ class CompleteAuthorization(actions.Action):
 
     def _get_provider_class(self):
         provider_class = None
-        if self.request.provider == user_containers.IdentityV1.LINKEDIN:
-            provider_class = providers.LinkedIn
-        elif self.request.provider == user_containers.IdentityV1.GOOGLE:
+        if self.request.provider == user_containers.IdentityV1.GOOGLE:
             provider_class = providers.Google
 
         if provider_class is None:
