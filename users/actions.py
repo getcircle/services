@@ -154,10 +154,16 @@ class UpdateUser(actions.Action):
         user.to_protobuf(self.response.user)
 
 
-class GetUser(actions.Action):
+class GetUser(mixins.PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
-        user = models.User.objects.get_or_none(primary_email=self.request.email)
+        parameters = {}
+        if self.request.email:
+            parameters['primary_email'] = self.request.email
+        else:
+            parameters['pk'] = self.parsed_token.user_id
+
+        user = models.User.objects.get_or_none(**parameters)
         if user is None:
             self.note_field_error('email', 'DOES_NOT_EXIST')
         else:
