@@ -5,7 +5,7 @@ from services.management.base import (
 )
 
 from ... import models
-from authentication import utils
+from users.authentication import utils
 
 
 class Command(BaseCommand):
@@ -15,9 +15,9 @@ class Command(BaseCommand):
         parser.add_argument('organization_domain', type=str, help='Organization\'s domain')
         parser.add_argument('metadata_url', type=str, help='SAML Metadata URL')
         parser.add_argument(
-            '--override',
+            '--overwrite',
             action='store_true',
-            help='If specified, we\'ll override existing metadata',
+            help='If specified, we\'ll overwrite existing metadata',
         )
 
     def handle(self, *args, **options):
@@ -26,7 +26,7 @@ class Command(BaseCommand):
         try:
             organization = models.Organization.objects.get(domain=organization_domain)
         except models.Organization.DoesNotExist:
-            raise CommandError('Organization: "%s" doesn\'t exist')
+            raise CommandError('Organization: "%s" doesn\'t exist' % (organization_domain,))
 
         response = requests.get(metadata_url)
         if not response.ok:
@@ -47,7 +47,10 @@ class Command(BaseCommand):
                 'metadata': metadata,
             },
         )
-        if not created and options['override']:
+        if not created and options['overwrite']:
+            print 'overwriting existing sso metadata'
             sso.metadata_url = metadata_url
             sso.metadata = metadata
             sso.save()
+        else:
+            print 'metadata exists, run with `--overwrite` to overwrite.'
