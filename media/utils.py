@@ -12,6 +12,7 @@ def get_presigned_url(
         host,
         access_key,
         secret_key,
+        region_name,
         protocol='https',
         expires=None,
         params=None,
@@ -43,6 +44,7 @@ def get_presigned_url(
         host=host,
         config=None,
         provider=provider,
+        region_name=region_name,
     )
     return auth.presign(request, expires)
 

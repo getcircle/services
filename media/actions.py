@@ -79,6 +79,7 @@ class StartImageUpload(actions.Action):
             host='%s.s3.amazonaws.com' % (settings.AWS_S3_MEDIA_BUCKET,),
             access_key=settings.AWS_ACCESS_KEY_ID,
             secret_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=bucket.get_location(),
             params={'uploadId': response.id, 'partNumber': 1},
         )
 
