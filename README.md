@@ -19,10 +19,10 @@ We run our services using github.com/remind101/empire. The following steps will 
   $ emp domain-add -a services api.lunohq.com
   ```
   
-3. Add the api.lunohq.com SSL cert
+3. Add the api.lunohq.com SSL cert (NOTE: both must be in PEM format)
 
   ```
-  $ emp ssl-cert-add -a services api_lunohq_co.crt key.pem
+  $ emp ssl-cert-add -a services api.lunohq.com.crt.pem api.lunohq.com.key.pem
   ```
   
 4. Load the environmental variables
