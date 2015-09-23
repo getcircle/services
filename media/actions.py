@@ -102,38 +102,6 @@ class CompleteImageUpload(StartImageUpload):
         else:
             self.response.media_url = response.location
 
-    def _delete_previous_profile_image(self):
-        client = service.control.Client('profile', token=self.token)
-        response = client.call_action(
-            'get_profile',
-            profile_id=self.request.media_key,
-            on_error=self.ActionFieldError('media_key', 'FAILED_TO_RETRIEVE'),
-        )
-
-        old_image_url = response.result.profile.image_url
-        # update the profile with the new image and delete the previous image
-        # (we only do this if the update succeeds)
-        updated_profile = profile_containers.ProfileV1()
-        updated_profile.CopyFrom(response.result.profile)
-        updated_profile.image_url = self.response.media_url
-        # XXX should we rollback the image upload if we fail to retrieve the profile?
-        response = client.call_action(
-            'update_profile',
-            profile=updated_profile,
-            on_error=self.ActionFieldError('media_key', 'FAILED_TO_RETRIEVE'),
-        )
-        if old_image_url:
-            unquoted_key = urllib.unquote_plus(old_image_url)
-            key_parts = unquoted_key.rsplit('/')[-2:]
-            key_name = '/'.join(key_parts)
-            self.bucket.delete_key(key_name)
-
-    def _delete_previous_image(self):
-        if self.request.media_type == media_pb2.PROFILE:
-            self._delete_previous_profile_image()
-
     def run(self, *args, **kwargs):
         self.bucket = self.s3_manager.get_media_bucket()
         self._complete_upload()
-        if not self.is_error():
-            self._delete_previous_image()

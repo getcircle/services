@@ -204,30 +204,3 @@ class TestMediaService(TestCase):
         )
         self.assertTrue(response.success)
         self.assertTrue(response.result.media_url.startswith('https'))
-
-    @patch('media.actions.MultiPartUpload')
-    @patch('media.utils.S3Connection')
-    def test_complete_image_upload_profile_delete_previous_image(
-            self,
-            mock_s3_connection,
-            mock_multipart,
-        ):
-        self._mock_complete_image_upload(mock_s3_connection, mock_multipart)
-        profile_id = fuzzy.FuzzyUUID().fuzz()
-        profile = self._mock_get_profile(profile_id)
-        self._mock_update_profile(profile)
-
-        response = self.client.call_action(
-            'complete_image_upload',
-            media_type=media_pb2.PROFILE,
-            media_key=profile_id,
-            upload_key='profiles/%s' % (profile_id,),
-            upload_id=fuzzy.FuzzyUUID().fuzz()
-        )
-        self.assertTrue(response.success)
-        self.assertEqual(mock_s3_connection().get_bucket().delete_key.call_count, 1)
-
-        old_path = mock_s3_connection().get_bucket().delete_key.call_args[0][0]
-        # verify the path we deleted was urlencoded (path should be "profiles/<id>")
-        self.assertTrue(old_path.startswith('profiles'))
-        self.assertTrue(old_path.index('/') > 0)
