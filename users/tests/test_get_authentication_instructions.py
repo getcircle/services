@@ -58,7 +58,7 @@ class TestUsersGetAuthenticationInstructions(TestCase):
 
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_organization_sso_force_internal(self, mocked_dns):
-        self._mock_dns(mocked_dns, is_google=False)
+        self._mock_dns(mocked_dns, is_google=True)
         email = 'example@example.com'
         with self.mock_transport() as mock, self.settings(
             USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH=('example',)

@@ -626,7 +626,9 @@ class GetAuthenticationInstructions(actions.Action):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif self._should_force_google_authentication() and self._is_google_domain():
             self._populate_google_instructions()
-        elif sso and not self._should_force_organization_internal_auth(domain):
+        elif self._should_force_organization_internal_auth(domain):
+            self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
+        elif sso:
             self._populate_saml_instructions(domain)
         elif self._is_google_domain():
             self._populate_google_instructions()
