@@ -9,9 +9,9 @@ settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 100)
 settings.DEFAULT_METRICS_HANDLER = 'service.metrics.datadog.instance'
 
 
-def _get_setting_from_environment(key, default, comma_delmited=True):
+def _get_delimited_setting_from_environment(key, default):
     value = os.environ.get(key)
-    if comma_delmited and isinstance(value, basestring):
+    if isinstance(value, basestring):
         value = value.split(',')
     return value or default
 
@@ -56,26 +56,25 @@ GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 DATADOG_API_KEY = os.environ.get('DATADOG_API_KEY', '')
 METRICS_HANDLER_KWARGS = {'api_key': DATADOG_API_KEY}
 
-USER_SERVICE_FORCE_GOOGLE_AUTH = _get_setting_from_environment(
+USER_SERVICE_FORCE_GOOGLE_AUTH = _get_delimited_setting_from_environment(
     'USER_SERVICE_FORCE_GOOGLE_AUTH',
     USER_SERVICE_FORCE_GOOGLE_AUTH,
 )
-USER_SERVICE_FORCE_INTERNAL_AUTH = _get_setting_from_environment(
+USER_SERVICE_FORCE_INTERNAL_AUTH = _get_delimited_setting_from_environment(
     'USER_SERVICE_FORCE_INTERNAL_AUTH',
     USER_SERVICE_FORCE_INTERNAL_AUTH,
 )
-USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = _get_setting_from_environment(
+USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = _get_delimited_setting_from_environment(
     'USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH',
     USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH,
 )
-USER_SERVICE_ALLOWED_REDIRECT_URIS = _get_setting_from_environment(
+USER_SERVICE_ALLOWED_REDIRECT_URIS = _get_delimited_setting_from_environment(
     'USER_SERVICE_ALLOWED_REDIRECT_URIS',
     USER_SERVICE_ALLOWED_REDIRECT_URIS,
 )
-USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI = _get_setting_from_environment(
+USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI = os.environ.get(
     'USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI',
     USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI,
-    comma_delmited=False,
 )
 
 AWS_SNS_PLATFORM_APPLICATION_APNS = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_APNS')
@@ -103,9 +102,12 @@ REST_FRAMEWORK = {
 }
 
 # XXX default to api.lunohq.com in the future
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'api.circlehq.co').split(',')
+ALLOWED_HOSTS = _get_delimited_setting_from_environment(
+    'ALLOWED_HOSTS',
+    ALLOWED_HOSTS,
+)
 
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', STRIPE_API_KEY)
 
 AWS_S3_MEDIA_BUCKET = os.environ.get('AWS_S3_MEDIA_BUCKET', AWS_S3_MEDIA_BUCKET)
 
