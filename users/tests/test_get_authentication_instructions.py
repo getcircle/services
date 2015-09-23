@@ -1,6 +1,9 @@
+import urlparse
+
 import service.control
 from mock import patch
 from protobufs.services.user.actions import authenticate_user_pb2
+from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
 from services.test import (
     mocks,
@@ -8,6 +11,7 @@ from services.test import (
 )
 
 from .. import factories
+from ..providers.base import parse_state_token
 
 
 class TestUsersGetAuthenticationInstructions(TestCase):
@@ -99,9 +103,12 @@ class TestUsersGetAuthenticationInstructions(TestCase):
                 email=email,
                 redirect_uri='https://frontendlunohq.com/auth/success/',
             )
+        parsed_url = urlparse.urlparse(response.result.authorization_url)
+        query = dict(urlparse.parse_qsl(parsed_url.query))
+        parsed_state = parse_state_token(user_containers.IdentityV1.GOOGLE, query['state'])
+        self.assertIn('frontendlunohq', parsed_state['redirect_uri'])
         self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
-        self.assertIn('frontendlunohq', response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
 
     @patch('users.actions.DNS.mxlookup')
@@ -114,9 +121,12 @@ class TestUsersGetAuthenticationInstructions(TestCase):
                 email=email,
                 redirect_uri='https://frontendlunohq.com/auth/success/',
             )
+        parsed_url = urlparse.urlparse(response.result.authorization_url)
+        query = dict(urlparse.parse_qsl(parsed_url.query))
+        parsed_state = parse_state_token(user_containers.IdentityV1.GOOGLE, query['state'])
+        self.assertNotIn('redirect_uri', parsed_state)
         self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
-        self.assertNotIn('frontendlunohq', response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
 
     @patch('users.actions.DNS.mxlookup')

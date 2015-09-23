@@ -66,7 +66,6 @@ class Provider(base.BaseProvider):
             id_token=None,
             is_sdk=False,
             client_type=None,
-            redirect_uri=None,
         ):
         parameters = {
             'client_id': settings.GOOGLE_CLIENT_ID,
@@ -77,8 +76,6 @@ class Provider(base.BaseProvider):
         # NB: For native app SDKs, Google requires a redirect_uri of an empty string
         if is_sdk:
             parameters['redirect_uri'] = ''
-        elif redirect_uri:
-            parameters['redirect_uri'] = redirect_uri
         elif client_type == token_pb2.WEB:
             parameters['redirect_uri'] = 'postmessage'
         else:
@@ -108,11 +105,10 @@ class Provider(base.BaseProvider):
         else:
             return request.oauth_sdk_details.code
 
-    def _get_identity_and_credentials_oauth2(self, request, redirect_uri=None):
+    def _get_identity_and_credentials_oauth2(self, request):
         credentials = self._get_credentials_from_code(
             self._get_authorization_code(request),
             client_type=request.client_type,
-            redirect_uri=redirect_uri,
         )
         identity, new = self.get_identity(credentials.id_token['sub'])
         self._update_identity_with_credentials(identity, credentials)
@@ -146,13 +142,13 @@ class Provider(base.BaseProvider):
         if is_sdk:
             identity, credentials = self._get_identity_and_credentials_oauth_sdk(request)
         else:
-            identity, credentials = self._get_identity_and_credentials_oauth2(
-                request,
-                redirect_uri=redirect_uri,
-            )
+            identity, credentials = self._get_identity_and_credentials_oauth2(request)
             # include the details to authenticate via the sdk in the response
             response.oauth_sdk_details.code = authorization_code
             response.oauth_sdk_details.id_token = credentials.token_response.get('id_token', '')
+
+        if redirect_uri and redirect_uri in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS:
+            response.redirect_uri = redirect_uri
 
         try:
             token_info = credentials.get_access_token()
@@ -164,7 +160,6 @@ class Provider(base.BaseProvider):
                 identity=identity,
                 is_sdk=is_sdk,
                 client_type=request.client_type,
-                redirect_uri=redirect_uri,
             )
             token_info = credentials.get_access_token()
 
@@ -189,7 +184,6 @@ class Provider(base.BaseProvider):
                         identity=identity,
                         is_sdk=is_sdk,
                         client_type=request.client_type,
-                        redirect_uri=redirect_uri,
                     )
 
                 self._update_identity_access_token(
@@ -213,9 +207,7 @@ class Provider(base.BaseProvider):
         if token:
             payload['token'] = token
 
-        if not redirect_uri:
-            redirect_uri = settings.GOOGLE_REDIRECT_URI
-        else:
+        if redirect_uri:
             payload['redirect_uri'] = redirect_uri
 
         scope = settings.GOOGLE_SCOPE.strip()
@@ -223,7 +215,7 @@ class Provider(base.BaseProvider):
             'response_type': 'code',
             'scope': scope,
             'client_id': settings.GOOGLE_CLIENT_ID,
-            'redirect_uri': redirect_uri,
+            'redirect_uri': settings.GOOGLE_REDIRECT_URI,
             'state': base.get_state_token(self.type, payload=payload),
             'access_type': 'offline',
         }

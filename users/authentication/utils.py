@@ -114,10 +114,10 @@ def authorization_redirect(
     if not any([name, redirect_uri]):
         raise TypeError('Must provide either "name" or "redirect_uri"')
 
-    if name:
-        url = reverse(name, *args, kwargs=kwargs)
-    else:
+    if redirect_uri:
         url = redirect_uri
+    else:
+        url = reverse(name, *args, kwargs=kwargs)
 
     parameters = query_params or {}
     if protobuf_query_params:

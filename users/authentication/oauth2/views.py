@@ -33,7 +33,8 @@ class OAuth2Handler(APIView):
         }
         return authorization_redirect(
             name='auth-success',
-            protobuf_query_parmas=protobuf_parameters,
+            redirect_uri=response.result.redirect_uri,
+            protobuf_query_params=protobuf_parameters,
         )
 
     def _parse_provider(self):
