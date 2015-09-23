@@ -1,20 +1,8 @@
-import urllib
-
-from django.core.urlresolvers import reverse
-from django.shortcuts import redirect
 from protobufs.services.user import containers_pb2 as user_containers
 from rest_framework.views import APIView
 import service.control
 
-
-def redirect_with_query_params(name, query_params=None, *args, **kwargs):
-    url = reverse(name, *args, kwargs=kwargs)
-    if query_params:
-        url = '%s?%s' % (
-            url,
-            urllib.urlencode(query_params),
-        )
-    return redirect(url)
+from ..utils import authorization_redirect
 
 
 class OAuth2Handler(APIView):
@@ -25,7 +13,7 @@ class OAuth2Handler(APIView):
             error = error.GET.get('error_description', 'invalid_request')
 
         parameters = {'error': error}
-        return redirect_with_query_params('auth-error', query_params=parameters)
+        return authorization_redirect(name='auth-error', query_params=parameters)
 
     def _complete_authorization(self, code, state):
         client = service.control.Client('user')
@@ -38,14 +26,15 @@ class OAuth2Handler(APIView):
         except service.control.CallActionError as e:
             return self._handle_error(', '.join(e.response.errors))
 
-        parameters = {
-            'user': urllib.base64.b64encode(response.result.user.SerializeToString()),
-            'identity': urllib.base64.b64encode(response.result.identity.SerializeToString()),
-            'oauth_sdk_details': urllib.base64.b64encode(
-                response.result.oauth_sdk_details.SerializeToString()
-            ),
+        protobuf_parameters = {
+            'user': response.result.user,
+            'identity': response.result.identity,
+            'oauth_sdk_details': response.result.oauth_sdk_details,
         }
-        return redirect_with_query_params('auth-success', query_params=parameters)
+        return authorization_redirect(
+            name='auth-success',
+            protobuf_query_parmas=protobuf_parameters,
+        )
 
     def _parse_provider(self):
         self.provider_name = self.kwargs['provider']

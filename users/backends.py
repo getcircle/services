@@ -39,10 +39,19 @@ class GoogleAuthenticationBackend(object):
 
 class SAMLAuthenticationBackend(object):
 
-    def authenticate(self, state=None):
-        parsed_state = parse_state_token(authenticate_user_pb2.RequestV1.SAML, state)
-        if parsed_state and isinstance(parsed_state, dict):
-            email = parsed_state.get('email')
-            if email:
-                user = models.User.objects.get_or_none(primary_email=email)
-                return user
+    def authenticate(self, auth_state=None):
+        client = service.control.Client('user')
+        try:
+            response = client.call_action(
+                'complete_authorization',
+                provider=user_containers.IdentityV1.SAML,
+                saml_details={
+                    'auth_state': auth_state,
+                },
+            )
+        except service.control.CallActionError:
+            pass
+        else:
+            user = models.User.objects.get(pk=response.result.user.id)
+            user.new = response.result.new_user
+            return user

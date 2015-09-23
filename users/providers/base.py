@@ -68,6 +68,7 @@ class BaseProvider(object):
 
     type = None
     csrf_exempt = False
+    exception_to_error_map = {}
 
     def __init__(self, token):
         self.token = token
@@ -92,7 +93,7 @@ class BaseProvider(object):
     def complete_authorization(self, request, response):
         raise NotImplementedError('Subclasses must override this method')
 
-    def finalize_authorization(self, identity, user):
+    def finalize_authorization(self, identity, user, request, response):
         pass
 
     def _extract_required_profile_field(self, profile, field_name, alias=None):

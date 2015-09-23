@@ -7,3 +7,4 @@ from .base import (  # NOQA
 )
 
 from .google import Provider as Google  # NOQA
+from .saml import Provider as SAML  # NOQA

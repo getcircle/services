@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
 )
+from django.conf import settings
 from phonenumber_field.modelfields import PhoneNumberField
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
@@ -116,10 +117,42 @@ class Token(models.UUIDModel):
         return self.key
 
 
+class TOTPTokenManager(models.CommonManager):
+
+    def _get_totp_code(self, token):
+        totp_code = str(pyotp.TOTP(token, interval=settings.USER_SERVICE_TOTP_INTERVAL).now())
+        if len(totp_code) < 6:
+            totp_code = '0%s' % (totp_code,)
+        return totp_code
+
+    def _token_for_user(self, user):
+        # clear any previously created tokens
+        self.filter(user_id=user.id).delete()
+        return self.create(user_id=user.id)
+
+    def totp_for_user(self, user):
+        token = self._token_for_user(user)
+        return self._get_totp_code(token.token)
+
+    def get_totp_for_user_id(self, user_id):
+        token = self.get(user_id=user_id)
+        return self._get_totp_code(token.token)
+
+    def verify_totp_for_user_id(self, input_totp, user_id):
+        totp = self.get_totp_for_user_id(user_id)
+        if totp != input_totp:
+            return False
+        else:
+            # clear out the token so we can only use it once
+            self.filter(user_id=user_id).delete()
+            return True
+
+
 class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
+    objects = TOTPTokenManager()
+
     user = models.OneToOneField(User)
-    # XXX not sure if this needs to be encrypted
     token = models.CharField(max_length=16, default=pyotp.random_base32)
 
 
@@ -129,13 +162,13 @@ class Identity(models.UUIDModel, models.TimestampableModel):
     provider = models.PositiveSmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(user_containers.IdentityV1.ProviderV1),
     )
-    full_name = models.CharField(max_length=255)
+    full_name = models.CharField(max_length=255, null=True)
     email = models.EmailField()
-    access_token = models.CharField(max_length=255)
-    refresh_token = models.CharField(max_length=255, null=True)
-    provider_uid = models.CharField(max_length=255)
-    expires_at = models.PositiveIntegerField()
     data = models.TextField(null=True)
+    provider_uid = models.CharField(max_length=255)
+    access_token = models.CharField(max_length=255, null=True)
+    refresh_token = models.CharField(max_length=255, null=True)
+    expires_at = models.PositiveIntegerField(null=True)
 
     def to_protobuf(self, *args, **kwargs):
         # override "provider" to prevent casting as a string

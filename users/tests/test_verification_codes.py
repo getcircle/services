@@ -111,15 +111,15 @@ class TestUsersVerificationCodes(TestCase):
         self.assertFalse(user.phone_number_verified)
 
     def test_verify_verification_code(self):
-        token = factories.TOTPTokenFactory.create()
-        code = actions.get_totp_code(token.token)
+        user = factories.UserFactory.create()
+        code = models.TOTPToken.objects.totp_for_user(user)
         response = self.client.call_action(
             'verify_verification_code',
-            user_id=str(token.user_id),
+            user_id=str(user.id),
             code=code,
         )
         self.assertTrue(response.success)
         self.assertTrue(response.result.verified)
 
-        user = models.User.objects.get(pk=token.user_id)
+        user = models.User.objects.get(pk=user.id)
         self.assertTrue(user.phone_number_verified)

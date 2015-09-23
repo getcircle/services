@@ -4,11 +4,9 @@ from django.contrib.auth import authenticate
 from django.core import validators as django_validators
 import django.db
 import DNS
-from itsdangerous import Signer
 from phonenumber_field.validators import validate_international_phonenumber
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
-import pyotp
 from twilio.rest import TwilioRestClient
 from twilio.rest.exceptions import TwilioRestException
 from service import (
@@ -18,16 +16,13 @@ from service import (
 import service.control
 
 from services import mixins
-from services.token import (
-    make_token,
-    parse_token,
-)
+from services.token import parse_token
 
 from . import (
     models,
     providers,
 )
-from .authentication.utils import get_saml_client
+from .authentication.utils import get_token
 
 
 def validate_new_password_min_length(value):
@@ -64,13 +59,6 @@ def validate_phone_number(value):
 
 def unique_phone_number(value):
     return not models.User.objects.filter(phone_number=value).exists()
-
-
-def get_totp_code(token):
-    totp_code = str(pyotp.TOTP(token, interval=settings.USER_SERVICE_TOTP_INTERVAL).now())
-    if len(totp_code) < 6:
-        totp_code = '0%s' % (totp_code,)
-    return totp_code
 
 
 @cached(timeout=settings.CACHEOPS_FUNC_IS_GOOGLE_DOMAIN_TIMEOUT)
@@ -154,14 +142,15 @@ class UpdateUser(actions.Action):
         user.to_protobuf(self.response.user)
 
 
-class GetUser(mixins.PreRunParseTokenMixin, actions.Action):
+class GetUser(actions.Action):
 
     def run(self, *args, **kwargs):
         parameters = {}
         if self.request.email:
             parameters['primary_email'] = self.request.email
         else:
-            parameters['pk'] = self.parsed_token.user_id
+            token = parse_token(self.token)
+            parameters['pk'] = token.user_id
 
         user = models.User.objects.get_or_none(**parameters)
         if user is None:
@@ -205,7 +194,7 @@ class AuthenticateUser(actions.Action):
             auth_params['id_token'] = self.request.credentials.secret
             auth_params['client_type'] = self.request.client_type
         elif self._is_saml_backend():
-            auth_params['state'] = self.request.credentials.secret
+            auth_params['auth_state'] = self.request.credentials.secret
         else:
             raise self.ActionFieldError('backend', 'INVALID')
         return auth_params
@@ -236,31 +225,9 @@ class AuthenticateUser(actions.Action):
             profile = None
         return profile
 
-    def _get_token(self, user):
-        token, _ = models.Token.objects.get_or_create(
-            user=user,
-            client_type=self.request.client_type,
-        )
-        # XXX this assumes that we have profiles already set up
-        temporary_token = make_token(
-            auth_token=token.key,
-            auth_token_id=token.id,
-            user_id=user.id,
-            client_type=self.request.client_type,
-        )
-        profile = self._get_profile(user.id, temporary_token)
-        return make_token(
-            auth_token=token.key,
-            auth_token_id=token.id,
-            profile_id=getattr(profile, 'id', None),
-            user_id=user.id,
-            organization_id=getattr(profile, 'organization_id', None),
-            client_type=self.request.client_type,
-        )
-
     def run(self, *args, **kwargs):
         user = self._handle_authentication()
-        self.response.token = self._get_token(user)
+        self.response.token = get_token(user, self.request.client_type)
         self.response.new_user = user.new
         user.to_protobuf(self.response.user)
 
@@ -329,14 +296,11 @@ class SendVerificationCode(actions.Action):
                 )
 
     def run(self, *args, **kwargs):
-        # clear out any previously created tokens
-        models.TOTPToken.objects.filter(user=self.user).delete()
-        # TODO it would be more fitting to put these in redis
-        token = models.TOTPToken.objects.create(user=self.user)
+        totp = models.TOTPToken.objects.totp_for_user(self.user)
         # TODO we should be logging the response of this message
         try:
             message = self.twilio_client.messages.create(
-                body='Your verification code: %s' % (get_totp_code(token.token),),
+                body='Your verification code: %s' % (totp,),
                 to=self.user.phone_number.as_international,
                 from_=settings.TWILIO_PHONE_NUMBER,
             )
@@ -359,8 +323,11 @@ class VerifyVerificationCode(actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        token = models.TOTPToken.objects.get(user_id=self.request.user_id)
-        if get_totp_code(token.token) != self.request.code:
+        valid = models.TOTPToken.objects.verify_totp_for_user_id(
+            self.request.code,
+            self.request.user_id,
+        )
+        if not valid:
             self.note_field_error('code', 'INVALID')
         else:
             user = models.User.objects.get(pk=self.request.user_id)
@@ -378,6 +345,14 @@ class GetAuthorizationInstructions(actions.Action):
                 login_hint=self.request.login_hint,
                 redirect_uri=self.request.redirect_uri,
             )
+        elif self.request.provider == user_containers.IdentityV1.SAML:
+            try:
+                self.response.authorization_url = providers.saml.Provider.get_authorization_url(
+                    domain=self.request.domain,
+                    redirect_uri=self.request.redirect_uri,
+                )
+            except providers.saml.SAMLMetaDataDoesNotExist:
+                raise self.ActionFieldError('domain', 'DOES_NOT_EXIST')
 
 
 class CompleteAuthorization(actions.Action):
@@ -386,6 +361,8 @@ class CompleteAuthorization(actions.Action):
         provider_class = None
         if self.request.provider == user_containers.IdentityV1.GOOGLE:
             provider_class = providers.Google
+        elif self.request.provider == user_containers.IdentityV1.SAML:
+            provider_class = providers.SAML
 
         if provider_class is None:
             self.ActionFieldError('provider', 'UNSUPPORTED')
@@ -396,17 +373,18 @@ class CompleteAuthorization(actions.Action):
     def validate(self, *args, **kwargs):
         super(CompleteAuthorization, self).validate(*args, **kwargs)
         self.provider_class = self._get_provider_class()
-        self.payload = providers.parse_state_token(
-            self.request.provider,
-            self.request.oauth2_details.state,
-        )
-        if self.payload is None:
-            if not self.provider_class.csrf_exempt:
-                raise self.ActionFieldError('oauth2_details.state', 'INVALID')
-            else:
-                self.payload = {}
+        self.payload = {}
+        if self.request.HasField('oauth2_details'):
+            self.payload = providers.parse_state_token(
+                self.request.provider,
+                self.request.oauth2_details.state,
+            )
+            if self.payload is None:
+                if not self.provider_class.csrf_exempt:
+                    raise self.ActionFieldError('oauth2_details.state', 'INVALID')
+                else:
+                    self.payload = {}
 
-    # XXX if this is SAML, we should be referencing those values
     def _get_or_create_user(self, identity, token):
         user_id = identity.user_id or getattr(token, 'user_id', None)
         if not user_id:
@@ -432,7 +410,6 @@ class CompleteAuthorization(actions.Action):
         return self.response.user
 
     def run(self, *args, **kwargs):
-        # XXX unused code?
         token = self.token or self.payload.get('token')
         if token:
             token = parse_token(token)
@@ -447,7 +424,12 @@ class CompleteAuthorization(actions.Action):
         identity.user_id = user.id
         identity.save()
         identity.to_protobuf(self.response.identity)
-        provider.finalize_authorization(identity, user)
+        provider.finalize_authorization(
+            identity=identity,
+            user=user,
+            request=self.request,
+            response=self.response,
+        )
 
 
 class DeleteIdentity(actions.Action):
@@ -588,22 +570,16 @@ class GetAuthenticationInstructions(actions.Action):
             redirect_uri=self.request.redirect_uri,
         )
 
-    def _get_redirect_uri(self):
-        signer = Signer(settings.SECRET_KEY)
-        return signer.sign(self.request.redirect_uri)
-
-    def _populate_saml_instructions(self, sso, domain):
-        saml_client = get_saml_client(domain, sso.metadata)
-        _, info = saml_client.prepare_for_authenticate(relay_state=self._get_redirect_uri())
-        authorization_url = None
-        # info['headers'] is an array of key, value tuples
-        for key, value in info['headers']:
-            if key == 'Location':
-                authorization_url = value
-
-        if authorization_url:
-            self.response.authorization_url = authorization_url
-            self.response.backend = authenticate_user_pb2.RequestV1.SAML
+    def _populate_saml_instructions(self, domain):
+        self.response.backend = authenticate_user_pb2.RequestV1.SAML
+        self.response.authorization_url = service.control.get_object(
+            service='user',
+            action='get_authorization_instructions',
+            return_object='authorization_url',
+            provider=user_containers.IdentityV1.SAML,
+            redirect_uri=self.request.redirect_uri,
+            domain=domain,
+        )
 
     def _get_organization_sso(self, domain):
         try:
@@ -651,7 +627,7 @@ class GetAuthenticationInstructions(actions.Action):
         elif self._should_force_google_authentication() and self._is_google_domain():
             self._populate_google_instructions()
         elif sso and not self._should_force_organization_internal_auth(domain):
-            self._populate_saml_instructions(sso, domain)
+            self._populate_saml_instructions(domain)
         elif self._is_google_domain():
             self._populate_google_instructions()
         else:
