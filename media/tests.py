@@ -96,6 +96,7 @@ class TestMediaService(TestCase):
         type(
             mock_s3_connection().get_bucket().initiate_multipart_upload()
         ).id = PropertyMock(return_value=fuzzy.FuzzyUUID().fuzz())
+        mock_s3_connection().get_bucket().get_location.return_value = 'us-east-1'
         profile_id = fuzzy.FuzzyUUID().fuzz()
         self._mock_get_profile(profile_id)
 
@@ -114,6 +115,7 @@ class TestMediaService(TestCase):
         type(
             mock_s3_connection().get_bucket().initiate_multipart_upload()
         ).id = PropertyMock(return_value=fuzzy.FuzzyUUID().fuzz())
+        mock_s3_connection().get_bucket().get_location.return_value = 'us-east-1'
         team_id = fuzzy.FuzzyUUID().fuzz()
         response = self.client.call_action(
             'start_image_upload',
@@ -130,6 +132,7 @@ class TestMediaService(TestCase):
         type(
             mock_s3_connection().get_bucket().initiate_multipart_upload()
         ).id = PropertyMock(return_value=fuzzy.FuzzyUUID().fuzz())
+        mock_s3_connection().get_bucket().get_location.return_value = 'us-west-2'
         location_id = fuzzy.FuzzyUUID().fuzz()
         response = self.client.call_action(
             'start_image_upload',
