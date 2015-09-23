@@ -22,6 +22,17 @@ class LocationSearchAdapter(SearchAdapter):
     def get_title(self, obj):
         return obj.name
 
+    def get_description(self, obj):
+        description = [
+            obj.address_1,
+            obj.address_2,
+            obj.city,
+            obj.region,
+            obj.country_code,
+            obj.postal_code
+        ]
+        return ' '.join([value for value in description if value and value.strip()])
+
 
 class AppConfig(DjangoAppConfig):
     name = 'organizations'
