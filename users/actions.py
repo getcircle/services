@@ -544,8 +544,6 @@ class RequestAccess(actions.Action):
 
 class GetAuthenticationInstructions(actions.Action):
 
-    required_fields = ('email',)
-
     type_validators = {
         'email': [validate_email],
     }
@@ -557,6 +555,15 @@ class GetAuthenticationInstructions(actions.Action):
             self.request.redirect_uri not in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS
         ):
             self.request.ClearField('redirect_uri')
+
+        if not (self.request.HasField('email') or self.request.HasField('organization_domain')):
+            raise self.ActionError(
+                'MISSING_REQUIRED_PARAMETERS',
+                (
+                    'MISSING_REQUIRED_PARAMETERS',
+                    'must provide either "email" or "organization_domain"',
+                ),
+            )
 
     def _populate_google_instructions(self):
         self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
@@ -597,14 +604,18 @@ class GetAuthenticationInstructions(actions.Action):
         return response.result.sso
 
     def _get_domain(self):
+        if self.request.HasField('organization_domain'):
+            return self.request.organization_domain
+
         try:
             return self.request.email.split('@', 1)[1].split('.', 1)[0]
         except IndexError:
             return None
 
-    def _is_google_domain(self):
-        domain = self.request.email.split('@', 1)[1]
-        return is_google_domain(domain)
+    def _is_email_google_domain(self):
+        if self.request.HasField('email'):
+            domain = self.request.email.split('@', 1)[1]
+            return is_google_domain(domain)
 
     def _should_force_internal_authentication(self):
         return self.request.email in settings.USER_SERVICE_FORCE_INTERNAL_AUTH
@@ -616,21 +627,22 @@ class GetAuthenticationInstructions(actions.Action):
         return domain in settings.USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH
 
     def run(self, *args, **kwargs):
-        self.response.user_exists = models.User.objects.filter(
-            primary_email=self.request.email,
-        ).exists()
-        domain = self._get_domain()
+        if self.request.HasField('email'):
+            self.response.user_exists = models.User.objects.filter(
+                primary_email=self.request.email,
+            ).exists()
 
+        domain = self._get_domain()
         sso = self._get_organization_sso(domain)
         if self._should_force_internal_authentication():
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
-        elif self._should_force_google_authentication() and self._is_google_domain():
+        elif self._should_force_google_authentication() and self._is_email_google_domain():
             self._populate_google_instructions()
         elif self._should_force_organization_internal_auth(domain):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif sso:
             self._populate_saml_instructions(domain)
-        elif self._is_google_domain():
+        elif self._is_email_google_domain():
             self._populate_google_instructions()
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
