@@ -1,8 +1,5 @@
-from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
 import service.control
-
-from .providers.base import parse_state_token
 
 from . import models
 
@@ -37,14 +34,14 @@ class GoogleAuthenticationBackend(object):
             return user
 
 
-class SAMLAuthenticationBackend(object):
+class OktaAuthenticationBackend(object):
 
     def authenticate(self, auth_state=None):
         client = service.control.Client('user')
         try:
             response = client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details={
                     'auth_state': auth_state,
                 },

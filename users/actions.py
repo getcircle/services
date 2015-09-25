@@ -181,8 +181,8 @@ class AuthenticateUser(actions.Action):
     def _is_google_backend(self):
         return self.request.backend == self.request.GOOGLE
 
-    def _is_saml_backend(self):
-        return self.request.backend == self.request.SAML
+    def _is_okta_backend(self):
+        return self.request.backend == self.request.OKTA
 
     def _get_auth_params(self):
         auth_params = {}
@@ -193,7 +193,7 @@ class AuthenticateUser(actions.Action):
             auth_params['code'] = self.request.credentials.key
             auth_params['id_token'] = self.request.credentials.secret
             auth_params['client_type'] = self.request.client_type
-        elif self._is_saml_backend():
+        elif self._is_okta_backend():
             auth_params['auth_state'] = self.request.credentials.secret
         else:
             raise self.ActionFieldError('backend', 'INVALID')
@@ -345,14 +345,16 @@ class GetAuthorizationInstructions(actions.Action):
                 login_hint=self.request.login_hint,
                 redirect_uri=self.request.redirect_uri,
             )
-        elif self.request.provider == user_containers.IdentityV1.SAML:
+            self.response.provider_name = 'Google'
+        elif self.request.provider == user_containers.IdentityV1.OKTA:
             try:
-                self.response.authorization_url = providers.saml.Provider.get_authorization_url(
-                    domain=self.request.domain,
+                self.response.authorization_url = providers.okta.Provider.get_authorization_url(
+                    domain=self.request.organization_domain,
                     redirect_uri=self.request.redirect_uri,
                 )
-            except providers.saml.SAMLMetaDataDoesNotExist:
-                raise self.ActionFieldError('domain', 'DOES_NOT_EXIST')
+                self.response.provider_name = 'Okta'
+            except providers.okta.SAMLMetaDataDoesNotExist:
+                raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
 
 
 class CompleteAuthorization(actions.Action):
@@ -361,8 +363,8 @@ class CompleteAuthorization(actions.Action):
         provider_class = None
         if self.request.provider == user_containers.IdentityV1.GOOGLE:
             provider_class = providers.Google
-        elif self.request.provider == user_containers.IdentityV1.SAML:
-            provider_class = providers.SAML
+        elif self.request.provider == user_containers.IdentityV1.OKTA:
+            provider_class = providers.Okta
 
         if provider_class is None:
             self.ActionFieldError('provider', 'UNSUPPORTED')
@@ -565,28 +567,34 @@ class GetAuthenticationInstructions(actions.Action):
                 ),
             )
 
-    def _populate_google_instructions(self):
-        self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
-        self.response.authorization_url = service.control.get_object(
+    def _get_authorization_instructions(self, provider, **kwargs):
+        response = service.control.call_action(
             service='user',
-            action='get_authorization_instructions',
-            return_object='authorization_url',
+            action_name='get_authorization_instructions',
             client_kwargs={'token': self.token},
-            provider=user_containers.IdentityV1.GOOGLE,
+            provider=provider,
             login_hint=self.request.email,
             redirect_uri=self.request.redirect_uri,
+            **kwargs
         )
+        return response.result
 
-    def _populate_saml_instructions(self, domain):
-        self.response.backend = authenticate_user_pb2.RequestV1.SAML
-        self.response.authorization_url = service.control.get_object(
-            service='user',
-            action='get_authorization_instructions',
-            return_object='authorization_url',
-            provider=user_containers.IdentityV1.SAML,
-            redirect_uri=self.request.redirect_uri,
-            domain=domain,
+    def _populate_google_instructions(self):
+        self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
+        instructions = self._get_authorization_instructions(
+            user_containers.IdentityV1.GOOGLE,
         )
+        self.response.authorization_url = instructions.authorization_url
+        self.response.provider_name = instructions.provider_name
+
+    def _populate_okta_instructions(self, domain):
+        self.response.backend = authenticate_user_pb2.RequestV1.OKTA
+        instructions = self._get_authorization_instructions(
+            user_containers.IdentityV1.OKTA,
+            organization_domain=domain,
+        )
+        self.response.authorization_url = instructions.authorization_url
+        self.response.provider_name = instructions.provider_name
 
     def _get_organization_sso(self, domain):
         try:
@@ -641,7 +649,7 @@ class GetAuthenticationInstructions(actions.Action):
         elif self._should_force_organization_internal_auth(domain):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif sso:
-            self._populate_saml_instructions(domain)
+            self._populate_okta_instructions(domain)
         elif self._is_email_google_domain():
             self._populate_google_instructions()
         else:

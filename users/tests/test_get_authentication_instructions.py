@@ -58,7 +58,8 @@ class TestUsersGetAuthenticationInstructions(TestCase):
             )
 
         self.assertTrue(response.result.authorization_url)
-        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.SAML)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.OKTA)
+        self.assertTrue(response.result.provider_name, 'Okta')
 
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_organization_sso(self, mocked_dns):
@@ -76,7 +77,7 @@ class TestUsersGetAuthenticationInstructions(TestCase):
             response = self.client.call_action('get_authentication_instructions', email=email)
 
         self.assertTrue(response.result.authorization_url)
-        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.SAML)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.OKTA)
 
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_organization_sso_force_internal(self, mocked_dns):

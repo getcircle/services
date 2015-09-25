@@ -13,7 +13,7 @@ from .. import (
 )
 from ..providers import (
     google as google_provider,
-    saml as saml_provider,
+    okta as okta_provider,
 )
 
 
@@ -174,13 +174,13 @@ class TestUsersAuthentication(TestCase):
         self.assertTrue(response.result.new_user)
         self.assertEqual(mocked_credentials_from_code.call_args[1]['redirect_uri'], 'postmessage')
 
-    def test_authenticate_user_saml(self):
-        identity = factories.IdentityFactory.create(provider=user_containers.IdentityV1.SAML)
+    def test_authenticate_user_okta(self):
+        identity = factories.IdentityFactory.create(provider=user_containers.IdentityV1.OKTA)
         user = identity.user.to_protobuf()
-        auth_state = saml_provider.get_state_for_user(user)
+        auth_state = okta_provider.get_state_for_user(user)
         response = self.client.call_action(
             self.action,
-            backend=authenticate_user_pb2.RequestV1.SAML,
+            backend=authenticate_user_pb2.RequestV1.OKTA,
             credentials={
                 'secret': auth_state,
             },

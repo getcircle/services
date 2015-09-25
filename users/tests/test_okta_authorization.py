@@ -12,17 +12,17 @@ from services.test import (
 )
 
 from .. import factories
-from ..providers.saml import (
+from ..providers.okta import (
     get_signer,
     get_state_for_user,
     parse_state,
 )
 
 
-class TestSAMLAuthorization(MockedTestCase):
+class TestOktaAuthorization(MockedTestCase):
 
     def setUp(self):
-        super(TestSAMLAuthorization, self).setUp()
+        super(TestOktaAuthorization, self).setUp()
         self.client = service.control.Client('user')
         self.mock.instance.dont_mock_service('user')
 
@@ -53,7 +53,10 @@ class TestSAMLAuthorization(MockedTestCase):
         return mocks.mock_saml_details(**overrides)
 
     def test_get_authorization_instructions_does_not_exist(self):
-        with self.assertFieldError('domain', 'DOES_NOT_EXIST'), self.mock_transport() as mock:
+        with self.assertFieldError(
+            'organization_domain',
+            'DOES_NOT_EXIST',
+        ), self.mock_transport() as mock:
             mock.instance.register_mock_call_action_error(
                 service_name='organization',
                 action_name='get_sso_metadata',
@@ -63,8 +66,8 @@ class TestSAMLAuthorization(MockedTestCase):
             )
             self.client.call_action(
                 'get_authorization_instructions',
-                provider=user_containers.IdentityV1.SAML,
-                domain='example',
+                provider=user_containers.IdentityV1.OKTA,
+                organization_domain='example',
             )
 
     def test_get_authorization_instructions(self):
@@ -72,18 +75,19 @@ class TestSAMLAuthorization(MockedTestCase):
             self._setup_test(MagicMock(), mock)
             response = self.client.call_action(
                 'get_authorization_instructions',
-                provider=user_containers.IdentityV1.SAML,
-                domain='lunohq',
+                provider=user_containers.IdentityV1.OKTA,
+                organization_domain='lunohq',
             )
         self.assertTrue(response.result.authorization_url)
+        self.assertTrue(response.result.provider_name, 'Okta')
 
     def test_get_authorization_instructions_redirect_uri(self):
         with self.mock_transport() as mock:
             self._setup_test(MagicMock(), mock)
             response = self.client.call_action(
                 'get_authorization_instructions',
-                provider=user_containers.IdentityV1.SAML,
-                domain='lunohq',
+                provider=user_containers.IdentityV1.OKTA,
+                organization_domain='lunohq',
                 redirect_uri='testredirecturi',
             )
         self.assertTrue(response.result.authorization_url)
@@ -101,7 +105,7 @@ class TestSAMLAuthorization(MockedTestCase):
             saml_details = self._setup_test(patched_saml_client, mock, relay_state=relay_state)
             response = self.client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details=saml_details,
             )
         self.assertEqual(response.result.redirect_uri, redirect_uri)
@@ -113,7 +117,7 @@ class TestSAMLAuthorization(MockedTestCase):
             saml_details = self._setup_test(patched_saml_client, mock, relay_state=relay_state)
             self.client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details=saml_details,
             )
 
@@ -123,10 +127,10 @@ class TestSAMLAuthorization(MockedTestCase):
             saml_details = self._setup_test(patched_saml_client, mock)
             response = self.client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details=saml_details,
             )
-        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.SAML)
+        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.OKTA)
         self.assertEqual(response.result.identity.email, 'michael@lunohq.com')
         self.assertEqual(response.result.identity.provider_uid, 'michael@lunohq.com')
         parsed_state = parse_state(response.result.saml_details.auth_state)
@@ -142,7 +146,7 @@ class TestSAMLAuthorization(MockedTestCase):
             saml_details = self._setup_test(patched_saml_client, mock)
             response = self.client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details=saml_details,
             )
         self.assertEqual(response.result.identity.email, 'michael@lunohq.com')
@@ -157,7 +161,7 @@ class TestSAMLAuthorization(MockedTestCase):
         )
         identity = factories.IdentityFactory.create_protobuf(
             email='michael@lunohq.com',
-            provider=user_containers.IdentityV1.SAML,
+            provider=user_containers.IdentityV1.OKTA,
             provider_uid='michael@lunohq.com',
             full_name='Michael Hahn',
             data=json.dumps(self._mock_user_info()),
@@ -169,7 +173,7 @@ class TestSAMLAuthorization(MockedTestCase):
             saml_details = self._setup_test(patched_saml_client, mock)
             response = self.client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details=saml_details,
             )
         self.verify_containers(response.result.identity, identity)
@@ -179,13 +183,13 @@ class TestSAMLAuthorization(MockedTestCase):
         user = factories.UserFactory.create()
         factories.IdentityFactory.create(
             user=user,
-            provider=user_containers.IdentityV1.SAML,
+            provider=user_containers.IdentityV1.OKTA,
         )
         user = user.to_protobuf()
         auth_state = get_state_for_user(user)
         response = self.client.call_action(
             'complete_authorization',
-            provider=user_containers.IdentityV1.SAML,
+            provider=user_containers.IdentityV1.OKTA,
             saml_details={
                 'auth_state': auth_state,
             },
@@ -196,7 +200,7 @@ class TestSAMLAuthorization(MockedTestCase):
         with self.assertRaisesCallActionError() as e:
             self.client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details={
                     'auth_state': auth_state,
                 },

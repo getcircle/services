@@ -64,7 +64,7 @@ def get_signer(domain):
 
 class Provider(base.BaseProvider):
 
-    type = user_containers.IdentityV1.SAML
+    type = user_containers.IdentityV1.OKTA
     exception_to_error_map = {
         BadSignature: 'PROVIDER_RESPONSE_VERIFICATION_FAILED',
         InvalidAuthState: 'INVALID_AUTH_STATE',
