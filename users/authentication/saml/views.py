@@ -15,7 +15,7 @@ class SAMLHandler(APIView):
         try:
             response = client.call_action(
                 'complete_authorization',
-                provider=user_containers.IdentityV1.SAML,
+                provider=user_containers.IdentityV1.OKTA,
                 saml_details={
                     'domain': domain,
                     'saml_response': request.data['SAMLResponse'],
