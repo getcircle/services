@@ -273,6 +273,11 @@ class SSO(models.UUIDModel, models.Model):
     organization = models.ForeignKey(Organization, related_name='sso', db_index=True)
     metadata_url = models.CharField(max_length=255, null=True)
     metadata = models.TextField(null=True)
+    provider = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(
+            organization_containers.SSOV1.ProviderV1,
+        ),
+    )
 
     class Meta:
         protobuf = organization_containers.SSOV1
