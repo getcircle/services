@@ -270,6 +270,8 @@ class Token(models.UUIDModel):
 
 class SSO(models.UUIDModel, models.Model):
 
+    as_dict_value_transforms = {'provider': int}
+
     organization = models.ForeignKey(Organization, related_name='sso', db_index=True)
     metadata_url = models.CharField(max_length=255, null=True)
     metadata = models.TextField(null=True)
