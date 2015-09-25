@@ -1,3 +1,5 @@
+import urlparse
+
 from django.conf import settings
 from django.http import Http404
 from protobufs.services.user import containers_pb2 as user_containers
@@ -8,6 +10,16 @@ from ..utils import authorization_redirect
 
 
 class SAMLHandler(APIView):
+
+    def _get_organization_redirect_uri(self, domain):
+        parts = urlparse.urlsplit(settings.USER_SERVICE_SAML_AUTH_SUCCESS_REDIRECT_URI)
+        return urlparse.urlunsplit((
+            parts.scheme,
+            '%s.%s' % (domain, parts.netloc),
+            parts.path,
+            parts.query,
+            parts.fragment,
+        ))
 
     def post(self, request, *args, **kwargs):
         domain = kwargs['domain']
@@ -26,10 +38,7 @@ class SAMLHandler(APIView):
             # XXX add some logging here and return to an error view for iOS
             raise Http404
 
-        redirect_uri = settings.USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI
-        if response.result.redirect_uri:
-            redirect_uri = response.result.redirect_uri
-
+        redirect_uri = self._get_organization_redirect_uri(domain)
         protobuf_parameters = {
             'user': response.result.user,
             'identity': response.result.identity,

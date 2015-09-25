@@ -260,9 +260,9 @@ USER_SERVICE_FORCE_GOOGLE_AUTH = tuple()
 USER_SERVICE_FORCE_INTERNAL_AUTH = tuple()
 USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = tuple()
 USER_SERVICE_ALLOWED_REDIRECT_URIS = (
-    'http://local.lunohq.com:9110/auth',
+    'http://lunohq.com:9110/auth',
 )
-USER_SERVICE_AUTH_SUCCESS_REDIRECT_URI = 'http://local.lunohq.com:9110/auth'
+USER_SERVICE_SAML_AUTH_SUCCESS_REDIRECT_URI = 'http://lunohq.com:9110/auth'
 
 # Data Dog API Key
 DATADOG_API_KEY = ''
