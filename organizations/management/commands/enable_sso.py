@@ -1,3 +1,4 @@
+from protobufs.services.organization.containers_pb2 import organization_containers
 import requests
 from services.management.base import (
     BaseCommand,
@@ -43,6 +44,7 @@ class Command(BaseCommand):
         sso, created = models.SSO.objects.get_or_create(
             organization=organization,
             defaults={
+                'provider': organization_containers.SSOV1.OKTA,
                 'metadata_url': metadata_url,
                 'metadata': metadata,
             },

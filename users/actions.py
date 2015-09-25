@@ -649,6 +649,8 @@ class GetAuthenticationInstructions(actions.Action):
         elif self._should_force_organization_internal_auth(domain):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif sso:
+            # in the future when we support more than Okta, we would want to
+            # check the `sso.provider`
             self._populate_okta_instructions(domain)
         elif self._is_email_google_domain():
             self._populate_google_instructions()
