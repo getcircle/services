@@ -301,3 +301,5 @@ SHELL_PLUS_POST_IMPORTS = (
 )
 
 STRIPE_API_KEY = 'sk_test_egjGFfpd8I06ZN05Xbh4HZQI'
+
+CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?(\w+\.)?lunohq\.com$', )
