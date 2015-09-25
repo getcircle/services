@@ -1,4 +1,4 @@
-from protobufs.services.organization.containers_pb2 import organization_containers
+from protobufs.services.organization import containers_pb2 as organization_containers
 import requests
 from services.management.base import (
     BaseCommand,
