@@ -43,11 +43,12 @@ def get_sso_for_domain(domain):
     return response.result.sso
 
 
-def get_state_for_user(user):
+def get_state_for_user(user, domain):
     totp = models.TOTPToken.objects.totp_for_user(user)
     payload = {
         'totp': totp,
         'user_id': user.id,
+        'domain': domain,
     }
     serializer = URLSafeSerializer(settings.SECRET_KEY)
     return serializer.dumps(payload)
@@ -79,6 +80,21 @@ class Provider(base.BaseProvider):
         except (KeyError, IndexError):
             raise ProviderResponseMissingRequiredField(field)
 
+    def _verify_profile_exists(self, domain, email):
+        organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            return_object='organization',
+            domain=domain,
+        )
+        return service.control.get_object(
+            service='profile',
+            action='profile_exists',
+            return_object='exists',
+            organization_id=organization.id,
+            email=email,
+        )
+
     def _complete_authorization(self, request, response):
         domain = request.saml_details.domain
         sso = get_sso_for_domain(domain)
@@ -100,6 +116,9 @@ class Provider(base.BaseProvider):
         email = self._get_value_for_identity_field('Email', user_info)
         first_name = self._get_value_for_identity_field('FirstName', user_info)
         last_name = self._get_value_for_identity_field('LastName', user_info)
+
+        if not self._verify_profile_exists(domain, email):
+            raise ProviderResponseVerificationFailed
 
         identity, created = self.get_identity(email)
         identity.email = email
@@ -125,7 +144,7 @@ class Provider(base.BaseProvider):
 
     def finalize_authorization(self, identity, user, request, response):
         # generate an auth_state the user can use to authenticate with the SAML backend once
-        response.saml_details.auth_state = get_state_for_user(user)
+        response.saml_details.auth_state = get_state_for_user(user, request.saml_details.domain)
 
     @classmethod
     def get_authorization_url(self, domain, redirect_uri=None, **kwargs):

@@ -36,18 +36,30 @@ class TestOktaAuthorization(MockedTestCase):
             'LastName': ['Hahn'],
         }
 
-    def _setup_test(self, saml_client, **overrides):
+    def _setup_test(self, saml_client, profile_exists=True, **overrides):
+        domain = overrides.get('domain', 'lunohq')
         self.mock.instance.register_mock_object(
             service='organization',
             action='get_sso_metadata',
             return_object_path='sso',
             return_object=mocks.mock_sso(),
-            organization_domain='lunohq',
+            organization_domain=domain,
         )
-        self.mock.instance.register_empty_response(
+        organization = mocks.mock_organization(domain=domain)
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_organization',
+            return_object_path='organization',
+            return_object=organization,
+            domain=organization.domain,
+        )
+        self.mock.instance.register_mock_object(
             service='profile',
-            action='get_profile',
-            mock_regex_lookup='profile:get_profile:.*',
+            action='profile_exists',
+            return_object_path='exists',
+            return_object=profile_exists,
+            organization_id=organization.id,
+            email='michael@lunohq.com',
         )
         self._patch_saml_client(saml_client, self._mock_user_info())
         return mocks.mock_saml_details(**overrides)
@@ -169,6 +181,24 @@ class TestOktaAuthorization(MockedTestCase):
         self.verify_containers(response.result.identity, identity)
         self.verify_containers(response.result.user, user)
 
+    @patch('users.authentication.utils.get_saml_client')
+    def test_complete_authorization_invalid_organization(self, patched_saml_client):
+        factories.UserFactory.create_protobuf(
+            primary_email='michael@lunohq.com',
+        )
+        saml_details = self._setup_test(
+            patched_saml_client,
+            domain='example',
+            profile_exists=False,
+        )
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action(
+                'complete_authorization',
+                provider=user_containers.IdentityV1.OKTA,
+                saml_details=saml_details,
+            )
+        self.assertIn('PROVIDER_RESPONSE_VERIFICATION_FAILED', expected.exception.response.errors)
+
     def test_complete_authorization_auth_state(self):
         user = factories.UserFactory.create()
         factories.IdentityFactory.create(
@@ -176,7 +206,7 @@ class TestOktaAuthorization(MockedTestCase):
             provider=user_containers.IdentityV1.OKTA,
         )
         user = user.to_protobuf()
-        auth_state = get_state_for_user(user)
+        auth_state = get_state_for_user(user, 'lunohq')
         response = self.client.call_action(
             'complete_authorization',
             provider=user_containers.IdentityV1.OKTA,

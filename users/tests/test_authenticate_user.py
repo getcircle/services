@@ -177,7 +177,7 @@ class TestUsersAuthentication(TestCase):
     def test_authenticate_user_okta(self):
         identity = factories.IdentityFactory.create(provider=user_containers.IdentityV1.OKTA)
         user = identity.user.to_protobuf()
-        auth_state = okta_provider.get_state_for_user(user)
+        auth_state = okta_provider.get_state_for_user(user, 'example')
         response = self.client.call_action(
             self.action,
             backend=authenticate_user_pb2.RequestV1.OKTA,
