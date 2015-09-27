@@ -23,6 +23,14 @@ class TestProfiles(MockedTestCase):
         with self.assertFieldError('organization_id', 'MISSING'):
             self.client.call_action('profile_exists', email='me@example.com')
 
+    def test_profile_exists_organization_id_invalid(self):
+        with self.assertFieldError('organization_id'):
+            self.client.call_action(
+                'profile_exists',
+                email='me@example.com',
+                organization_id='invalid',
+            )
+
     def test_profile_exists_false(self):
         response = self.client.call_action(
             'profile_exists',

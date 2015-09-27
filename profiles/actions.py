@@ -634,6 +634,10 @@ class ProfileExists(actions.Action):
 
     required_fields = ('email', 'organization_id')
 
+    type_validators = {
+        'organization_id': [validators.is_uuid4],
+    }
+
     def run(self, *args, **kwargs):
         self.response.exists = models.Profile.objects.filter(
             email=self.request.email,
