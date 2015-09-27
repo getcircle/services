@@ -36,15 +36,15 @@ class TestOktaAuthorization(MockedTestCase):
             'LastName': ['Hahn'],
         }
 
-    def _setup_test(self, saml_client, mock, **overrides):
-        mock.instance.register_mock_object(
+    def _setup_test(self, saml_client, **overrides):
+        self.mock.instance.register_mock_object(
             service='organization',
             action='get_sso_metadata',
             return_object_path='sso',
             return_object=mocks.mock_sso(),
             organization_domain='lunohq',
         )
-        mock.instance.register_empty_response(
+        self.mock.instance.register_empty_response(
             service='profile',
             action='get_profile',
             mock_regex_lookup='profile:get_profile:.*',
@@ -53,17 +53,14 @@ class TestOktaAuthorization(MockedTestCase):
         return mocks.mock_saml_details(**overrides)
 
     def test_get_authorization_instructions_does_not_exist(self):
-        with self.assertFieldError(
-            'organization_domain',
-            'DOES_NOT_EXIST',
-        ), self.mock_transport() as mock:
-            mock.instance.register_mock_call_action_error(
-                service_name='organization',
-                action_name='get_sso_metadata',
-                errors=['DOES_NOT_EXIST'],
-                error_details={},
-                organization_domain='example',
-            )
+        self.mock.instance.register_mock_call_action_error(
+            service_name='organization',
+            action_name='get_sso_metadata',
+            errors=['DOES_NOT_EXIST'],
+            error_details={},
+            organization_domain='example',
+        )
+        with self.assertFieldError('organization_domain', 'DOES_NOT_EXIST'):
             self.client.call_action(
                 'get_authorization_instructions',
                 provider=user_containers.IdentityV1.OKTA,
@@ -71,25 +68,23 @@ class TestOktaAuthorization(MockedTestCase):
             )
 
     def test_get_authorization_instructions(self):
-        with self.mock_transport() as mock:
-            self._setup_test(MagicMock(), mock)
-            response = self.client.call_action(
-                'get_authorization_instructions',
-                provider=user_containers.IdentityV1.OKTA,
-                organization_domain='lunohq',
-            )
+        self._setup_test(MagicMock())
+        response = self.client.call_action(
+            'get_authorization_instructions',
+            provider=user_containers.IdentityV1.OKTA,
+            organization_domain='lunohq',
+        )
         self.assertTrue(response.result.authorization_url)
         self.assertTrue(response.result.provider_name, 'Okta')
 
     def test_get_authorization_instructions_redirect_uri(self):
-        with self.mock_transport() as mock:
-            self._setup_test(MagicMock(), mock)
-            response = self.client.call_action(
-                'get_authorization_instructions',
-                provider=user_containers.IdentityV1.OKTA,
-                organization_domain='lunohq',
-                redirect_uri='testredirecturi',
-            )
+        self._setup_test(MagicMock())
+        response = self.client.call_action(
+            'get_authorization_instructions',
+            provider=user_containers.IdentityV1.OKTA,
+            organization_domain='lunohq',
+            redirect_uri='testredirecturi',
+        )
         self.assertTrue(response.result.authorization_url)
         # testing for the period at the end of the string is for verifying its signed
         self.assertIn('testredirecturi.', response.result.authorization_url)
@@ -99,10 +94,8 @@ class TestOktaAuthorization(MockedTestCase):
         redirect_uri = 'testredirecturi'
         signer = get_signer('lunohq')
         relay_state = signer.sign(redirect_uri)
-        with self.mock_transport() as mock, self.settings(
-            USER_SERVICE_ALLOWED_REDIRECT_URIS=(redirect_uri,)
-        ):
-            saml_details = self._setup_test(patched_saml_client, mock, relay_state=relay_state)
+        saml_details = self._setup_test(patched_saml_client, relay_state=relay_state)
+        with self.settings(USER_SERVICE_ALLOWED_REDIRECT_URIS=(redirect_uri,)):
             response = self.client.call_action(
                 'complete_authorization',
                 provider=user_containers.IdentityV1.OKTA,
@@ -113,8 +106,8 @@ class TestOktaAuthorization(MockedTestCase):
     @patch('users.authentication.utils.get_saml_client')
     def test_complete_authorization_invalid_relay_state(self, patched_saml_client):
         relay_state = 'testredirecturi'
-        with self.mock_transport() as mock, self.assertRaisesCallActionError():
-            saml_details = self._setup_test(patched_saml_client, mock, relay_state=relay_state)
+        saml_details = self._setup_test(patched_saml_client, relay_state=relay_state)
+        with self.assertRaisesCallActionError():
             self.client.call_action(
                 'complete_authorization',
                 provider=user_containers.IdentityV1.OKTA,
@@ -123,13 +116,12 @@ class TestOktaAuthorization(MockedTestCase):
 
     @patch('users.authentication.utils.get_saml_client')
     def test_complete_authorization_no_user(self, patched_saml_client):
-        with self.mock_transport() as mock:
-            saml_details = self._setup_test(patched_saml_client, mock)
-            response = self.client.call_action(
-                'complete_authorization',
-                provider=user_containers.IdentityV1.OKTA,
-                saml_details=saml_details,
-            )
+        saml_details = self._setup_test(patched_saml_client)
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=user_containers.IdentityV1.OKTA,
+            saml_details=saml_details,
+        )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.OKTA)
         self.assertEqual(response.result.identity.email, 'michael@lunohq.com')
         self.assertEqual(response.result.identity.provider_uid, 'michael@lunohq.com')
@@ -142,13 +134,12 @@ class TestOktaAuthorization(MockedTestCase):
         user = factories.UserFactory.create_protobuf(
             primary_email='michael@lunohq.com',
         )
-        with self.mock_transport() as mock:
-            saml_details = self._setup_test(patched_saml_client, mock)
-            response = self.client.call_action(
-                'complete_authorization',
-                provider=user_containers.IdentityV1.OKTA,
-                saml_details=saml_details,
-            )
+        saml_details = self._setup_test(patched_saml_client)
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=user_containers.IdentityV1.OKTA,
+            saml_details=saml_details,
+        )
         self.assertEqual(response.result.identity.email, 'michael@lunohq.com')
         self.assertEqual(response.result.identity.provider_uid, 'michael@lunohq.com')
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -169,13 +160,12 @@ class TestOktaAuthorization(MockedTestCase):
         )
         # above facotry requires user model, below we test with the protobuf
         user = user.to_protobuf()
-        with self.mock_transport() as mock:
-            saml_details = self._setup_test(patched_saml_client, mock)
-            response = self.client.call_action(
-                'complete_authorization',
-                provider=user_containers.IdentityV1.OKTA,
-                saml_details=saml_details,
-            )
+        saml_details = self._setup_test(patched_saml_client)
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=user_containers.IdentityV1.OKTA,
+            saml_details=saml_details,
+        )
         self.verify_containers(response.result.identity, identity)
         self.verify_containers(response.result.user, user)
 
