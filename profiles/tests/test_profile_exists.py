@@ -2,6 +2,7 @@ import service.control
 
 from services.test import (
     fuzzy,
+    mocks,
     MockedTestCase,
 )
 
@@ -17,33 +18,35 @@ class TestProfiles(MockedTestCase):
 
     def test_profile_exists_email_required(self):
         with self.assertFieldError('email', 'MISSING'):
-            self.client.call_action('profile_exists', organization_id=fuzzy.FuzzyUUID().fuzz())
+            self.client.call_action('profile_exists', domain='example')
 
     def test_profile_exists_organization_id_required(self):
-        with self.assertFieldError('organization_id', 'MISSING'):
+        with self.assertFieldError('domain', 'MISSING'):
             self.client.call_action('profile_exists', email='me@example.com')
 
-    def test_profile_exists_organization_id_invalid(self):
-        with self.assertFieldError('organization_id'):
-            self.client.call_action(
-                'profile_exists',
-                email='me@example.com',
-                organization_id='invalid',
-            )
-
     def test_profile_exists_false(self):
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_organization',
+            return_object_path='organization',
+            return_object=mocks.mock_organization(),
+            domain='example',
+        )
         response = self.client.call_action(
             'profile_exists',
             email='me@example.com',
-            organization_id=fuzzy.FuzzyUUID().fuzz(),
+            domain='example',
         )
         self.assertFalse(response.result.exists)
 
     def test_profile_exists_true(self):
         profile = factories.ProfileFactory.create()
-        response = self.client.call_action(
-            'profile_exists',
-            email=profile.email,
-            organization_id=profile.organization_id,
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_organization',
+            return_object_path='organization',
+            return_object=mocks.mock_organization(id=profile.organization_id),
+            domain='example',
         )
+        response = self.client.call_action('profile_exists', email=profile.email, domain='example')
         self.assertTrue(response.result.exists)

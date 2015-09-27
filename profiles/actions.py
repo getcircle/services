@@ -9,6 +9,7 @@ from service import (
 )
 
 from services.mixins import PreRunParseTokenMixin
+from services.token import make_admin_token
 from services.utils import should_inflate_field
 
 from . import (
@@ -632,14 +633,21 @@ class GetActiveTags(actions.Action):
 
 class ProfileExists(actions.Action):
 
-    required_fields = ('email', 'organization_id')
-
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-    }
+    required_fields = ('email', 'domain')
 
     def run(self, *args, **kwargs):
+        try:
+            organization = service.control.get_object(
+                service='organization',
+                action='get_organization',
+                client_kwargs={'token': make_admin_token()},
+                return_object='organization',
+                domain=self.request.domain,
+            )
+        except service.control.CallActionError:
+            raise self.ActionFieldError('domain')
+
         self.response.exists = models.Profile.objects.filter(
             email=self.request.email,
-            organization_id=self.request.organization_id,
+            organization_id=organization.id,
         ).exists()

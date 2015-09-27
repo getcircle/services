@@ -45,20 +45,12 @@ class TestOktaAuthorization(MockedTestCase):
             return_object=mocks.mock_sso(),
             organization_domain=domain,
         )
-        organization = mocks.mock_organization(domain=domain)
-        self.mock.instance.register_mock_object(
-            service='organization',
-            action='get_organization',
-            return_object_path='organization',
-            return_object=organization,
-            domain=organization.domain,
-        )
         self.mock.instance.register_mock_object(
             service='profile',
             action='profile_exists',
             return_object_path='exists',
             return_object=profile_exists,
-            organization_id=organization.id,
+            domain=domain,
             email='michael@lunohq.com',
         )
         self._patch_saml_client(saml_client, self._mock_user_info())

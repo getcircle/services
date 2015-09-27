@@ -81,17 +81,11 @@ class Provider(base.BaseProvider):
             raise ProviderResponseMissingRequiredField(field)
 
     def _verify_profile_exists(self, domain, email):
-        organization = service.control.get_object(
-            service='organization',
-            action='get_organization',
-            return_object='organization',
-            domain=domain,
-        )
         return service.control.get_object(
             service='profile',
             action='profile_exists',
             return_object='exists',
-            organization_id=organization.id,
+            domain=domain,
             email=email,
         )
 
