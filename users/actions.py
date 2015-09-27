@@ -611,6 +611,17 @@ class GetAuthenticationInstructions(actions.Action):
 
         return response.result.sso
 
+    def _get_organization_image_url(self, domain):
+        try:
+            response = service.control.call_action(
+                'organization',
+                'get_organization',
+                domain=domain,
+            )
+        except service.control.CallActionError:
+            return None
+        return response.result.organization.image_url
+
     def _get_domain(self):
         if self.request.HasField('organization_domain'):
             return self.request.organization_domain
@@ -641,6 +652,11 @@ class GetAuthenticationInstructions(actions.Action):
             ).exists()
 
         domain = self._get_domain()
+        if domain:
+            image_url = self._get_organization_image_url(domain)
+            if image_url:
+                self.response.organization_image_url = image_url
+
         sso = self._get_organization_sso(domain)
         if self._should_force_internal_authentication():
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL

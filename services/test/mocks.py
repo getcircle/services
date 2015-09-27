@@ -100,6 +100,7 @@ def mock_organization(container=None, **overrides):
         fuzzy.FuzzyUUID: ['id'],
         fuzzy.FuzzyText: ['name'],
         fuzzy.FuzzyText(suffix='.com'): ['domain'],
+        fuzzy.FuzzyText(prefix='http://', suffix='.com'): ['image_url'],
     }
     return _mock_container(container, mock_dict, **overrides)
 

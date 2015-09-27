@@ -52,6 +52,17 @@ class TestUsersGetAuthenticationInstructions(TestCase):
                 return_object=mocks.mock_sso(),
                 organization_domain='example',
             )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_organization',
+                return_object_path='organization',
+                return_object=mocks.mock_organization(
+                    domain='example',
+                    name='Example',
+                    image_url='imageurl',
+                ),
+                domain='example',
+            )
             response = self.client.call_action(
                 'get_authentication_instructions',
                 organization_domain='example',
@@ -60,6 +71,34 @@ class TestUsersGetAuthenticationInstructions(TestCase):
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.OKTA)
         self.assertTrue(response.result.provider_name, 'Okta')
+
+    def test_get_authentication_instructions_organization_domain(self):
+        with self.mock_transport() as mock:
+            mock.instance.dont_mock_service('user')
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_sso_metadata',
+                return_object_path='sso',
+                return_object=mocks.mock_sso(),
+                organization_domain='example',
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_organization',
+                return_object_path='organization',
+                return_object=mocks.mock_organization(
+                    domain='example',
+                    name='Example',
+                    image_url='imageurl',
+                ),
+                domain='example',
+            )
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                organization_domain='example',
+            )
+
+        self.assertEqual(response.result.organization_image_url, 'imageurl')
 
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_organization_sso(self, mocked_dns):
@@ -73,6 +112,17 @@ class TestUsersGetAuthenticationInstructions(TestCase):
                 return_object_path='sso',
                 return_object=mocks.mock_sso(),
                 organization_domain='example',
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_organization',
+                return_object_path='organization',
+                return_object=mocks.mock_organization(
+                    domain='example',
+                    name='Example',
+                    image_url='imageurl',
+                ),
+                domain='example',
             )
             response = self.client.call_action('get_authentication_instructions', email=email)
 
@@ -92,6 +142,17 @@ class TestUsersGetAuthenticationInstructions(TestCase):
                 return_object_path='sso',
                 return_object=mocks.mock_sso(),
                 organization_domain='example',
+            )
+            mock.instance.register_mock_object(
+                service='organization',
+                action='get_organization',
+                return_object_path='organization',
+                return_object=mocks.mock_organization(
+                    domain='example',
+                    name='Example',
+                    image_url='imageurl',
+                ),
+                domain='example',
             )
             response = self.client.call_action(
                 'get_authentication_instructions',
