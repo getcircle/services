@@ -628,3 +628,14 @@ class GetActiveTags(actions.Action):
             lambda item, container: item.to_protobuf(container.add()),
             count=count,
         )
+
+
+class ProfileExists(actions.Action):
+
+    required_fields = ('email', 'organization_id')
+
+    def run(self, *args, **kwargs):
+        self.response.exists = models.Profile.objects.filter(
+            email=self.request.email,
+            organization_id=self.request.organization_id,
+        ).exists()

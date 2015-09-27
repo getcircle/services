@@ -6,6 +6,10 @@ from . import actions
 class Server(service.control.Server):
     service_name = 'profile'
 
+    auth_exempt_actions = (
+        'profile_exists',
+    )
+
     actions = {
         'create_profile': actions.CreateProfile,
         'bulk_create_profiles': actions.BulkCreateProfiles,
@@ -21,4 +25,5 @@ class Server(service.control.Server):
         'get_upcoming_birthdays': actions.GetUpcomingBirthdays,
         'get_recent_hires': actions.GetRecentHires,
         'get_active_tags': actions.GetActiveTags,
+        'profile_exists': actions.ProfileExists,
     }
