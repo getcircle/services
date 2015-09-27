@@ -215,16 +215,6 @@ class AuthenticateUser(actions.Action):
             )
         return user
 
-    def _get_profile(self, user_id, token):
-        profile = None
-        client = service.control.Client('profile', token=token)
-        try:
-            response = client.call_action('get_profile')
-            profile = response.result.profile
-        except service.control.CallActionError:
-            profile = None
-        return profile
-
     def run(self, *args, **kwargs):
         user = self._handle_authentication()
         self.response.token = get_token(user, self.request.client_type)
