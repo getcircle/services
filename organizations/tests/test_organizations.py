@@ -30,6 +30,25 @@ class OrganizationTests(MockedTestCase):
         response = self.client.call_action('get_organization')
         self.verify_containers(organization, response.result.organization)
 
+    def test_get_organization_unauthenticated(self):
+        organization = factories.OrganizationFactory.create_protobuf()
+        client = service.control.Client('organization')
+        response = client.call_action('get_organization', domain=organization.domain)
+        result = response.result.organization
+        self.assertFalse(result.HasField('id'))
+        self.assertFalse(result.HasField('profile_count'))
+        self.assertFalse(result.HasField('team_count'))
+        self.assertFalse(result.HasField('location_count'))
+        self.assertEqual(result.domain, organization.domain)
+        self.assertEqual(result.image_url, organization.image_url)
+        self.assertEqual(result.name, organization.name)
+
+    def test_get_organization_unauthenticated_no_parameters(self):
+        client = service.control.Client('organization')
+        with self.assertRaisesCallActionError() as expected:
+            client.call_action('get_organization')
+        self.assertIn('FORBIDDEN', expected.exception.response.errors)
+
     def test_get_organization_with_domain_does_not_exist(self):
         with self.assertFieldError('domain', 'DOES_NOT_EXIST'):
             self.client.call_action('get_organization', domain='doesnotexist.com')

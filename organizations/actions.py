@@ -1,6 +1,7 @@
 import django.db
 from django.db.models import Count
 from django.utils import timezone
+from itsdangerous import BadSignature
 from protobufs.services.history import containers_pb2 as history_containers
 from protobuf_to_dict import protobuf_to_dict
 from service import (
@@ -58,7 +59,7 @@ class CreateOrganization(actions.Action):
             model.to_protobuf(self.response.organization)
 
 
-class GetOrganization(PreRunParseTokenMixin, actions.Action):
+class GetOrganization(actions.Action):
 
     field_validators = {
         'domain': {
@@ -66,27 +67,44 @@ class GetOrganization(PreRunParseTokenMixin, actions.Action):
         },
     }
 
+    exception_to_error_map = {
+        BadSignature: 'FORBIDDEN',
+    }
+
     def _get_organization(self):
         parameters = {}
+        # XXX we shouldn't expose this
         if self.request.HasField('domain'):
             parameters['domain'] = self.request.domain
         else:
-            parameters['pk'] = self.parsed_token.organization_id
+            parsed_token = parse_token(self.token)
+            parameters['pk'] = parsed_token.organization_id
         return models.Organization.objects.get(**parameters)
 
-    def run(self, *args, **kwargs):
-        model = self._get_organization()
+    def _populate_public_organization(self, organization):
+        organization.to_protobuf(self.response.organization, only=('image_url', 'domain', 'name'))
+
+    def _populate_authenticated_organization(self, organization):
         # XXX THIS IS REALLY BAD!!! XXX
         from profiles import models as profile_models
-        team_count = models.Team.objects.filter(organization_id=model.id).count()
-        profile_count = profile_models.Profile.objects.filter(organization_id=model.id).count()
-        location_count = models.Location.objects.filter(organization_id=model.id).count()
-        model.to_protobuf(
+        team_count = models.Team.objects.filter(organization_id=organization.id).count()
+        profile_count = profile_models.Profile.objects.filter(
+            organization_id=organization.id,
+        ).count()
+        location_count = models.Location.objects.filter(organization_id=organization.id).count()
+        organization.to_protobuf(
             self.response.organization,
             team_count=team_count,
             profile_count=profile_count,
             location_count=location_count,
         )
+
+    def run(self, *args, **kwargs):
+        model = self._get_organization()
+        if self.token:
+            self._populate_authenticated_organization(model)
+        else:
+            self._populate_public_organization(model)
 
 
 class UpdateTeam(TeamPermissionsMixin, actions.Action):

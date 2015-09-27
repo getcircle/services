@@ -7,6 +7,7 @@ class Server(service.control.Server):
     service_name = 'organization'
 
     auth_exempt_actions = (
+        'get_organization',
         'get_sso_metadata',
     )
 
