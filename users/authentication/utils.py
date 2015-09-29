@@ -1,3 +1,4 @@
+import re
 import tempfile
 import urllib
 import urlparse
@@ -130,3 +131,10 @@ def authorization_redirect(
             urllib.urlencode(parameters),
         )
     return redirect(url)
+
+
+def valid_redirect_uri(value):
+    for regex in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST:
+        if re.match(regex, value):
+            return True
+    return False

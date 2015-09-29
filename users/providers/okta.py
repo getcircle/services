@@ -103,7 +103,7 @@ class Provider(base.BaseProvider):
         if request.saml_details.relay_state:
             signer = get_signer(request.saml_details.domain)
             redirect_uri = signer.unsign(request.saml_details.relay_state)
-            if redirect_uri and redirect_uri in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS:
+            if redirect_uri and utils.valid_redirect_uri(redirect_uri):
                 response.redirect_uri = redirect_uri
 
         user_info = authn_response.get_identity()

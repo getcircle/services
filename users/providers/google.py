@@ -21,6 +21,7 @@ import service.control
 from service import actions
 
 from . import base
+from ..authentication import utils
 
 
 class Provider(base.BaseProvider):
@@ -147,7 +148,7 @@ class Provider(base.BaseProvider):
             response.oauth_sdk_details.code = authorization_code
             response.oauth_sdk_details.id_token = credentials.token_response.get('id_token', '')
 
-        if redirect_uri and redirect_uri in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS:
+        if redirect_uri and utils.valid_redirect_uri(redirect_uri):
             response.redirect_uri = redirect_uri
 
         try:

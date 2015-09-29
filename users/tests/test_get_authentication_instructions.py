@@ -180,17 +180,19 @@ class TestUsersGetAuthenticationInstructions(TestCase):
         email = 'example@example.com'
         with self.settings(
             USER_SERVICE_FORCE_GOOGLE_AUTH=(email,),
-            USER_SERVICE_ALLOWED_REDIRECT_URIS=('https://frontendlunohq.com/auth/success/',),
+            USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST=(
+                '^(https?://)?(\w+\.)?lunohq\.com/auth',
+            ),
         ):
             response = self.client.call_action(
                 'get_authentication_instructions',
                 email=email,
-                redirect_uri='https://frontendlunohq.com/auth/success/',
+                redirect_uri='https://frontend.lunohq.com/auth',
             )
         parsed_url = urlparse.urlparse(response.result.authorization_url)
         query = dict(urlparse.parse_qsl(parsed_url.query))
         parsed_state = parse_state_token(user_containers.IdentityV1.GOOGLE, query['state'])
-        self.assertIn('frontendlunohq', parsed_state['redirect_uri'])
+        self.assertIn('frontend.lunohq', parsed_state['redirect_uri'])
         self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
@@ -199,19 +201,14 @@ class TestUsersGetAuthenticationInstructions(TestCase):
     def test_get_authentication_instructions_redirect_uri_invalid(self, mocked_dns):
         self._mock_dns(mocked_dns, is_google=True)
         email = 'example@example.com'
-        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)):
-            response = self.client.call_action(
+        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)), self.assertFieldError(
+            'redirect_uri'
+        ):
+            self.client.call_action(
                 'get_authentication_instructions',
                 email=email,
                 redirect_uri='https://frontendlunohq.com/auth/success/',
             )
-        parsed_url = urlparse.urlparse(response.result.authorization_url)
-        query = dict(urlparse.parse_qsl(parsed_url.query))
-        parsed_state = parse_state_token(user_containers.IdentityV1.GOOGLE, query['state'])
-        self.assertNotIn('redirect_uri', parsed_state)
-        self.assertFalse(response.result.user_exists)
-        self.assertTrue(response.result.authorization_url)
-        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
 
     @patch('users.actions.DNS.mxlookup')
     def test_get_authentication_instructions_existing_user(self, mocked_dns):

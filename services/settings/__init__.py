@@ -259,10 +259,10 @@ USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state toke
 USER_SERVICE_FORCE_GOOGLE_AUTH = tuple()
 USER_SERVICE_FORCE_INTERNAL_AUTH = tuple()
 USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = tuple()
-USER_SERVICE_ALLOWED_REDIRECT_URIS = (
-    'http://lunohq.com:9110/auth',
-)
 USER_SERVICE_SAML_AUTH_SUCCESS_REDIRECT_URI = 'http://lunohq.com:9110/auth'
+USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST = tuple(
+    '^(https?://)?(\w+\.)?(\w+\.)?(\w+\.)?lunohq\.com/auth$',
+)
 
 # Data Dog API Key
 DATADOG_API_KEY = ''

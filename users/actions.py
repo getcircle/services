@@ -1,3 +1,5 @@
+import re
+
 from cacheops import cached
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -7,13 +9,13 @@ import DNS
 from phonenumber_field.validators import validate_international_phonenumber
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
-from twilio.rest import TwilioRestClient
-from twilio.rest.exceptions import TwilioRestException
 from service import (
     actions,
     validators,
 )
 import service.control
+from twilio.rest import TwilioRestClient
+from twilio.rest.exceptions import TwilioRestException
 
 from services import mixins
 from services.token import parse_token
@@ -22,7 +24,10 @@ from . import (
     models,
     providers,
 )
-from .authentication.utils import get_token
+from .authentication.utils import (
+    get_token,
+    valid_redirect_uri,
+)
 
 
 def validate_new_password_min_length(value):
@@ -328,6 +333,10 @@ class VerifyVerificationCode(actions.Action):
 
 class GetAuthorizationInstructions(actions.Action):
 
+    type_validators = {
+        'redirect_uri': [valid_redirect_uri],
+    }
+
     def run(self, *args, **kwargs):
         if self.request.provider == user_containers.IdentityV1.GOOGLE:
             self.response.authorization_url = providers.google.Provider.get_authorization_url(
@@ -538,16 +547,11 @@ class GetAuthenticationInstructions(actions.Action):
 
     type_validators = {
         'email': [validate_email],
+        'redirect_uri': [valid_redirect_uri],
     }
 
     def validate(self, *args, **kwargs):
         super(GetAuthenticationInstructions, self).validate(*args, **kwargs)
-        if (
-            self.request.redirect_uri and
-            self.request.redirect_uri not in settings.USER_SERVICE_ALLOWED_REDIRECT_URIS
-        ):
-            self.request.ClearField('redirect_uri')
-
         if not (self.request.HasField('email') or self.request.HasField('organization_domain')):
             raise self.ActionError(
                 'MISSING_REQUIRED_PARAMETERS',
@@ -558,13 +562,15 @@ class GetAuthenticationInstructions(actions.Action):
             )
 
     def _get_authorization_instructions(self, provider, **kwargs):
+        if self.request.redirect_uri:
+            kwargs['redirect_uri'] = self.request.redirect_uri
+
         response = service.control.call_action(
             service='user',
             action_name='get_authorization_instructions',
             client_kwargs={'token': self.token},
             provider=provider,
             login_hint=self.request.email,
-            redirect_uri=self.request.redirect_uri,
             **kwargs
         )
         return response.result

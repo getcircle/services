@@ -82,13 +82,15 @@ class TestOktaAuthorization(MockedTestCase):
         self.assertTrue(response.result.provider_name, 'Okta')
 
     def test_get_authorization_instructions_redirect_uri(self):
+        redirect_uri = 'testredirecturi'
         self._setup_test(MagicMock())
-        response = self.client.call_action(
-            'get_authorization_instructions',
-            provider=user_containers.IdentityV1.OKTA,
-            organization_domain='lunohq',
-            redirect_uri='testredirecturi',
-        )
+        with self.settings(USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST=(redirect_uri,)):
+            response = self.client.call_action(
+                'get_authorization_instructions',
+                provider=user_containers.IdentityV1.OKTA,
+                organization_domain='lunohq',
+                redirect_uri='testredirecturi',
+            )
         self.assertTrue(response.result.authorization_url)
         # testing for the period at the end of the string is for verifying its signed
         self.assertIn('testredirecturi.', response.result.authorization_url)
@@ -99,7 +101,7 @@ class TestOktaAuthorization(MockedTestCase):
         signer = get_signer('lunohq')
         relay_state = signer.sign(redirect_uri)
         saml_details = self._setup_test(patched_saml_client, relay_state=relay_state)
-        with self.settings(USER_SERVICE_ALLOWED_REDIRECT_URIS=(redirect_uri,)):
+        with self.settings(USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST=(redirect_uri,)):
             response = self.client.call_action(
                 'complete_authorization',
                 provider=user_containers.IdentityV1.OKTA,
