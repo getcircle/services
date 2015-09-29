@@ -39,11 +39,8 @@ SERVICES_REDIS = {
 
 METRICS_HANDLER_KWARGS = {'name': 'services.metrics'}
 
-CORS_ORIGIN_WHITELIST = (
-    'local.circlehq.co:9110',
-    'local.lunohq.com:9110',
-)
-CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?(\w+\.)?lunohq\.com(:\d+)?$', )
+CORS_ORIGIN_WHITELIST = tuple()
+CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?(\w+\.)?lunohq\.com(:\d+)?$',)
 
 GOOGLE_ADMIN_SDK_JSON_KEY = {
     u'client_email': u'1077014421904-v3q3sd1e8n0fq6bgchfv7qul4k9135ur@developer.gserviceaccount.com',
