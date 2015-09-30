@@ -7,11 +7,16 @@ from protobuf_to_dict import (
 from protobufs.services.common import containers_pb2 as common_containers
 
 
+# TODO we should be using JSONField when postgres 1.9 is released. i know its
+# ironic we're storing protobuf value in JSON, but its more human readable in
+# the db.
 class DescriptionField(HStoreField):
 
     def _to_protobuf(self, value):
         if value is None or hasattr(value, 'SerializeToString'):
             return value
+        if value.get('version') and isinstance(value['version'], str):
+            value['version'] = int(value['version'])
         return dict_to_protobuf(value, common_containers.DescriptionV1)
 
     def from_db_value(self, value, expression, connection, context):
@@ -26,6 +31,8 @@ class DescriptionField(HStoreField):
             return value
         output = protobuf_to_dict(value)
         output.pop('by_profile', None)
+        if output.get('version'):
+            output['version'] = str(output['version'])
         return output
 
     def as_dict_value_transform(self, value):
