@@ -15,7 +15,7 @@ class DescriptionField(HStoreField):
     def _to_protobuf(self, value):
         if value is None or hasattr(value, 'SerializeToString'):
             return value
-        if value.get('version') and isinstance(value['version'], str):
+        if value.get('version') and isinstance(value['version'], basestring):
             value['version'] = int(value['version'])
         return dict_to_protobuf(value, common_containers.DescriptionV1)
 
