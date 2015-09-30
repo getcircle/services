@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.conf import settings
 from itsdangerous import (
@@ -74,6 +75,12 @@ class Provider(base.BaseProvider):
         SAMLMetaDataDoesNotExist: 'SAML_METADATA_DOES_NOT_EXIST',
     }
 
+    @property
+    def logger(self):
+        if not hasattr(self, '_logger'):
+            self._logger = logging.getLogger('user:provider:okta')
+        return self._logger
+
     def _get_value_for_identity_field(self, field, identity_data):
         try:
             return identity_data[field][0]
@@ -98,6 +105,7 @@ class Provider(base.BaseProvider):
             entity.BINDING_HTTP_POST,
         )
         if authn_response is None:
+            self.logger.warn('failed to complete saml authorization')
             raise ProviderResponseVerificationFailed
 
         if request.saml_details.relay_state:
@@ -112,6 +120,7 @@ class Provider(base.BaseProvider):
         last_name = self._get_value_for_identity_field('LastName', user_info)
 
         if not self._verify_profile_exists(domain, email):
+            self.logger.warn('profile not found for: %s in domain: %s', email, domain)
             raise ProviderResponseVerificationFailed
 
         identity, created = self.get_identity(email)
