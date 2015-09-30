@@ -195,7 +195,7 @@ LOGGING = {
     },
     'root': {
         'level': 'INFO',
-        'handlers': ['console'],
+        'handlers': ['console_generic'],
     },
 }
 
