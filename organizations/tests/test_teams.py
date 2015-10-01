@@ -171,6 +171,30 @@ class OrganizationTeamTests(MockedTestCase):
         self.assertFalse(team.permissions.can_delete)
         self.assertTrue(team.permissions.can_edit)
 
+    def test_get_team_include_permissions_team_manager(self):
+        team = factories.TeamFactory.create_protobuf(
+            organization=self.organization,
+            manager_profile_id=self.profile.id,
+        )
+        manager = mocks.mock_profile(id=str(self.profile.id))
+        factories.ReportingStructureFactory.create(
+            organization=self.organization,
+            profile_id=self.profile.id,
+        )
+        self._mock_requester_profile()
+        self.mock.instance.register_mock_object(
+            'profile',
+            'get_profile',
+            return_object_path='profile',
+            return_object=manager,
+            profile_id=team.manager_profile_id,
+        )
+        response = self.client.call_action('get_team', team_id=str(team.id))
+        team = response.result.team
+        self.assertFalse(team.permissions.can_add)
+        self.assertFalse(team.permissions.can_delete)
+        self.assertTrue(team.permissions.can_edit)
+
     def test_update_team_profile_admin(self):
         self.profile.is_admin = True
         team = factories.TeamFactory.create_protobuf(organization=self.organization)

@@ -45,7 +45,10 @@ class TeamPermissionsMixin(mixins.PreRunParseTokenMixin):
             permissions.can_edit = True
             permissions.can_add = True
             permissions.can_delete = True
-        elif utils.matching_uuids(self._get_team_id(), team.id):
+        elif (
+            utils.matching_uuids(self._get_team_id(), team.id) or
+            utils.matching_uuids(self.parsed_token.profile_id, team.manager_profile_id)
+        ):
             permissions.can_edit = True
         return permissions
 
