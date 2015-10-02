@@ -22,6 +22,7 @@ class TestProfiles(MockedTestCase):
     def setUp(self):
         super(TestProfiles, self).setUp()
         self.organization = mocks.mock_organization()
+        self._mock_display_title()
         self.profile = factories.ProfileFactory.create_protobuf(
             organization_id=self.organization.id,
         )

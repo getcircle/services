@@ -1,7 +1,6 @@
 import service.control
 
 from services.test import (
-    fuzzy,
     mocks,
     MockedTestCase,
 )
@@ -15,6 +14,14 @@ class TestProfiles(MockedTestCase):
         super(TestProfiles, self).setUp()
         self.client = service.control.Client('profile')
         self.mock.instance.dont_mock_service('profile')
+        self._mock_display_title()
+
+    def _mock_display_title(self):
+        self.mock.instance.register_empty_response(
+            service='organization',
+            action='get_teams_for_profile_ids',
+            mock_regex_lookup='organization:get_teams_for_profile_ids:.*',
+        )
 
     def test_profile_exists_email_required(self):
         with self.assertFieldError('email', 'MISSING'):
