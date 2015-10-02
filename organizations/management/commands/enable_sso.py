@@ -54,5 +54,7 @@ class Command(BaseCommand):
             sso.metadata_url = metadata_url
             sso.metadata = metadata
             sso.save()
+        elif created:
+            print 'metadata loaded for: %s' % (organization_domain,)
         else:
             print 'metadata exists, run with `--overwrite` to overwrite.'
