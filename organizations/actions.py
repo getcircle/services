@@ -309,17 +309,22 @@ class GetLocation(BaseLocationAction):
         'location_id': [validators.is_uuid4],
     }
 
-    field_validators = {
-        'location_id': {
-            valid_location: 'DOES_NOT_EXIST',
-        },
-    }
-
     def run(self, *args, **kwargs):
-        location = models.Location.objects.get(
-            pk=self.request.location_id,
-            organization_id=self.parsed_token.organization_id,
-        )
+        parameters = {
+            'organization_id': self.parsed_token.organization_id,
+        }
+        lookup_field = 'location_id'
+        if self.request.HasField('name'):
+            parameters['name'] = self.request.name
+            lookup_field = 'name'
+        else:
+            parameters['pk'] = self.request.location_id
+
+        try:
+            location = models.Location.objects.get(**parameters)
+        except models.Location.DoesNotExist:
+            raise self.ActionFieldError(lookup_field, 'DOES_NOT_EXIST')
+
         points_of_contact = self._fetch_points_of_contact([location])
         location.to_protobuf(
             self.response.location,

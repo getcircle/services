@@ -145,6 +145,23 @@ class OrganizationLocationTests(MockedTestCase):
         with self.assertFieldError('location_id', 'DOES_NOT_EXIST'):
             self.client.call_action('get_location', location_id=fuzzy.FuzzyUUID().fuzz())
 
+    def test_get_location_name_does_not_exist(self):
+        with self.assertFieldError('name', 'DOES_NOT_EXIST'):
+            self.client.call_action('get_location', name='invalid')
+
+    def test_get_location_with_name(self):
+        location = factories.LocationFactory.create(organization=self.organization)
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+            mock_regex_lookup='profile:get_profile:.*',
+        )
+        response = self.client.call_action('get_location', name=str(location.name))
+        self.verify_containers(location.to_protobuf(), response.result.location)
+
     def test_get_location_with_location_id_non_admin(self):
         self.profile.is_admin = False
         location = factories.LocationFactory.create(organization=self.organization)
