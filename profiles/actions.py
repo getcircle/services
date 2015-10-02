@@ -173,7 +173,11 @@ class GetProfile(PreRunParseTokenMixin, actions.Action):
             parameters['user_id'] = self.parsed_token.user_id
 
         profile = models.Profile.objects.get(**parameters)
-        profile.to_protobuf(self.response.profile, inflations=self.request.inflations)
+        profile.to_protobuf(
+            self.response.profile,
+            inflations=self.request.inflations,
+            token=self.token,
+        )
 
 
 class GetProfiles(PreRunParseTokenMixin, actions.Action):
@@ -222,6 +226,21 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
             )
         return profile_ids
 
+    def _get_profiles_teams(self, profiles):
+        response = service.control.call_action(
+            service='organization',
+            action_name='get_teams_for_profile_ids',
+            client_kwargs={'token': self.token},
+            profile_ids=[p.id for p in profiles],
+            fields={'only': ['name']},
+        )
+        return dict((p.profile_id, p.team) for p in response.result.profiles_teams)
+
+    def _populate_display_title(self, container, profiles_teams):
+        team = profiles_teams.get(container.id)
+        if team:
+            container.display_title = '%s (%s)' % (container.title, team.name)
+
     def run(self, *args, **kwargs):
         parameters = {
             'organization_id': self.parsed_token.organization_id,
@@ -253,6 +272,7 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
                 lambda item, container: item.to_protobuf(
                     container.add(),
                     inflations=self.request.inflations,
+                    display_title=None,
                 ),
             )
         else:
@@ -260,7 +280,12 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
                 profile.to_protobuf(
                     self.response.profiles.add(),
                     inflations=self.request.inflations,
+                    display_title=None,
                 )
+
+        profiles_teams = self._get_profiles_teams(self.response.profiles)
+        for profile in self.response.profiles:
+            self._populate_display_title(profile, profiles_teams)
 
 
 class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):

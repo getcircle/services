@@ -4,6 +4,7 @@ from common import utils
 from django.contrib.postgres.fields import ArrayField
 import django.db
 from protobufs.services.profile import containers_pb2 as profile_containers
+import service.control
 
 from services.utils import should_inflate_field
 
@@ -53,7 +54,25 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     def full_name(self):
         return ' '.join([self.first_name, self.last_name])
 
-    def _inflate(self, protobuf, inflations, overrides):
+    def get_display_title(self, team):
+        return '%s (%s)' % (self.title, team.name)
+
+    def _get_display_title(self, token):
+        response = service.control.call_action(
+            service='organization',
+            action_name='get_teams_for_profile_ids',
+            client_kwargs={'token': token},
+            profile_ids=[str(self.id)],
+            fields={'only': ['name']},
+        )
+        try:
+            profile_team = response.result.profiles_teams[0]
+        except IndexError:
+            return None
+
+        return self.get_display_title(profile_team.team)
+
+    def _inflate(self, protobuf, inflations, overrides, token=None):
         if 'contact_methods' not in overrides:
             if should_inflate_field('contact_methods', inflations):
                 overrides['contact_methods'] = self.contact_methods.all()
@@ -73,9 +92,23 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         if status is not None and status.value is not None:
             overrides['status'] = status.as_dict()
 
-    def to_protobuf(self, protobuf=None, strict=False, extra=None, inflations=None, **overrides):
+        if 'display_title' not in overrides:
+            if should_inflate_field('display_title', inflations) and token:
+                overrides['display_title'] = self._get_display_title(token)
+
+        return overrides
+
+    def to_protobuf(
+            self,
+            protobuf=None,
+            strict=False,
+            extra=None,
+            inflations=None,
+            token=None,
+            **overrides
+        ):
         protobuf = self.new_protobuf_container(protobuf)
-        self._inflate(protobuf, inflations, overrides)
+        self._inflate(protobuf, inflations, overrides, token)
 
         items = []
         for item in overrides.get('items', self.items) or []:

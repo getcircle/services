@@ -32,6 +32,13 @@ class TestProfiles(MockedTestCase):
         self.client = service.control.Client('profile', token=token)
         self.mock.instance.dont_mock_service('profile')
 
+    def _mock_display_title(self):
+        self.mock.instance.register_empty_response(
+            service='organization',
+            action='get_teams_for_profile_ids',
+            mock_regex_lookup='organization:get_teams_for_profile_ids:.*',
+        )
+
     def test_create_profile_invalid_organization_id(self):
         self.profile.organization_id = 'invalid'
         with self.assertFieldError('profile.organization_id'):
@@ -67,6 +74,7 @@ class TestProfiles(MockedTestCase):
             status=status,
             organization_id=self.organization.id,
         )
+        self._mock_display_title()
         response = self.client.call_action(
             'get_profile',
             profile_id=expected.id,
@@ -679,3 +687,19 @@ class TestProfiles(MockedTestCase):
         )
         self.assertEqual(len(response.result.profiles), 3)
         self.assertEqual(response.control.paginator.next_page, 10)
+
+    def test_get_profile_display_title(self):
+        profile_team = mocks.mock_profile_team(profile_id=self.profile.id)
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_teams_for_profile_ids',
+            return_object_path='profiles_teams',
+            return_object=[profile_team],
+            profile_ids=[self.profile.id],
+            fields={'only': ['name']},
+        )
+        response = self.client.call_action('get_profile', profile_id=self.profile.id)
+        self.assertEqual(
+            response.result.profile.display_title,
+            '%s (%s)' % (self.profile.title, profile_team.team.name),
+        )

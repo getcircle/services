@@ -2,6 +2,7 @@ from django.apps import AppConfig as BaseAppConfig
 import watson
 
 from services.search import SearchAdapter
+from services.token import make_admin_token
 
 
 class ProfileSearchAdapter(SearchAdapter):
@@ -11,6 +12,9 @@ class ProfileSearchAdapter(SearchAdapter):
 
     def get_description(self, obj):
         return obj.title
+
+    def get_protobuf(self, obj):
+        return obj.to_protobuf(token=make_admin_token(organization_id=obj.organization_id))
 
 
 class TagSearchAdapter(SearchAdapter):

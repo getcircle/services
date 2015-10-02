@@ -206,7 +206,7 @@ class GetTeamsForProfileIds(PreRunParseTokenMixin, actions.Action):
         )
         team_dict = dict((t.manager_profile_id, t) for t in teams)
         for report in reporting_details:
-            container = self.response.profile_teams.add()
+            container = self.response.profiles_teams.add()
             container.profile_id = str(report.profile_id)
             team = team_dict.get(report.manager_id)
             if team:

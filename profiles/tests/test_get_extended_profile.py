@@ -13,6 +13,7 @@ class TestGetExtendedProfile(MockedTestCase):
 
     def setUp(self):
         super(TestGetExtendedProfile, self).setUp()
+        self._mock_display_title()
         self.organization = mocks.mock_organization()
         self.profile = factories.ProfileFactory.create_protobuf(
             organization_id=self.organization.id,
@@ -25,6 +26,13 @@ class TestGetExtendedProfile(MockedTestCase):
         # mock identities for all calls
         self.identities = self._mock_get_identities()
         self.mock.instance.dont_mock_service('profile')
+
+    def _mock_display_title(self):
+        self.mock.instance.register_empty_response(
+            service='organization',
+            action='get_teams_for_profile_ids',
+            mock_regex_lookup='organization:get_teams_for_profile_ids:.*',
+        )
 
     def _mock_get_identities(self, count=3, **overrides):
         service = 'user'

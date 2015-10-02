@@ -1,14 +1,10 @@
 import service.control
 from services.test import (
-    fuzzy,
     mocks,
     MockedTestCase,
 )
 
-from .. import (
-    factories,
-    models,
-)
+from .. import factories
 
 
 class TestGetTeamsForProfileIds(MockedTestCase):
@@ -73,14 +69,14 @@ class TestGetTeamsForProfileIds(MockedTestCase):
             'get_teams_for_profile_ids',
             profile_ids=[str(p.profile_id) for p in [report_1, report_2, report_3]],
         )
-        self.assertEqual(len(response.result.profile_teams), 3)
-        profile_teams_dict = dict((p.profile_id, p.team) for p in response.result.profile_teams)
+        self.assertEqual(len(response.result.profiles_teams), 3)
+        profiles_teams_dict = dict((p.profile_id, p.team) for p in response.result.profiles_teams)
 
-        report_1_team = profile_teams_dict[str(report_1.profile_id)]
+        report_1_team = profiles_teams_dict[str(report_1.profile_id)]
         self.verify_containers(report_1_team, manager_1_team)
-        report_2_team = profile_teams_dict[str(report_2.profile_id)]
+        report_2_team = profiles_teams_dict[str(report_2.profile_id)]
         self.verify_containers(report_2_team, manager_1_team)
-        report_3_team = profile_teams_dict[str(report_3.profile_id)]
+        report_3_team = profiles_teams_dict[str(report_3.profile_id)]
         self.verify_containers(report_3_team, manager_2_team)
 
         # only fetch team name
@@ -89,5 +85,5 @@ class TestGetTeamsForProfileIds(MockedTestCase):
             profile_ids=[str(p.profile_id) for p in [report_1, report_2, report_3]],
             fields={'only': ['name']},
         )
-        team = response.result.profile_teams[0].team
+        team = response.result.profiles_teams[0].team
         self.assertEqual(len(team.ListFields()), 1)
