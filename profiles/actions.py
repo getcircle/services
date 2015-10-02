@@ -361,7 +361,7 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
             pk=self.request.profile_id,
             organization_id=self.parsed_token.organization_id,
         )
-        profile.to_protobuf(self.response.profile)
+        profile.to_protobuf(self.response.profile, token=self.token)
 
         identities = service.control.get_object(
             'user',
