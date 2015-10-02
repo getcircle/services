@@ -34,4 +34,5 @@ class Server(service.control.Server):
         'add_location_members': actions.AddLocationMembers,
         'get_descendants': actions.GetDescendants,
         'get_sso_metadata': actions.GetSSOMetadata,
+        'get_teams_for_profile_ids': actions.GetTeamsForProfileIds,
     }

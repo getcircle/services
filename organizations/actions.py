@@ -187,6 +187,32 @@ class GetTeams(TeamPermissionsMixin, actions.Action):
         )
 
 
+class GetTeamsForProfileIds(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('profile_ids',)
+    type_validators = {
+        'profile_ids': [validators.is_uuid4_list],
+    }
+
+    def run(self, *args, **kwargs):
+        reporting_details = models.ReportingStructure.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            profile_id__in=self.request.profile_ids,
+        )
+        manager_ids = set([r.manager_id for r in reporting_details])
+        teams = models.Team.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            manager_profile_id__in=manager_ids,
+        )
+        team_dict = dict((t.manager_profile_id, t) for t in teams)
+        for report in reporting_details:
+            container = self.response.profile_teams.add()
+            container.profile_id = str(report.profile_id)
+            team = team_dict.get(report.manager_id)
+            if team:
+                container.team.CopyFrom(team.to_protobuf(only=self.request.fields.only))
+
+
 class CreateLocation(actions.Action):
 
     type_validators = {

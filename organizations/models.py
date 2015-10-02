@@ -89,15 +89,24 @@ class Team(models.UUIDModel, models.TimestampableModel):
         status = self._update_status(protobuf, by_profile_id)
         return super(Team, self).update_from_protobuf(protobuf, status=status)
 
+    def _should_populate_field(self, field, only):
+        if (only and field in only) or not only:
+            return True
+        return False
+
     def to_protobuf(self, protobuf=None, strict=False, extra=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-        try:
-            status = overrides.pop('status')
-        except KeyError:
+        only = overrides.get('only')
+
+        status = None
+        if self._should_populate_field('status', only):
             try:
-                status = self.teamstatus_set.all().order_by('-created')[0]
-            except IndexError:
-                status = None
+                status = overrides.pop('status')
+            except KeyError:
+                try:
+                    status = self.teamstatus_set.all().order_by('-created')[0]
+                except IndexError:
+                    status = None
 
         if status is not None and status.value is not None:
             status_dict = status.as_dict()
@@ -113,6 +122,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
             overrides['status'] = status_dict
 
         if (
+            self._should_populate_field('description', only) and
             'description' not in overrides and
             self.description and
             self.description.by_profile_id
@@ -127,7 +137,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 
-        if 'profile_count' not in overrides:
+        if 'profile_count' not in overrides and self._should_populate_field('profile_count', only):
             manager = ReportingStructure.objects.get(
                 pk=self.manager_profile_id,
                 organization_id=self.organization_id,
@@ -141,22 +151,23 @@ class Team(models.UUIDModel, models.TimestampableModel):
                     [child for child in children if child.get_descendant_count() > 0]
                 )
 
-        if not self.name and 'name' not in overrides:
-            # XXX REALLY BAD!!! XXX
-            from profiles import models as profile_models
-            try:
-                manager_name = profile_models.Profile.objects.filter(
-                    organization_id=self.organization_id,
-                    id=self.manager_profile_id,
-                ).values_list('first_name', flat=True)[0]
-            except IndexError:
-                pass
-            else:
-                overrides['display_name'] = '%s\'s Nameless Team' % (manager_name,)
-        elif self.name:
-            overrides['display_name'] = self.name
-        elif 'name' in overrides:
-            overrides['display_name'] = overrides['name']
+        if self._should_populate_field('display_name', only):
+            if not self.name and 'name' not in overrides:
+                # XXX REALLY BAD!!! XXX
+                from profiles import models as profile_models
+                try:
+                    manager_name = profile_models.Profile.objects.filter(
+                        organization_id=self.organization_id,
+                        id=self.manager_profile_id,
+                    ).values_list('first_name', flat=True)[0]
+                except IndexError:
+                    pass
+                else:
+                    overrides['display_name'] = '%s\'s Nameless Team' % (manager_name,)
+            elif self.name:
+                overrides['display_name'] = self.name
+            elif 'name' in overrides:
+                overrides['display_name'] = overrides['name']
 
         return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
