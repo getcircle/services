@@ -68,12 +68,12 @@ class CreateProfile(actions.Action):
             profile.to_protobuf(self.response.profile)
 
 
-class BulkCreateProfiles(actions.Action):
+class BulkCreateProfiles(PreRunParseTokenMixin, actions.Action):
 
-    @classmethod
-    def bulk_create_profiles(cls, protobufs):
+    def bulk_create_profiles(self, protobufs):
         objects = [models.Profile.objects.from_protobuf(
             profile,
+            organization_id=self.parsed_token.organization_id,
             commit=False,
         ) for profile in protobufs]
         return models.Profile.objects.bulk_create(objects)
@@ -81,7 +81,8 @@ class BulkCreateProfiles(actions.Action):
     def run(self, *args, **kwargs):
         # TODO this should have organization id
         existing_profiles = models.Profile.objects.filter(
-            email__in=[x.email for x in self.request.profiles]
+            email__in=[x.email for x in self.request.profiles],
+            organization_id=self.parsed_token.organization_id,
         )
         existing_profiles_dict = dict((profile.email, profile) for profile in existing_profiles)
         containers_dict = dict((profile.email, profile) for profile in self.request.profiles)
@@ -147,6 +148,7 @@ class UpdateProfile(actions.Action):
     def run(self, *args, **kwargs):
         profile = models.Profile.objects.get(
             pk=self.request.profile.id,
+            organization_id=self.parsed_token.organization_id,
         )
         profile.update_from_protobuf(self.request.profile)
         profile.save()
