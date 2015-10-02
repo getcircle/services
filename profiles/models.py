@@ -55,7 +55,10 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         return ' '.join([self.first_name, self.last_name])
 
     def get_display_title(self, team):
-        return '%s (%s)' % (self.title, team.name)
+        display_title = self.title
+        if team.name:
+            display_title = '%s (%s)' % (self.title, team.name)
+        return display_title
 
     def _get_display_title(self, token):
         response = service.control.call_action(
