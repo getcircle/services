@@ -71,7 +71,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         try:
             profile_team = response.result.profiles_teams[0]
         except IndexError:
-            return None
+            return self.title
 
         return self.get_display_title(profile_team.team)
 
