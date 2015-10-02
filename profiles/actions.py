@@ -112,6 +112,7 @@ class BulkCreateProfiles(actions.Action):
                 )
                 contact_methods.append(contact_method)
 
+        profiles = profiles + profiles_to_update
         contact_methods = models.ContactMethod.objects.bulk_create(contact_methods)
         profile_id_to_contact_methods = {}
         for contact_method in contact_methods:
