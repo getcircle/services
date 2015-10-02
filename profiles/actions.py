@@ -304,7 +304,7 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
             container = response_container.add()
             profile = profile_dict.get(profile_id)
             if profile:
-                profile.to_protobuf(container, contact_methods=None, status=None)
+                profile.to_protobuf(container, contact_methods=None, status=None, token=self.token)
 
     def _populate_reporting_details(self, client):
         response = client.call_action(
