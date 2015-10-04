@@ -62,6 +62,10 @@ class Row(object):
         'email',
     )
 
+    translations = {
+        'profile_picture_image_url': 'image_url',
+    }
+
     contact_method_fields = (
         'cell_phone',
     )
@@ -107,6 +111,9 @@ class Row(object):
             if key in self.data:
                 value = smart_text(self.data[key]).strip()
                 if value:
+                    if key in self.translations:
+                        key = self.translations[key]
+
                     profile[key] = value
 
         contact_methods = []
