@@ -54,7 +54,7 @@ class Row(object):
     profile_fields = (
         'first_name',
         'last_name',
-        'image_url',
+        'profile_picture_image_url',
         'small_image_url',
         'title',
         'birth_date',
