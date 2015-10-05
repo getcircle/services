@@ -15,10 +15,14 @@ from .. import (
 class TestProfileContactMethods(TestCase):
 
     def setUp(self):
-        self.client = service.control.Client('profile', token='test-token')
+        self.organization = mocks.mock_organization()
+        self.client = service.control.Client(
+            'profile',
+            token=mocks.mock_token(organization_id=self.organization.id),
+        )
 
     def test_add_contact_methods(self):
-        profile = factories.ProfileFactory.create_protobuf()
+        profile = factories.ProfileFactory.create_protobuf(organization_id=self.organization.id)
         for _ in range(2):
             container = profile.contact_methods.add()
             mocks.mock_contact_method(container, id=None)
@@ -34,7 +38,10 @@ class TestProfileContactMethods(TestCase):
                 contact_method_type=profile_containers.ContactMethodV1.EMAIL,
             )
             contact_methods.append(container)
-        profile = factories.ProfileFactory.create_protobuf(contact_methods=contact_methods)
+        profile = factories.ProfileFactory.create_protobuf(
+            contact_methods=contact_methods,
+            organization_id=self.organization.id,
+        )
         self.assertEqual(
             models.ContactMethod.objects.filter(
                 profile_id=profile.id,
@@ -67,9 +74,13 @@ class TestProfileContactMethods(TestCase):
         # create contact methods for separate profile
         factories.ProfileFactory.create_protobuf(
             contact_methods=[mocks.mock_contact_method(id=None) for _ in range(5)],
+            organization_id=self.organization.id,
         )
         contact_methods = [mocks.mock_contact_method(id=None) for _ in range(3)]
-        profile = factories.ProfileFactory.create_protobuf(contact_methods=contact_methods)
+        profile = factories.ProfileFactory.create_protobuf(
+            contact_methods=contact_methods,
+            organization_id=self.organization.id,
+        )
         # remove one of the contact methods
         removed_contact_method = profile.contact_methods[2]
         preserved_contact_methods = list(profile.contact_methods[:2])

@@ -112,7 +112,10 @@ class TestProfiles(MockedTestCase):
             self.client.call_action('update_profile', profile=self.profile)
 
     def test_update_profile(self):
-        original = factories.ProfileFactory.create_protobuf(status={'value': 'old status'})
+        original = factories.ProfileFactory.create_protobuf(
+            status={'value': 'old status'},
+            organization_id=self.organization.id,
+        )
         profile = profile_containers.ProfileV1()
         profile.CopyFrom(original)
 
@@ -172,7 +175,7 @@ class TestProfiles(MockedTestCase):
         self.assertEqual(response.result.profile.status.value, new_status)
 
     def test_update_profile_no_previous_status(self):
-        original = factories.ProfileFactory.create_protobuf()
+        original = factories.ProfileFactory.create_protobuf(organization_id=self.organization.id)
         profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
         new_status = 'new status'
         profile.status.CopyFrom(profile_containers.ProfileStatusV1(value=new_status))
