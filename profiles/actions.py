@@ -152,7 +152,7 @@ class UpdateProfile(PreRunParseTokenMixin, actions.Action):
         )
         profile.update_from_protobuf(self.request.profile)
         profile.save()
-        profile.to_protobuf(self.response.profile)
+        profile.to_protobuf(self.response.profile, token=self.token)
 
 
 class GetProfile(PreRunParseTokenMixin, actions.Action):
@@ -343,7 +343,12 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
             )
             manager = profile_dict.get(reporting_details.manager_profile_id)
             if manager:
-                manager.to_protobuf(self.response.manager, contact_methods=None, status=None)
+                manager.to_protobuf(
+                    self.response.manager,
+                    contact_methods=None,
+                    status=None,
+                    token=self.token,
+                )
 
         if reporting_details.HasField('team'):
             self.response.team.CopyFrom(reporting_details.team)
