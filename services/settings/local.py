@@ -5,9 +5,18 @@ from service import settings
 settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 10000)
 settings.DEFAULT_METRICS_HANDLER = 'service.metrics.log.instance'
 
+DEBUG = True
+TEMPLATE_DEBUG = True
+
 PASSWORD_HASHERS = (
     'django.contrib.auth.hashers.MD5PasswordHasher',
 )
+
+SECRET_KEY = '5rvaf1tsov&kdz!xp-x3785dc0xdmd+gh+#%-nl3ep-!e+ngot'
+SECRET_ENCRYPTION_KEY_V1 = 'q5pFzPB9HgB5IUSrgcuyW94aPLJT_jUcegb-jBdAhTQ='
+SECRET_ENCRYPTION_KEYS = [
+    SECRET_ENCRYPTION_KEY_V1,
+]
 
 DATABASES = {
     'default': {

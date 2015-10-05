@@ -14,24 +14,6 @@ import sys
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
-
-# TODO set this in vault
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '5rvaf1tsov&kdz!xp-x3785dc0xdmd+gh+#%-nl3ep-!e+ngot'
-
-SECRET_ENCRYPTION_KEY_V1 = 'q5pFzPB9HgB5IUSrgcuyW94aPLJT_jUcegb-jBdAhTQ='
-SECRET_ENCRYPTION_KEYS = [
-    SECRET_ENCRYPTION_KEY_V1,
-]
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-TEMPLATE_DEBUG = True
-
 ALLOWED_HOSTS = ['api.circlehq.co']
 
 HOSTNAME = 'localhost:8000'
@@ -204,7 +186,6 @@ TWILIO_ACCOUNT_SID = "AC952fb40dc6238649d073d9b44d677538"
 TWILIO_AUTH_TOKEN = "247a4bc227697c29cec954885b641d51"
 TWILIO_PHONE_NUMBER = "+1 415-930-9683"
 
-# TODO what is the downside of doing this?
 # Set a TOTP Interval of 2 minutes
 USER_SERVICE_TOTP_INTERVAL = 60 * 2
 
@@ -219,7 +200,6 @@ AWS_SNS_PLATFORM_APPLICATION_GCM = ''
 
 AWS_S3_MEDIA_BUCKET = 'dev-lunohq-media'
 
-# XXX temporary db cache until we setup memcache
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
