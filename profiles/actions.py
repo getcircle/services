@@ -129,7 +129,7 @@ class BulkCreateProfiles(PreRunParseTokenMixin, actions.Action):
             )
 
 
-class UpdateProfile(actions.Action):
+class UpdateProfile(PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
         'profile.id': [validators.is_uuid4],
