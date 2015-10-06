@@ -254,6 +254,7 @@ class LocationMember(models.UUIDModel):
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        unique_together = ('profile_id', 'location')
         index_together = (
             ('profile_id', 'organization'),
             ('location', 'organization'),
