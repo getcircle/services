@@ -58,6 +58,8 @@ pysaml2==2.4.0
 repoze.who==2.2
 zope.interface==4.1.2
 stripe==1.26.0
+django-postgrespool==0.3.0
+sqlalchemy==1.0.8
 
 # more recent version of bitfield for 1.8 compatibility
 git+https://git@github.com/disqus/django-bitfield.git#24126a01
