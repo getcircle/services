@@ -241,8 +241,10 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
 
     def _populate_display_title(self, container, profiles_teams):
         team = profiles_teams.get(container.id)
-        if team:
+        if team and team.name:
             container.display_title = '%s (%s)' % (container.title, team.name)
+        else:
+            container.display_title = container.title
 
     def run(self, *args, **kwargs):
         parameters = {
