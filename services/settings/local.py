@@ -14,7 +14,7 @@ PASSWORD_HASHERS = (
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django_postgrespool',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'services',
         'USER': '',
         'PASSWORD': '',
@@ -22,12 +22,6 @@ DATABASES = {
         'PORT': '',
         'CONN_MAX_AGE': None,
     }
-}
-
-DATABASE_POOL_ARGS = {
-    'max_overflow': 10,
-    'pool_size': 5,
-    'recycle': 300,
 }
 
 # NB: Specify 'cacheops' as an installed app only when we define redis

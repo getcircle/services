@@ -28,7 +28,7 @@ else:
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django_postgrespool',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': database_url.path[1:],
         'USER': database_url.username,
         'PASSWORD': database_url.password,
@@ -36,12 +36,6 @@ DATABASES = {
         'PORT': database_url.port,
         'CONN_MAX_AGE': conn_max_age,
     }
-}
-
-DATABASE_POOL_ARGS = {
-    'max_overflow': os.environ.get('DATABASE_POOL_MAX_OVERFLOW', 10),
-    'pool_size': os.environ.get('DATABASE_POOL_POOL_SIZE', 5),
-    'recycle': os.environ.get('DATABASE_POOL_RECYCLE', 300),
 }
 
 # NB: Specify 'cacheops' as an installed app only when we define redis
