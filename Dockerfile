@@ -1,12 +1,13 @@
 FROM lunohq/services-base:latest
 
 RUN apt-get install -y \
-    postgresql-client xmlsec1 git curl
+    postgresql-client xmlsec1 git curl libevent-2.0
 
 ADD . /app
 RUN mkdir /app/bin
 
-RUN git clone https://github.com/heroku/heroku-buildpack-pgbouncer.git
+RUN git clone https://github.com/getcircle/heroku-buildpack-pgbouncer.git
+# cedar-14 refers to ubuntu-14.04 within the buildpack
 RUN STACK='cedar-14' ./heroku-buildpack-pgbouncer/bin/compile /app
 
 WORKDIR /app
