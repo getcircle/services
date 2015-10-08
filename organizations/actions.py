@@ -213,16 +213,13 @@ class GetTeamsForProfileIds(PreRunParseTokenMixin, actions.Action):
                 container.team.CopyFrom(team.to_protobuf(only=self.request.fields.only))
 
 
-class CreateLocation(actions.Action):
-
-    type_validators = {
-        'location.organization_id': [validators.is_uuid4],
-    }
+class CreateLocation(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         try:
             location = models.Location.objects.from_protobuf(
                 self.request.location,
+                organization_id=self.parsed_token.organization_id,
             )
         except django.db.IntegrityError:
             raise self.ActionFieldError('location', 'DUPLICATE')
