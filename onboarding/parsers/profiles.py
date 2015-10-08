@@ -157,11 +157,14 @@ def save_reporting_details(rows, token, profiles_dict):
                 pass
 
 
-def add_profiles(filename, token):
-    rows = []
+def _validate_filename(filename):
     if not os.path.exists(filename):
         raise ValueError('%s does not exist' % (filename,))
 
+
+def add_profiles(filename, token):
+    rows = []
+    _validate_filename(filename)
     with open(filename) as read_file:
         reader = DictReader(read_file)
         for row_data in reader:
@@ -176,3 +179,37 @@ def add_profiles(filename, token):
 
     save_location_members(rows, token, profiles_dict)
     save_reporting_details(rows, token, profiles_dict)
+
+
+def update_managers(filename, token):
+    rows = []
+    _validate_filename(filename)
+    with open(filename) as read_file:
+        reader = DictReader(read_file)
+        for row_data in reader:
+            row = Row(row_data)
+            if not row.is_empty():
+                rows.append(row)
+
+    profiles = service.control.get_object(
+        service='profile',
+        action='get_profiles',
+        return_object='profiles',
+        client_kwargs={'token': token},
+        emails=sum([(r['email'], r['manager_email']) for r in rows]),
+    )
+    profiles_dict = dict((p.email, p) for p in profiles)
+
+    direct_reports = {}
+    for row in rows:
+        profile = profiles_dict[row.email]
+        manager = profiles_dict[row.manager_email]
+        direct_reports.setdefault(manager.id, []).append(profile.id)
+
+    client = service.control.Client('organization', token=token)
+    for profile_id, profile_ids in direct_reports.iteritems():
+        client.call_action(
+            'add_direct_reports',
+            profile_id=profile_id,
+            direct_reports_profile_ids=profile_ids,
+        )
