@@ -181,7 +181,7 @@ def _validate_filename(filename):
 def add_profiles(filename, token):
     rows = []
     _validate_filename(filename)
-    with open(filename) as read_file:
+    with open(filename, 'rU') as read_file:
         reader = DictReader(read_file)
         for row_data in reader:
             row = ProfileRow(row_data)
@@ -200,7 +200,7 @@ def add_profiles(filename, token):
 def update_managers(filename, token):
     rows = []
     _validate_filename(filename)
-    with open(filename) as read_file:
+    with open(filename, 'rU') as read_file:
         reader = DictReader(read_file)
         for row_data in reader:
             row = Row(row_data)
