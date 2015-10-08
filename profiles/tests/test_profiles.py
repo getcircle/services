@@ -101,6 +101,17 @@ class TestProfiles(MockedTestCase):
                 profile_id=fuzzy.FuzzyUUID().fuzz(),
             )
 
+    def test_get_profile_email(self):
+        expected = factories.ProfileFactory.create_protobuf(
+            organization_id=self.organization.id,
+        )
+        self._mock_display_title()
+        response = self.client.call_action(
+            'get_profile',
+            email=expected.email,
+        )
+        self.verify_containers(expected, response.result.profile)
+
     def test_update_profile_invalid_profile_id(self):
         self.profile.id = 'invalid'
         with self.assertFieldError('profile.id'):

@@ -8,8 +8,10 @@ import service.control
 
 from services.utils import get_timezone_for_location
 
+from .base import Row
 
-class LocationRow(object):
+
+class LocationRow(Row):
 
     field_names = (
         'office_name',
@@ -22,24 +24,12 @@ class LocationRow(object):
         'office_image_url',
     )
 
-    def __init__(self, data):
-        self.data = data
-
-    def __getattr__(self, key):
-        if key in self.data:
-            return smart_text(self.data[key])
-
-        return super(LocationRow, self).__getattr__(key)
-
     def get_protobuf_data(self):
         data = {}
         for key in self.field_names:
             location_key = key.split('office_')[1]
-            data[location_key] = self.data[key]
+            data[location_key] = self.data[key].strip()
         return data
-
-    def is_empty(self):
-        return not any(self.data.values())
 
 
 def get_lat_lng(data):
@@ -57,24 +47,24 @@ def get_lat_lng(data):
     return location['lat'], location['lng']
 
 
-def save_location(organization_client, organization_id, location_row):
+def save_location(location_row, token):
     data = location_row.get_protobuf_data()
-    lat, lng = get_lat_lng(data)
-    data['latitude'] = str(lat)
-    data['longitude'] = str(lng)
-    timezone = get_timezone_for_location(lat, lng)
-    data['organization_id'] = organization_id
-    data['timezone'] = timezone
+    client = service.control.Client('organization', token=token)
     try:
-        created = True
-        response = organization_client.call_action('create_location', location=data)
-    except service.control.CallActionError:
         created = False
-        response = organization_client.call_action('get_location', name=data['name'])
-    return created, response.result.location
+        response = client.call_action('get_location', name=data['name'])
+    except service.control.CallActionError:
+        created = True
+        lat, lng = get_lat_lng(data)
+        data['latitude'] = str(lat)
+        data['longitude'] = str(lng)
+        timezone = get_timezone_for_location(lat, lng)
+        data['timezone'] = timezone
+        response = client.call_action('create_location', location=data)
+    return response.result.location, created
 
 
-def add_locations(organization_client, organization_id, filename):
+def add_locations(filename, token):
     locations = []
     if os.path.exists(filename):
         with open(filename) as read_file:
@@ -82,7 +72,7 @@ def add_locations(organization_client, organization_id, filename):
             for row_data in reader:
                 row = LocationRow(row_data)
                 if not row.is_empty():
-                    created, location = save_location(organization_client, organization_id, row)
+                    location, created = save_location(row, token)
                     if created:
                         print 'successfully added location: %s' % (location.name,)
                     else:

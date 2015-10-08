@@ -41,12 +41,6 @@ class OrganizationLocationTests(MockedTestCase):
         kwargs['organization'] = kwargs.get('organization', self.organization)
         return factories.LocationFactory.build_protobuf(**kwargs)
 
-    def test_create_location_invalid_organization_id(self):
-        location = self._build_location_protobuf()
-        location.organization_id = 'invalid'
-        with self.assertFieldError('location.organization_id'):
-            self.client.call_action('create_location', location=location)
-
     def test_create_location(self):
         location = self._build_location_protobuf(established_date=arrow.utcnow().date())
         response = self.client.call_action('create_location', location=location)

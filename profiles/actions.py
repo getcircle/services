@@ -172,7 +172,10 @@ class GetProfile(PreRunParseTokenMixin, actions.Action):
         parameters = {}
         if self.request.profile_id:
             parameters['pk'] = self.request.profile_id
-            parameters['organization_id'] = self.parsed_token.organization_id,
+            parameters['organization_id'] = self.parsed_token.organization_id
+        elif self.request.email:
+            parameters['email'] = self.request.email
+            parameters['organization_id'] = self.parsed_token.organization_id
         else:
             parameters['user_id'] = self.parsed_token.user_id
 

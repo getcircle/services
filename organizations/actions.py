@@ -619,7 +619,7 @@ class SetManager(ReportingStructureAction):
     }
 
     def run(self, *args, **kwargs):
-        team, _ = self._add_direct_reports(
+        team, created = self._add_direct_reports(
             self.request.manager_profile_id,
             [self.request.profile_id],
         )

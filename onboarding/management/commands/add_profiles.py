@@ -1,17 +1,17 @@
 import service.control
 
-from onboarding.parsers.locations import add_locations
+from onboarding.parsers.profiles import add_profiles
 from services.management.base import BaseCommand
 from services.token import make_admin_token
 
 
 class Command(BaseCommand):
 
-    help = 'Add locations for an organization'
+    help = 'Add profiles for an organization'
 
     def add_arguments(self, parser):
         parser.add_argument('organization_domain', type=str, help='Organization\'s domain')
-        parser.add_argument('filename', help='Filename with location data we\'re adding')
+        parser.add_argument('filename', help='Filename with profile data we\'re adding')
 
     def handle(self, *args, **options):
         organization_domain = options['organization_domain']
@@ -20,4 +20,4 @@ class Command(BaseCommand):
         response = client.call_action('get_organization', domain=organization_domain)
         organization = response.result.organization
         token = make_admin_token(organization_id=organization.id)
-        add_locations(filename, token)
+        add_profiles(filename, token)
