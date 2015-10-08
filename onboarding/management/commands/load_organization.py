@@ -1,9 +1,7 @@
-import service.control
-
 from onboarding.parsers.locations import add_locations
 from onboarding.parsers.profiles import add_profiles
 from services.management.base import BaseCommand
-from services.token import make_admin_token
+from ..utils import get_token_for_domain
 
 
 class Command(BaseCommand):
@@ -20,10 +18,6 @@ class Command(BaseCommand):
         profiles_filename = options['profiles_filename']
         locations_filename = options['locations_filename']
 
-        client = service.control.Client('organization', token=make_admin_token())
-        response = client.call_action('get_organization', domain=organization_domain)
-        organization = response.result.organization
-        token = make_admin_token(organization_id=organization.id)
-
+        token = get_token_for_domain(organization_domain)
         add_locations(locations_filename, token)
         add_profiles(profiles_filename, token)
