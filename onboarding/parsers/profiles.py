@@ -1,12 +1,21 @@
 from csv import DictReader
 import os
 
+import arrow
 from django.utils.encoding import smart_text
 from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 
 from .base import Row
 from .users import add_users
+
+
+def clean_date(value):
+    try:
+        result = arrow.get(value)
+    except arrow.parser.ParserError:
+        result = arrow.get(value, 'M/DD/YY')
+    return result.format('YYYY-MM-DD')
 
 
 class ProfileRow(Row):
@@ -30,6 +39,11 @@ class ProfileRow(Row):
         'profile_picture_image_url': 'image_url',
     }
 
+    field_names_to_clean = {
+        'birth_date': clean_date,
+        'hire_date': clean_date,
+    }
+
     contact_method_to_type = {
         'cell_phone': ('Cell Phone', profile_containers.ContactMethodV1.CELL_PHONE)
     }
@@ -40,7 +54,9 @@ class ProfileRow(Row):
             profile_key = self.profile_translations.get(key, key)
             value = smart_text(self.data.get(key, '')).strip()
             if value:
-                data[profile_key] = self.data[key].strip()
+                if key in self.field_names_to_clean:
+                    value = self.field_names_to_clean[key](value)
+                data[profile_key] = value
 
         contact_methods = []
         for key in self.contact_method_field_names:
