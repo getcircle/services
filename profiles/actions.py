@@ -265,6 +265,8 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
             if not profile_ids:
                 return
             parameters['id__in'] = profile_ids
+        elif self.request.emails:
+            parameters['email__in'] = self.request.emails
 
         profiles = models.Profile.objects.filter(**parameters).order_by(
             'first_name',

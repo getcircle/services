@@ -748,3 +748,19 @@ class TestProfiles(MockedTestCase):
             response.result.profile.display_title,
             '%s (%s)' % (self.profile.title, profile_team.team.name),
         )
+
+    def test_get_profiles_emails(self):
+        # create extra profiles
+        factories.ProfileFactory.create_batch(size=3, organization_id=self.organization.id)
+
+        # create profiles we'll fetch
+        profiles = factories.ProfileFactory.create_batch(
+            size=3,
+            organization_id=self.organization.id,
+        )
+        response = self.client.call_action(
+            'get_profiles',
+            emails=[p.email for p in profiles],
+            inflations={'enabled': False},
+        )
+        self.assertEqual(len(response.result.profiles), 3)
