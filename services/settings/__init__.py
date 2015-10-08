@@ -239,6 +239,7 @@ GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 GOOGLE_USER_AGENT = 'lunohq-v1.0'
 GOOGLE_API_KEY = 'AIzaSyBvkJcNxomtXZeLnN4PwB3Vz90MObqDO-E'
 GOOGLE_TIMEZONE_ENDPOINT = 'https://maps.googleapis.com/maps/api/timezone/json'
+GOOGLE_GEOCODING_ENDPOINT = 'https://maps.googleapis.com/maps/api/geocode/json'
 
 # User Service Settings
 USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state token
