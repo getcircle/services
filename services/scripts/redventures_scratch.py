@@ -9,7 +9,8 @@ import boto
 from boto.s3.key import Key
 
 
-IMAGE_BASE_PATH = '/Users/mhahn/Downloads/employee_photos'
+IMAGE_BASE_PATH = '/Users/mhahn/Downloads/corporate_photos'
+FILENAME = '/Users/mhahn/labs/services/corporate-employee-export-10-7.csv'
 
 
 def upload_image(bucket, email, image_name):
@@ -27,9 +28,10 @@ def upload_image(bucket, email, image_name):
             print 'finished: %s' % (result,)
         else:
             print 'couldn\'t find photo at: %s' % (path,)
+            return None
     return result
 
-with open('/Users/mhahn/labs/services/red-ventures-pilot-a.csv') as csvfile:
+with open(FILENAME) as csvfile:
     reader = DictReader(csvfile)
     data = [row for row in reader]
 
@@ -37,10 +39,11 @@ connection = boto.connect_s3()
 bucket = connection.get_bucket('lunohq-media')
 
 for record in data:
-    image_name = record['image_name'].strip()
+    image_name = record['profile_picture_image_url'].strip()
     if image_name:
-        image_url = upload_image(bucket, record['email'], record['image_name'])
-        record['image_url'] = image_url
+        image_url = upload_image(bucket, record['email'], image_name)
+        if image_url:
+            record['profile_picture_image_url'] = image_url
 
 with open('output.csv', 'w') as write_file:
     writer = DictWriter(write_file, fieldnames=data[0].keys(), extrasaction='ignore')
