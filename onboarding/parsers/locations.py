@@ -2,7 +2,6 @@ from csv import DictReader
 import os
 
 from django.conf import settings
-from django.utils.encoding import smart_text
 import requests
 import service.control
 
@@ -66,16 +65,18 @@ def save_location(location_row, token):
 
 def add_locations(filename, token):
     locations = []
-    if os.path.exists(filename):
-        with open(filename) as read_file:
-            reader = DictReader(read_file)
-            for row_data in reader:
-                row = LocationRow(row_data)
-                if not row.is_empty():
-                    location, created = save_location(row, token)
-                    if created:
-                        print 'successfully added location: %s' % (location.name,)
-                    else:
-                        print 'location already exists: %s' % (location.name,)
-                    locations.append(location)
+    if not os.path.exists(filename):
+        raise ValueError('%s path does not exist' % (filename,))
+
+    with open(filename) as read_file:
+        reader = DictReader(read_file)
+        for row_data in reader:
+            row = LocationRow(row_data)
+            if not row.is_empty():
+                location, created = save_location(row, token)
+                if created:
+                    print 'successfully added location: %s' % (location.name,)
+                else:
+                    print 'location already exists: %s' % (location.name,)
+                locations.append(location)
     return locations
