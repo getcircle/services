@@ -196,7 +196,7 @@ def update_managers(filename, token):
         action='get_profiles',
         return_object='profiles',
         client_kwargs={'token': token},
-        emails=sum([(r['email'], r['manager_email']) for r in rows]),
+        emails=list(sum([(r.email, r.manager_email) for r in rows], ())),
     )
     profiles_dict = dict((p.email, p) for p in profiles)
 
