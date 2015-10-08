@@ -68,6 +68,7 @@ class OrganizationTeamTests(MockedTestCase):
         )
         self.assertEqual(response.result.team.profile_count, 3)
         self.assertEqual(response.result.team.child_team_count, 0)
+        self.assertTrue(response.result.created)
 
     def test_add_direct_reports_exist_team(self):
         # create an existing team (auto creates manager and direct report)
@@ -80,6 +81,7 @@ class OrganizationTeamTests(MockedTestCase):
         self.verify_containers(team, response.result.team, ignore_fields=('profile_count',))
         manager = models.ReportingStructure.objects.get(profile_id=team.manager_profile_id)
         self.assertEqual(manager.get_descendant_count(), 2)
+        self.assertFalse(response.result.created)
 
     def test_set_manager_manager_profile_id_required(self):
         with self.assertFieldError('manager_profile_id', 'MISSING'):

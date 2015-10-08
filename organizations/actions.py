@@ -583,7 +583,7 @@ class ReportingStructureAction(PreRunParseTokenMixin, actions.Action):
                 'created_by_profile_id': self.parsed_token.profile_id,
             },
         )
-        return team
+        return team, created
 
 
 class AddDirectReports(ReportingStructureAction):
@@ -598,11 +598,12 @@ class AddDirectReports(ReportingStructureAction):
     }
 
     def run(self, *args, **kwargs):
-        team = self._add_direct_reports(
+        team, created = self._add_direct_reports(
             self.request.profile_id,
             self.request.direct_reports_profile_ids,
         )
         team.to_protobuf(self.response.team)
+        self.response.created = created
 
 
 class SetManager(ReportingStructureAction):
@@ -618,7 +619,7 @@ class SetManager(ReportingStructureAction):
     }
 
     def run(self, *args, **kwargs):
-        team = self._add_direct_reports(
+        team, _ = self._add_direct_reports(
             self.request.manager_profile_id,
             [self.request.profile_id],
         )
