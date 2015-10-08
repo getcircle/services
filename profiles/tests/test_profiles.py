@@ -488,6 +488,36 @@ class TestProfiles(MockedTestCase):
         response = self.client.call_action('bulk_create_profiles', profiles=profiles)
         self.assertEqual(len(response.result.profiles), len(profiles))
 
+    def test_bulk_create_profiles_dont_update_by_default(self):
+        profiles = []
+        for _ in range(3):
+            profile = factories.ProfileFactory.create_protobuf(
+                organization_id=self.organization.id,
+            )
+            profile.first_name = 'invalid'
+            profiles.append(profile)
+
+        response = self.client.call_action('bulk_create_profiles', profiles=profiles)
+        for profile in response.result.profiles:
+            self.assertNotEqual(profile.first_name, 'invalid')
+
+    def test_bulk_create_profiles_should_update(self):
+        profiles = []
+        for _ in range(3):
+            profile = factories.ProfileFactory.create_protobuf(
+                organization_id=self.organization.id,
+            )
+            profile.first_name = 'invalid'
+            profiles.append(profile)
+
+        response = self.client.call_action(
+            'bulk_create_profiles',
+            profiles=profiles,
+            should_update=True,
+        )
+        for profile in response.result.profiles:
+            self.assertEqual(profile.first_name, 'invalid')
+
     def test_get_profiles_organization_id_by_default(self):
         response = self.client.call_action('get_profiles')
         self.assertTrue(response.success)

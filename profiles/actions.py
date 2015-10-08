@@ -94,11 +94,12 @@ class BulkCreateProfiles(PreRunParseTokenMixin, actions.Action):
                 profiles_to_create.append(container)
             else:
                 profile = existing_profiles_dict[container.email]
-                profile.update_from_protobuf(container)
+                if self.request.should_update:
+                    profile.update_from_protobuf(container)
                 profiles_to_update.append(profile)
 
         profiles = self.bulk_create_profiles(profiles_to_create)
-        if profiles_to_update:
+        if profiles_to_update and self.request.should_update:
             models.Profile.bulk_manager.bulk_update(profiles_to_update)
 
         contact_methods = []
