@@ -254,6 +254,10 @@ class OrganizationTeamTests(MockedTestCase):
         response = self.client.call_action('update_team', team=team)
         self.assertEqual(response.result.team.status.id, team.status.id)
         self.assertEqual(response.result.team.status.value, team.status.value)
+        self.assertTrue(response.result.team.status.changed)
+        self.assertTrue(response.result.team.status.created)
+        self.assertEqual(response.result.team.status.created, team.status.created)
+        self.assertNotEqual(response.result.team.status.changed, team.status.changed)
         statuses = models.TeamStatus.objects.filter(team_id=team.id)
         self.assertTrue(len(statuses), 1)
         self.assertEqual(statuses[0].value, team.status.value)
@@ -275,7 +279,11 @@ class OrganizationTeamTests(MockedTestCase):
             profile_id=team.manager_profile_id,
         )
         response = self.client.call_action('update_team', team=team)
-        self.verify_containers(team.status, response.result.team.status)
+        self.verify_containers(
+            team.status,
+            response.result.team.status,
+            ignore_fields=('changed',),
+        )
 
     def test_update_team_unset_status(self):
         self.profile.is_admin = True

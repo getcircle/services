@@ -191,11 +191,10 @@ class Team(models.UUIDModel, models.TimestampableModel):
         return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
 
 
-class TeamStatus(models.UUIDModel):
+class TeamStatus(models.UUIDModel, models.TimestampableModel):
 
     value = models.TextField(null=True)
     team = models.ForeignKey(Team)
-    created = models.DateTimeField(auto_now_add=True)
     organization_id = models.UUIDField(editable=False)
     by_profile_id = models.UUIDField(editable=False)
 
