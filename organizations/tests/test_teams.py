@@ -279,11 +279,7 @@ class OrganizationTeamTests(MockedTestCase):
             profile_id=team.manager_profile_id,
         )
         response = self.client.call_action('update_team', team=team)
-        self.verify_containers(
-            team.status,
-            response.result.team.status,
-            ignore_fields=('changed',),
-        )
+        self.verify_containers(team.status, response.result.team.status)
 
     def test_update_team_unset_status(self):
         self.profile.is_admin = True

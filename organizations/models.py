@@ -71,9 +71,10 @@ class Team(models.UUIDModel, models.TimestampableModel):
             team=self,
             pk=container.status.id,
         )
-        instance.update_from_protobuf(container.status)
-        instance.by_profile_id = by_profile_id
-        instance.save()
+        if container.status.value != instance.value:
+            instance.update_from_protobuf(container.status)
+            instance.by_profile_id = by_profile_id
+            instance.save()
         return instance.to_protobuf()
 
     def _new_status(self, container, by_profile_id):
