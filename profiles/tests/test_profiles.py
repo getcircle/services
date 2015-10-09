@@ -172,6 +172,19 @@ class TestProfiles(MockedTestCase):
         self.assertFalse(response.result.profile.HasField('status'))
         self.assertEqual(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 2)
 
+    def test_update_profile_update_status(self):
+        profile = factories.ProfileFactory.create_protobuf(
+            status={'value': 'old status'},
+            organization_id=self.organization.id,
+        )
+        profile.status.value = 'updated value'
+        self.client.call_action('update_profile', profile=profile)
+        response = self.client.call_action('get_profile', profile_id=profile.id)
+        status = response.result.profile.status
+        self.assertEqual(status.id, profile.status.id)
+        self.assertEqual(status.value, profile.status.value)
+        self.assertEqual(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 1)
+
     def test_update_profile_get_profile_only_returns_most_recent_status(self):
         original = factories.ProfileFactory.create_protobuf(
             status={'value': 'old status'},

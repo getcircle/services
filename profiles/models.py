@@ -139,15 +139,25 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             status=status,
         )
 
-    def _update_status(self, profile_container):
-        new_status = None
+    def _existing_status(self, container):
+        instance = ProfileStatus.objects.get(
+            organization_id=self.organization_id,
+            profile=self,
+            pk=container.status.id,
+        )
+        instance.update_from_protobuf(container.status)
+        instance.save()
+        return instance.to_protobuf()
+
+    def _new_status(self, container):
         try:
             current_status = self.statuses.all().order_by('-created')[0]
             current_value = current_status.value
         except IndexError:
             current_value = None
 
-        value = profile_container.status.value if profile_container.HasField('status') else None
+        value = container.status.value if container.HasField('status') else None
+        # support unsetting the current status (creating a stauts with value None, only once)
         if current_value != value:
             instance = ProfileStatus.objects.create(
                 profile=self,
@@ -155,8 +165,16 @@ class Profile(models.UUIDModel, models.TimestampableModel):
                 organization_id=self.organization_id,
             )
             if value is not None:
-                new_status = instance.to_protobuf()
-        return new_status
+                return instance.to_protobuf()
+
+    def _update_status(self, container):
+        next_status = None
+        status = container.status
+        if status.id:
+            next_status = self._existing_status(container)
+        else:
+            next_status = self._new_status(container)
+        return next_status
 
     def _update_contact_methods(self, methods):
         with django.db.transaction.atomic():
