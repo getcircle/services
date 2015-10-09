@@ -102,17 +102,18 @@ def save_location_members(rows, token, profiles_dict):
     members = {}
     for row in rows:
         profile = profiles_dict[row.email]
-        if row.office_name not in locations:
-            location = service.control.get_object(
-                service='organization',
-                action='get_location',
-                return_object='location',
-                client_kwargs={'token': token},
-                name=row.office_name,
-            )
-            locations[location.name] = location
-        location = locations[row.office_name]
-        members.setdefault(location.id, []).append(profile.id)
+        if row.office_name:
+            if row.office_name not in locations:
+                location = service.control.get_object(
+                    service='organization',
+                    action='get_location',
+                    return_object='location',
+                    client_kwargs={'token': token},
+                    name=row.office_name,
+                )
+                locations[location.name] = location
+            location = locations[row.office_name]
+            members.setdefault(location.id, []).append(profile.id)
 
     for location_id, profile_ids in members.iteritems():
         service.control.call_action(
