@@ -10,3 +10,4 @@ static
 .vagrant
 
 wheelhouse
+services/settings/overrides.py
