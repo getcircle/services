@@ -26,21 +26,25 @@ class OrganizationTeamTests(MockedTestCase):
         )
         self.mock.instance.dont_mock_service('organization')
 
-    def _mock_requester_profile(self):
+    def _mock_requester_profile(self, profile_id=None):
+        if profile_id is None:
+            profile = self.profile
+        else:
+            profile = mocks.mock_profile(id=profile_id)
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
             return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
+            return_object=profile,
+            profile_id=profile.id,
             inflations={'enabled': False},
         )
         self.mock.instance.register_mock_object(
             'profile',
             'get_profile',
             return_object_path='profile',
-            return_object=self.profile,
-            profile_id=self.profile.id,
+            return_object=profile,
+            profile_id=profile.id,
         )
 
     def test_get_team_invalid_team_id(self):
@@ -225,6 +229,32 @@ class OrganizationTeamTests(MockedTestCase):
         instance = models.Team.objects.get(pk=team.id)
         self.assertEqual(instance.name, team.name)
         statuses = instance.teamstatus_set.all()
+        self.assertTrue(len(statuses), 1)
+        self.assertEqual(statuses[0].value, team.status.value)
+        self.assertEqualUUID4(statuses[0].by_profile_id, str(self.profile.id))
+
+    def test_update_team_existing_status(self):
+        by_profile_id = fuzzy.FuzzyUUID().fuzz()
+        self.profile.is_admin = True
+        self._mock_requester_profile()
+        self._mock_requester_profile(by_profile_id)
+        team = factories.TeamFactory.create_protobuf(
+            organization=self.organization,
+            status={'value': 'original status', 'by_profile_id': by_profile_id},
+        )
+        manager = mocks.mock_profile(id=str(team.manager_profile_id))
+        self.mock.instance.register_mock_object(
+            'profile',
+            'get_profile',
+            return_object_path='profile',
+            return_object=manager,
+            profile_id=team.manager_profile_id,
+        )
+        team.status.value = 'new status'
+        response = self.client.call_action('update_team', team=team)
+        self.assertEqual(response.result.team.status.id, team.status.id)
+        self.assertEqual(response.result.team.status.value, team.status.value)
+        statuses = models.TeamStatus.objects.filter(team_id=team.id)
         self.assertTrue(len(statuses), 1)
         self.assertEqual(statuses[0].value, team.status.value)
         self.assertEqualUUID4(statuses[0].by_profile_id, str(self.profile.id))

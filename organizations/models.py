@@ -65,15 +65,26 @@ class Team(models.UUIDModel, models.TimestampableModel):
     def get_description(self):
         return self.description or {}
 
-    def _update_status(self, team_container, by_profile_id):
-        new_status = None
+    def _existing_status(self, container, by_profile_id):
+        instance = TeamStatus.objects.get(
+            organization_id=self.organization_id,
+            team=self,
+            pk=container.status.id,
+        )
+        instance.update_from_protobuf(container.status)
+        instance.by_profile_id = by_profile_id
+        instance.save()
+        return instance.to_protobuf()
+
+    def _new_status(self, container, by_profile_id):
         try:
             current_status = self.teamstatus_set.all().order_by('-created')[0]
             current_value = current_status.value
         except IndexError:
             current_value = None
 
-        value = team_container.status.value if team_container.HasField('status') else None
+        value = container.status.value if container.HasField('status') else None
+        # support unsetting the current status (creating a stauts with value None, only once)
         if current_value != value:
             instance = TeamStatus.objects.create(
                 team=self,
@@ -82,8 +93,16 @@ class Team(models.UUIDModel, models.TimestampableModel):
                 by_profile_id=by_profile_id,
             )
             if value is not None:
-                new_status = instance.to_protobuf()
-        return new_status
+                return instance.to_protobuf()
+
+    def _update_status(self, container, by_profile_id):
+        next_status = None
+        status = container.status
+        if status.id:
+            next_status = self._existing_status(container, by_profile_id)
+        else:
+            next_status = self._new_status(container, by_profile_id)
+        return next_status
 
     def update_from_protobuf(self, protobuf, by_profile_id):
         status = self._update_status(protobuf, by_profile_id)
