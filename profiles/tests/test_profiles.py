@@ -145,6 +145,11 @@ class TestProfiles(MockedTestCase):
         self.assertEqual(new_status, response.result.profile.status.value)
         self.assertTrue(response.result.profile.status.created)
         self.assertTrue(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 2)
+        status = response.result.profile.status
+        self.assertTrue(status.created)
+        self.assertTrue(status.changed)
+        self.assertNotEqual(original.status.created, status.created)
+        self.assertNotEqual(original.status.changed, status.changed)
 
     def test_update_profile_status_didnt_change(self):
         original = factories.ProfileFactory.create_protobuf(
@@ -184,6 +189,10 @@ class TestProfiles(MockedTestCase):
         self.assertEqual(status.id, profile.status.id)
         self.assertEqual(status.value, profile.status.value)
         self.assertEqual(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 1)
+        self.assertTrue(status.changed)
+        self.assertTrue(status.created)
+        self.assertEqual(status.created, profile.status.created)
+        self.assertNotEqual(status.changed, profile.status.changed)
 
     def test_update_profile_get_profile_only_returns_most_recent_status(self):
         original = factories.ProfileFactory.create_protobuf(

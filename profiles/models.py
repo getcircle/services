@@ -145,8 +145,9 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             profile=self,
             pk=container.status.id,
         )
-        instance.update_from_protobuf(container.status)
-        instance.save()
+        if container.status.value != instance.value:
+            instance.update_from_protobuf(container.status)
+            instance.save()
         return instance.to_protobuf()
 
     def _new_status(self, container):
@@ -220,11 +221,10 @@ class ProfileTags(models.TimestampableModel):
         unique_together = ('tag', 'profile')
 
 
-class ProfileStatus(models.UUIDModel):
+class ProfileStatus(models.UUIDModel, models.TimestampableModel):
 
     value = models.TextField(null=True)
     profile = models.ForeignKey(Profile, related_name='statuses')
-    created = models.DateTimeField(auto_now_add=True)
     organization_id = models.UUIDField()
 
     class Meta:
