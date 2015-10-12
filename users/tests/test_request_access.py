@@ -11,7 +11,7 @@ from .. import (
 )
 
 
-class TestUserDevices(TestCase):
+class TestRequestAccess(TestCase):
 
     def setUp(self):
         self.client = service.control.Client('user', token='test-token')
