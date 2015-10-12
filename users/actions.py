@@ -541,7 +541,7 @@ class RequestAccess(actions.Action):
     def validate(self, *args, **kwargs):
         super(RequestAccess, self).validate(*args, **kwargs)
         if not self.is_error():
-            if not (self.request.user_id or self.request.anonymous_user):
+            if not (self.request.HasField('user_id') or self.request.HasField('anonymous_user')):
                 raise self.ActionError(
                     'MISSING_ARGUMENTS',
                     ('MISSING_ARGUMENTS', 'must provide either user_id or anonymous_user'),
