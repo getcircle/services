@@ -1,5 +1,6 @@
-import re
+import json
 
+import boto3
 from cacheops import cached
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -18,7 +19,10 @@ from twilio.rest import TwilioRestClient
 from twilio.rest.exceptions import TwilioRestException
 
 from services import mixins
-from services.token import parse_token
+from services.token import (
+    make_admin_token,
+    parse_token,
+)
 
 from . import (
     models,
@@ -524,8 +528,6 @@ class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
 
 class RequestAccess(actions.Action):
 
-    required_fields = ('user_id',)
-
     type_validators = {
         'user_id': [validators.is_uuid4],
     }
@@ -536,11 +538,69 @@ class RequestAccess(actions.Action):
         },
     }
 
-    def run(self, *args, **kwargs):
-        access_request, _ = models.AccessRequest.objects.get_or_create(
-            user_id=self.request.user_id,
+    def validate(self, *args, **kwargs):
+        super(RequestAccess, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if not (self.request.user_id or self.request.anonymous_user):
+                raise self.ActionError(
+                    'MISSING_ARGUMENTS',
+                    ('MISSING_ARGUMENTS', 'must provide either user_id or anonymous_user'),
+                )
+
+    def _get_provider_name(self, provider):
+        provider_dict = dict(zip(
+            user_containers.IdentityV1.ProviderV1.values(),
+            user_containers.IdentityV1.ProviderV1.keys(),
+        ))
+        return provider_dict.get(provider, 'Unknown (%s)' % (provider,))
+
+    def _get_admin_emails(self, domain):
+        organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            return_object='organization',
+            client_kwargs={'token': make_admin_token()},
+            domain=domain,
         )
-        access_request.to_protobuf(self.response.access_request)
+        profiles = service.control.get_object(
+            service='profile',
+            action='get_profiles',
+            return_object='profiles',
+            client_kwargs={'token': make_admin_token(organization_id=organization.id)},
+            inflations={'enabled': False, 'only': ['email']},
+            is_admin=True,
+        )
+        return [p.email for p in profiles]
+
+    def _anonymous_user_request(self):
+        user = self.request.anonymous_user
+        user_info = {}
+        if user.user_info:
+            user_info = json.loads(user.user_info)
+
+        provider_name = self._get_provider_name(user_info.pop('_provider', None))
+        sns = boto3.resource('sns', **settings.AWS_SNS_TOPIC_REQUEST_ACCESS_KWARGS)
+        topic = sns.Topic(settings.AWS_SNS_TOPIC_REQUEST_ACCESS)
+        admin_emails = self._get_admin_emails(user.domain)
+        topic.publish(
+            Subject='[%s] Access Request' % (user.domain,),
+            Message='%s\n%s\n\nAdmins:\n%s\n\n%s Response:\n%s' % (
+                user.domain,
+                user.location,
+                ', '.join(admin_emails),
+                provider_name,
+                json.dumps(user_info),
+            ),
+        )
+
+    def run(self, *args, **kwargs):
+        if self.request.user_id:
+            access_request, _ = models.AccessRequest.objects.get_or_create(
+                user_id=self.request.user_id,
+            )
+            access_request.to_protobuf(self.response.access_request)
+        else:
+            self._anonymous_user_request()
 
 
 class GetAuthenticationInstructions(actions.Action):

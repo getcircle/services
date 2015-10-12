@@ -123,6 +123,7 @@ class Provider(base.BaseProvider):
         email = self._get_value_for_identity_field('Email', user_info)
         first_name = self._get_value_for_identity_field('FirstName', user_info)
         last_name = self._get_value_for_identity_field('LastName', user_info)
+        user_info['_provider'] = self.type
 
         if not self._verify_profile_exists(domain, email):
             self.logger.warn(

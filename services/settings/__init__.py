@@ -203,6 +203,12 @@ AWS_SECRET_ACCESS_KEY = "+D7EMNyPKOCPI959HiheMVRHKs5QN4lM+MhNK5JR"
 # AWS SNS Settings
 AWS_SNS_PLATFORM_APPLICATION_APNS = ''
 AWS_SNS_PLATFORM_APPLICATION_GCM = ''
+AWS_SNS_TOPIC_REQUEST_ACCESS_KWARGS = {
+    'aws_access_key_id': AWS_ACCESS_KEY_ID,
+    'aws_secret_access_key': AWS_SECRET_ACCESS_KEY,
+    'region_name': 'us-west-2',
+}
+AWS_SNS_TOPIC_REQUEST_ACCESS = 'arn:aws:sns:us-west-2:487220619225:access-requests'
 
 AWS_S3_MEDIA_BUCKET = 'dev-lunohq-media'
 

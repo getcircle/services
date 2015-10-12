@@ -58,6 +58,11 @@ pysaml2==2.4.0
 repoze.who==2.2
 zope.interface==4.1.2
 stripe==1.26.0
+boto3==1.1.4
+botocore==1.2.10
+docutils==0.12
+futures==2.2.0
+jmespath==0.9.0
 
 # more recent version of bitfield for 1.8 compatibility
 git+https://git@github.com/disqus/django-bitfield.git#24126a01

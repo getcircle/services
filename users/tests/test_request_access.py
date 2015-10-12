@@ -24,9 +24,10 @@ class TestUserDevices(TestCase):
         with self.assertFieldError('user_id', 'DOES_NOT_EXIST'):
             self.client.call_action('request_access', user_id=fuzzy.FuzzyUUID().fuzz())
 
-    def test_request_access_user_id_missing(self):
-        with self.assertFieldError('user_id', 'MISSING'):
+    def test_request_access_missing_arguments(self):
+        with self.assertRaisesCallActionError() as expected:
             self.client.call_action('request_access')
+        self.assertIn('MISSING_ARGUMENTS', expected.exception.response.errors)
 
     def test_request_access(self):
         user = factories.UserFactory.create_protobuf()
