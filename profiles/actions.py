@@ -294,9 +294,10 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
                     display_title=None,
                 )
 
-        profiles_teams = self._get_profiles_teams(self.response.profiles)
-        for profile in self.response.profiles:
-            self._populate_display_title(profile, profiles_teams)
+        if should_inflate_field('display_title', self.request.inflations):
+            profiles_teams = self._get_profiles_teams(self.response.profiles)
+            for profile in self.response.profiles:
+                self._populate_display_title(profile, profiles_teams)
 
 
 class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
