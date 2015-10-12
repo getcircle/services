@@ -1,7 +1,7 @@
+import base64
 import urlparse
 
 from django.conf import settings
-from django.http import Http404
 from protobufs.services.user import containers_pb2 as user_containers
 from rest_framework.views import APIView
 import service.control
@@ -23,6 +23,8 @@ class SAMLHandler(APIView):
 
     def post(self, request, *args, **kwargs):
         domain = kwargs['domain']
+        redirect_uri = self._get_organization_redirect_uri(domain)
+
         client = service.control.Client('user')
         try:
             response = client.call_action(
@@ -34,11 +36,16 @@ class SAMLHandler(APIView):
                     'relay_state': request.data['RelayState'],
                 },
             )
-        except service.control.CallActionError:
-            # XXX add some logging here and return to an error view for iOS
-            raise Http404
+        except service.control.CallActionError as e:
+            query_params = {
+                'error': ','.join(e.response.errors),
+                'domain': domain,
+            }
+            if query_params['error'] == 'PROFILE_NOT_FOUND':
+                user_info = e.response.error_details[0].detail
+                query_params['user_info'] = base64.b64encode(user_info)
+            return authorization_redirect(redirect_uri=redirect_uri, query_params=query_params)
 
-        redirect_uri = self._get_organization_redirect_uri(domain)
         protobuf_parameters = {
             'user': response.result.user,
             'identity': response.result.identity,

@@ -28,6 +28,10 @@ class InvalidAuthState(Exception):
     pass
 
 
+class ProfileNotFound(Exception):
+    pass
+
+
 class ProviderResponseMissingRequiredField(Exception):
 
     def __init__(self, field, *args, **kwargs):
@@ -73,6 +77,7 @@ class Provider(base.BaseProvider):
         ProviderResponseMissingRequiredField: 'PROVIDER_RESPONSE_MISSING_REQUIRED_FIELD',
         ProviderResponseVerificationFailed: 'PROVIDER_RESPONSE_VERIFICATION_FAILED',
         SAMLMetaDataDoesNotExist: 'SAML_METADATA_DOES_NOT_EXIST',
+        ProfileNotFound: 'PROFILE_NOT_FOUND',
     }
 
     @property
@@ -120,8 +125,13 @@ class Provider(base.BaseProvider):
         last_name = self._get_value_for_identity_field('LastName', user_info)
 
         if not self._verify_profile_exists(domain, email):
-            self.logger.warn('profile not found for: %s in domain: %s', email, domain)
-            raise ProviderResponseVerificationFailed
+            self.logger.warn(
+                'profile not found for: %s in domain: %s (%s)',
+                email,
+                domain,
+                user_info,
+            )
+            raise ProfileNotFound(json.dumps(user_info))
 
         identity, created = self.get_identity(email)
         identity.email = email
