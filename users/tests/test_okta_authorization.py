@@ -191,7 +191,7 @@ class TestOktaAuthorization(MockedTestCase):
                 provider=user_containers.IdentityV1.OKTA,
                 saml_details=saml_details,
             )
-        self.assertIn('PROVIDER_RESPONSE_VERIFICATION_FAILED', expected.exception.response.errors)
+        self.assertIn('PROFILE_NOT_FOUND', expected.exception.response.errors)
 
     def test_complete_authorization_auth_state(self):
         user = factories.UserFactory.create()
