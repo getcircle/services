@@ -48,11 +48,12 @@ class Command(BaseCommand):
                     if options['commit']:
                         profile.save()
 
-                    identity = Identity.objects.get(
+                    identity = Identity.objects.get_or_none(
                         user_id=profile.user_id,
                         provider=user_containers.IdentityV1.OKTA,
                     )
-                    if identity.provider_uid != employee_id:
+                    if identity and identity.provider_uid != employee_id:
+                        identity.provider_uid = employee_id
                         print 'updating provider_uid for identity: %s (%s)' % (
                             identity.email,
                             identity.pk,
