@@ -677,7 +677,22 @@ class GetActiveTags(actions.Action):
 
 class ProfileExists(actions.Action):
 
-    required_fields = ('email', 'domain')
+    required_fields = ('domain',)
+
+    def validate(self, *args, **kwargs):
+        super(ProfileExists, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if not (
+                (self.request.HasField('email') and self.request.email) or
+                (
+                    self.request.HasField('authentication_identifier') and
+                    self.request.authentication_identifier
+                )
+            ):
+                raise self.ActionError(
+                    'MISSING_ARGUMENTS',
+                    ('MISSING_ARGUMENTS', 'email or authentication_identifier required'),
+                )
 
     def run(self, *args, **kwargs):
         try:
@@ -691,7 +706,16 @@ class ProfileExists(actions.Action):
         except service.control.CallActionError:
             raise self.ActionFieldError('domain')
 
-        self.response.exists = models.Profile.objects.filter(
-            email=self.request.email,
-            organization_id=organization.id,
-        ).exists()
+        parameters = {'organization_id': organization.id}
+        if self.request.HasField('email'):
+            parameters['email'] = self.request.email
+        else:
+            parameters['authentication_identifier'] = self.request.authentication_identifier
+
+        profile = models.Profile.objects.get_or_none(**parameters)
+        if not profile:
+            self.response.exists = False
+        else:
+            self.response.exists = True
+            self.response.user_id = str(profile.user_id)
+            self.response.profile_id = str(profile.id)
