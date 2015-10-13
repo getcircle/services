@@ -27,7 +27,7 @@ class TagSearchAdapter(SearchAdapter):
 class ProfileStatusSearchAdapter(SearchAdapter):
 
     def get_title(self, obj):
-        return obj.value
+        return obj.value or ''
 
     def get_description(self, obj):
         profile = obj.profile.to_protobuf(
@@ -55,7 +55,7 @@ class AppConfig(BaseAppConfig):
 
         ProfileStatus = self.get_model('ProfileStatus')
         watson.register(
-            ProfileStatus,
+            ProfileStatus.objects.exclude(value__isnull=True),
             ProfileStatusSearchAdapter,
             fields=('value'),
         )
