@@ -49,6 +49,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     )
     is_admin = models.BooleanField(default=False)
     small_image_url = models.URLField(max_length=255, null=True)
+    authentication_identifier = models.CharField(max_length=255, null=True)
 
     @property
     def full_name(self):
@@ -208,7 +209,10 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             return methods
 
     class Meta:
-        unique_together = ('organization_id', 'user_id')
+        unique_together = (
+            ('organization_id', 'user_id'),
+            ('organization_id', 'authentication_identifier'),
+        )
         protobuf = profile_containers.ProfileV1
 
 
