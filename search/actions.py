@@ -20,6 +20,7 @@ from organizations.models import (
 )
 from profiles.models import (
     Profile,
+    ProfileStatus,
     Tag,
 )
 
@@ -72,6 +73,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 Profile.objects.filter(organization_id=self.organization_id),
                 Location.objects.filter(organization_id=self.organization_id),
                 Team.objects.filter(organization_id=self.organization_id),
+                ProfileStatus.objects.filter(organization_id=self.organization_id),
                 # TODO remove these, we aren't supporting searching across them right now
                 #Tag.objects.filter(organization_id=self.organization_id),
                 #self._get_group_category_queryset(),
@@ -141,5 +143,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 container_key = 'location'
             elif container is group_containers.GroupV1:
                 container_key = 'group'
+            elif container is profile_containers.ProfileStatusV1:
+                container_key = 'profile_status'
             result_container = self.response.results.add()
             getattr(result_container, container_key).CopyFrom(value)

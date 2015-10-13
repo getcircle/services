@@ -1,3 +1,4 @@
+import arrow
 from django.apps import AppConfig as BaseAppConfig
 import watson
 
@@ -23,6 +24,21 @@ class TagSearchAdapter(SearchAdapter):
         return obj.name
 
 
+class ProfileStatusSearchAdapter(SearchAdapter):
+
+    def get_title(self, obj):
+        return obj.value
+
+    def get_description(self, obj):
+        profile = obj.profile.to_protobuf(
+            token=make_admin_token(organization_id=obj.organization_id),
+        )
+        return ' '.join([profile.full_name, profile.display_title])
+
+    def get_content(self, obj):
+        return arrow.get(obj.created).format('MMMM D, YYYY')
+
+
 class AppConfig(BaseAppConfig):
     name = 'profiles'
 
@@ -36,3 +52,10 @@ class AppConfig(BaseAppConfig):
 
         Tag = self.get_model('Tag')
         watson.register(Tag, TagSearchAdapter, fields=('name', 'type'))
+
+        ProfileStatus = self.get_model('ProfileStatus')
+        watson.register(
+            ProfileStatus,
+            ProfileStatusSearchAdapter,
+            fields=('value'),
+        )
