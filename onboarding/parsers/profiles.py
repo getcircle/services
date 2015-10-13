@@ -90,6 +90,9 @@ def save_profiles(profile_rows, token, email_to_user_dict):
 
         data = {'user_id': user.id}
         data.update(row.get_protobuf_data())
+        if not data.get('authentication_identifier'):
+            data['authentication_identifier'] = data['email']
+
         profiles.append(data)
 
     client = service.control.Client('profile', token=token)
