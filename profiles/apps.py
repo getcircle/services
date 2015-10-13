@@ -11,7 +11,7 @@ class ProfileSearchAdapter(SearchAdapter):
         return ' '.join([obj.first_name, obj.last_name])
 
     def get_description(self, obj):
-        return obj.title
+        return obj.title or ''
 
     def get_protobuf(self, obj):
         return obj.to_protobuf(token=make_admin_token(organization_id=obj.organization_id))
