@@ -6,7 +6,9 @@ from mock import (
 )
 from protobufs.services.user import containers_pb2 as user_containers
 import service.control
+from service.transports.mock import get_mockable_response
 from services.test import (
+    fuzzy,
     mocks,
     MockedTestCase,
 )
@@ -36,7 +38,7 @@ class TestOktaAuthorization(MockedTestCase):
             'LastName': ['Hahn'],
         }
 
-    def _setup_test(self, saml_client, profile_exists=True, **overrides):
+    def _setup_test(self, saml_client, profile_exists=True, user_id=None, **overrides):
         domain = overrides.get('domain', 'lunohq')
         self.mock.instance.register_mock_object(
             service='organization',
@@ -45,13 +47,18 @@ class TestOktaAuthorization(MockedTestCase):
             return_object=mocks.mock_sso(),
             organization_domain=domain,
         )
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='profile_exists',
-            return_object_path='exists',
-            return_object=profile_exists,
+        response = get_mockable_response('profile', 'profile_exists')
+        if profile_exists:
+            response.user_id = user_id or fuzzy.FuzzyUUID().fuzz()
+            response.profile_id = fuzzy.FuzzyUUID().fuzz()
+            response.exists = True
+
+        self.mock.instance.register_mock_response(
+            'profile',
+            'profile_exists',
+            mock_response=response,
             domain=domain,
-            email='michael@lunohq.com',
+            authentication_identifier='michael@lunohq.com',
         )
         self._patch_saml_client(saml_client, self._mock_user_info())
         return mocks.mock_saml_details(**overrides)
@@ -100,7 +107,12 @@ class TestOktaAuthorization(MockedTestCase):
         redirect_uri = 'testredirecturi'
         signer = get_signer('lunohq')
         relay_state = signer.sign(redirect_uri)
-        saml_details = self._setup_test(patched_saml_client, relay_state=relay_state)
+        user = factories.UserFactory.create_protobuf(primary_email='michael@lunohq.com')
+        saml_details = self._setup_test(
+            patched_saml_client,
+            relay_state=relay_state,
+            user_id=user.id,
+        )
         with self.settings(USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST=(redirect_uri,)):
             response = self.client.call_action(
                 'complete_authorization',
@@ -121,26 +133,11 @@ class TestOktaAuthorization(MockedTestCase):
             )
 
     @patch('users.authentication.utils.get_saml_client')
-    def test_complete_authorization_no_user(self, patched_saml_client):
-        saml_details = self._setup_test(patched_saml_client)
-        response = self.client.call_action(
-            'complete_authorization',
-            provider=user_containers.IdentityV1.OKTA,
-            saml_details=saml_details,
-        )
-        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.OKTA)
-        self.assertEqual(response.result.identity.email, 'michael@lunohq.com')
-        self.assertEqual(response.result.identity.provider_uid, 'michael@lunohq.com')
-        parsed_state = parse_state(response.result.saml_details.auth_state)
-        self.assertEqual(parsed_state['user_id'], response.result.user.id)
-        self.assertTrue(parsed_state['totp'])
-
-    @patch('users.authentication.utils.get_saml_client')
     def test_complete_authorization(self, patched_saml_client):
         user = factories.UserFactory.create_protobuf(
             primary_email='michael@lunohq.com',
         )
-        saml_details = self._setup_test(patched_saml_client)
+        saml_details = self._setup_test(patched_saml_client, user_id=user.id)
         response = self.client.call_action(
             'complete_authorization',
             provider=user_containers.IdentityV1.OKTA,
@@ -166,7 +163,7 @@ class TestOktaAuthorization(MockedTestCase):
         )
         # above facotry requires user model, below we test with the protobuf
         user = user.to_protobuf()
-        saml_details = self._setup_test(patched_saml_client)
+        saml_details = self._setup_test(patched_saml_client, user_id=user.id)
         response = self.client.call_action(
             'complete_authorization',
             provider=user_containers.IdentityV1.OKTA,

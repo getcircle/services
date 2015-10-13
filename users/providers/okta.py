@@ -86,20 +86,21 @@ class Provider(base.BaseProvider):
             self._logger = logging.getLogger('user:provider:okta')
         return self._logger
 
-    def _get_value_for_identity_field(self, field, identity_data):
+    def _get_value_for_identity_field(self, field, identity_data, required=True):
         try:
             return identity_data[field][0]
         except (KeyError, IndexError):
-            raise ProviderResponseMissingRequiredField(field)
+            if required:
+                raise ProviderResponseMissingRequiredField(field)
 
-    def _verify_profile_exists(self, domain, email):
-        return service.control.get_object(
+    def _profile_exists(self, domain, authentication_identifier):
+        response = service.control.call_action(
             service='profile',
-            action='profile_exists',
-            return_object='exists',
+            action_name='profile_exists',
             domain=domain,
-            email=email,
+            authentication_identifier=authentication_identifier,
         )
+        return response.result
 
     def _complete_authorization(self, request, response):
         domain = request.saml_details.domain
@@ -123,9 +124,15 @@ class Provider(base.BaseProvider):
         email = self._get_value_for_identity_field('Email', user_info)
         first_name = self._get_value_for_identity_field('FirstName', user_info)
         last_name = self._get_value_for_identity_field('LastName', user_info)
+        employee_id = self._get_value_for_identity_field('EmployeeID', user_info, required=False)
         user_info['_provider'] = self.type
 
-        if not self._verify_profile_exists(domain, email):
+        # Authentication Identifier is a unique identifier for the employee
+        # within the organization. We prefer EmployeeID, but will fallback to
+        # Email if it is not provided
+        authentication_identifier = employee_id or email
+        profile_exists = self._profile_exists(domain, authentication_identifier)
+        if not profile_exists.exists:
             self.logger.warn(
                 'profile not found for: %s in domain: %s (%s)',
                 email,
@@ -134,12 +141,13 @@ class Provider(base.BaseProvider):
             )
             raise ProfileNotFound(json.dumps(user_info))
 
-        identity, created = self.get_identity(email)
+        identity, created = self.get_identity(authentication_identifier)
         identity.email = email
         full_name = ' '.join([first_name, last_name]).strip()
         if full_name:
             identity.full_name = full_name
         identity.data = json.dumps(user_info)
+        identity.user_id = profile_exists.user_id
         return identity
 
     def _complete_authorization_auth_state(self, request, response):
