@@ -50,7 +50,7 @@ class Command(BaseCommand):
 
                     identity = Identity.objects.get(
                         user_id=profile.user_id,
-                        provider=user_containers.IdentityV1.ProviderV1.OKTA,
+                        provider=user_containers.IdentityV1.OKTA,
                     )
                     if identity.provider_uid != employee_id:
                         print 'updating provider_uid for identity: %s (%s)' % (
