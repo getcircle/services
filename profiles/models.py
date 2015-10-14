@@ -231,6 +231,12 @@ class ProfileStatus(models.UUIDModel, models.TimestampableModel):
     profile = models.ForeignKey(Profile, related_name='statuses')
     organization_id = models.UUIDField()
 
+    def to_protobuf(self, *args, **kwargs):
+        protobuf = super(ProfileStatus, self).to_protobuf(*args, **kwargs)
+        profile = self.profile.to_protobuf(inflations={'enabled': False})
+        protobuf.profile.CopyFrom(profile)
+        return protobuf
+
     class Meta:
         index_together = ('profile', 'organization_id', 'created')
         protobuf = profile_containers.ProfileStatusV1

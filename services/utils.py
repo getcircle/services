@@ -3,6 +3,8 @@ import uuid
 
 import arrow
 from django.conf import settings
+from protobuf_to_dict import dict_to_protobuf
+from protobufs.services.common import containers_pb2 as common_containers
 import requests
 
 
@@ -31,6 +33,9 @@ def get_timezone_for_location(latitude, longitude):
 
 
 def should_inflate_field(field_name, inflations):
+    if isinstance(inflations, dict):
+        inflations = dict_to_protobuf(inflations, common_containers.InflationsV1)
+
     should_inflate = True
     if inflations:
         if (
