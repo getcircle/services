@@ -49,7 +49,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     )
     is_admin = models.BooleanField(default=False)
     small_image_url = models.URLField(max_length=255, null=True)
-    authentication_identifier = models.CharField(max_length=255, null=True)
+    authentication_identifier = models.CharField(max_length=255)
 
     @property
     def full_name(self):
