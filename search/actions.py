@@ -1,5 +1,6 @@
 from base64 import b64decode
 
+from django.db.models import Q
 from django.utils.module_loading import import_string
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
@@ -75,7 +76,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 Team.objects.filter(organization_id=self.organization_id),
                 ProfileStatus.objects.filter(
                     organization_id=self.organization_id,
-                ).exclude(value=''),
+                ).exclude(Q(value='') | Q(value__isnull=True)),
             )
         else:
             category = self.request.category
