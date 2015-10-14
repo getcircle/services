@@ -238,7 +238,7 @@ class ProfileStatus(models.UUIDModel, models.TimestampableModel):
         return protobuf
 
     class Meta:
-        index_together = ('profile', 'organization_id', 'created')
+        index_together = (('profile', 'organization_id', 'created'), ('value', 'organization_id'))
         protobuf = profile_containers.ProfileStatusV1
 
 

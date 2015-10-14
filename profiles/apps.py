@@ -55,7 +55,7 @@ class AppConfig(BaseAppConfig):
 
         ProfileStatus = self.get_model('ProfileStatus')
         watson.register(
-            ProfileStatus.objects.exclude(value__isnull=True),
+            ProfileStatus.objects.exclude(value=''),
             ProfileStatusSearchAdapter,
             fields=('value'),
         )
