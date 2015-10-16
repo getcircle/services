@@ -23,6 +23,7 @@ from services.token import (
     make_admin_token,
     parse_token,
 )
+from services.utils import build_slack_message
 
 from . import (
     models,
@@ -572,6 +573,46 @@ class RequestAccess(actions.Action):
         )
         return [p.email for p in profiles]
 
+    def _get_email_message(self, user, admin_emails, user_info, provider_name):
+        return '%s\n%s\n\nAdmins:\n%s\n\n%s Response:\n%s' % (
+            user.domain,
+            user.location,
+            ', '.join(admin_emails),
+            provider_name,
+            json.dumps(user_info),
+        )
+
+    def _get_lambda_message(self, user, admin_emails, user_info, provider_name):
+        attachments = [
+            {
+                'fallback': '[%s] Access Request' % (user.domain,),
+                'pretext': '[%s] Access Request' % (user.domain,),
+                'fields': [
+                    {
+                        'title': 'Domain',
+                        'value': user.domain,
+                        'short': True,
+                    },
+                    {
+                        'title': 'Location',
+                        'value': user.location,
+                        'short': True,
+                    },
+                    {
+                        'title': 'Admins',
+                        'value': ', '.join(admin_emails),
+                        'short': False,
+                    },
+                ],
+            },
+            {
+                'pretext': '%s Response' % (provider_name,),
+                'fields': [{'title': key, 'value': value[0], 'short': True}
+                           for key, value in user_info.iteritems()],
+            },
+        ]
+        return build_slack_message(attachments, '#access-requests')
+
     def _anonymous_user_request(self):
         user = self.request.anonymous_user
         user_info = {}
@@ -584,13 +625,11 @@ class RequestAccess(actions.Action):
         admin_emails = self._get_admin_emails(user.domain)
         topic.publish(
             Subject='[%s] Access Request' % (user.domain,),
-            Message='%s\n%s\n\nAdmins:\n%s\n\n%s Response:\n%s' % (
-                user.domain,
-                user.location,
-                ', '.join(admin_emails),
-                provider_name,
-                json.dumps(user_info),
-            ),
+            Message=json.dumps({
+                'default': self._get_email_message(user, admin_emails, user_info, provider_name),
+                'lambda': self._get_lambda_message(user, admin_emails, user_info, provider_name),
+            }),
+            MessageStructure='json',
         )
 
     def run(self, *args, **kwargs):

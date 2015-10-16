@@ -1,3 +1,4 @@
+import json
 import urllib
 import uuid
 
@@ -45,3 +46,18 @@ def should_inflate_field(field_name, inflations):
         ):
             should_inflate = False
     return should_inflate
+
+
+def build_slack_message(attachments, channel, username=None, icon_emoji=None):
+    if icon_emoji is None:
+        icon_emoji = ':cubimal_chick:'
+
+    if username is None:
+        username = 'sns-bot'
+
+    return json.dumps({
+        'channel': channel,
+        'icon_emoji': icon_emoji,
+        'username': username,
+        'attachments': attachments,
+    })
