@@ -247,11 +247,15 @@ class NoSearchResults(mixins.PreRunParseTokenMixin, actions.Action):
         )
         reporting_details = response.result
 
+        profile_ids = [self.parsed_token.profile_id]
+        if reporting_details.manager_profile_id:
+            profile_ids.append(reporting_details.manager_profile_id)
+
         response = service.control.call_action(
             service='profile',
             action='get_profiles',
             client_kwargs={'token': self.token},
-            ids=[reporting_details.manager_profile_id, self.parsed_token.profile_id],
+            ids=profile_ids,
         )
         profile_dict = dict((p.id, p) for p in response.result.profiles)
         manager = profile_dict.get(reporting_details.manager_profile_id)
@@ -268,10 +272,11 @@ class NoSearchResults(mixins.PreRunParseTokenMixin, actions.Action):
             'company': organization.name,
             'name': profile.full_name,
             'title': profile.display_title,
-            'manager_name': manager.full_name,
-            'manager_title': manager.display_title,
             'query': self.request.query,
             'client_type': self._get_client_type(),
+            'joined': '',
+            'comment': '',
+            'manager': '',
         }
         if profile.hire_date:
             joined = arrow.get(profile.hire_date).humanize()
@@ -280,10 +285,16 @@ class NoSearchResults(mixins.PreRunParseTokenMixin, actions.Action):
         if self.request.comment:
             parameters['comment'] = 'Question:\n %s' % (self.request.comment,)
 
+        if manager:
+            parameters['manager'] = 'Manager: %s, %s\n' % (
+                manager.full_name,
+                manager.display_title,
+            )
+
         return (
             'Company: %(company)s\n'
             'Name: %(name)s, %(title)s\n'
-            'Manager: %(manager_name)s, %(manager_title)s\n'
+            '%(manager)s\n'
             '%(joined)s'
             'App: %(client_type)s\n'
             '\nSearch Query: %(query)s\n'
@@ -302,12 +313,14 @@ class NoSearchResults(mixins.PreRunParseTokenMixin, actions.Action):
                 'value': '%s, %s' % (profile.full_name, profile.display_title),
                 'short': False,
             },
-            {
+        ]
+        if manager:
+            fields.append({
                 'title': 'Manager',
                 'value': '%s, %s' % (manager.full_name, manager.display_title),
                 'short': False,
-            },
-        ]
+            })
+
         if profile.hire_date:
             fields.append({
                 'title': 'Joined company',
