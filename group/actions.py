@@ -87,7 +87,7 @@ class JoinGroup(PreRunParseTokenMixin, actions.Action):
             try:
                 service.control.call_action(
                     service='notification',
-                    action_name='send_notification',
+                    action='send_notification',
                     client_kwargs={'token': self.token},
                     to_profile_ids=map(str, membership_request.approver_profile_ids),
                     notification={
@@ -135,7 +135,7 @@ class RespondToMembershipRequest(PreRunParseTokenMixin, actions.Action):
         try:
             service.control.call_action(
                 service='notification',
-                action_name='send_notification',
+                action='send_notification',
                 client_kwargs={'token': self.token},
                 to_profile_ids=[str(membership_request.requester_profile_id)],
                 notification={

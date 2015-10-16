@@ -666,7 +666,7 @@ class GetAuthenticationInstructions(actions.Action):
 
         response = service.control.call_action(
             service='user',
-            action_name='get_authorization_instructions',
+            action='get_authorization_instructions',
             client_kwargs={'token': self.token},
             provider=provider,
             login_hint=self.request.email,

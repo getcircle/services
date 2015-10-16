@@ -224,9 +224,9 @@ class TestGoogleGroups(TestCase):
 
     def test_respond_to_membership_request_request_id_required(self):
         with self.assertFieldError('request_id', 'MISSING'):
-            self.client.call_action(
+            self.client.call(
                 'respond_to_membership_request',
-                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+                action_kwargs={'action': respond_to_membership_request_pb2.RequestV1.APPROVE},
             )
 
     def test_respond_to_membership_request_action_required(self):
@@ -238,18 +238,22 @@ class TestGoogleGroups(TestCase):
 
     def test_respond_to_membership_request_request_id_invalid(self):
         with self.assertFieldError('request_id', 'INVALID'):
-            self.client.call_action(
+            self.client.call(
                 'respond_to_membership_request',
-                request_id='invalid',
-                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+                action_kwargs={
+                    'action': respond_to_membership_request_pb2.RequestV1.APPROVE,
+                    'request_id': 'invalid',
+                },
             )
 
     def test_respond_to_membership_request_request_id_does_not_exist(self):
         with self.assertFieldError('request_id', 'DOES_NOT_EXIST'):
-            self.client.call_action(
+            self.client.call(
                 'respond_to_membership_request',
-                request_id=fuzzy.FuzzyUUID().fuzz(),
-                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+                action_kwargs={
+                    'action': respond_to_membership_request_pb2.RequestV1.APPROVE,
+                    'request_id': fuzzy.FuzzyUUID().fuzz(),
+                },
             )
 
     @patch('group.actions.providers.Google')
@@ -266,10 +270,12 @@ class TestGoogleGroups(TestCase):
                 action='send_notification',
                 mock_regex_lookup='notification:.*',
             )
-            self.client.call_action(
+            self.client.call(
                 'respond_to_membership_request',
-                request_id=str(member_request.id),
-                action=respond_to_membership_request_pb2.RequestV1.APPROVE,
+                action_kwargs={
+                    'action': respond_to_membership_request_pb2.RequestV1.APPROVE,
+                    'request_id': str(member_request.id),
+                },
             )
         self.assertEqual(mock_google_provider().approve_request_to_join.call_count, 1)
 
@@ -287,10 +293,12 @@ class TestGoogleGroups(TestCase):
                 action='send_notification',
                 mock_regex_lookup='notification:.*',
             )
-            self.client.call_action(
+            self.client.call(
                 'respond_to_membership_request',
-                request_id=str(member_request.id),
-                action=respond_to_membership_request_pb2.RequestV1.DENY,
+                action_kwargs={
+                    'action': respond_to_membership_request_pb2.RequestV1.DENY,
+                    'request_id': str(member_request.id),
+                },
             )
         self.assertEqual(mock_google_provider().deny_request_to_join.call_count, 1)
 

@@ -145,11 +145,11 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
         team.update_from_protobuf(self.request.team, self.parsed_token.profile_id)
         team.save()
         if action:
-            service.control.call_action(
+            service.control.call(
                 'history',
                 'record_action',
                 client_kwargs={'token': self.token},
-                action=action,
+                action_kwargs={'action': action},
             )
         team.to_protobuf(self.response.team, token=self.token)
         self.response.team.permissions.CopyFrom(permissions)
@@ -285,11 +285,11 @@ class UpdateLocation(BaseLocationAction):
         location.update_from_protobuf(self.request.location)
         location.save()
         if action:
-            service.control.call_action(
+            service.control.call(
                 'history',
                 'record_action',
                 client_kwargs={'token': self.token},
-                action=action,
+                action_kwargs={'action': action},
             )
 
         points_of_contact = self._fetch_points_of_contact([location])

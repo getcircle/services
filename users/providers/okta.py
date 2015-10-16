@@ -96,7 +96,7 @@ class Provider(base.BaseProvider):
     def _profile_exists(self, domain, authentication_identifier):
         response = service.control.call_action(
             service='profile',
-            action_name='profile_exists',
+            action='profile_exists',
             domain=domain,
             authentication_identifier=authentication_identifier,
         )

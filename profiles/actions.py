@@ -216,14 +216,14 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
             profile_ids = self._get_remote_profile_ids(
                 'member_profile_ids',
                 service='organization',
-                action_name='get_location_members',
+                action='get_location_members',
                 location_id=self.request.location_id,
             )
         elif self.request.team_id:
             profile_ids = self._get_remote_profile_ids(
                 'profile_ids',
                 service='organization',
-                action_name='get_descendants',
+                action='get_descendants',
                 team_id=self.request.team_id,
             )
         # XXX add tests for this
@@ -231,7 +231,7 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
             profile_ids = self._get_remote_profile_ids(
                 'profile_ids',
                 service='organization',
-                action_name='get_descendants',
+                action='get_descendants',
                 profile_id=self.request.manager_id,
                 direct=True,
             )
@@ -240,7 +240,7 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
     def _get_profiles_teams(self, profiles):
         response = service.control.call_action(
             service='organization',
-            action_name='get_teams_for_profile_ids',
+            action='get_teams_for_profile_ids',
             client_kwargs={'token': self.token},
             profile_ids=[p.id for p in profiles],
             fields={'only': ['name']},

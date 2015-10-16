@@ -65,8 +65,8 @@ class TestOktaAuthorization(MockedTestCase):
 
     def test_get_authorization_instructions_does_not_exist(self):
         self.mock.instance.register_mock_call_action_error(
-            service_name='organization',
-            action_name='get_sso_metadata',
+            service='organization',
+            action='get_sso_metadata',
             errors=['DOES_NOT_EXIST'],
             error_details={},
             organization_domain='example',

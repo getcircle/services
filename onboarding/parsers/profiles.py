@@ -121,7 +121,7 @@ def save_location_members(rows, token, profiles_dict):
     for location_id, profile_ids in members.iteritems():
         service.control.call_action(
             service='organization',
-            action_name='add_location_members',
+            action='add_location_members',
             client_kwargs={'token': token},
             location_id=location_id,
             profile_ids=profile_ids,

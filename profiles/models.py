@@ -64,7 +64,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     def _get_display_title(self, token):
         response = service.control.call_action(
             service='organization',
-            action_name='get_teams_for_profile_ids',
+            action='get_teams_for_profile_ids',
             client_kwargs={'token': token},
             profile_ids=[str(self.id)],
             fields={'only': ['name']},
