@@ -11,4 +11,5 @@ class Server(service.control.Server):
         'update_preference': actions.UpdatePreference,
         'register_device': actions.RegisterDevice,
         'send_notification': actions.SendNotification,
+        'no_search_results': actions.NoSearchResults,
     }

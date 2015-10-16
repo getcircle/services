@@ -620,7 +620,7 @@ class RequestAccess(actions.Action):
             user_info = json.loads(user.user_info)
 
         provider_name = self._get_provider_name(user_info.pop('_provider', None))
-        sns = boto3.resource('sns', **settings.AWS_SNS_TOPIC_REQUEST_ACCESS_KWARGS)
+        sns = boto3.resource('sns', **settings.AWS_SNS_KWARGS)
         topic = sns.Topic(settings.AWS_SNS_TOPIC_REQUEST_ACCESS)
         admin_emails = self._get_admin_emails(user.domain)
         topic.publish(

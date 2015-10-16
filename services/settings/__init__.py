@@ -201,12 +201,13 @@ AWS_SECRET_ACCESS_KEY = 'no1OPytcWDeUvkPwjA2yxFHtrgygTokiHVOF1Gkv'
 # AWS SNS Settings
 AWS_SNS_PLATFORM_APPLICATION_APNS = ''
 AWS_SNS_PLATFORM_APPLICATION_GCM = ''
-AWS_SNS_TOPIC_REQUEST_ACCESS_KWARGS = {
+AWS_SNS_KWARGS = {
     'aws_access_key_id': AWS_ACCESS_KEY_ID,
     'aws_secret_access_key': AWS_SECRET_ACCESS_KEY,
     'region_name': 'us-west-2',
 }
 AWS_SNS_TOPIC_REQUEST_ACCESS = 'arn:aws:sns:us-west-2:487220619225:dev-lunohq-accessRequest-Topic-1GNW0ZXVZ80OA'
+AWS_SNS_TOPIC_NO_SEARCH_RESULTS = 'arn:aws:sns:us-west-2:487220619225:dev-lunohq-noSearchResults-Topic-4UFRYJPVYA6W'
 
 AWS_S3_MEDIA_BUCKET = 'dev-lunohq-media'
 

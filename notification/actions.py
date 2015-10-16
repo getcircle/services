@@ -1,8 +1,15 @@
+import json
+
+import arrow
+import boto3
+from django.conf import settings
 from protobufs.services.notification import containers_pb2 as notification_containers
+from protobufs.services.user.containers import token_pb2
 from service import actions
 import service.control
 
 from services import mixins
+from services.utils import build_slack_message
 
 from . import (
     models,
@@ -226,3 +233,138 @@ class SendNotification(mixins.PreRunParseTokenMixin, actions.Action):
                 notification_type,
                 preferences_dict.get(to_profile_id),
             )
+
+
+class NoSearchResults(mixins.PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('client_type', 'query')
+
+    def _get_profile_and_manager(self):
+        response = service.control.call_action(
+            service='organization',
+            action='get_profile_reporting_details',
+            client_kwargs={'token': self.token},
+        )
+        reporting_details = response.result
+
+        response = service.control.call_action(
+            service='profile',
+            action='get_profiles',
+            client_kwargs={'token': self.token},
+            ids=[reporting_details.manager_profile_id, self.parsed_token.profile_id],
+        )
+        profile_dict = dict((p.id, p) for p in response.result.profiles)
+        manager = profile_dict.get(reporting_details.manager_profile_id)
+        profile = profile_dict.get(self.parsed_token.profile_id)
+        return profile, manager
+
+    def _get_client_type(self):
+        return dict(zip(token_pb2.ClientTypeV1.values(), token_pb2.ClientTypeV1.keys()))[
+            self.request.client_type
+        ]
+
+    def _get_email_message(self, organization, profile, manager):
+        parameters = {
+            'company': organization.name,
+            'name': profile.full_name,
+            'title': profile.display_title,
+            'manager_name': manager.full_name,
+            'manager_title': manager.display_title,
+            'query': self.request.query,
+            'client_type': self._get_client_type(),
+        }
+        if profile.hire_date:
+            joined = arrow.get(profile.hire_date).humanize()
+            parameters['joined'] = 'Joined company: %s\n' % (joined,)
+
+        if self.request.comment:
+            parameters['comment'] = 'Question:\n %s' % (self.request.comment,)
+
+        return (
+            'Company: %(company)s\n'
+            'Name: %(name)s, %(title)s\n'
+            'Manager: %(manager_name)s, %(manager_title)s\n'
+            '%(joined)s'
+            'App: %(client_type)s\n'
+            '\nSearch Query: %(query)s\n'
+            '%(comment)s'
+        ) % parameters
+
+    def _get_lambda_message(self, organization, profile, manager):
+        fields = [
+            {
+                'title': 'Company',
+                'value': organization.domain,
+                'short': False,
+            },
+            {
+                'title': 'Profile',
+                'value': '%s, %s' % (profile.full_name, profile.display_title),
+                'short': False,
+            },
+            {
+                'title': 'Manager',
+                'value': '%s, %s' % (manager.full_name, manager.display_title),
+                'short': False,
+            },
+        ]
+        if profile.hire_date:
+            fields.append({
+                'title': 'Joined company',
+                'value': arrow.get(profile.hire_date).humanize(),
+                'short': False,
+            })
+
+        fields.extend([
+            {
+                'title': 'App',
+                'value': self._get_client_type(),
+                'short': False,
+            },
+            {
+                'title': 'Search Query',
+                'value': self.request.query,
+                'short': False,
+            },
+        ])
+
+        if self.request.comment:
+            fields.append({
+                'title': 'Question',
+                'value': self.request.comment,
+                'short': False,
+            })
+
+        attachments = [
+            {
+                'fallback': '[%s] No Search Results. "%s"' % (
+                    organization.domain,
+                    self.request.query,
+                ),
+                'pretext': '[%s] No Search Results' % (organization.domain,),
+                'fields': fields,
+            }
+        ]
+        return build_slack_message(attachments, '#no-search-results')
+
+    def _send_notification(self, organization, profile, manager):
+        sns = boto3.resource('sns', **settings.AWS_SNS_KWARGS)
+        topic = sns.Topic(settings.AWS_SNS_TOPIC_NO_SEARCH_RESULTS)
+        topic.publish(
+            Subject='[%s] No Search Results' % (organization.domain,),
+            Message=json.dumps({
+                'default': self._get_email_message(organization, profile, manager),
+                'lambda': self._get_lambda_message(organization, profile, manager),
+            }),
+            MessageStructure='json',
+        )
+
+    def run(self, *args, **kwargs):
+        organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            client_kwargs={'token': self.token},
+            return_object='organization',
+        )
+        profile, manager = self._get_profile_and_manager()
+        self._send_notification(organization, profile, manager)
