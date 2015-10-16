@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core import validators as django_validators
 import django.db
+from django.utils import timezone
 import DNS
 from phonenumber_field.validators import validate_international_phonenumber
 from protobufs.services.user.actions import authenticate_user_pb2
@@ -227,6 +228,8 @@ class AuthenticateUser(actions.Action):
 
     def run(self, *args, **kwargs):
         user = self._handle_authentication()
+        user.last_login = timezone.now()
+        user.save()
         self.response.token = get_token(user, self.request.client_type)
         self.response.new_user = user.new
         user.to_protobuf(self.response.user)

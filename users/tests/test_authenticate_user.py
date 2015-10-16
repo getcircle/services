@@ -9,6 +9,7 @@ from services.token import parse_token
 from . import MockCredentials
 from .. import (
     factories,
+    models,
     providers,
 )
 from ..providers import (
@@ -54,6 +55,12 @@ class TestUsersAuthentication(TestCase):
         self.assertTrue(response.result.token)
         self.assertFalse(response.result.new_user)
         self.verify_containers(response.result.user, self.user)
+        old = models.User.objects.get(pk=response.result.user.id)
+        self._authenticate_user()
+        new = models.User.objects.get(pk=response.result.user.id)
+        self.assertTrue(old.last_login)
+        self.assertTrue(new.last_login)
+        self.assertNotEqual(old.last_login, new.last_login)
 
     def test_authenticate_user_invalid_password(self):
         with self.assertRaises(service.control.CallActionError):
