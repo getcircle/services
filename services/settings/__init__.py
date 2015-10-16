@@ -206,7 +206,7 @@ AWS_SNS_TOPIC_REQUEST_ACCESS_KWARGS = {
     'aws_secret_access_key': AWS_SECRET_ACCESS_KEY,
     'region_name': 'us-west-2',
 }
-AWS_SNS_TOPIC_REQUEST_ACCESS = 'arn:aws:sns:us-west-2:487220619225:access-requests'
+AWS_SNS_TOPIC_REQUEST_ACCESS = 'arn:aws:sns:us-west-2:487220619225:dev-lunohq-accessRequest-Topic-1GNW0ZXVZ80OA'
 
 AWS_S3_MEDIA_BUCKET = 'dev-lunohq-media'
 
