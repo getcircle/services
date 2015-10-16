@@ -164,3 +164,25 @@ class TestGetExtendedProfile(MockedTestCase):
         self.assertFalse(response.result.HasField('manages_team'))
         self.verify_containers(self.profile, response.result.profile)
         self.assertEqual(len(self.identities), len(response.result.identities))
+
+    def test_get_extended_profile_default_token_profile_id(self):
+        # setup mock service calls
+        self.mock.instance.register_empty_response(
+            'organization',
+            'get_locations',
+            profile_id=self.profile.id,
+            inflations={'only': ['profile_count']},
+        )
+        self.mock.instance.register_empty_response(
+            'organization',
+            'get_profile_reporting_details',
+            profile_id=self.profile.id,
+        )
+
+        response = self.client.call_action('get_extended_profile')
+        self.assertFalse(response.result.HasField('manager'))
+        self.assertFalse(response.result.locations)
+        self.assertFalse(response.result.HasField('team'))
+        self.assertFalse(response.result.HasField('manages_team'))
+        self.verify_containers(self.profile, response.result.profile)
+        self.assertEqual(len(self.identities), len(response.result.identities))

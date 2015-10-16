@@ -327,7 +327,7 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
     def _populate_reporting_details(self, client):
         response = client.call_action(
             'get_profile_reporting_details',
-            profile_id=self.request.profile_id,
+            profile_id=self._get_profile_id(),
         )
         reporting_details = response.result
         profile_ids = []
@@ -374,15 +374,18 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
         locations = client.get_object(
             'get_locations',
             return_object='locations',
-            profile_id=self.request.profile_id,
+            profile_id=self._get_profile_id(),
             inflations={'only': ['profile_count']},
         )
         self.response.locations.extend(locations)
 
+    def _get_profile_id(self):
+        return self.request.profile_id or self.parsed_token.profile_id
+
     def run(self, *args, **kwargs):
         profile = models.Profile.objects.prefetch_related('contact_methods').get(
-            pk=self.request.profile_id,
             organization_id=self.parsed_token.organization_id,
+            pk=self._get_profile_id(),
         )
         profile.to_protobuf(self.response.profile, token=self.token)
 
