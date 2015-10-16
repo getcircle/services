@@ -132,13 +132,20 @@ class OrganizationTeamTests(MockedTestCase):
         self.assertFalse(response.result.manager_profile_id)
         self.assertFalse(response.result.direct_reports_profile_ids)
 
-    def test_get_profile_reporting_details_profile_id_required(self):
-        with self.assertFieldError('profile_id', 'MISSING'):
-            self.client.call_action('get_profile_reporting_details')
-
     def test_get_profile_reporting_details_profile_id_invalid(self):
         with self.assertFieldError('profile_id'):
             self.client.call_action('get_profile_reporting_details', profile_id='invalid')
+
+    def test_get_profile_reporting_details_default_token_profile_id(self):
+        team = factories.TeamFactory.create_protobuf(organization=self.organization)
+        manager = models.ReportingStructure.objects.get(profile_id=team.manager_profile_id)
+        models.ReportingStructure.objects.create(
+            profile_id=self.profile.id,
+            manager=manager,
+            organization=self.organization,
+        )
+        response = self.client.call_action('get_profile_reporting_details')
+        self.assertEqual(response.result.manager_profile_id, str(manager.profile_id))
 
     def test_get_profile_reporting_details(self):
         # create a team, manager, and direct_report

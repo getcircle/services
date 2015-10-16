@@ -628,17 +628,20 @@ class SetManager(ReportingStructureAction):
 
 class GetProfileReportingDetails(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('profile_id',)
     type_validators = {
         'profile_id': (validators.is_uuid4,),
     }
 
     def run(self, *args, **kwargs):
+        parameters = {
+            'organization_id': self.parsed_token.organization_id,
+            'profile_id': self.parsed_token.profile_id,
+        }
+        if self.request.profile_id:
+            parameters['profile_id'] = self.request.profile_id
+
         try:
-            position = models.ReportingStructure.objects.get(
-                profile_id=self.request.profile_id,
-                organization_id=self.parsed_token.organization_id,
-            )
+            position = models.ReportingStructure.objects.get(**parameters)
         except models.ReportingStructure.DoesNotExist:
             return
 
