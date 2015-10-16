@@ -1,11 +1,9 @@
 import hashlib
-import urllib
 import uuid
 
 import arrow
 from django.conf import settings
 from protobufs.services.media.containers import media_pb2
-from protobufs.services.profile import containers_pb2 as profile_containers
 from service import (
     actions,
     validators,
