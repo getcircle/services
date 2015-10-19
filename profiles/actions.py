@@ -279,6 +279,8 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
             parameters['email__in'] = self.request.emails
         elif self.request.is_admin:
             parameters['is_admin'] = True
+        elif self.request.authentication_identifiers:
+            parameters['authentication_identifier__in'] = self.request.authentication_identifiers
 
         profiles = models.Profile.objects.filter(**parameters).order_by(
             'first_name',

@@ -608,6 +608,17 @@ class TestProfiles(MockedTestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 5)
 
+    def test_get_profiles_authentication_identifier(self):
+        profiles = factories.ProfileFactory.create_batch(
+            size=5,
+            organization_id=self.organization.id,
+        )
+        response = self.client.call_action(
+            'get_profiles',
+            authentication_identifiers=[p.authentication_identifier for p in profiles[:2]],
+        )
+        self.assertEqual(len(response.result.profiles), 2)
+
     def test_get_profiles_with_location_id(self):
         profiles = factories.ProfileFactory.create_batch(
             size=5,
