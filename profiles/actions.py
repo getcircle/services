@@ -166,24 +166,30 @@ class GetProfile(PreRunParseTokenMixin, actions.Action):
         'profile_id': [validators.is_uuid4],
     }
 
-    field_validators = {
-        'profile_id': {
-            valid_profile: 'DOES_NOT_EXIST',
-        },
-    }
-
     def run(self, *args, **kwargs):
-        parameters = {}
+        parameters = {'organization_id': self.parsed_token.organization_id}
+        field = None
         if self.request.profile_id:
             parameters['pk'] = self.request.profile_id
-            parameters['organization_id'] = self.parsed_token.organization_id
+            field = 'profile_id'
         elif self.request.email:
             parameters['email'] = self.request.email
-            parameters['organization_id'] = self.parsed_token.organization_id
+            field = 'email'
+        elif self.request.authentication_identifier:
+            parameters['authentication_identifier'] = self.request.authentication_identifier
+            field = 'authentication_identifier'
         else:
+            # we might not have the organization_id right now
+            parameters.pop('organization_id')
             parameters['user_id'] = self.parsed_token.user_id
 
-        profile = models.Profile.objects.get(**parameters)
+        try:
+            profile = models.Profile.objects.get(**parameters)
+        except models.Profile.DoesNotExist:
+            if field:
+                raise self.ActionFieldError(field, 'DOES_NOT_EXIST')
+            raise
+
         profile.to_protobuf(
             self.response.profile,
             inflations=self.request.inflations,

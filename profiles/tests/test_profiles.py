@@ -83,6 +83,24 @@ class TestProfiles(MockedTestCase):
         self.verify_containers(expected, response.result.profile)
         self.verify_containers(status, response.result.profile.status)
 
+    def test_get_profile_authentication_identifier(self):
+        expected = factories.ProfileFactory.create_protobuf(
+            organization_id=self.organization.id,
+        )
+        self._mock_display_title()
+        response = self.client.call_action(
+            'get_profile',
+            authentication_identifier=expected.authentication_identifier,
+        )
+        self.verify_containers(expected, response.result.profile)
+
+    def test_get_profile_does_not_exist_authentication_identifier(self):
+        with self.assertFieldError('authentication_identifier', 'DOES_NOT_EXIST'):
+            self.client.call_action(
+                'get_profile',
+                authentication_identifier=fuzzy.FuzzyUUID().fuzz(),
+            )
+
     def test_get_profile_full_name(self):
         profile = factories.ProfileFactory.create_protobuf()
         self.assertTrue(profile.full_name)
