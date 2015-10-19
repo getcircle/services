@@ -253,7 +253,7 @@ USER_SERVICE_FORCE_INTERNAL_AUTH = tuple()
 USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = tuple()
 USER_SERVICE_SAML_AUTH_SUCCESS_REDIRECT_URI = 'http://lunohq.com:9110/auth'
 USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST = tuple(
-    '^(https?://)?(\w+\.)?(\w+\.)?(\w+\.)?lunohq\.com/auth$',
+    '^(https?://)?([A-Za-z0-9\-_]+\.)?(\w+\.)?(\w+\.)?lunohq\.com/auth$',
 )
 
 # Data Dog API Key
@@ -294,4 +294,4 @@ SHELL_PLUS_POST_IMPORTS = (
 
 STRIPE_API_KEY = 'sk_test_egjGFfpd8I06ZN05Xbh4HZQI'
 
-CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?(\w+\.)?(\w+\.)?(\w+\.)?lunohq\.com$',)
+CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?([A-Za-z0-9\-_]+\.)?(\w+\.)?(\w+\.)?lunohq\.com$',)

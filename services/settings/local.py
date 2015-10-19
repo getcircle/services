@@ -44,9 +44,9 @@ SERVICES_REDIS = {
 METRICS_HANDLER_KWARGS = {'name': 'services.metrics'}
 
 CORS_ORIGIN_WHITELIST = tuple()
-CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?(\w+\.)?lunohq\.com(:\d+)?$',)
+CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?([A-Za-z0-9\-]+\.)?lunohq\.com(:\d+)?$',)
 USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST = (
-    '^(https?://)?(\w+\.)?(\w+\.)?(\w+\.)?lunohq\.com(:\d+)?/auth$',
+    '^(https?://)?([A-Za-z0-9\-]+\.)?(\w+\.)?(\w+\.)?lunohq\.com(:\d+)?/auth$',
 )
 
 GOOGLE_ADMIN_SDK_JSON_KEY = {
