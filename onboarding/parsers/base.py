@@ -14,3 +14,6 @@ class Row(object):
 
     def is_empty(self):
         return not any(self.data.values())
+
+    def __getitem__(self, key):
+        return self.data[key]
