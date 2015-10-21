@@ -74,7 +74,10 @@ def unique_phone_number(value):
 
 @cached(timeout=settings.CACHEOPS_FUNC_IS_GOOGLE_DOMAIN_TIMEOUT)
 def is_google_domain(domain):
-    mail_exchangers = DNS.mxlookup(domain)
+    try:
+        mail_exchangers = DNS.mxlookup(domain)
+    except:
+        return False
 
     def is_google_mx(mx):
         mx = mx.strip().lower()
