@@ -68,6 +68,7 @@ anyjson==0.3.3
 billiard==3.3.0.20
 celery==3.1.18
 kombu==3.0.28
+msgpack==0.4.6
 
 # more recent version of bitfield for 1.8 compatibility
 git+https://git@github.com/disqus/django-bitfield.git#24126a01
