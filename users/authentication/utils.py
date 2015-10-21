@@ -21,7 +21,7 @@ from .. import models
 
 def get_acs_url(domain, scheme='http'):
     saml_url = reverse('saml-handler', kwargs={'domain': domain})
-    return urlparse.urlunparse((scheme, settings.HOSTNAME, saml_url, None, None, None))
+    return urlparse.urlunparse((scheme, settings.SERVICES_HOSTNAME, saml_url, None, None, None))
 
 
 def get_saml_config(domain, metadata):

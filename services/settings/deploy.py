@@ -111,7 +111,7 @@ RAVEN_CONFIG = {
 }
 
 # XXX default to api.lunohq.com in the future
-HOSTNAME = os.environ.get('HOSTNAME', 'api.circlehq.co')
+SERVICES_HOSTNAME = os.environ.get('SERVICES_HOSTNAME', 'api.circlehq.co')
 
 # Disable the browsable API
 REST_FRAMEWORK = {
