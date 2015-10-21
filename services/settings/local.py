@@ -41,6 +41,8 @@ SERVICES_REDIS = {
     'socket_timeout': 3,
 }
 
+BROKER_URL = 'redis://localhost:6379/3'
+
 METRICS_HANDLER_KWARGS = {'name': 'services.metrics'}
 
 CORS_ORIGIN_WHITELIST = tuple()

@@ -59,6 +59,8 @@ SERVICES_REDIS = {
     'socket_timeout': os.environ.get('SERVICES_REDIS_SOCKET_TIMEOUT', 3),
 }
 
+BROKER_URL = 'redis://%s:%s/3' % (redis_url.hostname, redis_url.port)
+
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 
 DATADOG_API_KEY = os.environ.get('DATADOG_API_KEY', '')
