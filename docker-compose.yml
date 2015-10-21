@@ -1,0 +1,36 @@
+services:
+  build: .
+  command: python manage.py runserver 0.0.0.0:8000
+  volumes:
+    - .:/app
+  ports:
+    - "8000:8000"
+  links:
+    - postgres:postgres
+    - redis:redis
+  env_file: .env
+
+celery:
+  build: .
+  command: celery -A services -l info worker
+  env_file: .env
+  links:
+    - redis:redis
+
+postgres:
+  image: postgres:9.4
+  ports:
+    - "5432:5432"
+  volumes_from:
+    - postgres-data
+
+redis:
+  image: redis:2.8
+  ports:
+    - "6379:6379"
+
+postgres-data:
+  image: postgres:latest
+  volumes:
+    - /var/lib/postgresql
+  command: "true"
