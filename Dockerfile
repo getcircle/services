@@ -11,7 +11,6 @@ RUN git clone https://github.com/getcircle/heroku-buildpack-pgbouncer.git
 RUN cd heroku-buildpack-pgbouncer && git checkout v0.4.0
 
 ADD . /app
-RUN mkdir /app/bin
 # cedar-14 refers to ubuntu-14.04 within the buildpack
 RUN STACK='cedar-14' ./heroku-buildpack-pgbouncer/bin/compile /app
 
