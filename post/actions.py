@@ -66,10 +66,26 @@ class GetPost(actions.Action):
         pass
 
 
-class GetPosts(actions.Action):
+class GetPosts(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
-        pass
+        by_profile_id = self.parsed_token.profile_id
+        if self.request.by_profile_id:
+            by_profile_id = self.request.by_profile_id
+
+        parameters = {
+            'organization_id': self.parsed_token.organization_id,
+            'by_profile_id': by_profile_id,
+        }
+        if not self.request.all_states:
+            parameters['state'] = self.request.state
+
+        posts = models.Post.objects.filter(**parameters).order_by('-changed')
+        self.paginated_response(
+            self.response.posts,
+            posts,
+            lambda item, container: item.to_protobuf(container.add()),
+        )
 
 
 class DeletePost(actions.Action):
