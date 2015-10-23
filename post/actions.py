@@ -28,10 +28,36 @@ class CreatePost(PreRunParseTokenMixin, actions.Action):
         post.to_protobuf(self.response.post)
 
 
-class UpdatePost(actions.Action):
+class UpdatePost(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = (
+        'post',
+        'post.id',
+        'post.title',
+        'post.content',
+    )
+
+    type_validators = {
+        'post.id': [validators.is_uuid4],
+    }
 
     def run(self, *args, **kwargs):
-        pass
+        try:
+            post = models.Post.objects.get(
+                pk=self.request.post.id,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+            )
+        except models.Post.DoesNotExist:
+            raise self.ActionFieldError('post.id', 'DOES_NOT_EXIST')
+
+        post.update_from_protobuf(
+            self.request.post,
+            organization_id=self.parsed_token.organization_id,
+            by_profile_id=self.parsed_token.profile_id,
+        )
+        post.save()
+        post.to_protobuf(self.response.post)
 
 
 class GetPost(actions.Action):
