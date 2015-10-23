@@ -22,6 +22,7 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         index_together = ('organization_id', 'by_profile_id')
+        protobuf = post_containers.PostV1
 
     def _get_by_profile(self, token):
         return service.control.get_object(
