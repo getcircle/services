@@ -106,7 +106,23 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
         )
 
 
-class DeletePost(actions.Action):
+class DeletePost(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('id',)
+    type_validators = {
+        'id': [validators.is_uuid4],
+    }
 
     def run(self, *args, **kwargs):
-        pass
+        try:
+            post = models.Post.objects.get(
+                organization_id=self.parsed_token.organization_id,
+                pk=self.request.id,
+            )
+        except models.Post.DoesNotExist:
+            raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
+
+        if not utils.matching_uuids(post.by_profile_id, self.parsed_token.profile_id):
+            raise self.PermissionDenied()
+
+        post.delete()
