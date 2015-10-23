@@ -1,3 +1,4 @@
+from protobufs.services.post import containers_pb2 as post_containers
 import service.control
 
 from services.test import (
@@ -87,3 +88,45 @@ class TestPosts(MockedTestCase):
         post.content = ''
         with self.assertFieldError('post.content', 'MISSING'):
             self.client.call_action('update_post', post=post)
+
+    def test_update_post_draft_to_listed(self):
+        post = factories.PostFactory.create_protobuf(
+            profile=self.profile,
+            state=post_containers.DRAFT,
+        )
+        post.state = post_containers.LISTED
+        response = self.client.call_action('update_post', post=post)
+        post = response.result.post
+        self.assertEqual(post.state, post_containers.LISTED)
+
+        post.state = post_containers.DRAFT
+        # verify we can't go back to DRAFT from listed
+        with self.assertFieldError('post.state'):
+            self.client.call_action('update_post', post=post)
+
+    def test_update_post_draft_to_unlisted(self):
+        post = factories.PostFactory.create_protobuf(
+            profile=self.profile,
+            state=post_containers.DRAFT,
+        )
+        post.state = post_containers.UNLISTED
+        response = self.client.call_action('update_post', post=post)
+        post = response.result.post
+        self.assertEqual(post.state, post_containers.UNLISTED)
+
+        post.state = post_containers.DRAFT
+        # verify we can't go back to DRAFT from listed
+        with self.assertFieldError('post.state'):
+            self.client.call_action('update_post', post=post)
+
+        # verify we can list the post
+        post.state = post_containers.LISTED
+        response = self.client.call_action('update_post', post=post)
+        post = response.result.post
+        self.assertEqual(post.state, post_containers.LISTED)
+
+        # verify we can unlist again
+        post.state = post_containers.UNLISTED
+        response = self.client.call_action('update_post', post=post)
+        post = response.result.post
+        self.assertEqual(post.state, post_containers.UNLISTED)

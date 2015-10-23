@@ -51,6 +51,9 @@ class UpdatePost(PreRunParseTokenMixin, actions.Action):
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('post.id', 'DOES_NOT_EXIST')
 
+        if post.state != post_containers.DRAFT and self.request.post.state == post_containers.DRAFT:
+            raise self.ActionFieldError('post.state', 'INVALID')
+
         post.update_from_protobuf(
             self.request.post,
             organization_id=self.parsed_token.organization_id,
