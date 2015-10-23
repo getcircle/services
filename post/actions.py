@@ -1,5 +1,4 @@
 from protobufs.services.post import containers_pb2 as post_containers
-import service.control
 from service import (
     actions,
     validators,
