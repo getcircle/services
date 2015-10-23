@@ -42,7 +42,8 @@ def should_inflate_field(field_name, inflations):
         if (
             not inflations.enabled or
             (inflations.exclude and field_name in inflations.exclude) or
-            (inflations.only and field_name not in inflations.only)
+            (inflations.only and field_name not in inflations.only) or
+            inflations.disabled
         ):
             should_inflate = False
     return should_inflate

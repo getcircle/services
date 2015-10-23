@@ -6,7 +6,7 @@ from service import (
 )
 
 from services.mixins import PreRunParseTokenMixin
-from services.utils import should_inflate_field
+from services import utils
 
 from . import models
 
@@ -60,10 +60,28 @@ class UpdatePost(PreRunParseTokenMixin, actions.Action):
         post.to_protobuf(self.response.post)
 
 
-class GetPost(actions.Action):
+class GetPost(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('id',)
+    type_validators = {
+        'id': [validators.is_uuid4],
+    }
+
+    def populate_permissions(self, post):
+        if utils.matching_uuids(self.parsed_token.profile_id, post.by_profile_id):
+            post.permissions.can_edit = True
+            post.permissions.can_delete = True
 
     def run(self, *args, **kwargs):
-        pass
+        try:
+            post = models.Post.objects.get(
+                pk=self.request.id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except models.Post.DoesNotExist:
+            raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
+        post.to_protobuf(self.response.post, inflations=self.request.inflations, token=self.token)
+        self.populate_permissions(self.response.post)
 
 
 class GetPosts(PreRunParseTokenMixin, actions.Action):
