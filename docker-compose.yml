@@ -9,6 +9,7 @@ services:
   links:
     - postgres:postgres
     - redis:redis
+    - es:es
   env_file: .env
 
 celery:
@@ -18,6 +19,7 @@ celery:
   links:
     - postgres:postgres
     - redis:redis
+    - es:es
 
 postgres:
   image: postgres:9.4
@@ -32,7 +34,23 @@ redis:
     - "6379:6379"
 
 postgres-data:
-  image: postgres:latest
+  image: postgres:9.4
   volumes:
     - /var/lib/postgresql
   command: "true"
+
+es:
+  image: elasticsearch:1.5
+  volumes_from:
+    - es-data
+  volumes:
+    - ./docker/elasticsearch/config:/data/config
+  command: /usr/share/elasticsearch/bin/elasticsearch -Des.config=/data/config/elasticsearch.yml
+
+es-data:
+  image: ubuntu:14.04
+  volumes:
+    - /data/logs
+    - /data/data
+    - /data/plugins
+  command: /bin/bash
