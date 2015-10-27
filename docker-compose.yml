@@ -15,6 +15,7 @@ celery:
   command: celery -A services -l info worker
   env_file: .env
   links:
+    - postgres:postgres
     - redis:redis
 
 postgres:
