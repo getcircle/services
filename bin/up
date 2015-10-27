@@ -6,5 +6,4 @@ docker-machine start dev && \
     # build our base images
     docker build -t lunohq/services-base docker/base && \
     docker build -t lunohq/services-build docker/build && \
-    docker run -v `pwd`/wheelhouse:/wheelhouse -v `pwd`:/application lunohq/services-build &&
-    docker-compose up -d
+    docker run -v `pwd`/wheelhouse:/wheelhouse -v `pwd`:/application lunohq/services-build
