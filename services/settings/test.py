@@ -9,3 +9,10 @@ LOGGING['handlers']['console'] = {
 LOGGING['handlers']['console_generic'] = {
     'class': 'logging.NullHandler',
 }
+
+CELERY_ALWAYS_EAGER = True
+
+INSTALLED_APPS = INSTALLED_APPS + (
+    # register search test models
+    'search.tests',
+)
