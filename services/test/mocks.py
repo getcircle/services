@@ -7,6 +7,7 @@ from . import fuzzy
 from .. import token
 
 from protobufs.services.common import containers_pb2 as common_containers
+from protobufs.services.common.containers import description_pb2
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.actions import get_teams_for_profile_ids_pb2
@@ -244,7 +245,7 @@ def mock_device(container=None, **overrides):
 
 def mock_description(container=None, **overrides):
     if container is None:
-        container = common_containers.DescriptionV1()
+        container = description_pb2.DescriptionV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['by_profile_id'],

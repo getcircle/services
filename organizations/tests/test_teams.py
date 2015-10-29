@@ -419,7 +419,6 @@ class OrganizationTeamTests(MockedTestCase):
 
         # update the description again
         team = response.result.team
-        team.description.version = 1
         team.description.value = 'newer description'
         response = self._test_update_team(team, manager)
         team_description = response.result.team.description

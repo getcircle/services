@@ -4,10 +4,10 @@ from protobuf_to_dict import (
     protobuf_to_dict,
 )
 
-from protobufs.services.common import containers_pb2 as common_containers
+from protobufs.services.common.containers import description_pb2
 
 
-# TODO we should be using JSONField when postgres 1.9 is released. i know its
+# TODO we should be using JSONField when Django 1.9 is released. i know its
 # ironic we're storing protobuf value in JSON, but its more human readable in
 # the db.
 class DescriptionField(HStoreField):
@@ -17,7 +17,7 @@ class DescriptionField(HStoreField):
             return value
         if value.get('version') and isinstance(value['version'], basestring):
             value['version'] = int(value['version'])
-        return dict_to_protobuf(value, common_containers.DescriptionV1)
+        return dict_to_protobuf(value, description_pb2.DescriptionV1)
 
     def from_db_value(self, value, expression, connection, context):
         return self._to_protobuf(value)
