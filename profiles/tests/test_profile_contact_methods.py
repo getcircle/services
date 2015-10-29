@@ -3,7 +3,7 @@ import service.control
 
 from services.test import (
     mocks,
-    TestCase,
+    MockedTestCase,
 )
 
 from .. import (
@@ -12,14 +12,16 @@ from .. import (
 )
 
 
-class TestProfileContactMethods(TestCase):
+class TestProfileContactMethods(MockedTestCase):
 
     def setUp(self):
+        super(TestProfileContactMethods, self).setUp()
         self.organization = mocks.mock_organization()
         self.client = service.control.Client(
             'profile',
             token=mocks.mock_token(organization_id=self.organization.id),
         )
+        self.mock.instance.dont_mock_service('profile')
 
     def test_add_contact_methods(self):
         profile = factories.ProfileFactory.create_protobuf(organization_id=self.organization.id)

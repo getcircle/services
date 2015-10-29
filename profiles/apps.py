@@ -43,6 +43,8 @@ class AppConfig(BaseAppConfig):
     name = 'profiles'
 
     def ready(self):
+        from . import receivers  # NOQA (must be done when the app is ready)
+
         Profile = self.get_model('Profile')
         watson.register(
             Profile,

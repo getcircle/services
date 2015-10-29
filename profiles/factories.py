@@ -1,4 +1,7 @@
 import datetime
+from django.db.models.signals import post_save
+import factory.django
+
 from protobufs.services.profile import containers_pb2 as profile_containers
 
 from services.test import factory
@@ -6,6 +9,7 @@ from services.test import factory
 from . import models
 
 
+@factory.django.mute_signals(post_save)
 class ProfileFactory(factory.Factory):
     class Meta:
         model = models.Profile

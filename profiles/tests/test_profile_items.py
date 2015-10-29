@@ -3,15 +3,16 @@ import service.control
 from services.test import (
     fuzzy,
     mocks,
-    TestCase,
+    MockedTestCase,
 )
 
 from .. import factories
 
 
-class TestProfileItems(TestCase):
+class TestProfileItems(MockedTestCase):
 
     def setUp(self):
+        super(TestProfileItems, self).setUp()
         self.organization = mocks.mock_organization()
         self.profile = factories.ProfileFactory.create_protobuf(
             organization_id=self.organization.id,
@@ -20,6 +21,7 @@ class TestProfileItems(TestCase):
             organization_id=self.organization.id,
             profile_id=self.profile.id,
         ))
+        self.mock.instance.dont_mock_service('profile')
 
     def test_add_items_to_profile(self):
         item_1 = self.profile.items.add()
