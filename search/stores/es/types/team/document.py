@@ -1,5 +1,5 @@
 from elasticsearch_dsl import DocType, String, MetaField
-from ..indices import search_v1
+from ...indices import search_v1
 from . import analysis
 
 
