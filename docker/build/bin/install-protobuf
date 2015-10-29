@@ -1,8 +1,11 @@
 #!/bin/bash
 
 cd /tmp
-curl -L -O https://github.com/google/protobuf/releases/download/v3.0.0-beta-1/protobuf-python-3.0.0-alpha-4.tar.gz
-tar -xvf protobuf-python-3.0.0-alpha-4.tar.gz
-cd protobuf-3.0.0-alpha-4
-./configure &&
+git clone https://github.com/lunohq/protobuf.git &&
+    cd protobuf &&
+    git checkout 6dbd46875378c9206cccdd3c7de998f76fe23f2a &&
+    ./autogen.sh &&
+    ./configure &&
+    make &&
+    make check &&
     make install
