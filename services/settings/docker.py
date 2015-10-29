@@ -33,3 +33,9 @@ SERVICES_REDIS = {
 }
 
 BROKER_URL = 'redis://%s:%s/3' % (redis_url.hostname, redis_url.port)
+
+es_url = urlparse.urlparse(os.environ['SEARCH_SERVICE_ELASTICSEARCH_URL'])
+SEARCH_SERVICE_ELASTICSEARCH = {
+    'hosts': ['%s:%s' % (es_url.hostname, es_url.port)],
+    'timeout': 10,
+}

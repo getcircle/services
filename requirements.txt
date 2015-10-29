@@ -70,6 +70,9 @@ billiard==3.3.0.20
 celery==3.1.18
 kombu==3.0.28
 msgpack-python==0.4.6
+elasticsearch-dsl==0.0.9
+elasticsearch==1.9.0
+urllib3==1.12
 
 # more recent version of bitfield for 1.8 compatibility
 git+https://git@github.com/disqus/django-bitfield.git#24126a01
