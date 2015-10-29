@@ -1,4 +1,4 @@
-from .local import *  # NOQA
+from .docker import *  # NOQA
 
 CACHEOPS_FAKE = True
 settings.DEFAULT_METRICS_HANDLER = 'service.metrics.local.instance'
@@ -12,7 +12,4 @@ LOGGING['handlers']['console_generic'] = {
 
 CELERY_ALWAYS_EAGER = True
 
-INSTALLED_APPS = INSTALLED_APPS + (
-    # register search test models
-    'search.tests',
-)
+SEARCH_SERVICE_ELASTICSEARCH = None
