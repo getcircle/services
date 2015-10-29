@@ -254,6 +254,7 @@ class ContactMethod(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(
             profile_containers.ContactMethodV1.ContactMethodTypeV1
         ),
+        default=0,
     )
     organization_id = models.UUIDField()
 
