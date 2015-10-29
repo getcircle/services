@@ -4,7 +4,7 @@ from invoke import (
 )
 
 
-def execute_with_settings(command, settings='local', extra='', **kwargs):
+def execute_with_settings(command, settings='docker', extra='', **kwargs):
     command = 'DJANGO_SETTINGS_MODULE=services.settings.%s ./manage.py %s %s' % (
         settings,
         command,

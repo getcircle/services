@@ -11,6 +11,17 @@ services:
     - es:es
   env_file: .env
 
+dev:
+  image: lunohq/services-dev
+  command: bash
+  volumes:
+    - .:/app
+  links:
+    - postgres:postgres
+    - redis:redis
+    - es:es
+  env_file: .env
+
 celery:
   build: .
   command: celery -A services -l info worker
