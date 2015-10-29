@@ -18,6 +18,7 @@ class Tag(models.UUIDModel, models.TimestampableModel):
     name = models.CharField(max_length=64)
     type = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(profile_containers.TagV1.TagTypeV1),
+        default=0,
     )
 
     class Meta:
