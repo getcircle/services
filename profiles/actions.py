@@ -83,21 +83,24 @@ class BulkCreateProfiles(PreRunParseTokenMixin, actions.Action):
         return models.Profile.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
-        # TODO this should have organization id
         existing_profiles = models.Profile.objects.filter(
-            email__in=[x.email for x in self.request.profiles],
+            authentication_identifier__in=[
+                x.authentication_identifier for x in self.request.profiles
+            ],
             organization_id=self.parsed_token.organization_id,
         )
-        existing_profiles_dict = dict((profile.email, profile) for profile in existing_profiles)
-        containers_dict = dict((profile.email, profile) for profile in self.request.profiles)
+        existing_profiles_dict = dict((profile.authentication_identifier, profile) for profile
+                                      in existing_profiles)
+        containers_dict = dict((profile.authentication_identifier, profile) for profile
+                               in self.request.profiles)
 
         profiles_to_create = []
         profiles_to_update = []
         for container in self.request.profiles:
-            if container.email not in existing_profiles_dict:
+            if container.authentication_identifier not in existing_profiles_dict:
                 profiles_to_create.append(container)
             else:
-                profile = existing_profiles_dict[container.email]
+                profile = existing_profiles_dict[container.authentication_identifier]
                 if self.request.should_update:
                     profile.update_from_protobuf(container)
                 profiles_to_update.append(profile)
@@ -108,7 +111,7 @@ class BulkCreateProfiles(PreRunParseTokenMixin, actions.Action):
 
         contact_methods = []
         for profile in profiles:
-            profile_container = containers_dict[profile.email]
+            profile_container = containers_dict[profile.authentication_identifier]
             for container in profile_container.contact_methods:
                 contact_method = models.ContactMethod.objects.from_protobuf(
                     container,
