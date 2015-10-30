@@ -147,3 +147,9 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 container_key = 'profile_status'
             result_container = self.response.results.add()
             getattr(result_container, container_key).CopyFrom(value)
+
+
+class SearchV2(actions.Action):
+
+    def run(self, *args, **kwargs):
+        pass

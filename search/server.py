@@ -8,4 +8,5 @@ class Server(service.control.Server):
 
     actions = {
         'search': actions.Search,
+        'search_v2': actions.SearchV2,
     }
