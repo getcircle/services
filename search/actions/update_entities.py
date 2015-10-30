@@ -1,15 +1,28 @@
 from protobufs.services.search.containers import entity_pb2
 from service import actions
+from service.settings import MAX_PAGE_SIZE
 
 from services.mixins import PreRunParseTokenMixin
 
 from .. import tasks
 
 
+def get_batches(items, batch_size=MAX_PAGE_SIZE):
+    num_full_batches = len(items) / batch_size
+    batches = []
+    for i in range(num_full_batches):
+        batch = items[(i * batch_size):(i + 1) * batch_size]
+        batches.append(batch)
+
+    if len(items) % batch_size:
+        batches.append(items[num_full_batches * batch_size:])
+    return batches
+
+
 def update_entities(entity_type, ids, organization_id):
     task = None
     if entity_type == entity_pb2.PROFILE:
-        task = tasks.update_profile
+        task = tasks.update_profiles
 
     if task is None:
         raise ValueError(
@@ -18,7 +31,8 @@ def update_entities(entity_type, ids, organization_id):
             )
         )
 
-    [task.delay(pk, organization_id) for pk in ids]
+    batches = get_batches(ids)
+    [task.delay(batch, organization_id) for batch in batches]
 
 
 class Action(PreRunParseTokenMixin, actions.Action):
