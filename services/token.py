@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from itsdangerous import URLSafeTimedSerializer
 from protobufs.services.user.containers import token_pb2
+import service.control
 
 
 class MissingTokenParameter(Exception):
@@ -75,3 +76,14 @@ def make_admin_token(**values):
     values['auth_token_id'] = ServiceToken.admin_key
     values['client_type'] = token_pb2.WEB
     return make_token(**values)
+
+
+def get_token_for_domain(domain):
+    organization = service.control.get_object(
+        service='organization',
+        action='get_organization',
+        client_kwargs={'token': make_admin_token()},
+        return_object='organization',
+        domain=domain,
+    )
+    return make_admin_token(organization_id=organization.id)

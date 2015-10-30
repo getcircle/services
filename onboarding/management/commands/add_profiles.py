@@ -1,6 +1,6 @@
 from onboarding.parsers.profiles import add_profiles
 from services.management.base import BaseCommand
-from ..utils import get_token_for_domain
+from services.token import get_token_for_domain
 
 
 class Command(BaseCommand):
