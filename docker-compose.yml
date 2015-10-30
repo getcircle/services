@@ -25,6 +25,8 @@ dev:
 celery:
   build: .
   command: celery -A services -l info worker
+  volumes:
+    - .:/app
   env_file: .env
   links:
     - postgres:postgres
