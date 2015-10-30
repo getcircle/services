@@ -97,7 +97,7 @@ class MockedTestCase(TestCase):
 
     def tearDown(self, *args, **kwargs):
         service.settings.DEFAULT_TRANSPORT = 'service.transports.local.instance'
-        super(MockedTestCase, self).setUp(*args, **kwargs)
+        super(MockedTestCase, self).tearDown(*args, **kwargs)
 
 
 class TestAuthView(APIView):
