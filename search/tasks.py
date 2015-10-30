@@ -21,6 +21,7 @@ def update_profiles(ids, organization_id):
     )
     # TODO:
         # - should we be passing changed as version?
-    documents = [ProfileV1.from_protobuf(profile) for profile in profiles]
+    documents = [ProfileV1.from_protobuf(profile).to_dict(include_meta=True) for profile
+                 in profiles]
     es = connections.connections.get_connection()
     bulk(es, documents)
