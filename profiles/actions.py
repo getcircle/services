@@ -2,6 +2,7 @@ import arrow
 from cacheops import cached_as
 import django.db
 from django.db import connection
+from protobufs.services.search.containers import entity_pb2
 import service.control
 from service import (
     actions,
@@ -129,12 +130,22 @@ class BulkCreateProfiles(PreRunParseTokenMixin, actions.Action):
                 contact_method,
             )
 
+        profile_ids = []
         for profile in profiles:
             container = self.response.profiles.add()
             profile.to_protobuf(
                 container,
                 contact_methods=profile_id_to_contact_methods.get(profile.id),
             )
+            profile_ids.append(str(profile.id))
+
+        service.control.call_action(
+            service='search',
+            action='update_entities',
+            client_kwargs={'token': self.token},
+            ids=profile_ids,
+            type=entity_pb2.PROFILE,
+        )
 
 
 class UpdateProfile(PreRunParseTokenMixin, actions.Action):
