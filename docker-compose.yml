@@ -1,5 +1,5 @@
 services:
-  build: lunohq/services
+  image: lunohq/services
   command: python manage.py runserver 0.0.0.0:8000
   volumes:
     - .:/app
@@ -23,7 +23,7 @@ dev:
   env_file: .env
 
 celery:
-  build: lunohq/services
+  image: lunohq/services
   command: celery -A services -l info worker
   volumes:
     - .:/app
