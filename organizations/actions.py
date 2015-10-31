@@ -179,7 +179,11 @@ class GetTeam(TeamPermissionsMixin, actions.Action):
 class GetTeams(TeamPermissionsMixin, actions.Action):
 
     def run(self, *args, **kwargs):
-        teams = models.Team.objects.filter(organization_id=self.parsed_token.organization_id)
+        parameters = {'organization_id': self.parsed_token.organization_id}
+        if self.request.ids:
+            parameters['id__in'] = self.request.ids
+
+        teams = models.Team.objects.filter(**parameters)
         self.paginated_response(
             self.response.teams,
             teams,

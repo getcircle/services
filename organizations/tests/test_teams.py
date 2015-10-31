@@ -428,10 +428,21 @@ class OrganizationTeamTests(MockedTestCase):
     def test_get_teams(self):
         teams = factories.TeamFactory.create_protobufs(size=3, organization=self.organization)
         team_dict = dict((team.id, team) for team in teams)
-        # create teams in other locations
+        # create teams in other organizations
         factories.TeamFactory.create_batch(size=3)
 
         response = self.client.call_action('get_teams')
+        self.assertEqual(len(response.result.teams), 3)
+        for team in response.result.teams:
+            self.verify_containers(team_dict.get(team.id), team)
+
+    def test_get_teams_with_ids(self):
+        teams = factories.TeamFactory.create_protobufs(size=3, organization=self.organization)
+        team_dict = dict((team.id, team) for team in teams)
+        # create teams in other organizations
+        factories.TeamFactory.create_batch(size=3)
+
+        response = self.client.call_action('get_teams', ids=[str(t.id) for t in teams])
         self.assertEqual(len(response.result.teams), 3)
         for team in response.result.teams:
             self.verify_containers(team_dict.get(team.id), team)
