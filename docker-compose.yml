@@ -10,6 +10,8 @@ services:
     - redis:redis
     - es:es
   env_file: .env
+  environment:
+    - SERVICES_ENVIRONMENT=local
 
 dev:
   image: lunohq/services-dev
@@ -23,6 +25,7 @@ dev:
   env_file: .env
   environment:
     - DJANGO_SETTINGS_MODULE=services.settings.dev
+    - SERVICES_ENVIRONMENT=local-dev
 
 test:
   image: lunohq/services-dev
@@ -36,6 +39,7 @@ test:
   env_file: .env
   environment:
     - DJANGO_SETTINGS_MODULE=services.settings.test
+    - SERVICES_ENVIRONMENT=local-test
 
 celery:
   image: lunohq/services
