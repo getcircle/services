@@ -14,6 +14,7 @@ class ProfileV1(BaseDocType):
     full_name = String(analyzer=analysis.full_name_analyzer_v1)
     email = String()
     display_title = String(analyzer=analysis.display_title_analyzer_v1)
+    organization_id = String(index='not_analyzed')
 
     class Meta:
         doc_type = 'profile'

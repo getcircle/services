@@ -18,6 +18,7 @@ class LocationV1(BaseDocType):
     city = String(copy_to='full_address')
     region = String(copy_to='full_address')
     postal_code = String(copy_to='full_address')
+    organization_id = String(index='not_analyzed')
 
     class Meta:
         doc_type = 'location'
