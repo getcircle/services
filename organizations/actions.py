@@ -342,9 +342,11 @@ class GetLocations(BaseLocationAction):
     }
 
     def run(self, *args, **kwargs):
-        locations = models.Location.objects.filter(
-            organization_id=self.parsed_token.organization_id,
-        )
+        parameters = {'organization_id': self.parsed_token.organization_id}
+        if self.request.ids:
+            parameters['id__in'] = self.request.ids
+
+        locations = models.Location.objects.filter(**parameters)
         if self.request.profile_id:
             locations = locations.filter(
                 members__profile_id=self.request.profile_id,

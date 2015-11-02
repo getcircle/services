@@ -451,3 +451,20 @@ class OrganizationLocationTests(MockedTestCase):
             self.assertFalse(location.permissions.can_edit)
             self.assertFalse(location.permissions.can_add)
             self.assertFalse(location.permissions.can_delete)
+
+    def test_get_locations_with_ids(self):
+        locations = factories.LocationFactory.create_batch(
+            size=3,
+            organization=self.organization,
+        )
+        factories.LocationFactory.create_batch(size=3)
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+            mock_regex_lookup='profile:get_profile:.*',
+        )
+        response = self.client.call_action('get_locations', ids=[str(l.id) for l in locations][:2])
+        self.assertEqual(2, len(response.result.locations))
