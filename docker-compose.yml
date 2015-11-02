@@ -21,6 +21,8 @@ dev:
     - redis:redis
     - es:es
   env_file: .env
+  environment:
+    - DJANGO_SETTINGS_MODULE=services.settings.dev
 
 celery:
   image: lunohq/services
