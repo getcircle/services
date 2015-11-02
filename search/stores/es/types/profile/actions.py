@@ -1,5 +1,3 @@
-import service.control
-
 from ...indices.actions import closed_index
 from .document import ProfileV1
 
