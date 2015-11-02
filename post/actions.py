@@ -89,14 +89,14 @@ class GetPost(PreRunParseTokenMixin, actions.Action):
 class GetPosts(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
-        by_profile_id = self.parsed_token.profile_id
-        if self.request.by_profile_id:
-            by_profile_id = self.request.by_profile_id
+        parameters = {'organization_id': self.parsed_token.organization_id}
+        if self.request.ids:
+            parameters['id__in'] = self.request.ids
+        elif self.request.by_profile_id:
+            parameters['by_profile_id'] = self.request.by_profile_id
+        else:
+            parameters['by_profile_id'] = self.parsed_token.profile_id
 
-        parameters = {
-            'organization_id': self.parsed_token.organization_id,
-            'by_profile_id': by_profile_id,
-        }
         if not self.request.all_states:
             parameters['state'] = self.request.state
 

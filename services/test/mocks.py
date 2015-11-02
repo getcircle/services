@@ -6,11 +6,11 @@ from service.transports import local
 from . import fuzzy
 from .. import token
 
-from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.common.containers import description_pb2
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.actions import get_teams_for_profile_ids_pb2
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
@@ -299,3 +299,14 @@ def mock_profile_team(container=None, team_kwargs=None, **overrides):
     }
     defaults.update(overrides)
     return _mock_container(container, mock_dict, **defaults)
+
+
+def mock_post(container=None, **overrides):
+    if container is None:
+        container = post_containers.PostV1()
+
+    mock_dict = {
+        fuzzy.FuzzyText: ['title', 'content'],
+        fuzzy.FuzzyUUID: ['organization_id', 'by_profile_id'],
+    }
+    return _mock_container(container, mock_dict, **overrides)

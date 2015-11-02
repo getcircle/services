@@ -68,3 +68,17 @@ class TestPosts(MockedTestCase):
         _verify_posts_with_state(post_containers.DRAFT, 2)
         _verify_posts_with_state(post_containers.LISTED, 2)
         _verify_posts_with_state(post_containers.UNLISTED, 2)
+
+    def test_get_posts_with_ids(self):
+        posts = factories.PostFactory.create_batch(
+            size=3,
+            organization_id=self.organization.id,
+        )
+        # create posts in another organization
+        factories.PostFactory.create_batch(size=3)
+        response = self.client.call_action(
+            'get_posts',
+            ids=[str(p.id) for p in posts[:2]],
+            all_states=True,
+        )
+        self.assertEqual(len(response.result.posts), 2)
