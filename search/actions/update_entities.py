@@ -25,6 +25,8 @@ def update_entities(entity_type, ids, organization_id):
         task = tasks.update_profiles
     elif entity_type == entity_pb2.TEAM:
         task = tasks.update_teams
+    elif entity_type == entity_pb2.LOCATION:
+        task = tasks.update_locations
 
     if task is None:
         raise ValueError(

@@ -52,6 +52,13 @@ class Command(BaseCommand):
             const=entity_pb2.TEAM,
             help='Index the teams for the organization',
         )
+        parser.add_argument(
+            '--locations',
+            dest='entity_types',
+            action='append_const',
+            const=entity_pb2.LOCATION,
+            help='Index the locations for the organization',
+        )
 
     def handle(self, *args, **options):
         organization_domain = options['organization_domain']
@@ -72,4 +79,12 @@ class Command(BaseCommand):
                 'get_teams',
                 'teams',
                 entity_pb2.TEAM,
+            )
+        if entity_pb2.LOCATION in entity_types:
+            _update_paginated_entities(
+                token,
+                'organization',
+                'get_locations',
+                'locations',
+                entity_pb2.LOCATION,
             )

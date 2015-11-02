@@ -114,3 +114,40 @@ class TestUpdateEntities(MockedTestCase):
             strict=False,
         )
         self.verify_containers(team, called_team)
+
+    @patch('search.actions.update_entities.tasks.update_locations')
+    def test_update_entities_locations(self, patched):
+        locations = [mocks.mock_location(organization_id=self.organization.id) for _ in range(2)]
+        self.client.call_action(
+            'update_entities',
+            type=entity_pb2.LOCATION,
+            ids=[l.id for l in locations],
+        )
+        self.assertEqual(patched.delay.call_count, 1)
+        call_args = patched.delay.call_args_list[0][0]
+        self.assertEqual(
+            call_args,
+            ([str(l.id) for l in locations], str(locations[0].organization_id))
+        )
+
+    @patch('search.tasks.bulk')
+    @patch('search.tasks.connections')
+    def test_tasks_update_locations(self, patched_connection, patched_bulk):
+        location = mocks.mock_location()
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_locations',
+            return_object=[location],
+            return_object_path='locations',
+            ids=[location.id],
+        )
+        tasks.update_locations([str(location.id)], str(location.organization_id))
+        self.assertEqual(patched_bulk.call_count, 1)
+
+        documents = patched_bulk.call_args_list[0][0][1]
+        called_location = dict_to_protobuf(
+            documents[0]['_source'],
+            organization_containers.LocationV1,
+            strict=False,
+        )
+        self.verify_containers(location, called_location)
