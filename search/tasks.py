@@ -1,11 +1,13 @@
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl import connections
+from protobufs.services.post import containers_pb2 as post_containers
 import service.control
 
 from services.celery import app
 from services.token import make_admin_token
 
 from .stores.es.types.location.document import LocationV1
+from .stores.es.types.post.document import PostV1
 from .stores.es.types.profile.document import ProfileV1
 from .stores.es.types.team.document import TeamV1
 
@@ -57,3 +59,17 @@ def update_locations(ids, organization_id):
         ids=ids,
     )
     _update_documents(LocationV1, locations)
+
+
+@app.task
+def update_posts(ids, organization_id):
+    posts = service.control.get_object(
+        service='post',
+        action='get_posts',
+        return_object='posts',
+        client_kwargs={'token': make_admin_token(organization_id=organization_id)},
+        control={'paginator': {'page_size': len(ids)}},
+        ids=ids,
+        state=post_containers.LISTED,
+    )
+    _update_documents(PostV1, posts)

@@ -25,7 +25,12 @@ def _update_paginated_entities(token, service_name, action, return_object_path, 
             action,
             control={'paginator': {'page': next_page, 'page_size': PAGE_SIZE}},
         )
-        _update_entiites(token, getattr(response.result, return_object_path), entity_type)
+        items = getattr(response.result, return_object_path)
+        if not items:
+            print 'no items found for %s:%s' % (service_name, action)
+            break
+
+        _update_entiites(token, items, entity_type)
         if response.control.paginator.page != response.control.paginator.total_pages:
             next_page = response.control.paginator.next_page
         else:
@@ -59,6 +64,13 @@ class Command(BaseCommand):
             const=entity_pb2.LOCATION,
             help='Index the locations for the organization',
         )
+        parser.add_argument(
+            '--posts',
+            dest='entity_types',
+            action='append_const',
+            const=entity_pb2.POST,
+            help='Index the posts for the organization',
+        )
 
     def handle(self, *args, **options):
         organization_domain = options['organization_domain']
@@ -87,4 +99,12 @@ class Command(BaseCommand):
                 'get_locations',
                 'locations',
                 entity_pb2.LOCATION,
+            )
+        if entity_pb2.POST in entity_types:
+            _update_paginated_entities(
+                token,
+                'post',
+                'get_posts',
+                'posts',
+                entity_pb2.POST,
             )

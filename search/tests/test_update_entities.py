@@ -1,6 +1,7 @@
 from mock import patch
 from protobuf_to_dict import dict_to_protobuf
 from protobufs.services.organization import containers_pb2 as organization_containers
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import entity_pb2
 import service.control
@@ -151,3 +152,41 @@ class TestUpdateEntities(MockedTestCase):
             strict=False,
         )
         self.verify_containers(location, called_location)
+
+    @patch('search.actions.update_entities.tasks.update_posts')
+    def test_update_entities_posts(self, patched):
+        posts = [mocks.mock_post(organization_id=self.organization.id) for _ in range(2)]
+        self.client.call_action(
+            'update_entities',
+            type=entity_pb2.POST,
+            ids=[p.id for p in posts],
+        )
+        self.assertEqual(patched.delay.call_count, 1)
+        call_args = patched.delay.call_args_list[0][0]
+        self.assertEqual(
+            call_args,
+            ([str(p.id) for p in posts], str(posts[0].organization_id))
+        )
+
+    @patch('search.tasks.bulk')
+    @patch('search.tasks.connections')
+    def test_tasks_update_posts(self, patched_connection, patched_bulk):
+        post = mocks.mock_post()
+        self.mock.instance.register_mock_object(
+            service='post',
+            action='get_posts',
+            return_object=[post],
+            return_object_path='posts',
+            ids=[post.id],
+            state=post_containers.LISTED,
+        )
+        tasks.update_posts([str(post.id)], str(post.organization_id))
+        self.assertEqual(patched_bulk.call_count, 1)
+
+        documents = patched_bulk.call_args_list[0][0][1]
+        called_post = dict_to_protobuf(
+            documents[0]['_source'],
+            post_containers.PostV1,
+            strict=False,
+        )
+        self.verify_containers(post, called_post)
