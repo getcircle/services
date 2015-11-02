@@ -94,8 +94,6 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
             parameters['id__in'] = self.request.ids
         elif self.request.by_profile_id:
             parameters['by_profile_id'] = self.request.by_profile_id
-        else:
-            parameters['by_profile_id'] = self.parsed_token.profile_id
 
         if not self.request.all_states:
             parameters['state'] = self.request.state

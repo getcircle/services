@@ -22,8 +22,18 @@ class TestPosts(MockedTestCase):
 
     def test_get_posts_current_user(self):
         factories.PostFactory.create_batch(size=3, profile=self.profile)
-        response = self.client.call_action('get_posts', all_states=True)
+        response = self.client.call_action(
+            'get_posts',
+            all_states=True,
+            by_profile_id=self.profile.id,
+        )
         self.assertEqual(len(response.result.posts), 3)
+
+    def test_get_posts_organization_default(self):
+        posts = factories.PostFactory.create_batch(size=3, organization_id=self.organization.id)
+        factories.PostFactory.create_batch(size=3)
+        response = self.client.call_action('get_posts', all_states=True)
+        self.assertEqual(len(response.result.posts), len(posts))
 
     def test_get_posts_specify_by_profile_id(self):
         profile_id = fuzzy.FuzzyUUID().fuzz()
