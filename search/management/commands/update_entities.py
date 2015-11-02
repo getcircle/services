@@ -71,12 +71,18 @@ class Command(BaseCommand):
             const=entity_pb2.POST,
             help='Index the posts for the organization',
         )
+        parser.add_argument(
+            '--all',
+            action='store_true',
+            help='Index all entities for the organization',
+        )
 
     def handle(self, *args, **options):
         organization_domain = options['organization_domain']
         token = get_token_for_domain(organization_domain)
-        entity_types = options['entity_types']
-        if entity_pb2.PROFILE in entity_types:
+        entity_types = options.get('entity_types') or []
+        index_all = options['all']
+        if entity_pb2.PROFILE in entity_types or index_all:
             _update_paginated_entities(
                 token,
                 'profile',
@@ -84,7 +90,7 @@ class Command(BaseCommand):
                 'profiles',
                 entity_pb2.PROFILE,
             )
-        if entity_pb2.TEAM in entity_types:
+        if entity_pb2.TEAM in entity_types or index_all:
             _update_paginated_entities(
                 token,
                 'organization',
@@ -92,7 +98,7 @@ class Command(BaseCommand):
                 'teams',
                 entity_pb2.TEAM,
             )
-        if entity_pb2.LOCATION in entity_types:
+        if entity_pb2.LOCATION in entity_types or index_all:
             _update_paginated_entities(
                 token,
                 'organization',
@@ -100,7 +106,7 @@ class Command(BaseCommand):
                 'locations',
                 entity_pb2.LOCATION,
             )
-        if entity_pb2.POST in entity_types:
+        if entity_pb2.POST in entity_types or index_all:
             _update_paginated_entities(
                 token,
                 'post',
