@@ -24,6 +24,19 @@ dev:
   environment:
     - DJANGO_SETTINGS_MODULE=services.settings.dev
 
+test:
+  image: lunohq/services-dev
+  command: bash
+  volumes:
+    - .:/app
+  links:
+    - postgres:postgres
+    - redis:redis
+    - es-test:es
+  env_file: .env
+  environment:
+    - DJANGO_SETTINGS_MODULE=services.settings.test
+
 celery:
   image: lunohq/services
   command: celery -A services -l info worker
@@ -57,6 +70,12 @@ es:
   image: elasticsearch:1.5
   volumes_from:
     - es-data
+  volumes:
+    - ./docker/elasticsearch/config:/data/config
+  command: /usr/share/elasticsearch/bin/elasticsearch -Des.config=/data/config/elasticsearch.yml
+
+es-test:
+  image: elasticsearch:1.5
   volumes:
     - ./docker/elasticsearch/config:/data/config
   command: /usr/share/elasticsearch/bin/elasticsearch -Des.config=/data/config/elasticsearch.yml

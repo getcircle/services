@@ -12,4 +12,8 @@ LOGGING['handlers']['console_generic'] = {
 
 CELERY_ALWAYS_EAGER = True
 
-SEARCH_SERVICE_ELASTICSEARCH = None
+es_url = urlparse.urlparse(os.environ['SEARCH_SERVICE_ELASTICSEARCH_URL'])
+SEARCH_SERVICE_ELASTICSEARCH = {
+    'hosts': ['%s:%s' % (es_url.hostname, es_url.port)],
+    'timeout': 10,
+}
