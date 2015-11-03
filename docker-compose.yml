@@ -82,7 +82,7 @@ es-test:
   image: elasticsearch:1.5
   volumes:
     - ./docker/elasticsearch/config:/data/config
-  command: /usr/share/elasticsearch/bin/elasticsearch -Des.config=/data/config/elasticsearch.yml
+  command: /usr/share/elasticsearch/bin/elasticsearch -Des.config=/data/config/elasticsearch-test.yml
 
 es-data:
   image: ubuntu:14.04

@@ -1,6 +1,6 @@
 FROM lunohq/services-base:latest
 
-RUN apt-get install -y \
+RUN apt-get update -y && apt-get install -y \
     python-dev libffi-dev libssl-dev xmlsec1 curl autoconf build-essential libtool unzip
 
 ADD bin/install-protobuf /tmp/install-protobuf
