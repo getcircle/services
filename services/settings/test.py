@@ -17,3 +17,5 @@ SEARCH_SERVICE_ELASTICSEARCH = {
     'hosts': ['%s:%s' % (es_url.hostname, es_url.port)],
     'timeout': 10,
 }
+
+TESTS_TEARDOWN_ES = True
