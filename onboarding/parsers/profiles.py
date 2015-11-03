@@ -249,7 +249,7 @@ def update_managers(filename, token, id_field_name, manager_id_field_name):
         ),
         control={'paginator': {'page_size': 100}},
     )
-    profiles_dict = dict((p[id_field_name], p) for p in profiles)
+    profiles_dict = dict((p.authentication_identifier, p) for p in profiles)
 
     direct_reports = {}
     for row in rows:
