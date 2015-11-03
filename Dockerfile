@@ -1,7 +1,7 @@
 FROM lunohq/services-base:latest
 
 RUN apt-get update && apt-get install -y \
-    postgresql-client xmlsec1 git curl libevent-2.0
+    xmlsec1 libevent-2.0
 
 ADD requirements.txt /app/requirements.txt
 ADD wheelhouse /app/wheelhouse
