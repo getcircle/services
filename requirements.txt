@@ -73,6 +73,7 @@ elasticsearch-dsl==0.0.9
 elasticsearch==1.9.0
 urllib3==1.12
 PyYAML==3.11
+protobuf==3.0.0a3
 
 # more recent version of bitfield for 1.8 compatibility
 git+https://git@github.com/disqus/django-bitfield.git#24126a01

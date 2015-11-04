@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install -y \
 
 ADD requirements.txt /app/requirements.txt
 ADD wheelhouse /app/wheelhouse
-RUN pip install --no-index -f /app/wheelhouse protobuf==3.0.0a4
 RUN pip install --no-index -f /app/wheelhouse -r /app/requirements.txt
 
 RUN git clone https://github.com/getcircle/heroku-buildpack-pgbouncer.git
