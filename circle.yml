@@ -23,7 +23,7 @@ test:
     - docker run -d --name=postgres postgres:9.4
     - docker run -d --name=redis redis:2.8
   override:
-    - docker run -e DJANGO_SETTINGS_MODULE=services.settings.test -e DATABASE_URL=postgres://postgres:postgres@postgres/services -e REDIS_URL=redis://redis:6376/1 -e SEARCH_SERVICE_ELASTICSEARCH_URL=elasticsearch://es:9200 --link postgres:postgres --link redis:redis --link es:es lunohq/services python manage.py test --noinput --failfast
+    - docker run -e DJANGO_SETTINGS_MODULE=services.settings.test -e DATABASE_URL=postgres://postgres:postgres@postgres/services -e REDIS_URL=redis://redis:6376/1 -e SEARCH_SERVICE_ELASTICSEARCH_URL=elasticsearch://es:9200 --link postgres:postgres --link redis:redis --link es:es lunohq/services pip install -r docker/dev/test-requirements.txt && python manage.py test --noinput --failfast
 
 deployment:
   hub:

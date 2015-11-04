@@ -1,7 +1,7 @@
 # dev requirements
 ipdb==0.8
 ipython==2.3.1
-mock==1.0.1
-freezegun==0.3.1
 invoke
 httpie
+
+-r docker/dev/test-requirements.txt
