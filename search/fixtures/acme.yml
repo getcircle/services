@@ -44,6 +44,141 @@ locations:
   profile_count: 181
   region: !!python/unicode 'CA'
   timezone: !!python/unicode 'America/Los_Angeles'
+posts:
+- {by_profile_id: !!python/unicode '7bdb758e-b2cd-4790-91ea-e51b61f9929b', changed: !!python/unicode '2015-11-04T21:05:37.775738+00:00',
+  content: !!python/unicode '
+
+    We just tested Arbiter on electric.com and saveonenergy.com and saw great results.
+    We are looking for more jobs to stress test the system. If you''re interest or
+    know anyone who might be, let me know!
+
+
+    Successes:
+
+    - Arbiter found 100 issues on the energy sites electric.com and saveonenergy.com.
+    Of these issues about 50 were serious (competitor products not showing up on the
+    competitor page) and the others were misnamed competitor names/values. These issues
+    have all been addressed.
+
+    - On Friday we found an additional 12 issues on electric.com which were more competitor
+    products not showing up along with a couple of issues with EMP serving the default
+    experience instead of the competitor experience.
+
+    - Full write up here: some shared document or another Luno post.
+
+
+    New features:
+
+    - The piece of arbiter that runs jobs was refactored to be more reliable, scalable,
+    and efficient (uses less memory).
+
+    - Link scan assertion: this assertion will check all the URLs on a page to see
+    if they return a 200 status code
+
+    - CSV import: instead of copy pasting a CSV into arbiter you can pick a file to
+    upload
+
+
+    Upcoming features:
+
+    - HTTP Authentication: this will allow you to sign into staging/QA sites
+
+    - Counting elements: arbiter will count the number of elements that match a specific
+    selector and use that in assertions so if you expect that there are 45 products
+    on a product grid HTTPll be able to check that.you
+
+    - Setting cookies: some pages have cookie based authentication so Countingre adding
+    a way for you to set that in arbiterwe
+
+
+    Settingre also working on multiple browser support right now (IE8-11, firefox,
+    opera, chrome, android, iOS) so we can tell when someone deploys code that makes
+    IE8 look like garbage or when one of the grids is showing the wrong price. In
+    the admin tool Settingd love for it to be point and click. For example you tell
+    arbiter what URL you want to test, it loads the page, and you click on specific
+    things on the page to run tests against. These are way down the road but Settings
+    the end goal.thatIWe
+
+
+    If you have any feedback or feature request, let me know!', created: !!python/unicode '2015-11-04T21:05:37.775716+00:00',
+  id: !!python/unicode '0dbe8e92-e4dd-417d-b1cb-bffb1cb01474', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
+  title: !!python/unicode 'Arbiter - October 26th Update'}
+- {by_profile_id: !!python/unicode '7bdb758e-b2cd-4790-91ea-e51b61f9929b', changed: !!python/unicode '2015-11-04T21:04:09.239224+00:00',
+  content: !!python/unicode "\nArbiter is a functional testing framework built on\
+    \ webdriver.io/selenium to solve a variety of compliance/functionality issues.\
+    \ Functional testing just means that it tests the functionality of the site without\
+    \ worrying about the underlying code.\n  \nThe end goal is to have a system upon\
+    \ which we can test all sites at RV without the need for a person to manually\
+    \ check each page. This is crucial as re constantly adding sites and Red Ventures\
+    \ virtual footprint increases.we\n  \ns How Itsection on this page http://confluence.redventures.net/display/AR/Developer%27s+Guide,\
+    \ which is a bit technical, but ping me if you have any questions. Worksa There\n\
+    \nSpecial thanks to @Justin Robinson who wrote the first version of Arbiter.\n",
+  created: !!python/unicode '2015-11-04T21:04:09.239202+00:00', id: !!python/unicode '57268635-16aa-41d8-b0bd-c941316c28df',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'What
+    is Arbiter?'}
+- {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
+  content: !!python/unicode 'Expence reports are now done exclusively through https://certify.com.
+
+    If you do not have a username/password or have any questions regarding expense
+    reporting, please contact Trina Canning in accounting at tcanning@redventures.com',
+  created: !!python/unicode '2015-11-04T21:02:20.574942+00:00', id: !!python/unicode '56894fb6-3d55-4036-95b7-56ccb52e7624',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How
+    do I fill out an expense report?'}
+- {by_profile_id: !!python/unicode '17777194-9679-4b20-8aca-9ec05dc81c0a', changed: !!python/unicode '2015-11-04T21:01:04.967678+00:00',
+  content: !!python/unicode 'Complete this form and return the original (keep a copy
+    for yourself) to HR', created: !!python/unicode '2015-11-04T21:01:04.967657+00:00',
+  id: !!python/unicode 'a8ca3bb2-0a61-4eeb-b3bc-09c0cc4438ae', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
+  title: !!python/unicode 'How do I sign up for direct deposit?'}
+- {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:00:29.342873+00:00',
+  content: !!python/unicode 'All travel requests go through Faye Lindsey. Please fill
+    out the attached form and send it to her to get your flights, hotels, and conferences
+    booked!', created: !!python/unicode '2015-11-04T21:00:29.342851+00:00', id: !!python/unicode '8a7e3951-4ecf-454b-a01b-171db24ec3d1',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'I
+    need to go somewhere for work. How do I book my flight, hotel, etc?'}
+- {by_profile_id: !!python/unicode '8ac12837-ad8b-4de4-8686-b6760c501c78', changed: !!python/unicode '2015-11-04T20:59:02.638963+00:00',
+  content: !!python/unicode 'Please email Tayloar Goddard at tgoddard@redventures.com
+    and he will make sure you''re question gets into this FAQ section so everyone
+    can benefit!', created: !!python/unicode '2015-11-04T20:59:02.638941+00:00', id: !!python/unicode 'bad96e4e-b25c-430d-964e-a5026109b620',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'I
+    don''t see my question answered on the new Intranet, who do I tell?'}
+- {by_profile_id: !!python/unicode '7bdb758e-b2cd-4790-91ea-e51b61f9929b', changed: !!python/unicode '2015-11-04T20:58:01.536769+00:00',
+  content: !!python/unicode 'A - Asking for information?
+
+    L - Looks suspicious?
+
+    E - Expecting the email or call?
+
+    R - Risky to you or RV?
+
+    T - Tell IT Security! Send email to redalert@redventures.com', created: !!python/unicode '2015-11-04T20:58:01.536745+00:00',
+  id: !!python/unicode '6e67a60c-d41a-4acd-aa5e-930bbb1ff770', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
+  title: !!python/unicode 'I just got a phishing email, who do I tell?'}
+- {by_profile_id: !!python/unicode '8ac12837-ad8b-4de4-8686-b6760c501c78', changed: !!python/unicode '2015-11-04T20:56:03.538054+00:00',
+  content: !!python/unicode 'Contact Linda Koziol at lkoziol@redventures.com', created: !!python/unicode '2015-11-04T20:56:03.538031+00:00',
+  id: !!python/unicode '28916cd6-4ff4-4002-a50b-f016b58275df', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
+  title: !!python/unicode 'How do I get the beer turned on?'}
+- {by_profile_id: !!python/unicode '7bdb758e-b2cd-4790-91ea-e51b61f9929b', changed: !!python/unicode '2015-11-04T20:55:21.494944+00:00',
+  content: !!python/unicode 'http://static.viewer.dacast.com/b/22537/c/62563', created: !!python/unicode '2015-11-04T20:55:21.494920+00:00',
+  id: !!python/unicode 'b6c0a783-46e2-4e57-a8c6-544d1f835d14', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
+  title: !!python/unicode 'What is the link to the stream for the all-employee meeting?'}
+- {by_profile_id: !!python/unicode '8ac12837-ad8b-4de4-8686-b6760c501c78', changed: !!python/unicode '2015-11-04T20:54:25.971330+00:00',
+  content: !!python/unicode 'Swag is given mostly for participating in specific events
+    but sometimes is handed out company-wide. If you don''t have a swag item, be patient
+    you''ll get some soon enough.', created: !!python/unicode '2015-11-04T20:54:25.971307+00:00',
+  id: !!python/unicode '1c639f8f-7885-4629-a27d-01f4da5614d0', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
+  title: !!python/unicode 'How do I get swag?'}
+- {by_profile_id: !!python/unicode '8ac12837-ad8b-4de4-8686-b6760c501c78', changed: !!python/unicode '2015-11-04T20:53:20.328179+00:00',
+  content: !!python/unicode 'If you have an event going on, contact Taylor Goddard
+    at tgoddard@redventures.com', created: !!python/unicode '2015-11-04T20:53:20.328156+00:00',
+  id: !!python/unicode '96a2ca0b-567e-49d5-b5a1-cfa4d3585391', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
+  title: !!python/unicode 'Who do I contact to get video of something cool happening?'}
+- {by_profile_id: !!python/unicode '8ac12837-ad8b-4de4-8686-b6760c501c78', changed: !!python/unicode '2015-11-04T20:52:24.336540+00:00',
+  content: !!python/unicode 'RV Portraits are taken once every quarter. Taylor Goddard
+    will send out a calendar invite a few days prior to each photo session but if
+    you need your photo taken for a specific reason reach out to Taylor at tgoddard@redventures.com',
+  created: !!python/unicode '2015-11-04T20:52:24.336518+00:00', id: !!python/unicode 'c087b493-cf75-44cc-af5a-68ead1d2ddb5',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How
+    do I get my RV portrait taken?'}
 profiles:
 - authentication_identifier: !!python/unicode 'alan@acme.com'
   contact_methods:

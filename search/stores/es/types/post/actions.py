@@ -12,6 +12,9 @@ def get_should_statements_v1(query):
     statements = [
         Q('match', title=query),
         Q('match', **{'title.shingle': query}),
+        Q('match', **{'title.stemmed': query}),
+        Q('match', **{'title.raw': query}),
         Q('match', content=query),
+        Q('match', **{'content.stemmed': query}),
     ]
     return statements

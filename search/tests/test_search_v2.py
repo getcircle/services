@@ -110,18 +110,33 @@ class TestSearch(ESTestCase):
         self._setup_location_fixtures(fixtures.get('locations', []))
         self._setup_post_fixtures(fixtures.get('posts', []))
 
-    def verify_in_top_results(self, result_object_type, fields, results, top_results=3):
+    def verify_in_top_results(
+            self,
+            result_object_type,
+            fields,
+            results,
+            top_results=3,
+            query=None,
+        ):
         present = False
         for result in results[:top_results]:
             result_object = getattr(result, result_object_type)
             all_match = True
-            for field, value in fields.iteritems():
-                if getattr(result_object, field) != value:
+            for field, expected_value in fields.iteritems():
+                value = getattr(result_object, field)
+                if callable(expected_value) and not expected_value(value):
+                    all_match = False
+                elif value != value:
                     all_match = False
             if all_match:
                 present = True
                 break
-        self.assertTrue(present)
+        message = 'Expected a match in the top %s results for: %s%s' % (
+            top_results,
+            fields,
+            ' (query: %s)' % (query,) if query else '',
+        )
+        self.assertTrue(present, message)
 
     def test_search_query_required(self):
         with self.assertFieldError('query', 'MISSING'):
@@ -297,3 +312,59 @@ class TestSearch(ESTestCase):
             response.result.results,
             top_results=1,
         )
+
+    def test_search_post_phising_email(self):
+        _verify = lambda response, query: self.verify_in_top_results(
+            'post',
+            {'title': lambda y: 'phishing' in y},
+            response.result.results,
+            top_results=1,
+            query=query,
+        )
+
+        queries = [
+            'phishing',
+            'phishing email',
+            'suspicious email',
+            'suspicious call',
+        ]
+        for query in queries:
+            response = self.client.call_action('search_v2', query=query)
+            _verify(response, query)
+
+    def test_search_post_travel_request(self):
+        _verify = lambda response, query: self.verify_in_top_results(
+            'post',
+            {'title': lambda y: 'go somewhere for work' in y},
+            response.result.results,
+            top_results=1,
+            query=query,
+        )
+
+        queries = [
+            'travel request',
+            'booking travel',
+            'booking flight',
+            'booking hotel',
+            'travelling for work',
+            'going to a conference',
+        ]
+        for query in queries:
+            response = self.client.call_action('search_v2', query=query)
+            _verify(response, query)
+
+    def test_search_post_arbiter_how_to(self):
+        _verify = lambda response, query: self.verify_in_top_results(
+            'post',
+            {'title': lambda y: 'What is Arbiter?'},
+            response.result.results,
+            query=query,
+        )
+
+        queries = [
+            'Arbiter',
+            'website testing framework',
+        ]
+        for query in queries:
+            response = self.client.call_action('search_v2', query=query)
+            _verify(response, query)

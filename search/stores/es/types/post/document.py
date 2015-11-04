@@ -28,6 +28,18 @@ title_shingle_analyzer_v1 = analyzer(
     filter=['standard', 'lowercase', shingle_filter],
 )
 
+raw_analyzer_v1 = analyzer(
+    'post_raw_analyzer_v1',
+    tokenizer='standard',
+    filter=['standard', 'lowercase'],
+)
+
+stem_analyzer_v1 = analyzer(
+    'post_stem_analyzer_v1',
+    tokenizer='standard',
+    filter=['standard', 'lowercase', 'kstem'],
+)
+
 
 @search_v1.INDEX.doc_type
 class PostV1(BaseDocType):
@@ -38,9 +50,13 @@ class PostV1(BaseDocType):
                 index_analyzer=title_shingle_analyzer_v1,
                 search_analyzer=shingle_search,
             ),
+            'stemmed': String(analyzer=stem_analyzer_v1),
+            'raw': String(index_analyzer=raw_analyzer_v1),
         },
     )
-    content = String()
+    content = String(fields={
+        'stemmed': String(analyzer=stem_analyzer_v1),
+    })
     state = Integer()
     created = Date()
     changed = Date()
