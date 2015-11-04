@@ -2,11 +2,13 @@ import time
 
 from . import INDEX
 from ..import SEARCH_ALIAS
+from ...analysis import default_search
 
 
 def create_index(*args, **kwargs):
     INDEX.aliases(**{SEARCH_ALIAS: {}})
     INDEX.delete(ignore=404)
+    INDEX.settings(index={'analysis': default_search.get_analysis_definition()})
     INDEX.create()
     waiting = True
     while waiting:
