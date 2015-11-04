@@ -5,6 +5,7 @@ from elasticsearch_dsl import (
 
 from protobufs.services.organization import containers_pb2 as organization_containers
 
+from ...analysis import shingle_search
 from ...indices import search_v1
 from ..base import BaseDocType
 from . import analysis
@@ -12,14 +13,35 @@ from . import analysis
 
 @search_v1.INDEX.doc_type
 class LocationV1(BaseDocType):
-    name = String(index_analyzer=analysis.name_analyzer_v1)
+
+    document_to_protobuf_mapping = {
+        'location_name': 'name',
+    }
+
+    location_name = String(
+        index_analyzer=analysis.name_analyzer_v1,
+        fields={
+            'shingle': String(
+                index_analyzer=analysis.name_shingle_analyzer_v1,
+                search_analyzer=shingle_search,
+            ),
+        },
+    )
     address_1 = String(copy_to='full_address')
     address_2 = String(copy_to='full_address')
     city = String(copy_to='full_address')
     region = String(copy_to='full_address')
     postal_code = String(copy_to='full_address')
     organization_id = String(index='not_analyzed')
-    full_address = String()
+    full_address = String(
+        index_analyzer=analysis.name_analyzer_v1,
+        fields={
+            'shingle': String(
+                index_analyzer=analysis.name_shingle_analyzer_v1,
+                search_analyzer=shingle_search,
+            ),
+        },
+    )
 
     class Meta:
         doc_type = 'location'
