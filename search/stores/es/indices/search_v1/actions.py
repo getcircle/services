@@ -11,6 +11,6 @@ def create_index(*args, **kwargs):
     waiting = True
     while waiting:
         health = INDEX.connection.cluster.health()
-        waiting = health['status'] != 'red'
+        waiting = health['status'] == 'red'
         print 'waiting for cluster to get out of "red" status: %s' % (health,)
         time.sleep(1)
