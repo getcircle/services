@@ -24,9 +24,23 @@ class BaseDocTypeMeta(DocTypeMeta):
 @add_metaclass(BaseDocTypeMeta)
 class BaseDocType(DocType):
 
+    document_to_protobuf_mapping = None
+
     @classmethod
     def from_protobuf(cls, protobuf):
-        return cls(_id=protobuf.id, **protobuf_to_dict(protobuf))
+        data = protobuf_to_dict(protobuf)
+        if cls.document_to_protobuf_mapping:
+            for key, value in cls.document_to_protobuf_mapping.iteritems():
+                data[key] = data.pop(value, None)
+        return cls(_id=protobuf.id, **data)
+
+    @classmethod
+    def prepare_protobuf_dict(cls, data):
+        if cls.document_to_protobuf_mapping:
+            for key, value in cls.document_to_protobuf_mapping.iteritems():
+                data[value] = data.pop(key, None)
 
     def to_protobuf(self):
-        return dict_to_protobuf(self.to_dict(), self._options.protobuf, strict=False)
+        data = self.to_dict()
+        self.prepare_protobuf_dict(data)
+        return dict_to_protobuf(data, self._options.protobuf, strict=False)
