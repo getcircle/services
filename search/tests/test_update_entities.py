@@ -14,6 +14,7 @@ from services.token import make_admin_token
 
 from .. import tasks
 from ..actions.update_entities import get_batches
+from ..stores.es import types
 
 
 class TestUpdateEntities(MockedTestCase):
@@ -146,6 +147,7 @@ class TestUpdateEntities(MockedTestCase):
         self.assertEqual(patched_bulk.call_count, 1)
 
         documents = patched_bulk.call_args_list[0][0][1]
+        types.LocationV1.prepare_protobuf_dict(documents[0]['_source'])
         called_location = dict_to_protobuf(
             documents[0]['_source'],
             organization_containers.LocationV1,
