@@ -1,7 +1,10 @@
 import service.control
 
 from . import actions
-from .actions import update_entities
+from .actions import (
+    search_v2,
+    update_entities,
+)
 
 
 class Server(service.control.Server):
@@ -9,6 +12,6 @@ class Server(service.control.Server):
 
     actions = {
         'search': actions.Search,
-        'search_v2': actions.SearchV2,
+        'search_v2': search_v2.Action,
         'update_entities': update_entities.Action,
     }
