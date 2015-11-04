@@ -12,7 +12,7 @@ from . import analysis
 
 @search_v1.INDEX.doc_type
 class LocationV1(BaseDocType):
-    name = String(analyzer=analysis.name_analyzer_v1)
+    name = String(index_analyzer=analysis.name_analyzer_v1)
     address_1 = String(copy_to='full_address')
     address_2 = String(copy_to='full_address')
     city = String(copy_to='full_address')
