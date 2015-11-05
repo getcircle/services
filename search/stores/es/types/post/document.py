@@ -44,15 +44,16 @@ stem_analyzer_v1 = analyzer(
 @search_v1.INDEX.doc_type
 class PostV1(BaseDocType):
     title = String(
-        index_analyzer=title_analyzer_v1,
+        analyzer=title_analyzer_v1,
         fields={
             'shingle': String(
-                index_analyzer=title_shingle_analyzer_v1,
+                analyzer=title_shingle_analyzer_v1,
                 search_analyzer=shingle_search,
             ),
             'stemmed': String(analyzer=stem_analyzer_v1),
-            'raw': String(index_analyzer=raw_analyzer_v1),
+            'raw': String(analyzer=raw_analyzer_v1, search_analyzer='default_search'),
         },
+        search_analyzer='default_search',
     )
     content = String(fields={
         'stemmed': String(analyzer=stem_analyzer_v1),

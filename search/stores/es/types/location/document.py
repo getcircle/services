@@ -19,13 +19,14 @@ class LocationV1(BaseDocType):
     }
 
     location_name = String(
-        index_analyzer=analysis.name_analyzer_v1,
+        analyzer=analysis.name_analyzer_v1,
         fields={
             'shingle': String(
-                index_analyzer=analysis.name_shingle_analyzer_v1,
+                analyzer=analysis.name_shingle_analyzer_v1,
                 search_analyzer=shingle_search,
             ),
         },
+        search_analyzer='default_search',
     )
     address_1 = String(copy_to='full_address')
     address_2 = String(copy_to='full_address')
@@ -34,13 +35,14 @@ class LocationV1(BaseDocType):
     postal_code = String(copy_to='full_address')
     organization_id = String(index='not_analyzed')
     full_address = String(
-        index_analyzer=analysis.name_analyzer_v1,
+        analyzer=analysis.name_analyzer_v1,
         fields={
             'shingle': String(
-                index_analyzer=analysis.name_shingle_analyzer_v1,
+                analyzer=analysis.name_shingle_analyzer_v1,
                 search_analyzer=shingle_search,
             ),
         },
+        search_analyzer='default_search',
     )
 
     class Meta:

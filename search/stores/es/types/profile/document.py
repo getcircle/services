@@ -11,9 +11,12 @@ from . import analysis
 
 @search_v1.INDEX.doc_type
 class ProfileV1(BaseDocType):
-    full_name = String(index_analyzer=analysis.full_name_analyzer_v1)
-    email = String(index_analyzer=analysis.email_analyzer_v1)
-    display_title = String(index_analyzer=analysis.display_title_analyzer_v1)
+    full_name = String(analyzer=analysis.full_name_analyzer_v1, search_analyzer='default_search')
+    email = String(analyzer=analysis.email_analyzer_v1, search_analyzer='default_search')
+    display_title = String(
+        analyzer=analysis.display_title_analyzer_v1,
+        search_analyzer='default_search',
+    )
     organization_id = String(index='not_analyzed')
 
     class Meta:

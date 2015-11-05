@@ -33,6 +33,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         search = Search(index=SEARCH_ALIAS).filter(
+            'term',
             organization_id=self.parsed_token.organization_id,
         )
         query = self.request.query

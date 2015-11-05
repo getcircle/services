@@ -71,23 +71,23 @@ postgres-data:
   command: "true"
 
 es:
-  image: elasticsearch:1.5
+  image: lunohq/es-dev
   volumes_from:
     - es-data
-  volumes:
-    - ./docker/elasticsearch/config:/data/config
-  command: /usr/share/elasticsearch/bin/elasticsearch -Des.config=/data/config/elasticsearch.yml
+  environment:
+    - RUN_AS=root
+  command: elasticsearch -Des.network.host=0.0.0.0
 
 es-test:
-  image: elasticsearch:1.5
-  volumes:
-    - ./docker/elasticsearch/config:/data/config
-  command: /usr/share/elasticsearch/bin/elasticsearch -Des.config=/data/config/elasticsearch-test.yml
+  image: lunohq/es-test
+  environment:
+    - RUN_AS=root
+  command: elasticsearch -Des.network.host=0.0.0.0
 
 es-data:
   image: ubuntu:14.04
   volumes:
-    - /data/logs
-    - /data/data
-    - /data/plugins
+    - /usr/share/elasticsearch/logs
+    - /usr/share/elasticsearch/data
+    - /usr/share/elasticsearch/plugins
   command: /bin/bash

@@ -23,7 +23,7 @@ name_analyzer_v1 = analyzer(
 
 @search_v1.INDEX.doc_type
 class TeamV1(BaseDocType):
-    name = String(index_analyzer=name_analyzer_v1)
+    name = String(analyzer=name_analyzer_v1, search_analyzer='default_search')
     description = String(analyzer='english')
     organization_id = String(index='not_analyzed')
 
