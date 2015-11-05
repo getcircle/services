@@ -30,9 +30,3 @@ def _update_profile_entity(primary_key, organization_id):
 def update_search_index_on_profile_update(sender, **kwargs):
     instance = kwargs['instance']
     _update_profile_entity(instance.pk, instance.organization_id)
-
-
-@receiver(post_save, sender=models.ContactMethod)
-def update_search_index_on_contact_method_update(sender, **kwargs):
-    instance = kwargs['instance']
-    _update_profile_entity(instance.profile_id, instance.organization_id)
