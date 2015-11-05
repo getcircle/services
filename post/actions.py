@@ -52,10 +52,6 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('post.id', 'DOES_NOT_EXIST')
 
-        permissions = self.get_permissions(post)
-        if not permissions.can_edit:
-            raise self.PermissionDenied()
-
         if post.state != post_containers.DRAFT and self.request.post.state == post_containers.DRAFT:
             raise self.ActionFieldError('post.state', 'INVALID')
 
