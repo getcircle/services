@@ -149,6 +149,8 @@ SEARCH_SERVICE_ELASTICSEARCH_URL = os.environ.get('SEARCH_SERVICE_ELASTICSEARCH_
 if SEARCH_SERVICE_ELASTICSEARCH_URL:
     es_url = urlparse.urlparse(SEARCH_SERVICE_ELASTICSEARCH_URL)
     SEARCH_SERVICE_ELASTICSEARCH = {
-        'hosts': ['%s:%s' % (es_url.hostname, es_url.port)],
+        'hosts': [es_url.hostname],
         'timeout': 10,
+        'port': es_url.port,
+        'use_ssl': True,
     }
