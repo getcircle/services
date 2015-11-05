@@ -3,5 +3,6 @@ ipdb==0.8
 ipython==2.3.1
 invoke
 httpie
+awscli
 
 -r docker/dev/test-requirements.txt
