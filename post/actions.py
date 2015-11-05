@@ -8,6 +8,7 @@ from services.mixins import PreRunParseTokenMixin
 from services import utils
 
 from . import models
+from .mixins import PostPermissionsMixin
 
 
 class CreatePost(PreRunParseTokenMixin, actions.Action):
@@ -27,7 +28,7 @@ class CreatePost(PreRunParseTokenMixin, actions.Action):
         post.to_protobuf(self.response.post)
 
 
-class UpdatePost(PreRunParseTokenMixin, actions.Action):
+class UpdatePost(PostPermissionsMixin, actions.Action):
 
     required_fields = (
         'post',
@@ -60,19 +61,15 @@ class UpdatePost(PreRunParseTokenMixin, actions.Action):
         )
         post.save()
         post.to_protobuf(self.response.post)
+        self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 
-class GetPost(PreRunParseTokenMixin, actions.Action):
+class GetPost(PostPermissionsMixin, actions.Action):
 
     required_fields = ('id',)
     type_validators = {
         'id': [validators.is_uuid4],
     }
-
-    def populate_permissions(self, post):
-        if utils.matching_uuids(self.parsed_token.profile_id, post.by_profile_id):
-            post.permissions.can_edit = True
-            post.permissions.can_delete = True
 
     def run(self, *args, **kwargs):
         try:
@@ -83,7 +80,7 @@ class GetPost(PreRunParseTokenMixin, actions.Action):
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
         post.to_protobuf(self.response.post, inflations=self.request.inflations, token=self.token)
-        self.populate_permissions(self.response.post)
+        self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 
 class GetPosts(PreRunParseTokenMixin, actions.Action):
@@ -106,7 +103,7 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
         )
 
 
-class DeletePost(PreRunParseTokenMixin, actions.Action):
+class DeletePost(PostPermissionsMixin, actions.Action):
 
     required_fields = ('id',)
     type_validators = {
@@ -122,7 +119,8 @@ class DeletePost(PreRunParseTokenMixin, actions.Action):
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
 
-        if not utils.matching_uuids(post.by_profile_id, self.parsed_token.profile_id):
+        permissions = self.get_permissions(post)
+        if not permissions.can_delete:
             raise self.PermissionDenied()
 
         post.delete()

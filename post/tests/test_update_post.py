@@ -37,6 +37,8 @@ class TestPosts(MockedTestCase):
         self.assertEqual(updated_content, post.content)
         self.assertEqual(self.profile.id, post.by_profile_id)
         self.assertEqual(self.organization.id, post.organization_id)
+        self.assertTrue(post.permissions.can_edit)
+        self.assertTrue(post.permissions.can_delete)
 
     def test_update_post_does_not_exist(self):
         post = factories.PostFactory.build_protobuf()
