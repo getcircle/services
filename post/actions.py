@@ -3,7 +3,6 @@ from service import (
     actions,
     validators,
 )
-import service.control
 
 from services.mixins import PreRunParseTokenMixin
 from services import utils
@@ -62,7 +61,7 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
         )
         post.save()
         post.to_protobuf(self.response.post)
-        self.response.post.permissions.CopyFrom(permissions)
+        self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 
 class GetPost(PostPermissionsMixin, actions.Action):
