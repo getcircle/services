@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ensure we've started the default machine
-docker-machine start dev && \
+docker-machine start dev || true && \
     eval "$(docker-machine env dev)" && \
     # build our base images
     docker build -t lunohq/services-base docker/base && \
