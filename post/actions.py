@@ -108,7 +108,7 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
         )
 
 
-class DeletePost(PreRunParseTokenMixin, actions.Action):
+class DeletePost(PostPermissionsMixin, actions.Action):
 
     required_fields = ('id',)
     type_validators = {
@@ -124,7 +124,8 @@ class DeletePost(PreRunParseTokenMixin, actions.Action):
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
 
-        if not utils.matching_uuids(post.by_profile_id, self.parsed_token.profile_id):
+        permissions = self.get_permissions(post)
+        if not permissions.can_delete:
             raise self.PermissionDenied()
 
         post.delete()
