@@ -3,6 +3,7 @@ from service import (
     actions,
     validators,
 )
+import service.control
 
 from services.mixins import PreRunParseTokenMixin
 from services import utils
@@ -28,7 +29,7 @@ class CreatePost(PreRunParseTokenMixin, actions.Action):
         post.to_protobuf(self.response.post)
 
 
-class UpdatePost(PreRunParseTokenMixin, actions.Action):
+class UpdatePost(PostPermissionsMixin, actions.Action):
 
     required_fields = (
         'post',
@@ -51,6 +52,10 @@ class UpdatePost(PreRunParseTokenMixin, actions.Action):
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('post.id', 'DOES_NOT_EXIST')
 
+        permissions = self.get_permissions(post)
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
+
         if post.state != post_containers.DRAFT and self.request.post.state == post_containers.DRAFT:
             raise self.ActionFieldError('post.state', 'INVALID')
 
@@ -61,6 +66,7 @@ class UpdatePost(PreRunParseTokenMixin, actions.Action):
         )
         post.save()
         post.to_protobuf(self.response.post)
+        self.response.post.permissions.CopyFrom(permissions)
 
 
 class GetPost(PostPermissionsMixin, actions.Action):
