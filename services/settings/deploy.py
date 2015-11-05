@@ -144,3 +144,11 @@ SECRET_ENCRYPTION_KEYS = _get_delimited_setting_from_environment(
     'SECRET_ENCRYPTION_KEYS',
     SECRET_ENCRYPTION_KEYS,
 )
+
+SEARCH_SERVICE_ELASTICSEARCH_URL = os.environ.get('SEARCH_SERVICE_ELASTICSEARCH_URL')
+if SEARCH_SERVICE_ELASTICSEARCH_URL:
+    es_url = urlparse.urlparse(SEARCH_SERVICE_ELASTICSEARCH_URL)
+    SEARCH_SERVICE_ELASTICSEARCH = {
+        'hosts': ['%s:%s' % (es_url.hostname, es_url.port)],
+        'timeout': 10,
+    }
