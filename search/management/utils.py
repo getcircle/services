@@ -9,14 +9,19 @@ def execute_handler_on_paginated_items(
         action,
         return_object_path,
         handler,
+        action_kwargs=None,
         **kwargs
     ):
+    if not action_kwargs:
+        action_kwargs = {}
+
     client = service.control.Client(service_name, token=token)
     next_page = 1
     while next_page:
         response = client.call_action(
             action,
             control={'paginator': {'page': next_page, 'page_size': PAGE_SIZE}},
+            **action_kwargs
         )
         items = getattr(response.result, return_object_path)
         if not items:

@@ -1,3 +1,4 @@
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.search.containers import entity_pb2
 import service.control
 
@@ -17,13 +18,21 @@ def _update_entiites(items, token=None, entity_type=None):
     )
 
 
-def _update_paginated_entities(token, service_name, action, return_object_path, entity_type):
+def _update_paginated_entities(
+        token,
+        service_name,
+        action,
+        return_object_path,
+        entity_type,
+        **kwargs
+    ):
     execute_handler_on_paginated_items(
         token,
         service_name,
         action,
         return_object_path,
         _update_entiites,
+        action_kwargs=kwargs,
         entity_type=entity_type,
     )
 
@@ -104,4 +113,5 @@ class Command(BaseCommand):
                 'get_posts',
                 'posts',
                 entity_pb2.POST,
+                state=post_containers.LISTED,
             )
