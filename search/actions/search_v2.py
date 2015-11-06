@@ -5,6 +5,7 @@ from elasticsearch_dsl import (
     Q,
 )
 from protobuf_to_dict import dict_to_protobuf
+from protobufs.services.search.containers import search_pb2
 from service import actions
 
 from services.mixins import PreRunParseTokenMixin
@@ -31,19 +32,49 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('query',)
 
+    def _get_doc_type(self):
+        if not self.request.HasField('category'):
+            return None
+
+        doc_types = []
+        if self.request.category == search_pb2.PROFILES:
+            doc_types.append(types.ProfileV1._doc_type.name)
+        elif self.request.category == search_pb2.TEAMS:
+            doc_types.append(types.TeamV1._doc_type.name)
+        elif self.request.category == search_pb2.LOCATIONS:
+            doc_types.append(types.LocationV1._doc_type.name)
+        elif self.request.category == search_pb2.POSTS:
+            doc_types.append(types.PostV1._doc_type.name)
+        return ','.join(doc_types) or None
+
+    def _get_should_statements(self):
+        if not self.request.HasField('category'):
+            search_actions = [
+                post_actions.get_should_statements_v1,
+                profile_actions.get_should_statements_v1,
+                team_actions.get_should_statements_v1,
+                location_actions.get_should_statements_v1,
+            ]
+        elif self.request.category == search_pb2.PROFILES:
+            search_actions = [profile_actions.get_should_statements_v1]
+        elif self.request.category == search_pb2.TEAMS:
+            search_actions = [team_actions.get_should_statements_v1]
+        elif self.request.category == search_pb2.LOCATIONS:
+            search_actions = [location_actions.get_should_statements_v1]
+        elif self.request.category == search_pb2.POSTS:
+            search_actions = [post_actions.get_should_statements_v1]
+        return _combine_statements(search_actions, self.request.query)
+
     def run(self, *args, **kwargs):
-        search = Search(index=SEARCH_ALIAS).filter(
+        search = Search(
+            index=SEARCH_ALIAS,
+            doc_type=self._get_doc_type(),
+        ).filter(
             'term',
             organization_id=self.parsed_token.organization_id,
         )
-        query = self.request.query
-        should_statements = _combine_statements([
-            post_actions.get_should_statements_v1,
-            profile_actions.get_should_statements_v1,
-            team_actions.get_should_statements_v1,
-            location_actions.get_should_statements_v1,
-        ], query)
 
+        should_statements = self._get_should_statements()
         q = Q('bool', should=should_statements)
         response = search.query(q).execute()
         for result in response.hits:

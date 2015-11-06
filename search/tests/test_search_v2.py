@@ -5,6 +5,7 @@ from protobufs.services.organization import containers_pb2 as organization_conta
 from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import entity_pb2
+from protobufs.services.search.containers import search_pb2
 import service.control
 import yaml
 
@@ -110,13 +111,14 @@ class TestSearch(ESTestCase):
         self._setup_location_fixtures(fixtures.get('locations', []))
         self._setup_post_fixtures(fixtures.get('posts', []))
 
-    def verify_in_top_results(
+    def verify_top_results(
             self,
             result_object_type,
             fields,
             results,
             top_results=3,
             query=None,
+            should_be_present=True,
         ):
         present = False
         for result in results[:top_results]:
@@ -131,12 +133,21 @@ class TestSearch(ESTestCase):
             if all_match:
                 present = True
                 break
-        message = 'Expected a match in the top %s results for: %s%s' % (
-            top_results,
-            fields,
-            ' (query: %s)' % (query,) if query else '',
-        )
-        self.assertTrue(present, message)
+
+        if should_be_present:
+            message = 'Expected a match in the top %s results for: %s%s' % (
+                top_results,
+                fields,
+                ' (query: %s)' % (query,) if query else '',
+            )
+            self.assertTrue(present, message)
+        else:
+            message = 'Didn\'t expect a match in the top %s results for: %s%s' % (
+                top_results,
+                fields,
+                ' (query: %s)' % (query,) if query else '',
+            )
+            self.assertFalse(present, message)
 
     def test_search_query_required(self):
         with self.assertFieldError('query', 'MISSING'):
@@ -162,7 +173,7 @@ class TestSearch(ESTestCase):
 
     def test_search_profile_partial_full_name(self):
         response = self.client.call_action('search_v2', query='meg')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'profile',
             {'email': 'meghan@acme.com', 'full_name': 'Meghan Ward'},
             response.result.results,
@@ -170,7 +181,7 @@ class TestSearch(ESTestCase):
 
     def test_search_profile_first_name(self):
         response = self.client.call_action('search_v2', query='Meghan')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'profile',
             {'email': 'meghan@acme.com'},
             response.result.results,
@@ -178,7 +189,7 @@ class TestSearch(ESTestCase):
 
     def test_search_profile_last_name(self):
         response = self.client.call_action('search_v2', query='Ward')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'profile',
             {'email': 'meghan@acme.com'},
             response.result.results,
@@ -186,7 +197,7 @@ class TestSearch(ESTestCase):
 
     def test_search_profile_name_title(self):
         response = self.client.call_action('search_v2', query='Meg Customer Service Agent')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'profile',
             {'email': 'meghan@acme.com'},
             response.result.results,
@@ -195,7 +206,7 @@ class TestSearch(ESTestCase):
 
     def test_search_profile_name_department(self):
         response = self.client.call_action('search_v2', query='Meg in Customer Support')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'profile',
             {'email': 'meghan@acme.com'},
             response.result.results,
@@ -204,7 +215,7 @@ class TestSearch(ESTestCase):
 
     def test_search_profile_nick_name_last_name(self):
         response = self.client.call_action('search_v2', query='Meg Ward')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'profile',
             {'email': 'meghan@acme.com'},
             response.result.results,
@@ -213,7 +224,7 @@ class TestSearch(ESTestCase):
 
     def test_search_team_name(self):
         response = self.client.call_action('search_v2', query='Customer Support')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'team',
             {'name': 'Customer Support'},
             response.result.results,
@@ -222,21 +233,21 @@ class TestSearch(ESTestCase):
 
     def test_search_team_partial_name(self):
         response = self.client.call_action('search_v2', query='Customer')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'team',
             {'name': 'Customer Support'},
             response.result.results,
             top_results=1,
         )
         response = self.client.call_action('search_v2', query='Support')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'team',
             {'name': 'Customer Support'},
             response.result.results,
             top_results=1,
         )
         response = self.client.call_action('search_v2', query='Cust')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'team',
             {'name': 'Customer Support'},
             response.result.results,
@@ -246,7 +257,7 @@ class TestSearch(ESTestCase):
         response = self.client.call_action('search_v2', query='Customer Support San Francisco')
         # TODO this should be the top result, "San" matches profile "Sandra"
         # because of "email", "full_name" matching "san"
-        self.verify_in_top_results(
+        self.verify_top_results(
             'team',
             {'name': 'Customer Support'},
             response.result.results,
@@ -254,7 +265,7 @@ class TestSearch(ESTestCase):
 
     def test_search_location_with_name(self):
         response = self.client.call_action('search_v2', query='Headquarters')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'location',
             {'name': 'Headquarters'},
             response.result.results,
@@ -263,7 +274,7 @@ class TestSearch(ESTestCase):
 
     def test_search_location_address_1(self):
         response = self.client.call_action('search_v2', query='1 Front Street, Suite 2700')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'location',
             {'name': 'Headquarters'},
             response.result.results,
@@ -272,7 +283,7 @@ class TestSearch(ESTestCase):
 
     def test_search_location_city(self):
         response = self.client.call_action('search_v2', query='San Francisco')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'location',
             {'name': 'Headquarters'},
             response.result.results,
@@ -281,7 +292,7 @@ class TestSearch(ESTestCase):
 
     def test_search_location_zip_code(self):
         response = self.client.call_action('search_v2', query='94111')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'location',
             {'name': 'Headquarters'},
             response.result.results,
@@ -290,7 +301,7 @@ class TestSearch(ESTestCase):
 
     def test_search_location_partial_name(self):
         response = self.client.call_action('search_v2', query='Head')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'location',
             {'name': 'Headquarters'},
             response.result.results,
@@ -299,14 +310,14 @@ class TestSearch(ESTestCase):
 
     def test_search_location_partial_address(self):
         response = self.client.call_action('search_v2', query='1 Front')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'location',
             {'name': 'Headquarters'},
             response.result.results,
             top_results=1,
         )
         response = self.client.call_action('search_v2', query='Suite 2700')
-        self.verify_in_top_results(
+        self.verify_top_results(
             'location',
             {'name': 'Headquarters'},
             response.result.results,
@@ -314,7 +325,7 @@ class TestSearch(ESTestCase):
         )
 
     def test_search_post_phising_email(self):
-        _verify = lambda response, query: self.verify_in_top_results(
+        _verify = lambda response, query: self.verify_top_results(
             'post',
             {'title': lambda y: 'phishing' in y},
             response.result.results,
@@ -333,7 +344,7 @@ class TestSearch(ESTestCase):
             _verify(response, query)
 
     def test_search_post_travel_request(self):
-        _verify = lambda response, query: self.verify_in_top_results(
+        _verify = lambda response, query: self.verify_top_results(
             'post',
             {'title': lambda y: 'go somewhere for work' in y},
             response.result.results,
@@ -354,7 +365,7 @@ class TestSearch(ESTestCase):
             _verify(response, query)
 
     def test_search_post_arbiter_how_to(self):
-        _verify = lambda response, query: self.verify_in_top_results(
+        _verify = lambda response, query: self.verify_top_results(
             'post',
             {'title': lambda y: 'What is Arbiter?'},
             response.result.results,
@@ -368,3 +379,92 @@ class TestSearch(ESTestCase):
         for query in queries:
             response = self.client.call_action('search_v2', query=query)
             _verify(response, query)
+
+    def test_search_category_profiles(self):
+        # verify a normal search returns a team
+        response = self.client.call_action('search_v2', query='Customer Support')
+        self.verify_top_results(
+            'team',
+            {'name': 'Customer Support'},
+            response.result.results,
+            top_results=1,
+        )
+
+        response = self.client.call_action(
+            'search_v2',
+            query='Customer Support',
+            category=search_pb2.PROFILES,
+        )
+        self.verify_top_results(
+            'profile',
+            {'display_title': lambda x: 'Customer Support' in x},
+            response.result.results,
+            top_results=1,
+        )
+
+    def test_search_category_teams(self):
+        # verify a normal search returns a person
+        response = self.client.call_action('search_v2', query='Customer Support')
+        self.verify_top_results(
+            'profile',
+            {'display_title': lambda x: 'Customer Support' in x},
+            response.result.results,
+            top_results=10,
+        )
+
+        response = self.client.call_action(
+            'search_v2',
+            query='Customer Support',
+            category=search_pb2.TEAMS,
+        )
+        self.verify_top_results(
+            'profile',
+            {'display_title': lambda x: 'Customer Support' in x},
+            response.result.results,
+            top_results=10,
+            should_be_present=False,
+        )
+
+    def test_search_category_locations(self):
+        # verify a normal search returns a person
+        response = self.client.call_action('search_v2', query='San Francisco')
+        self.verify_top_results(
+            'profile',
+            {'full_name': lambda x: 'Sandra' in x},
+            response.result.results,
+        )
+
+        response = self.client.call_action(
+            'search_v2',
+            query='San Francisco',
+            category=search_pb2.LOCATIONS,
+        )
+        self.verify_top_results(
+            'profile',
+            {'full_name': lambda x: 'Sandra' in x},
+            response.result.results,
+            top_results=10,
+            should_be_present=False,
+        )
+
+    def test_search_category_posts(self):
+        # verify a normal search returns a person
+        response = self.client.call_action('search_v2', query='Taylor')
+        self.verify_top_results(
+            'profile',
+            {'full_name': lambda x: 'Taylor' in x},
+            response.result.results,
+        )
+
+        response = self.client.call_action(
+            'search_v2',
+            query='Taylor',
+            category=search_pb2.POSTS,
+        )
+        self.verify_top_results(
+            'profile',
+            {'full_name': lambda x: 'Taylor' in x},
+            response.result.results,
+            top_results=10,
+            should_be_present=False,
+        )
