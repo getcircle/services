@@ -8,6 +8,7 @@ from .. import tasks
 
 
 def get_batches(items, batch_size=MAX_PAGE_SIZE):
+    batch_size = int(batch_size)
     num_full_batches = len(items) / batch_size
     batches = []
     for i in range(num_full_batches):
