@@ -96,6 +96,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
+    'feature.server.Server',
     'glossary.server.Server',
     'group.server.Server',
     'history.server.Server',
@@ -306,3 +307,5 @@ CELERYD_TASK_SOFT_TIME_LIMIT = 15
 SEARCH_SERVICE_ELASTICSEARCH = None
 
 TESTS_TEARDOWN_ES = False
+
+FEATURE_SERVICE_POSTS_ENABLED_ORGANIZATIONS = []
