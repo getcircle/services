@@ -16,4 +16,8 @@ class GetFlags(actions.Action):
             return_object='organization',
         )
         if organization.domain in settings.FEATURE_SERVICE_POSTS_ENABLED_ORGANIZATIONS:
-            self.response.flags[POSTS_FEATURE] = True
+            posts_enabled = True
+        else:
+            posts_enabled = False
+
+        self.response.flags[POSTS_FEATURE] = posts_enabled
