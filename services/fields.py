@@ -17,7 +17,7 @@ class DescriptionField(HStoreField):
             return value
         if value.get('version') and isinstance(value['version'], basestring):
             value['version'] = int(value['version'])
-        return dict_to_protobuf(value, description_pb2.DescriptionV1)
+        return dict_to_protobuf(value, description_pb2.DescriptionV1, strict=False)
 
     def from_db_value(self, value, expression, connection, context):
         return self._to_protobuf(value)
