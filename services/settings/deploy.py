@@ -3,18 +3,12 @@ import urlparse
 
 # import default settings
 from . import *  # noqa
+from ._utils import _get_delimited_setting_from_environment
 
 from service import settings
 settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 100)
 settings.DEFAULT_METRICS_HANDLER = 'service.metrics.datadog.instance'
 settings.LOG_REQUEST_AND_RESPONSE = int(os.environ.get('SERVICE_LOG_REQUEST_AND_RESPONSE', 1))
-
-
-def _get_delimited_setting_from_environment(key, default):
-    value = os.environ.get(key)
-    if isinstance(value, basestring):
-        value = value.split(',')
-    return value or default
 
 DEBUG = False
 TEMPLATE_DEBUG = False

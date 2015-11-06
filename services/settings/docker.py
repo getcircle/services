@@ -3,6 +3,7 @@ import os
 import urlparse
 
 from .local import *  # NOQA
+from ._utils import _get_delimited_setting_from_environment
 
 database_url = urlparse.urlparse(os.environ['DATABASE_URL'])
 
@@ -39,3 +40,8 @@ SEARCH_SERVICE_ELASTICSEARCH = {
     'hosts': ['%s:%s' % (es_url.hostname, es_url.port)],
     'timeout': 10,
 }
+
+FEATURE_SERVICE_POSTS_ENABLED_ORGANIZATIONS = _get_delimited_setting_from_environment(
+    'FEATURE_SERVICE_POSTS_ENABLED_ORGANIZATIONS',
+    FEATURE_SERVICE_POSTS_ENABLED_ORGANIZATIONS,
+)
