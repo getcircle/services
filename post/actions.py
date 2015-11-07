@@ -85,14 +85,32 @@ class GetPost(PostPermissionsMixin, actions.Action):
 
 class GetPosts(PreRunParseTokenMixin, actions.Action):
 
+    def is_author(self):
+        return utils.matching_uuids(
+            self.parsed_token.profile_id,
+            self.request.by_profile_id,
+        )
+
+    def validate(self, *args, **kwargs):
+        super(GetPosts, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if (
+                self.request.by_profile_id and
+                not self.request.all_states
+                and self.request.state in [post_containers.UNLISTED, post_containers.DRAFT]
+            ):
+                raise self.PermissionDenied()
+
     def run(self, *args, **kwargs):
         parameters = {'organization_id': self.parsed_token.organization_id}
         if self.request.ids:
             parameters['id__in'] = self.request.ids
         elif self.request.by_profile_id:
             parameters['by_profile_id'] = self.request.by_profile_id
+            if not self.is_author() and self.request.all_states:
+                parameters['state'] = post_containers.LISTED
 
-        if not self.request.all_states:
+        if 'state' not in parameters and not self.request.all_states:
             parameters['state'] = self.request.state
 
         posts = models.Post.objects.filter(**parameters).order_by('-changed')

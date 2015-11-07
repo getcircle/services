@@ -35,16 +35,6 @@ class TestPosts(MockedTestCase):
         response = self.client.call_action('get_posts', all_states=True)
         self.assertEqual(len(response.result.posts), len(posts))
 
-    def test_get_posts_specify_by_profile_id(self):
-        profile_id = fuzzy.FuzzyUUID().fuzz()
-        factories.PostFactory.create_batch(
-            size=3,
-            organization_id=self.organization.id,
-            by_profile_id=profile_id,
-        )
-        response = self.client.call_action('get_posts', by_profile_id=profile_id, all_states=True)
-        self.assertEqual(len(response.result.posts), 3)
-
     def test_get_posts_wrong_organization(self):
         profile_id = fuzzy.FuzzyUUID().fuzz()
         factories.PostFactory.create_batch(size=3, by_profile_id=profile_id)
@@ -92,3 +82,39 @@ class TestPosts(MockedTestCase):
             all_states=True,
         )
         self.assertEqual(len(response.result.posts), 2)
+
+    def test_get_posts_by_profile_id_only_return_listed(self):
+        profile = mocks.mock_profile(organization_id=self.organization.id)
+        factories.PostFactory.create(
+            profile=profile,
+            state=post_containers.UNLISTED,
+        )
+        factories.PostFactory.create(
+            profile=profile,
+            state=post_containers.LISTED,
+        )
+        factories.PostFactory.create(
+            profile=profile,
+            state=post_containers.DRAFT,
+        )
+
+        response = self.client.call_action('get_posts', by_profile_id=profile.id, all_states=True)
+        self.assertEqual(len(response.result.posts), 1)
+
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action(
+                'get_posts',
+                by_profile_id=profile.id,
+                state=post_containers.DRAFT,
+            )
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action(
+                'get_posts',
+                by_profile_id=profile.id,
+                state=post_containers.UNLISTED,
+            )
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
