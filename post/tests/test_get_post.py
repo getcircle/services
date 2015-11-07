@@ -62,10 +62,31 @@ class TestPosts(MockedTestCase):
             return_object_path='profile',
             mock_regex_lookup='profile:get_profile:.*',
         )
-        expected_post = factories.PostFactory.create_protobuf(profile=by_profile)
+        expected_post = factories.PostFactory.create_protobuf(
+            profile=by_profile,
+            state=post_containers.LISTED,
+        )
         response = self.client.call_action('get_post', id=expected_post.id)
         post = response.result.post
         self.verify_containers(by_profile, post.by_profile)
         self.assertFalse(post.permissions.can_edit)
         self.assertFalse(post.permissions.can_delete)
         self.assertFalse(post.permissions.can_add)
+
+    def test_get_post_unlisted(self):
+        by_profile = mocks.mock_profile(organization_id=self.organization.id)
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object=by_profile,
+            return_object_path='profile',
+            mock_regex_lookup='profile:get_profile:.*',
+        )
+        post = factories.PostFactory.create_protobuf(
+            profile=by_profile,
+            state=post_containers.UNLISTED,
+        )
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action('get_post', id=post.id)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)

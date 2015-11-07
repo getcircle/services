@@ -79,6 +79,12 @@ class GetPost(PostPermissionsMixin, actions.Action):
             )
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
+
+        unlisted = post.state in [post_containers.UNLISTED, post_containers.DRAFT]
+        is_author = utils.matching_uuids(post.by_profile_id, self.parsed_token.profile_id)
+        if unlisted and not is_author:
+            raise self.PermissionDenied()
+
         post.to_protobuf(self.response.post, inflations=self.request.inflations, token=self.token)
         self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
@@ -86,7 +92,7 @@ class GetPost(PostPermissionsMixin, actions.Action):
 class GetPosts(PreRunParseTokenMixin, actions.Action):
 
     def is_author(self):
-        return utils.matching_uuids(
+        return self.request.by_profile_id and utils.matching_uuids(
             self.parsed_token.profile_id,
             self.request.by_profile_id,
         )
@@ -107,10 +113,10 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
             parameters['id__in'] = self.request.ids
         elif self.request.by_profile_id:
             parameters['by_profile_id'] = self.request.by_profile_id
-            if not self.is_author() and self.request.all_states:
-                parameters['state'] = post_containers.LISTED
 
-        if 'state' not in parameters and not self.request.all_states:
+        if not self.is_author() and self.request.all_states:
+            parameters['state'] = post_containers.LISTED
+        elif not self.request.all_states:
             parameters['state'] = self.request.state
 
         posts = models.Post.objects.filter(**parameters).order_by('-changed')
