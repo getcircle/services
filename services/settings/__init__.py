@@ -43,6 +43,8 @@ INSTALLED_APPS = (
     'services',
 
     'api',
+    'feature',
+    'file',
     'glossary',
     'group',
     'history',
@@ -97,6 +99,7 @@ STATIC_ROOT = 'static'
 
 LOCALIZED_SERVICES = [
     'feature.server.Server',
+    'file.server.Server',
     'glossary.server.Server',
     'group.server.Server',
     'history.server.Server',
@@ -213,6 +216,7 @@ AWS_SNS_TOPIC_REQUEST_ACCESS = 'arn:aws:sns:us-west-2:487220619225:dev-lunohq-ac
 AWS_SNS_TOPIC_NO_SEARCH_RESULTS = 'arn:aws:sns:us-west-2:487220619225:dev-lunohq-noSearchResults-Topic-4UFRYJPVYA6W'
 
 AWS_S3_MEDIA_BUCKET = 'dev-lunohq-media'
+AWS_S3_FILE_BUCKET = 'dev-lunohq-files'
 
 CACHES = {
     'default': {
