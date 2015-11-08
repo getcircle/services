@@ -29,11 +29,17 @@ class StartUpload(actions.Action):
         self.response.upload_instructions.upload_id = response.id
         self.response.upload_instructions.upload_key = upload_key
 
+        region_name = bucket.get_location() or 'us-east-1'
+        if region_name != 'us-east-1':
+            host = '%s.s3-%s.amazonaws.com' % (settings.AWS_S3_FILE_BUCKET, region_name)
+        else:
+            host = '%s.s3.amazonaws.com' % (settings.AWS_S3_FILE_BUCKET,)
+
         path = '/%s' % (upload_key,)
         self.response.upload_instructions.upload_url = utils.get_presigned_url(
             path=path,
             method='PUT',
-            host='%s.s3.amazonaws.com' % (settings.AWS_S3_FILE_BUCKET,),
+            host=host,
             access_key=settings.AWS_ACCESS_KEY_ID,
             secret_key=settings.AWS_SECRET_ACCESS_KEY,
             region_name=bucket.get_location() or 'us-east-1',
