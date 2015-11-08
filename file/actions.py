@@ -72,6 +72,9 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         source_url = self._complete_upload()
+        if not source_url:
+            return
+
         instance = models.File.objects.create(
             by_profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
