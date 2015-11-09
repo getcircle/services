@@ -3,7 +3,10 @@ import uuid
 from boto.s3.connection import S3ResponseError
 from boto.s3.multipart import MultiPartUpload
 from django.conf import settings
-from service import actions
+from service import (
+    actions,
+    validators,
+)
 
 from services.mixins import PreRunParseTokenMixin
 
@@ -97,3 +100,22 @@ class GetFiles(PreRunParseTokenMixin, actions.Action):
             files,
             lambda item, container: item.to_protobuf(container.add()),
         )
+
+
+class Delete(PreRunParseTokenMixin, actions.Action):
+
+    type_validators = {
+        'id': [validators.is_uuid4],
+    }
+    required_fields = ('id',)
+
+    def run(self, *args, **kwargs):
+        try:
+            f = models.File.objects.get(
+                organization_id=self.parsed_token.organization_id,
+                pk=self.request.id,
+            )
+        except models.File.DoesNotExist:
+            raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
+        else:
+            f.delete()
