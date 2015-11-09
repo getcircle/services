@@ -18,10 +18,10 @@ class TestCase(DjangoTestCase):
 
     def _verify_error(self, response, code, key, detail):
         self.assertFalse(response.success)
-        self.assertIn(code, response.errors)
+        self.assertIn(code, response.errors, response.errors)
         error = response.error_details[0]
-        self.assertEqual(key, error.key)
-        self.assertEqual(detail, error.detail)
+        self.assertEqual(key, error.key, error)
+        self.assertEqual(detail, error.detail, error.detail)
 
     def tearDown(self):
         super(TestCase, self).tearDown()

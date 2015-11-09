@@ -13,3 +13,4 @@ class FileFactory(factory.Factory):
     by_profile_id = factory.FuzzyUUID()
     organization_id = factory.FuzzyUUID()
     source_url = factory.FuzzyText(prefix='https://', suffix='.txt')
+    name = factory.FuzzyText()

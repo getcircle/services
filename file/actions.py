@@ -52,7 +52,7 @@ class StartUpload(actions.Action):
 
 class CompleteUpload(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('upload_key', 'upload_id')
+    required_fields = ('upload_key', 'upload_id', 'file_name')
 
     def _complete_upload(self):
         s3_manager = utils.S3Manager()
@@ -82,6 +82,7 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             by_profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             source_url=source_url,
+            name=self.request.file_name,
         )
         instance.to_protobuf(self.response.file)
 
