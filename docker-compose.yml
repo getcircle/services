@@ -53,7 +53,7 @@ celery:
     - es:es
 
 postgres:
-  image: postgres:9.4
+  image: lunohq/postgres
   ports:
     - "5432:5432"
   volumes_from:

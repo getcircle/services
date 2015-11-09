@@ -10,4 +10,5 @@ docker-machine start dev || true && \
     docker build -t lunohq/services . && \
     docker build -t lunohq/services-dev docker/dev && \
     docker build -t lunohq/es-dev docker/elasticsearch/dev && \
-    docker build -t lunohq/es-test docker/elasticsearch/test
+    docker build -t lunohq/es-test docker/elasticsearch/test && \
+    docker build -t lunohq/postgres docker/postgres
