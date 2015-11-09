@@ -117,6 +117,7 @@ class IntegrationFactory(factory.Factory):
 
     organization = factory.SubFactory(OrganizationFactory)
     type = integration_pb2.GOOGLE_GROUPS
+    provider_uid = factory.FuzzyText()
 
 
 class ReportingStructureFactory(factory.Factory):
