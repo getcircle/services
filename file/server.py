@@ -9,4 +9,5 @@ class Server(service.control.Server):
     actions = {
         'start_upload': actions.StartUpload,
         'complete_upload': actions.CompleteUpload,
+        'get_files': actions.GetFiles,
     }

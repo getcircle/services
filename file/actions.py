@@ -81,3 +81,19 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             source_url=source_url,
         )
         instance.to_protobuf(self.response.file)
+
+
+class GetFiles(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('ids',)
+
+    def run(self, *args, **kwargs):
+        files = models.File.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            id__in=self.request.ids,
+        )
+        self.paginated_response(
+            self.response.files,
+            files,
+            lambda item, container: item.to_protobuf(container.add()),
+        )
