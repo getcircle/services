@@ -21,13 +21,25 @@ class TestPosts(MockedTestCase):
         self.mock.instance.dont_mock_service('post')
 
     def test_get_posts_current_user(self):
-        factories.PostFactory.create_batch(size=3, profile=self.profile)
+        # create posts in all different states
+        factories.PostFactory.create(profile=self.profile, state=post_containers.LISTED)
+        factories.PostFactory.create(profile=self.profile, state=post_containers.UNLISTED)
+        factories.PostFactory.create(profile=self.profile, state=post_containers.DRAFT)
+
         response = self.client.call_action(
             'get_posts',
             all_states=True,
             by_profile_id=self.profile.id,
         )
         self.assertEqual(len(response.result.posts), 3)
+
+        response = self.client.call_action(
+            'get_posts',
+            state=post_containers.DRAFT,
+            by_profile_id=self.profile.id,
+        )
+        self.assertEqual(len(response.result.posts), 1)
+        self.assertEqual(response.result.posts[0].state, post_containers.DRAFT)
 
     def test_get_posts_organization_default(self):
         factories.PostFactory.create_batch(

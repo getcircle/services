@@ -97,15 +97,15 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
             self.request.by_profile_id,
         )
 
-    def validate(self, *args, **kwargs):
-        super(GetPosts, self).validate(*args, **kwargs)
-        if not self.is_error():
-            if (
-                self.request.by_profile_id and
-                not self.request.all_states
-                and self.request.state in [post_containers.UNLISTED, post_containers.DRAFT]
-            ):
-                raise self.PermissionDenied()
+    def pre_run(self, *args, **kwargs):
+        super(GetPosts, self).pre_run(*args, **kwargs)
+        if (
+            self.request.by_profile_id and
+            not self.is_author() and
+            not self.request.all_states and
+            self.request.state in [post_containers.UNLISTED, post_containers.DRAFT]
+        ):
+            raise self.PermissionDenied()
 
     def run(self, *args, **kwargs):
         parameters = {'organization_id': self.parsed_token.organization_id}
