@@ -88,6 +88,9 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
 
 class GetFiles(PreRunParseTokenMixin, actions.Action):
 
+    type_validators = {
+        'ids': [validators.is_uuid4_list],
+    }
     required_fields = ('ids',)
 
     def run(self, *args, **kwargs):

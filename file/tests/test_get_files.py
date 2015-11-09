@@ -1,7 +1,6 @@
 import service.control
 
 from services.test import (
-    fuzzy,
     mocks,
     MockedTestCase,
 )
@@ -38,3 +37,7 @@ class TestGetFiles(MockedTestCase):
 
         for f in files:
             self.assertIn(str(f.id), response_ids)
+
+    def test_get_files_invalid_ids(self):
+        with self.assertFieldError('ids'):
+            self.client.call_action('get_files', ids=['invalid', 'invalid'])
