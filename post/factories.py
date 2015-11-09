@@ -23,3 +23,18 @@ class PostFactory(factory.Factory):
             kwargs['by_profile_id'] = profile.id
             kwargs['organization_id'] = profile.organization_id
         return kwargs
+
+
+class AttachmentFactory(factory.Factory):
+    class Meta:
+        model = models.Attachment
+
+    organization_id = factory.FuzzyUUID()
+    file_id = factory.FuzzyUUID()
+    post = factory.SubFactory(PostFactory)
+
+    @classmethod
+    def _adjust_kwargs(cls, **kwargs):
+        if 'post' in kwargs:
+            kwargs['organization_id'] = kwargs['post'].organization_id
+        return kwargs

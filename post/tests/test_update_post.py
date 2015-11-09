@@ -1,3 +1,4 @@
+from mock import patch
 from protobufs.services.post import containers_pb2 as post_containers
 import service.control
 
@@ -7,7 +8,10 @@ from services.test import (
     MockedTestCase,
 )
 
-from .. import factories
+from .. import (
+    factories,
+    models,
+)
 
 
 class TestPosts(MockedTestCase):
@@ -132,3 +136,29 @@ class TestPosts(MockedTestCase):
         response = self.client.call_action('update_post', post=post)
         post = response.result.post
         self.assertEqual(post.state, post_containers.UNLISTED)
+
+    def test_update_post_set_file_ids(self):
+        post = factories.PostFactory.create_protobuf(profile=self.profile)
+        post.file_ids.extend([fuzzy.FuzzyUUID().fuzz(), fuzzy.FuzzyUUID().fuzz()])
+
+        response = self.client.call_action('update_post', post=post)
+        self.assertEqual(len(response.result.post.file_ids), len(post.file_ids))
+        attachments = models.Attachment.objects.filter(post_id=post.id)
+        self.assertEqual(len(attachments), 2)
+
+    @patch('post.actions.service.control.call_action')
+    def test_update_post_remove_file_ids(self, patched):
+        post = factories.PostFactory.create(profile=self.profile)
+        factories.AttachmentFactory.create_batch(size=2, post=post)
+        container = post.to_protobuf()
+        removed_file_id = container.file_ids.pop(1)
+
+        response = self.client.call_action('update_post', post=container)
+        file_ids = response.result.post.file_ids
+        self.assertEqual(len(file_ids), 1)
+        self.assertNotIn(removed_file_id, file_ids)
+
+        # verify we deleted the file
+        args = patched.call_args_list[1][1]
+        self.assertEqual(args['service'], 'file')
+        self.assertEqual(args['action'], 'delete')

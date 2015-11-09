@@ -3,6 +3,7 @@ from service import (
     actions,
     validators,
 )
+import service.control
 
 from services.mixins import PreRunParseTokenMixin
 from services import utils
@@ -41,6 +42,15 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
         'post.id': [validators.is_uuid4],
     }
 
+    def _delete_attachment(self, attachment):
+        service.control.call_action(
+            service='file',
+            action='delete',
+            client_kwargs={'token': self.token},
+            id=str(attachment.file_id),
+        )
+        attachment.delete()
+
     def run(self, *args, **kwargs):
         try:
             post = models.Post.objects.get(
@@ -51,8 +61,30 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('post.id', 'DOES_NOT_EXIST')
 
-        if post.state != post_containers.DRAFT and self.request.post.state == post_containers.DRAFT:
+        if (
+            post.state != post_containers.DRAFT
+            and self.request.post.state == post_containers.DRAFT
+        ):
             raise self.ActionFieldError('post.state', 'INVALID')
+
+        attachments = post.attachments.filter(
+            organization_id=self.parsed_token.organization_id,
+        )
+        file_ids = []
+        for attachment in attachments:
+            if str(attachment.file_id) not in self.request.post.file_ids:
+                self._delete_attachment(attachment)
+            else:
+                file_ids.append(str(attachment.file_id))
+
+        for file_id in self.request.post.file_ids:
+            if file_id not in file_ids:
+                models.Attachment.objects.create(
+                    post=post,
+                    organization_id=self.parsed_token.organization_id,
+                    file_id=file_id,
+                )
+                file_ids.append(file_id)
 
         post.update_from_protobuf(
             self.request.post,
@@ -60,7 +92,7 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
             by_profile_id=self.parsed_token.profile_id,
         )
         post.save()
-        post.to_protobuf(self.response.post)
+        post.to_protobuf(self.response.post, file_ids=file_ids)
         self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 

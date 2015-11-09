@@ -90,3 +90,25 @@ class TestPosts(MockedTestCase):
             self.client.call_action('get_post', id=post.id)
 
         self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
+    def test_get_post_with_attachments(self):
+        post = factories.PostFactory.create(profile=self.profile)
+        attachments = factories.AttachmentFactory.create_batch(size=2, post=post)
+        mock_files = []
+        for attachment in attachments:
+            mock_files.append(
+                mocks.mock_file(id=attachment.file_id, organization_id=attachment.organization_id)
+            )
+
+        self.mock.instance.register_mock_object(
+            service='file',
+            action='get_files',
+            return_object=mock_files,
+            return_object_path='files',
+            ids=[str(a.file_id) for a in attachments],
+        )
+
+        response = self.client.call_action('get_post', id=str(post.id))
+        self.assertEqual(len(response.result.post.files), len(attachments))
+        for f in response.result.post.files:
+            self.assertTrue(f.source_url)

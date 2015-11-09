@@ -34,10 +34,43 @@ class Post(models.UUIDModel, models.TimestampableModel):
             inflations={'only': ['display_title']},
         )
 
+    def _should_fetch_attachments(self, overrides, inflations):
+        # ensure that we have created the object before fetching attachments.
+        # certian test cases can hit this when we use the `build` method of the
+        # factory and provide an non-uuid primary key value intentionally
+        if (
+            ('file_ids' not in overrides and should_inflate_field('file_ids', inflations)) or
+            ('files' not in overrides and should_inflate_field('files', inflations))
+        ) and self.created:
+            return True
+        return False
+
+    def _inflate_files(self, attachments, token):
+        files = service.control.get_object(
+            service='file',
+            action='get_files',
+            client_kwargs={'token': token},
+            return_object='files',
+            ids=[str(a.file_id) for a in attachments],
+        )
+        return [protobuf_to_dict(f) for f in files]
+
     def _inflate(self, protobuf, inflations, overrides, token):
         if 'by_profile' not in overrides:
             if should_inflate_field('by_profile', inflations) and token:
                 overrides['by_profile'] = protobuf_to_dict(self._get_by_profile(token))
+
+        should_fetch_attachments = self._should_fetch_attachments(overrides, inflations)
+        if should_fetch_attachments:
+            attachments = Attachment.objects.filter(
+                post_id=self.pk,
+                organization_id=self.organization_id,
+            )
+            if 'file_ids' not in overrides and should_inflate_field('file_ids', inflations):
+                overrides['file_ids'] = map(str, [a.file_id for a in attachments])
+            if 'files' not in overrides and should_inflate_field('files', inflations) and token:
+                overrides['files'] = self._inflate_files(attachments, token)
+
         return overrides
 
     def to_protobuf(
@@ -59,3 +92,10 @@ class Post(models.UUIDModel, models.TimestampableModel):
             only=only,
             **overrides
         )
+
+
+class Attachment(models.UUIDModel, models.TimestampableModel):
+
+    post = models.ForeignKey(Post, related_name='attachments')
+    organization_id = models.UUIDField()
+    file_id = models.UUIDField()

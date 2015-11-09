@@ -7,6 +7,7 @@ from . import fuzzy
 from .. import token
 
 from protobufs.services.common.containers import description_pb2
+from protobufs.services.file import containers_pb2 as file_containers
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.actions import get_teams_for_profile_ids_pb2
@@ -308,5 +309,16 @@ def mock_post(container=None, **overrides):
     mock_dict = {
         fuzzy.FuzzyText: ['title', 'content'],
         fuzzy.FuzzyUUID: ['organization_id', 'by_profile_id'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_file(container=None, **overrides):
+    if container is None:
+        container = file_containers.FileV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'by_profile_id', 'organization_id'],
+        fuzzy.FuzzyText(prefix='https://', suffix='.txt'): ['source_url'],
     }
     return _mock_container(container, mock_dict, **overrides)
