@@ -1,7 +1,7 @@
 FROM lunohq/services-base:latest
 
 RUN apt-get update && apt-get install -y \
-    xmlsec1 libevent-2.0
+    xmlsec1 libevent-2.0 python-dev libncurses5-dev
 
 ADD requirements.txt /app/requirements.txt
 ADD wheelhouse /app/wheelhouse
