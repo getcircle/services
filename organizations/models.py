@@ -335,6 +335,7 @@ class Integration(models.UUIDModel, models.Model):
         protobuf_classes=[
             integration_pb2.GoogleGroupDetailsV1,
             integration_pb2.SlackSlashCommandDetailsV1,
+            integration_pb2.SlackWebApiDetailsV1,
         ],
         null=True,
     )
@@ -345,4 +346,6 @@ class Integration(models.UUIDModel, models.Model):
             kwargs.update({'google_groups': protobuf_to_dict(self.details)})
         elif self.details and self.type == integration_pb2.SLACK_SLASH_COMMAND:
             kwargs.update({'slack_slash_command': protobuf_to_dict(self.details)})
+        elif self.details and self.type == integration_pb2.SLACK_WEB_API:
+            kwargs.update({'slack_web_api': protobuf_to_dict(self.details)})
         return super(Integration, self).to_protobuf(*args, **kwargs)

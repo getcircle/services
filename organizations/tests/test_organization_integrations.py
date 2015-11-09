@@ -17,7 +17,11 @@ class OrganizationIntegrationTests(TestCase):
     def setUp(self):
         super(OrganizationIntegrationTests, self).setUp()
         self.organization = factories.OrganizationFactory.create()
-        self.token = mocks.mock_token(organization_id=self.organization.id)
+        self.profile = mocks.mock_profile(organization_id=str(self.organization.id))
+        self.token = mocks.mock_token(
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+        )
         self.client = service.control.Client('organization', token=self.token)
 
     def test_organization_enable_integration_integartion_required(self):
@@ -55,7 +59,7 @@ class OrganizationIntegrationTests(TestCase):
         self.assertEqual(integration.type, integration_pb2.GOOGLE_GROUPS)
 
     def test_organization_enable_integration_slack_slash_command(self):
-        slack_token = fuzzy.FuzzyUUID().fuzz()
+        slack_token = fuzzy.FuzzyText().fuzz()
         response = self.client.call_action(
             'enable_integration',
             integration={
@@ -76,6 +80,31 @@ class OrganizationIntegrationTests(TestCase):
         self.assertEqual(integration.provider_uid, slack_token)
         self.assertEqual(integration.type, integration_pb2.SLACK_SLASH_COMMAND)
         self.assertEqual(integration.details, response.result.integration.slack_slash_command)
+
+    def test_organization_enable_slack_web_api(self):
+        slack_token = fuzzy.FuzzyUUID().fuzz()
+        scopes = ['channels:history', 'groups:history']
+        response = self.client.call_action(
+            'enable_integration',
+            integration={
+                'integration_type': integration_pb2.SLACK_WEB_API,
+                'slack_web_api': {
+                    'token': slack_token,
+                    'scopes': scopes,
+                    'team_id': 'lunohq',
+                },
+            },
+        )
+
+        integration = response.result.integration
+        self.assertEqual(integration.integration_type, integration_pb2.SLACK_WEB_API)
+        self.assertEqual(integration.slack_web_api.token, slack_token)
+        self.assertEqual(integration.slack_web_api.scopes, scopes)
+        self.assertEqual(integration.slack_web_api.team_id, 'lunohq')
+
+        integration = models.Integration.objects.get(pk=integration.id)
+        self.assertEqual(integration.type, integration_pb2.SLACK_WEB_API)
+        self.assertEqual(response.result.integration.slack_web_api, integration.details)
 
     def test_organization_get_integration_provider_uid(self):
         integration = factories.IntegrationFactory.create_protobuf(

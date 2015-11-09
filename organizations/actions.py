@@ -512,8 +512,9 @@ class EnableIntegration(PreRunParseTokenMixin, actions.Action):
                     scopes = self._default_google_group_scopes()
 
                 details.scopes.extend(scopes)
-        elif integration_type == integration_pb2.SLACK_SLASH_COMMAND:
-            details = self.request.integration.slack_slash_command
+        else:
+            details_path = self.request.integration.WhichOneof('details')
+            details = getattr(self.request.integration, details_path)
         return details
 
     def run(self, *args, **kwargs):
