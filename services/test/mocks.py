@@ -13,6 +13,7 @@ from protobufs.services.organization import containers_pb2 as organization_conta
 from protobufs.services.organization.actions import get_teams_for_profile_ids_pb2
 from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
+from protobufs.services.search import containers_pb2 as search_containers
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
 
@@ -322,3 +323,9 @@ def mock_file(container=None, **overrides):
         fuzzy.FuzzyText(prefix='https://', suffix='.txt'): ['source_url'],
     }
     return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_search_result(container=None, **overrides):
+    if container is None:
+        container = search_containers.SearchResultV1()
+    return _mock_container(container, {}, **overrides)

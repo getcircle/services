@@ -2,6 +2,7 @@ from rest_framework import exceptions
 from rest_framework.response import Response
 
 from .draft import handle_draft
+from .search import handle_search
 
 
 LUNO_HELP = """
@@ -39,4 +40,5 @@ COMMAND_TO_HANDLER_MAP = {
 
 ACTION_TO_HANDLER_MAP = {
     'draft': handle_draft,
+    'search': handle_search,
 }

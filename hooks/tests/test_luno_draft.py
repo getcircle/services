@@ -11,6 +11,10 @@ from services.test import (
     MockedTestCase,
 )
 
+from .utils import (
+    mock_slack_user_info,
+    setup_mock_slack_test,
+)
 from ..actions import (
     get_profile_for_slack_user,
     get_email_for_slack_user,
@@ -32,28 +36,6 @@ class Test(MockedTestCase):
         self.slack_token = fuzzy.FuzzyText().fuzz()
         self.api = APIClient()
 
-    def _mock_user_info(self, patched, email='test@acme.com'):
-        patched().users.info.return_value = Response(
-            '{"ok": true, "user": {"profile": {"email": "%s"}}}' % (email,)
-        )
-        return email
-
-    def _setup_test(self, patched):
-        expected_email = self._mock_user_info(patched)
-        expected_profile = mocks.mock_profile(
-            organization_id=self.organization.id,
-            email=expected_email,
-        )
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profile',
-            return_object=expected_profile,
-            return_object_path='profile',
-            email=expected_email,
-            inflations={'enabled': False},
-        )
-        return expected_profile
-
     def _request_payload(self, **overrides):
         payload = {
             'token': fuzzy.FuzzyText().fuzz(),
@@ -66,7 +48,7 @@ class Test(MockedTestCase):
 
     @patch('hooks.actions.Slacker')
     def test_get_email_for_slack_user(self, patched):
-        expected_email = self._mock_user_info(patched)
+        expected_email = mock_slack_user_info(patched)
 
         user_id = fuzzy.FuzzyUUID().fuzz()
         email = get_email_for_slack_user(self.slack_token, user_id)
@@ -74,7 +56,7 @@ class Test(MockedTestCase):
 
     @patch('hooks.actions.Slacker')
     def test_get_profile_for_slack_user(self, patched):
-        expected_profile = self._setup_test(patched)
+        expected_profile = setup_mock_slack_test(self.mock, patched, self.organization)
         user_id = fuzzy.FuzzyUUID().fuzz()
 
         profile = get_profile_for_slack_user(
@@ -86,7 +68,7 @@ class Test(MockedTestCase):
 
     @patch('hooks.actions.Slacker')
     def test_handle_draft_default_help_text(self, patched):
-        self._setup_test(patched)
+        setup_mock_slack_test(self.mock, patched, self.organization)
         response = self.api.post('/hooks/slack/', self._request_payload(text='draft'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['text'], LUNO_DRAFT_HELP)
