@@ -18,16 +18,20 @@ from . import (
 
 class StartUpload(actions.Action):
 
-    required_fields = ('file_name', 'content_type')
+    required_fields = ('file_name',)
 
     def run(self, *args, **kwargs):
         s3_manager = utils.S3Manager()
         bucket = s3_manager.get_bucket()
         upload_key = '%s/%s' % (uuid.uuid4().hex, self.request.file_name)
 
+        metadata = {}
+        if self.request.content_type:
+            metadata['content-type'] = self.request.content_type
+
         response = bucket.initiate_multipart_upload(
             upload_key,
-            metadata={'content-type': self.request.content_type},
+            metadata=metadata,
         )
         self.response.upload_instructions.upload_id = response.id
         self.response.upload_instructions.upload_key = upload_key
@@ -52,7 +56,7 @@ class StartUpload(actions.Action):
 
 class CompleteUpload(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('upload_key', 'upload_id', 'file_name', 'content_type')
+    required_fields = ('upload_key', 'upload_id', 'file_name')
 
     def _complete_upload(self):
         s3_manager = utils.S3Manager()
@@ -66,15 +70,17 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             response = multipart_upload.complete_upload()
         except S3ResponseError as e:
             self.note_error('FAILED', ('FAILED', 'failed to complete upload: %s' % (e,)))
-            return
+            return None, None
         except TypeError:
             self.note_field_error('upload_id', 'UNKNOWN')
-            return
-        else:
-            return response.location
+            return None, None
+
+        location = response.location
+        key = bucket.get_key(self.request.upload_key)
+        return location, key.content_type
 
     def run(self, *args, **kwargs):
-        source_url = self._complete_upload()
+        source_url, content_type = self._complete_upload()
         if not source_url:
             return
 
@@ -83,7 +89,7 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             source_url=source_url,
             name=self.request.file_name,
-            content_type=self.request.content_type,
+            content_type=content_type,
         )
         instance.to_protobuf(self.response.file)
 
