@@ -1,43 +1,14 @@
 import urlparse
 
 from django.conf import settings
-from rest_framework import exceptions
 from rest_framework.response import Response
 import service.control
 
 from . import actions
 
-LUNO_HELP = """
-Valid commands: draft
-To start a draft in luno: /luno draft last 5 minutes
-"""
-
 LUNO_DRAFT_HELP = """
 Usage: To start a draft in luno: /luno draft <message interval>
 """
-
-
-def handle_hook(request):
-    command = request.data['command']
-    handler = COMMAND_TO_HANDLER_MAP.get(command)
-    if not handler:
-        raise exceptions.NotFound(detail='Don\'t know how to handle: %s' % (command,))
-
-    return handler(request)
-
-
-def handle_luno_command(request):
-    try:
-        action, text = request.data['text'].split(' ', 1)
-    except ValueError:
-        action = request.data['text']
-        text = ''
-
-    handler = ACTION_TO_HANDLER_MAP.get(action)
-    if not handler:
-        return Response({'text': LUNO_HELP})
-
-    return handler(request, text)
 
 
 def handle_draft(request, text):
@@ -56,6 +27,8 @@ def handle_draft(request, text):
         channel_name=request.data['channel_name'],
     )
     messages.reverse()
+    # XXX should have a `post_content_from_messages` function, we should handle
+    # special formatting for the messages
     text_values = [m['text'] for m in messages if 'text' in m and 'subtype' not in m]
     title = 'Slack Draft - %s' % (text,)
     content = '\n'.join(text_values)
@@ -67,15 +40,10 @@ def handle_draft(request, text):
         post={'title': title, 'content': content},
     )
     parsed_url = urlparse.urlparse(settings.FRONTEND_URL)
+    # XXX the frontend should support different actions, ie:
+        # post_created_from_slack or something so that we don't have to know
+        # about the URL structure of the app, we just send an event that
+        # happend and it needs to handle routing to the correct location
     parsed_url = parsed_url._replace(path='/'.join(['post', post.id, 'edit']))
     response_url = urlparse.urlunparse(parsed_url)
     return Response({'text': 'Draft created: %s' % (response_url,)})
-
-
-COMMAND_TO_HANDLER_MAP = {
-    '/luno': handle_luno_command,
-}
-
-ACTION_TO_HANDLER_MAP = {
-    'draft': handle_draft,
-}
