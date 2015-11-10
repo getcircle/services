@@ -10,6 +10,7 @@ TIME_INTERVALS = {
     'seconds': ['seconds', 'secs', 'sec', 's'],
 }
 VALID_TIME_INTERVALS = sum(TIME_INTERVALS.values(), [])
+VALID_MESSAGE_ALIASES = ['messages', 'msgs', 'message']
 DraftInterval = namedtuple('DraftInterval', ['from_timestamp', 'messages'])
 
 
@@ -79,17 +80,23 @@ def _parse_multipart_interval(request_time, parts):
             interval,
             interval_type,
         )
-    elif interval_type == 'messages':
+    elif interval_type in VALID_MESSAGE_ALIASES:
         return DraftInterval(None, int(interval))
 
 
 def _parse_interval(request_time, parts):
     interval = ''
     part = parts[0]
+    if part == 'message':
+        return DraftInterval(None, 1)
+
     for index, char in enumerate(part):
+        is_last_char = index == len(part) - 1
         if char.isdigit():
             interval += char
-        elif index == len(part) - 1 and char in VALID_TIME_INTERVALS:
+            if is_last_char:
+                return DraftInterval(None, int(interval))
+        elif is_last_char and char in VALID_TIME_INTERVALS:
             return _parse_time_interval(
                 request_time,
                 interval,

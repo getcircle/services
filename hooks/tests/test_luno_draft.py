@@ -103,6 +103,18 @@ class Test(MockedTestCase):
             self.assertEqual(interval.from_timestamp, 1447147770)
             self.assertIsNone(interval.messages)
 
+    def test_parse_draft_interval_last_x_messages(self):
+        timestamp = arrow.utcnow().timestamp
+        interval = actions.parse_draft_interval(timestamp, 'message')
+        self.assertEqual(interval.messages, 1)
+        self.assertIsNone(interval.from_timestamp)
+        inputs = ['4 messages', '4 message', '4 msgs', '4']
+        for i in inputs:
+            interval = actions.parse_draft_interval(timestamp, i)
+            self.assertIsNotNone(interval, i)
+            self.assertEqual(interval.messages, 4, i)
+            self.assertIsNone(interval.from_timestamp, i)
+
     def test_parse_draft_invalid_values(self):
         inputs = ['30 30 sec onds', '30seconds', '30min', '30minutes']
         for i in inputs:
