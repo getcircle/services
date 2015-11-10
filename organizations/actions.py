@@ -3,6 +3,7 @@ from django.db.models import Count
 from django.utils import timezone
 from itsdangerous import BadSignature
 from protobufs.services.history import containers_pb2 as history_containers
+from protobufs.services.organization.containers import integration_pb2
 from protobuf_to_dict import protobuf_to_dict
 from service import (
     actions,
@@ -501,22 +502,33 @@ class EnableIntegration(PreRunParseTokenMixin, actions.Action):
         )
 
     def _get_details_object(self):
-        details = self.request.integration.google_groups
-        if not len(details.scopes):
-            if details.read_only:
-                scopes = self._read_only_google_group_scopes()
-            else:
-                scopes = self._default_google_group_scopes()
+        integration_type = self.request.integration.integration_type
+        if integration_type == integration_pb2.GOOGLE_GROUPS:
+            details = self.request.integration.google_groups
+            if not len(details.scopes):
+                if details.read_only:
+                    scopes = self._read_only_google_group_scopes()
+                else:
+                    scopes = self._default_google_group_scopes()
 
-            details.scopes.extend(scopes)
+                details.scopes.extend(scopes)
+        else:
+            details_path = self.request.integration.WhichOneof('details')
+            details = getattr(self.request.integration, details_path)
         return details
 
     def run(self, *args, **kwargs):
+        parameters = {
+            'organization_id': self.parsed_token.organization_id,
+            'details': self._get_details_object(),
+        }
+        if self.request.integration.slack_slash_command:
+            parameters['provider_uid'] = self.request.integration.slack_slash_command.token
+
         try:
             integration = models.Integration.objects.from_protobuf(
                 self.request.integration,
-                organization_id=self.parsed_token.organization_id,
-                details=self._get_details_object(),
+                **parameters
             )
         except django.db.IntegrityError:
             raise self.ActionFieldError('integration.integration_type', 'DUPLICATE')
@@ -544,6 +556,28 @@ class DisableIntegration(PreRunParseTokenMixin, actions.Action):
 
 
 class GetIntegration(DisableIntegration):
+
+    def _get_lookup_parameters(self):
+        parameters = {}
+        if self.request.provider_uid:
+            parameters['provider_uid'] = self.request.provider_uid
+        return parameters
+
+    def _get_integration(self):
+        parameters = {}
+        if self.request.provider_uid:
+            parameters['provider_uid'] = self.request.provider_uid
+        else:
+            parameters['organization_id'] = self.parsed_token.organization_id
+
+        try:
+            integration = models.Integration.objects.get(
+                type=self.request.integration_type,
+                **parameters
+            )
+        except models.Integration.DoesNotExist:
+            raise self.ActionFieldError('integration_type', 'DOES_NOT_EXIST')
+        return integration
 
     def run(self, *args, **kwargs):
         integration = self._get_integration()
