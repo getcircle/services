@@ -92,7 +92,7 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
             by_profile_id=self.parsed_token.profile_id,
         )
         post.save()
-        post.to_protobuf(self.response.post, file_ids=file_ids)
+        post.to_protobuf(self.response.post, file_ids=file_ids, token=self.token)
         self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 

@@ -139,10 +139,19 @@ class TestPosts(MockedTestCase):
 
     def test_update_post_set_file_ids(self):
         post = factories.PostFactory.create_protobuf(profile=self.profile)
-        post.file_ids.extend([fuzzy.FuzzyUUID().fuzz(), fuzzy.FuzzyUUID().fuzz()])
+        files = [mocks.mock_file(organization_id=self.organization.id) for _ in range(2)]
+        post.file_ids.extend([f.id for f in files])
+        self.mock.instance.register_mock_object(
+            service='file',
+            action='get_files',
+            return_object=files,
+            return_object_path='files',
+            ids=[f.id for f in files],
+        )
 
         response = self.client.call_action('update_post', post=post)
         self.assertEqual(len(response.result.post.file_ids), len(post.file_ids))
+        self.assertEqual(len(response.result.post.files), len(post.file_ids))
         attachments = models.Attachment.objects.filter(post_id=post.id)
         self.assertEqual(len(attachments), 2)
 
