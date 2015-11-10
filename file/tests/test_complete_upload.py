@@ -52,7 +52,25 @@ class TestCompleteUpload(MockedTestCase):
 
     @patch.object(actions.CompleteUpload, '_complete_upload')
     def test_complete_upload(self, patched):
-        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz()
+        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), 'text/plain'
+        response = self.client.call_action(
+            'complete_upload',
+            upload_id=fuzzy.FuzzyUUID().fuzz(),
+            upload_key=fuzzy.FuzzyText().fuzz(),
+            file_name='some file.txt',
+            content_type='text/plain',
+        )
+        upload = response.result.file
+        self.assertEqual(upload.by_profile_id, self.profile.id)
+        self.assertEqual(upload.organization_id, self.organization.id)
+        self.assertEqual(upload.name, 'some file.txt')
+        self.assertEqual(upload.content_type, 'text/plain')
+        file_model = models.File.objects.get(pk=upload.id)
+        self.verify_containers(upload, file_model.to_protobuf())
+
+    @patch.object(actions.CompleteUpload, '_complete_upload')
+    def test_complete_upload_content_type_not_required(self, patched):
+        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), 'text/plain'
         response = self.client.call_action(
             'complete_upload',
             upload_id=fuzzy.FuzzyUUID().fuzz(),

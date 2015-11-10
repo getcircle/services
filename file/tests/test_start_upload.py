@@ -25,10 +25,6 @@ class TestStartUpload(MockedTestCase):
         with self.assertFieldError('file_name', 'MISSING'):
             self.client.call_action('start_upload', content_type='text/plain')
 
-    def test_start_upload_file_name_content_type_required(self):
-        with self.assertFieldError('content_type', 'MISSING'):
-            self.client.call_action('start_upload', file_name='text_file.txt')
-
     @patch('file.actions.utils.S3Manager')
     def test_start_upload(self, patched):
         bucket = patched().get_bucket()
@@ -39,6 +35,21 @@ class TestStartUpload(MockedTestCase):
             'start_upload',
             file_name='some report.pdf',
             content_type='text/plain',
+        )
+        instructions = response.result.upload_instructions
+        self.assertTrue(instructions.upload_id)
+        self.assertTrue(instructions.upload_url)
+        self.assertTrue(instructions.upload_key)
+
+    @patch('file.actions.utils.S3Manager')
+    def test_start_upload_content_type_not_required(self, patched):
+        bucket = patched().get_bucket()
+        type(bucket.initiate_multipart_upload()).id = fuzzy.FuzzyUUID().fuzz()
+        bucket.get_location.return_value = 'us-west-2'
+
+        response = self.client.call_action(
+            'start_upload',
+            file_name='some report.pdf',
         )
         instructions = response.result.upload_instructions
         self.assertTrue(instructions.upload_id)

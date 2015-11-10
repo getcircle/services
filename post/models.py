@@ -66,10 +66,11 @@ class Post(models.UUIDModel, models.TimestampableModel):
                 post_id=self.pk,
                 organization_id=self.organization_id,
             )
-            if 'file_ids' not in overrides and should_inflate_field('file_ids', inflations):
-                overrides['file_ids'] = map(str, [a.file_id for a in attachments])
-            if 'files' not in overrides and should_inflate_field('files', inflations) and token:
-                overrides['files'] = self._inflate_files(attachments, token)
+            if attachments:
+                if 'file_ids' not in overrides and should_inflate_field('file_ids', inflations):
+                    overrides['file_ids'] = map(str, [a.file_id for a in attachments])
+                if 'files' not in overrides and should_inflate_field('files', inflations) and token:
+                    overrides['files'] = self._inflate_files(attachments, token)
 
         return overrides
 
