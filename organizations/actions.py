@@ -540,15 +540,11 @@ class DisableIntegration(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('integration_type',)
 
-    def _get_lookup_parameters(self):
-        return {}
-
     def _get_integration(self):
         try:
             integration = models.Integration.objects.get(
                 organization_id=self.parsed_token.organization_id,
                 type=self.request.integration_type,
-                **self._get_lookup_parameters()
             )
         except models.Integration.DoesNotExist:
             raise self.ActionFieldError('integration_type', 'DOES_NOT_EXIST')
@@ -566,6 +562,22 @@ class GetIntegration(DisableIntegration):
         if self.request.provider_uid:
             parameters['provider_uid'] = self.request.provider_uid
         return parameters
+
+    def _get_integration(self):
+        parameters = {}
+        if self.request.provider_uid:
+            parameters['provider_uid'] = self.request.provider_uid
+        else:
+            parameters['organization_id'] = self.parsed_token.organization_id
+
+        try:
+            integration = models.Integration.objects.get(
+                type=self.request.integration_type,
+                **parameters
+            )
+        except models.Integration.DoesNotExist:
+            raise self.ActionFieldError('integration_type', 'DOES_NOT_EXIST')
+        return integration
 
     def run(self, *args, **kwargs):
         integration = self._get_integration()

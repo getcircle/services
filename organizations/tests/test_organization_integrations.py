@@ -5,6 +5,7 @@ from services.test import (
     mocks,
     TestCase,
 )
+from services.token import make_admin_token
 
 from .. import (
     factories,
@@ -113,6 +114,20 @@ class OrganizationIntegrationTests(TestCase):
         )
 
         response = self.client.call_action(
+            'get_integration',
+            integration_type=integration_pb2.SLACK_SLASH_COMMAND,
+            provider_uid=integration.provider_uid,
+        )
+        self.verify_containers(integration, response.result.integration)
+
+    def test_organization_get_integration_provider_uid_no_organization_token(self):
+        client = service.control.Client('organization', token=make_admin_token())
+        integration = factories.IntegrationFactory.create_protobuf(
+            organization=self.organization,
+            type=integration_pb2.SLACK_SLASH_COMMAND,
+        )
+
+        response = client.call_action(
             'get_integration',
             integration_type=integration_pb2.SLACK_SLASH_COMMAND,
             provider_uid=integration.provider_uid,

@@ -9,10 +9,15 @@ import common.db.models.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('organizations', '0037_auto_20151109_2036'),
+        ('organizations', '0036_auto_20151009_1818'),
     ]
 
     operations = [
+        migrations.AddField(
+            model_name='integration',
+            name='provider_uid',
+            field=models.CharField(max_length=255, unique=True, null=True),
+        ),
         migrations.AlterField(
             model_name='integration',
             name='details',
