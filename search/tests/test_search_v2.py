@@ -484,7 +484,8 @@ class TestSearch(ESTestCase):
 
     def test_search_v2_feature_flag(self):
         with self.settings(
-            SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS=[]
+            SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS=[],
+            SEARCH_V2_ENABLED=False,
         ):
             response = self.client.call_action('search_v2', query='Taylor')
             self.assertFalse(len(response.result.results))
