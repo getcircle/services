@@ -6,8 +6,9 @@ from .search import handle_search
 
 
 LUNO_HELP = """
-Valid commands: draft
+Valid commands: [draft, search]
 To start a draft in luno: /luno draft last 5 minutes
+To search luno: /luno search what is luno?
 """
 
 
