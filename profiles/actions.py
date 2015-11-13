@@ -165,6 +165,8 @@ class UpdateProfile(PreRunParseTokenMixin, actions.Action):
     }
 
     def run(self, *args, **kwargs):
+        # XXX add validation around by_profile_id. should only let admin and
+        # the current user update the profile.
         profile = models.Profile.objects.get(
             pk=self.request.profile.id,
             organization_id=self.parsed_token.organization_id,
