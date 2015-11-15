@@ -133,13 +133,13 @@ class TestSearch(ESTestCase):
         present = False
         for result in results[:top_results]:
             result_object = getattr(result, result_object_type)
-            all_match = True
+            all_match = False
             for field, expected_value in fields.iteritems():
                 value = getattr(result_object, field)
-                if callable(expected_value) and not expected_value(value):
-                    all_match = False
-                elif value != value:
-                    all_match = False
+                if callable(expected_value) and expected_value(value):
+                    all_match = True
+                elif value == expected_value:
+                    all_match = True
             if all_match:
                 present = True
                 break
