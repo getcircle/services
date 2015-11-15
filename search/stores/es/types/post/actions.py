@@ -16,5 +16,6 @@ def get_should_statements_v1(query):
         Q('match', **{'title.raw': query}),
         Q('match', content=query),
         Q('match', **{'content.stemmed': query}),
+        Q('match', **{'content.raw': query}),
     ]
     return statements

@@ -254,7 +254,6 @@ class TestSearch(ESTestCase):
             'team',
             {'name': 'Customer Support'},
             response.result.results,
-            top_results=1,
         )
         response = self.client.call_action('search_v2', query='Cust')
         self.verify_top_results(
@@ -493,7 +492,6 @@ class TestSearch(ESTestCase):
         response = self.client.call_action('search_v2', query='#engineering')
         self.verify_top_results(
             'post',
-            {'title': 'Sample with hashtag'},
+            {'title': 'Hashtag'},
             response.result.results,
-            top_results=1,
         )

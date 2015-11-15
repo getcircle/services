@@ -24,6 +24,12 @@ default_search = analyzer(
     filter=['standard', 'lowercase'],
 )
 
+raw_search = analyzer(
+    'raw_search',
+    tokenizer='keyword',
+    filter=['standard', 'lowercase'],
+)
+
 shingle_search = analyzer(
     'shingle_search',
     tokenizer='keyword',

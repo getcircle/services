@@ -10,6 +10,7 @@ from protobufs.services.post import containers_pb2 as post_containers
 from ...indices import search_v1
 from ...analysis import (
     edge_ngram_max_gram_20,
+    raw_search,
     shingle_filter,
     shingle_search,
 )
@@ -30,7 +31,7 @@ title_shingle_analyzer_v1 = analyzer(
 
 raw_analyzer_v1 = analyzer(
     'post_raw_analyzer_v1',
-    tokenizer='standard',
+    tokenizer='keyword',
     filter=['standard', 'lowercase'],
 )
 
@@ -51,13 +52,17 @@ class PostV1(BaseDocType):
                 search_analyzer=shingle_search,
             ),
             'stemmed': String(analyzer=stem_analyzer_v1),
-            'raw': String(analyzer=raw_analyzer_v1, search_analyzer='default_search'),
+            'raw': String(analyzer=raw_analyzer_v1, search_analyzer=raw_search),
         },
         search_analyzer='default_search',
     )
-    content = String(fields={
-        'stemmed': String(analyzer=stem_analyzer_v1),
-    })
+    content = String(
+        analyzer='english',
+        fields={
+            'stemmed': String(analyzer=stem_analyzer_v1),
+            'raw': String(analyzer=raw_analyzer_v1, search_analyzer=raw_search),
+        },
+    )
     state = Integer()
     created = Date()
     changed = Date()
