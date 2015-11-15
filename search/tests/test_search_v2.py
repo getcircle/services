@@ -10,10 +10,7 @@ from protobufs.services.search.containers import search_pb2
 import service.control
 import yaml
 
-from services.test import (
-    fuzzy,
-    mocks,
-)
+from services.test import mocks
 
 from .base import ESTestCase
 
@@ -491,3 +488,12 @@ class TestSearch(ESTestCase):
             self.assertFalse(len(response.result.results))
         response = self.client.call_action('search_v2', query='Taylor')
         self.assertTrue(len(response.result.results))
+
+    def test_search_hashtags(self):
+        response = self.client.call_action('search_v2', query='#engineering')
+        self.verify_top_results(
+            'post',
+            {'title': 'Sample with hashtag'},
+            response.result.results,
+            top_results=1,
+        )
