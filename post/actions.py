@@ -52,11 +52,11 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
         attachment.delete()
 
     def run(self, *args, **kwargs):
+
         try:
             post = models.Post.objects.get(
                 pk=self.request.post.id,
                 organization_id=self.parsed_token.organization_id,
-                by_profile_id=self.parsed_token.profile_id,
             )
         except models.Post.DoesNotExist:
             raise self.ActionFieldError('post.id', 'DOES_NOT_EXIST')
@@ -66,6 +66,10 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
             and self.request.post.state == post_containers.DRAFT
         ):
             raise self.ActionFieldError('post.state', 'INVALID')
+
+        permissions = self.get_permissions(post)
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
 
         attachments = post.attachments.filter(
             organization_id=self.parsed_token.organization_id,
@@ -89,7 +93,6 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
         post.update_from_protobuf(
             self.request.post,
             organization_id=self.parsed_token.organization_id,
-            by_profile_id=self.parsed_token.profile_id,
         )
         post.save()
         post.to_protobuf(self.response.post, file_ids=file_ids, token=self.token)

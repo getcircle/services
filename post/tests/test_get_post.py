@@ -73,6 +73,36 @@ class TestPosts(MockedTestCase):
         self.assertFalse(post.permissions.can_delete)
         self.assertFalse(post.permissions.can_add)
 
+    def test_get_post_admin(self):
+        by_profile = mocks.mock_profile(organization_id=self.organization.id)
+        # register mock object for post.to_protobuf expansion
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object=by_profile,
+            return_object_path='profile',
+            profile_id=by_profile.id,
+            inflations={'only': ['display_title']},
+        )
+        # register mock object for permissions
+        self.profile.is_admin = True
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object=self.profile,
+            return_object_path='profile',
+        )
+
+        expected_post = factories.PostFactory.create_protobuf(
+            profile=by_profile,
+            state=post_containers.LISTED,
+        )
+        response = self.client.call_action('get_post', id=expected_post.id)
+        post = response.result.post
+        self.verify_containers(by_profile, post.by_profile)
+        self.assertTrue(post.permissions.can_edit)
+        self.assertTrue(post.permissions.can_delete)
+
     def test_get_post_unlisted(self):
         by_profile = mocks.mock_profile(organization_id=self.organization.id)
         self.mock.instance.register_mock_object(

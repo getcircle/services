@@ -20,7 +20,10 @@ class TestPosts(MockedTestCase):
         super(TestPosts, self).setUp()
         self.organization = mocks.mock_organization()
         self.profile = mocks.mock_profile(organization_id=self.organization.id)
-        token = mocks.mock_token(organization_id=self.organization.id, profile_id=self.profile.id)
+        token = mocks.mock_token(
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+        )
         self.client = service.control.Client('post', token=token)
         self.mock.instance.dont_mock_service('post')
 
@@ -49,9 +52,8 @@ class TestPosts(MockedTestCase):
         with self.assertFieldError('post.id', 'DOES_NOT_EXIST'):
             self.client.call_action('update_post', post=post)
 
-    def test_update_post_ignore_organization_id_profile_id(self):
+    def test_update_post_ignore_organization_id(self):
         post = factories.PostFactory.create_protobuf(profile=self.profile)
-        post.by_profile_id = fuzzy.FuzzyUUID().fuzz()
         post.organization_id = fuzzy.FuzzyUUID().fuzz()
         post.title = 'new'
         response = self.client.call_action('update_post', post=post)
@@ -171,3 +173,37 @@ class TestPosts(MockedTestCase):
         args = patched.call_args_list[1][1]
         self.assertEqual(args['service'], 'file')
         self.assertEqual(args['action'], 'delete')
+
+    def test_update_post_admin_wrong_organization(self):
+        post = factories.PostFactory.create_protobuf()
+        self.profile.is_admin = True
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object=self.profile,
+            return_object_path='profile',
+        )
+        with self.assertFieldError('post.id', 'DOES_NOT_EXIST'):
+            self.client.call_action('update_post', post=post)
+
+    def test_update_post_admin(self):
+        post = factories.PostFactory.create_protobuf(organization_id=self.organization.id)
+        self.profile.is_admin = True
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object=self.profile,
+            return_object_path='profile',
+        )
+        updated_content = 'updated'
+        post.content = updated_content
+        response = self.client.call_action('update_post', post=post)
+        result = response.result.post
+        self.verify_containers(post, result, ignore_fields=('content', 'created', 'changed'))
+
+    def test_update_post_non_admin(self):
+        post = factories.PostFactory.create_protobuf(organization_id=self.organization.id)
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action('update_post', post=post)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
