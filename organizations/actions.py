@@ -87,9 +87,10 @@ class GetOrganization(actions.Action):
 
     def _populate_authenticated_organization(self, organization):
         # XXX THIS IS REALLY BAD!!! XXX
+        from post import models as post_models
         from profiles import models as profile_models
         team_count = models.Team.objects.filter(organization_id=organization.id).count()
-        post_count = models.Post.objects.filter(organization_id=organization.id).count()
+        post_count = post_models.Post.objects.filter(organization_id=organization.id).count()
         profile_count = profile_models.Profile.objects.filter(
             organization_id=organization.id,
         ).count()
