@@ -36,6 +36,7 @@ class OrganizationTests(MockedTestCase):
         response = client.call_action('get_organization', domain=organization.domain)
         result = response.result.organization
         self.assertFalse(result.HasField('id'))
+        self.assertFalse(result.HasField('post_count'))
         self.assertFalse(result.HasField('profile_count'))
         self.assertFalse(result.HasField('team_count'))
         self.assertFalse(result.HasField('location_count'))

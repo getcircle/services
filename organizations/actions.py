@@ -89,6 +89,7 @@ class GetOrganization(actions.Action):
         # XXX THIS IS REALLY BAD!!! XXX
         from profiles import models as profile_models
         team_count = models.Team.objects.filter(organization_id=organization.id).count()
+        post_count = models.Post.objects.filter(organization_id=organization.id).count()
         profile_count = profile_models.Profile.objects.filter(
             organization_id=organization.id,
         ).count()
@@ -96,6 +97,7 @@ class GetOrganization(actions.Action):
         organization.to_protobuf(
             self.response.organization,
             team_count=team_count,
+            post_count=post_count,
             profile_count=profile_count,
             location_count=location_count,
         )
