@@ -7,6 +7,7 @@ from . import actions
 from .actions import (
     search_v2,
     update_entities,
+    delete_entities,
 )
 
 
@@ -17,6 +18,7 @@ class Server(service.control.Server):
         'search': actions.Search,
         'search_v2': search_v2.Action,
         'update_entities': update_entities.Action,
+        'delete_entities': delete_entities.Action,
     }
 
     def get_action_class(self, control, action):

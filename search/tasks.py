@@ -1,6 +1,7 @@
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl import connections
 from protobufs.services.post import containers_pb2 as post_containers
+from protobufs.services.search.containers import entity_pb2
 import service.control
 
 from services.celery import app
@@ -73,3 +74,28 @@ def update_posts(ids, organization_id):
         state=post_containers.LISTED,
     )
     _update_documents(PostV1, posts)
+
+
+@app.task
+def delete_entities(ids, entity_type, organization_id):
+
+    _build_action = lambda document_id, document_type: {
+        '_id': document_id,
+        '_op_type': 'delete',
+        '_index': document_type._doc_type.index,
+        '_type': document_type._doc_type.name,
+    }
+
+    document_type = None
+    if entity_type == entity_pb2.PROFILE:
+        document_type = ProfileV1
+    elif entity_type == entity_pb2.TEAM:
+        document_type = TeamV1
+    elif entity_type == entity_pb2.LOCATION:
+        document_type = LocationV1
+    elif entity_type == entity_pb2.POST:
+        document_type = PostV1
+
+    actions = [_build_action(_id, document_type) for _id in ids]
+    es = connections.connections.get_connection()
+    bulk(es, actions)
