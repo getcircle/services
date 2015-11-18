@@ -1,6 +1,9 @@
 import logging
 
-from django.db.models.signals import post_save
+from django.db.models.signals import (
+    post_delete,
+    post_save,
+)
 from django.dispatch import receiver
 from protobufs.services.search.containers import entity_pb2
 import service.control
@@ -20,6 +23,22 @@ def update_search_index_on_post_update(sender, **kwargs):
         service.control.call_action(
             service='search',
             action='update_entities',
+            client_kwargs={'token': token},
+            ids=[str(instance.pk)],
+            type=entity_pb2.POST,
+        )
+    except service.control.CallActionError as e:
+        logger.error(e.summary)
+
+
+@receiver(post_delete, sender=models.Post)
+def delete_entity_on_post_delete(sender, **kwargs):
+    instance = kwargs['instance']
+    token = make_admin_token(organization_id=instance.organization_id)
+    try:
+        service.control.call_action(
+            service='search',
+            action='delete_entities',
             client_kwargs={'token': token},
             ids=[str(instance.pk)],
             type=entity_pb2.POST,
