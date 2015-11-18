@@ -9,7 +9,6 @@ from ...analysis import (
     edge_ngram_max_gram_20,
     parens_strip,
 )
-from ...indices import search_v1
 from ..base import BaseDocType
 
 
@@ -21,7 +20,6 @@ name_analyzer_v1 = analyzer(
 )
 
 
-@search_v1.INDEX.doc_type
 class TeamV1(BaseDocType):
     name = String(analyzer=name_analyzer_v1, search_analyzer='default_search')
     description = String(analyzer='english')

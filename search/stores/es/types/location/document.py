@@ -6,12 +6,10 @@ from elasticsearch_dsl import (
 from protobufs.services.organization import containers_pb2 as organization_containers
 
 from ...analysis import shingle_search
-from ...indices import search_v1
 from ..base import BaseDocType
 from . import analysis
 
 
-@search_v1.INDEX.doc_type
 class LocationV1(BaseDocType):
 
     document_to_protobuf_mapping = {

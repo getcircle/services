@@ -4,12 +4,10 @@ from elasticsearch_dsl import (
 )
 from protobufs.services.profile import containers_pb2 as profile_containers
 
-from ...indices import search_v1
 from ..base import BaseDocType
 from . import analysis
 
 
-@search_v1.INDEX.doc_type
 class ProfileV1(BaseDocType):
     full_name = String(analyzer=analysis.full_name_analyzer_v1, search_analyzer='default_search')
     email = String(analyzer=analysis.email_analyzer_v1, search_analyzer='default_search')
