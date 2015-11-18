@@ -64,15 +64,23 @@ class Command(BaseCommand):
             organization=organization,
         )
 
+        organization_token = make_admin_token(organization_id=response.result.organization.id)
         client = service.control.Client(
             'organization',
-            token=make_admin_token(organization_id=response.result.organization.id),
+            token=organization_token,
         )
         client.call_action('create_token')
         if not response.success:
             raise CommandError('Error creating organization: %s' % (
                 response.errors,
             ))
+
+        # create the search index for the organization
+        service.control.call_action(
+            service='search',
+            action='create_index',
+            client_kwargs={'token': organization_token},
+        )
 
         print 'created organization "%s": %s' % (
             response.result.organization.name,
