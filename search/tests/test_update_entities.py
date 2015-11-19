@@ -30,7 +30,7 @@ class TestUpdateEntities(MockedTestCase):
         self.patcher = patch('search.tasks.connections')
         patched_connections = self.patcher.start()
         connection = patched_connections.connections.get_connection()
-        connection.indices.get_aliases.return_value = {get_write_alias(self.organization.id): {}}
+        connection.indices.get_alias.return_value = {get_write_alias(self.organization.id): {}}
 
     def tearDown(self):
         super(TestUpdateEntities, self).tearDown()

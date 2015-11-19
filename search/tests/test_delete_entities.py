@@ -30,7 +30,7 @@ class Test(MockedTestCase):
     def test_delete_entities_profiles(self, patched, patched_connections):
         write_alias = get_write_alias(self.organization.id)
         patched_es = patched_connections.connections.get_connection()
-        patched_es.indices.get_aliases.return_value = {write_alias: {}}
+        patched_es.indices.get_alias.return_value = {write_alias: {}}
 
         def _test(entity_name, entity_value):
             ids = [fuzzy.FuzzyUUID().fuzz() for _ in range(3)]

@@ -14,6 +14,11 @@ from .stores.es.types.profile.document import ProfileV1
 from .stores.es.types.team.document import TeamV1
 
 
+def _get_write_indices_for_organization_id(es, organization_id):
+    alias = get_write_alias(organization_id)
+    return es.indices.get_alias('%s*' % (organization_id,), alias).keys()
+
+
 def _bulk_actions(actions, organization_id):
 
     def _get_action_for_index(action, index):
@@ -22,8 +27,7 @@ def _bulk_actions(actions, organization_id):
         return action
 
     es = connections.connections.get_connection()
-    alias = get_write_alias(organization_id)
-    indices = es.indices.get_aliases('*', alias).keys()
+    indices = _get_write_indices_for_organization_id(es, organization_id)
     all_actions = []
     for action in actions:
         for index in indices:
