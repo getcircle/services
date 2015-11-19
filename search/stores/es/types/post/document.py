@@ -9,6 +9,7 @@ from protobufs.services.post import containers_pb2 as post_containers
 
 from ...analysis import (
     edge_ngram_max_gram_20,
+    raw_analyzer_v1,
     raw_search,
     shingle_filter,
     shingle_search,
@@ -26,12 +27,6 @@ title_shingle_analyzer_v1 = analyzer(
     'post_title_shingle_analyzer_v1',
     tokenizer='standard',
     filter=['standard', 'lowercase', shingle_filter],
-)
-
-raw_analyzer_v1 = analyzer(
-    'post_raw_analyzer_v1',
-    tokenizer='keyword',
-    filter=['standard', 'lowercase'],
 )
 
 stem_analyzer_v1 = analyzer(

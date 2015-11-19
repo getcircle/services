@@ -36,3 +36,9 @@ shingle_filter = token_filter(
     output_unigrams=False,
     output_unigrams_if_no_shingles=False,
 )
+
+raw_analyzer_v1 = analyzer(
+    'raw_analyzer_v1',
+    tokenizer='keyword',
+    filter=['standard', 'lowercase'],
+)

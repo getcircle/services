@@ -19,10 +19,10 @@ _fixtures = None
 _executed = False
 
 
-class TestSearch(ESTestCase):
+class Test(ESTestCase):
 
     def setUp(self):
-        super(TestSearch, self).setUp()
+        super(Test, self).setUp()
         organization_id = _fixtures['profiles'][0]['organization_id']
         self.organization = mocks.mock_organization(id=organization_id)
         self.profile = mocks.mock_profile(organization_id=self.organization.id)
@@ -36,7 +36,7 @@ class TestSearch(ESTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestSearch, cls).setUpClass()
+        super(Test, cls).setUpClass()
         with open('search/fixtures/acme.yml') as read_file:
             global _fixtures
             _fixtures = yaml.load(read_file)
@@ -48,7 +48,7 @@ class TestSearch(ESTestCase):
     @classmethod
     def tearDownClass(cls):
         settings.SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS = cls._original
-        super(TestSearch, cls).tearDownClass()
+        super(Test, cls).tearDownClass()
 
     def _update_entities(self, entity_type, containers):
         self.client.call_action(
@@ -498,4 +498,20 @@ class TestSearch(ESTestCase):
             'post',
             {'title': 'Hashtag'},
             response.result.results,
+        )
+
+    def test_search_location_address_higher_than_content(self):
+        """Verify that a raw match in the location address is ranked higher than in a post.
+
+        This assumes we have a location with an address in San Francisco and a
+        post with "San Francisco" in the content. We should always rank the raw
+        match in the address higher than the post content.
+
+        """
+        response = self.client.call_action('search_v2', query='San Francisco')
+        self.verify_top_results(
+            'location',
+            {'city': 'San Francisco'},
+            response.result.results,
+            top_results=1,
         )

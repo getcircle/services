@@ -5,7 +5,10 @@ from elasticsearch_dsl import (
 
 from protobufs.services.organization import containers_pb2 as organization_containers
 
-from ...analysis import shingle_search
+from ...analysis import (
+    raw_analyzer_v1,
+    raw_search,
+)
 from ..base import BaseDocType
 from . import analysis
 
@@ -16,13 +19,12 @@ class LocationV1(BaseDocType):
         'location_name': 'name',
     }
 
+    # we prefix with `location` to avoid conflicts with other documents that
+    # have a `name` type.
     location_name = String(
         analyzer=analysis.name_analyzer_v1,
         fields={
-            'shingle': String(
-                analyzer=analysis.name_shingle_analyzer_v1,
-                search_analyzer=shingle_search,
-            ),
+            'raw': String(analyzer=raw_analyzer_v1, search_analyzer=raw_search),
         },
         search_analyzer='default_search',
     )
@@ -35,10 +37,7 @@ class LocationV1(BaseDocType):
     full_address = String(
         analyzer=analysis.name_analyzer_v1,
         fields={
-            'shingle': String(
-                analyzer=analysis.name_shingle_analyzer_v1,
-                search_analyzer=shingle_search,
-            ),
+            'raw': String(analyzer=raw_analyzer_v1, search_analyzer=raw_search),
         },
         search_analyzer='default_search',
     )

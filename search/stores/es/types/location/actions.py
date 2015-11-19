@@ -11,8 +11,8 @@ def create_mapping_v1(*args, **kwargs):
 def get_should_statements_v1(query):
     statements = [
         Q('match', location_name=query),
-        Q('match', **{'location_name.shingle': query}),
+        Q('match', **{'location_name.raw': {'query': query, 'boost': 3}}),
         Q('match', full_address=query),
-        Q('match', **{'full_address.shingle': query}),
+        Q('match', **{'full_address.raw': {'query': query, 'boost': 3}}),
     ]
     return statements
