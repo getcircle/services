@@ -16,7 +16,6 @@ class ProfileV1(BaseDocType):
         analyzer=analysis.display_title_analyzer_v1,
         search_analyzer='default_search',
     )
-    organization_id = String(index='not_analyzed')
 
     class Meta:
         doc_type = 'profile'

@@ -59,7 +59,6 @@ class PostV1(BaseDocType):
     state = Integer()
     created = Date()
     changed = Date()
-    organization_id = String(index='not_analyzed')
 
     class Meta:
         doc_type = 'post'

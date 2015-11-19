@@ -19,7 +19,6 @@ name_analyzer_v1 = analyzer(
 class TeamV1(BaseDocType):
     name = String(analyzer=name_analyzer_v1, search_analyzer='default_search')
     description = String(analyzer='english')
-    organization_id = String(index='not_analyzed')
 
     class Meta:
         doc_type = 'team'
