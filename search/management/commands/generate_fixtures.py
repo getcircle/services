@@ -1,11 +1,11 @@
 from collections import namedtuple
 
 from protobuf_to_dict import protobuf_to_dict
-from services.management.base import BaseCommand
-from services.token import get_token_for_domain
 import yaml
 
-from ..utils import execute_handler_on_paginated_items
+from services.management.base import BaseCommand
+from services.token import get_token_for_domain
+from services.utils import execute_handler_on_paginated_items
 
 
 def _add_fixtures(key):
