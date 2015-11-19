@@ -1,1 +1,0 @@
-SEARCH_ALIAS = 'search'

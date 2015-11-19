@@ -10,7 +10,7 @@ from service import actions
 
 from services.mixins import PreRunParseTokenMixin
 from ..stores.es import types
-from ..stores.es.indices import SEARCH_ALIAS
+from ..stores.es.indices.organization.actions import get_read_alias
 from ..stores.es.types.location import actions as location_actions
 from ..stores.es.types.post import actions as post_actions
 from ..stores.es.types.profile import actions as profile_actions
@@ -66,13 +66,8 @@ class Action(PreRunParseTokenMixin, actions.Action):
         return _combine_statements(search_actions, self.request.query)
 
     def run(self, *args, **kwargs):
-        search = Search(
-            index=SEARCH_ALIAS,
-            doc_type=self._get_doc_type(),
-        ).filter(
-            'term',
-            organization_id=self.parsed_token.organization_id,
-        )
+        read_alias = get_read_alias(self.parsed_token.organization_id)
+        search = Search(index=read_alias, doc_type=self._get_doc_type())
 
         should_statements = self._get_should_statements()
         q = Q('bool', should=should_statements)

@@ -15,6 +15,7 @@ from services.token import make_admin_token
 from .. import tasks
 from ..actions.update_entities import get_batches
 from ..stores.es import types
+from ..stores.es.indices.organization.actions import get_write_alias
 
 
 class TestUpdateEntities(MockedTestCase):
@@ -25,6 +26,15 @@ class TestUpdateEntities(MockedTestCase):
         token = make_admin_token(organization_id=self.organization.id)
         self.client = service.control.Client('search', token=token)
         self.mock.instance.dont_mock_service('search')
+
+        self.patcher = patch('search.tasks.connections')
+        patched_connections = self.patcher.start()
+        connection = patched_connections.connections.get_connection()
+        connection.indices.get_aliases.return_value = {get_write_alias(self.organization.id): {}}
+
+    def tearDown(self):
+        super(TestUpdateEntities, self).tearDown()
+        self.patcher.stop()
 
     def test_update_entities_ids_required(self):
         with self.assertFieldError('ids', 'MISSING'):
@@ -46,8 +56,7 @@ class TestUpdateEntities(MockedTestCase):
         )
 
     @patch('search.tasks.bulk')
-    @patch('search.tasks.connections')
-    def test_tasks_update_profiles(self, patched_connection, patched_bulk):
+    def test_tasks_update_profiles(self, patched_bulk):
         profile = mocks.mock_profile()
         self.mock.instance.register_mock_object(
             service='profile',
@@ -96,8 +105,7 @@ class TestUpdateEntities(MockedTestCase):
         )
 
     @patch('search.tasks.bulk')
-    @patch('search.tasks.connections')
-    def test_tasks_update_teams(self, patched_connection, patched_bulk):
+    def test_tasks_update_teams(self, patched_bulk):
         team = mocks.mock_team()
         self.mock.instance.register_mock_object(
             service='organization',
@@ -133,8 +141,7 @@ class TestUpdateEntities(MockedTestCase):
         )
 
     @patch('search.tasks.bulk')
-    @patch('search.tasks.connections')
-    def test_tasks_update_locations(self, patched_connection, patched_bulk):
+    def test_tasks_update_locations(self, patched_bulk):
         location = mocks.mock_location()
         self.mock.instance.register_mock_object(
             service='organization',
@@ -171,8 +178,7 @@ class TestUpdateEntities(MockedTestCase):
         )
 
     @patch('search.tasks.bulk')
-    @patch('search.tasks.connections')
-    def test_tasks_update_posts(self, patched_connection, patched_bulk):
+    def test_tasks_update_posts(self, patched_bulk):
         post = mocks.mock_post()
         self.mock.instance.register_mock_object(
             service='post',

@@ -1,6 +1,7 @@
 import time
 
 from django.conf import settings
+from elasticsearch_dsl import connections
 from protobuf_to_dict import dict_to_protobuf
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.post import containers_pb2 as post_containers
@@ -50,6 +51,10 @@ class TestSearch(ESTestCase):
         super(TestSearch, cls).tearDownClass()
 
     def _update_entities(self, entity_type, containers):
+        es = connections.connections.get_connection()
+        es.indices.delete('*')
+
+        self.client.call_action('create_index')
         self.client.call_action(
             'update_entities',
             type=entity_type,
