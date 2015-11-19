@@ -70,9 +70,12 @@ class Action(PreRunParseTokenMixin, actions.Action):
         if not self.request.HasField('category'):
             statements = [
                 post_actions.get_rescore_statements_v1,
+                location_actions.get_rescore_statements_v1,
             ]
         elif self.request.category == search_pb2.POSTS:
             statements = [post_actions.get_rescore_statements_v1]
+        elif self.request.category == search_pb2.LOCATIONS:
+            statements = [location_actions.get_rescore_statements_v1]
 
         if statements:
             statements = _combine_statements(statements, self.request.query)

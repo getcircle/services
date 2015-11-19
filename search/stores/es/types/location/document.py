@@ -35,9 +35,6 @@ class LocationV1(BaseDocType):
     postal_code = String(copy_to='full_address')
     full_address = String(
         analyzer=analysis.name_analyzer_v1,
-        fields={
-            'raw': String(analyzer=raw_analyzer_v1, search_analyzer=raw_search),
-        },
         search_analyzer='default_search',
     )
 
