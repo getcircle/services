@@ -125,6 +125,14 @@ posts:
   organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How
     do I fill out an expense report?'}
 - {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
+  content: !!python/unicode 'Something about a video I just posted about. Check out the video for more details.',
+  created: !!python/unicode '2015-11-04T21:02:20.574942+00:00', id: !!python/unicode '1f3b0e9f-411a-4341-adc0-a67ffbb6fff9',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How do i set my password (video)?'}
+- {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
+  content: !!python/unicode 'Dolores Park is a meeting room on the 2nd Floor of the SF office. It seats 10 people. It has a whiteboard, Airplay, and Polycom video conferencing.',
+  created: !!python/unicode '2015-11-04T21:02:20.574942+00:00', id: !!python/unicode 'd6d34b36-69ca-4964-b11b-a0c4367fdf00',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'Dolores Park'}
+- {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
   content: !!python/unicode 'for more info, please contact someone in San Francisco engineering department',
   created: !!python/unicode '2015-11-04T21:02:20.574942+00:00', id: !!python/unicode '46894fb6-3d55-4035-93b7-56ccb52e7624',
   organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How

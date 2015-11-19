@@ -13,9 +13,13 @@ def get_should_statements_v1(query):
         Q('match', title=query),
         Q('match', **{'title.shingle': query}),
         Q('match', **{'title.stemmed': query}),
-        Q('match', **{'title.raw': query}),
         Q('match', content=query),
-        Q('match', **{'content.stemmed': query}),
-        Q('match', **{'content.raw': query}),
+    ]
+    return statements
+
+
+def get_rescore_statements_v1(query):
+    statements = [
+        Q('match_phrase', content={'query': query, 'boost': 2}),
     ]
     return statements

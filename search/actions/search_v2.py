@@ -49,29 +49,54 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
     def _get_should_statements(self):
         if not self.request.HasField('category'):
-            search_actions = [
+            statements = [
                 post_actions.get_should_statements_v1,
                 profile_actions.get_should_statements_v1,
                 team_actions.get_should_statements_v1,
                 location_actions.get_should_statements_v1,
             ]
         elif self.request.category == search_pb2.PROFILES:
-            search_actions = [profile_actions.get_should_statements_v1]
+            statements = [profile_actions.get_should_statements_v1]
         elif self.request.category == search_pb2.TEAMS:
-            search_actions = [team_actions.get_should_statements_v1]
+            statements = [team_actions.get_should_statements_v1]
         elif self.request.category == search_pb2.LOCATIONS:
-            search_actions = [location_actions.get_should_statements_v1]
+            statements = [location_actions.get_should_statements_v1]
         elif self.request.category == search_pb2.POSTS:
-            search_actions = [post_actions.get_should_statements_v1]
-        return _combine_statements(search_actions, self.request.query)
+            statements = [post_actions.get_should_statements_v1]
+        return _combine_statements(statements, self.request.query)
+
+    def _get_rescore_statements(self):
+        statements = None
+        if not self.request.HasField('category'):
+            statements = [
+                post_actions.get_rescore_statements_v1,
+            ]
+        elif self.request.category == search_pb2.POSTS:
+            statements = [post_actions.get_rescore_statements_v1]
+
+        if statements:
+            statements = _combine_statements(statements, self.request.query)
+
+        return statements
 
     def run(self, *args, **kwargs):
         read_alias = get_read_alias(self.parsed_token.organization_id)
         search = Search(index=read_alias, doc_type=self._get_doc_type())
 
         should_statements = self._get_should_statements()
+        rescore_statements = self._get_rescore_statements()
+        extra = {}
+        if rescore_statements:
+            rescore_query = Q('bool', should=rescore_statements)
+            extra['rescore'] = {
+                'window_size': 20,
+                'query': {
+                    'rescore_query': rescore_query.to_dict(),
+                },
+            }
+
         q = Q('bool', should=should_statements)
-        response = search.query(q).execute()
+        response = search.query(q).extra(**extra).execute()
         for result in response.hits:
             result_object_type = None
             if result.meta.doc_type == types.ProfileV1._doc_type.name:

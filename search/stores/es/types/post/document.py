@@ -45,17 +45,10 @@ class PostV1(BaseDocType):
                 search_analyzer=shingle_search,
             ),
             'stemmed': String(analyzer=stem_analyzer_v1),
-            'raw': String(analyzer=raw_analyzer_v1, search_analyzer=raw_search),
         },
         search_analyzer='default_search',
     )
-    content = String(
-        analyzer='english',
-        fields={
-            'stemmed': String(analyzer=stem_analyzer_v1),
-            'raw': String(analyzer=raw_analyzer_v1, search_analyzer=raw_search),
-        },
-    )
+    content = String(analyzer='english')
     state = Integer()
     created = Date()
     changed = Date()
