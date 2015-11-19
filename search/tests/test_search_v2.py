@@ -51,10 +51,6 @@ class TestSearch(ESTestCase):
         super(TestSearch, cls).tearDownClass()
 
     def _update_entities(self, entity_type, containers):
-        es = connections.connections.get_connection()
-        es.indices.delete('*')
-
-        self.client.call_action('create_index')
         self.client.call_action(
             'update_entities',
             type=entity_type,
@@ -121,6 +117,9 @@ class TestSearch(ESTestCase):
         self._update_entities(entity_pb2.POST, containers)
 
     def _setup_fixtures(self, fixtures):
+        es = connections.connections.get_connection()
+        es.indices.delete('*')
+        self.client.call_action('create_index')
         self._setup_profile_fixtures(fixtures.get('profiles', []))
         self._setup_team_fixtures(fixtures.get('teams', []))
         self._setup_location_fixtures(fixtures.get('locations', []))
