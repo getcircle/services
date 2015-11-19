@@ -194,6 +194,30 @@ posts:
   organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'No Hahstag'}
 
 profiles:
+- authentication_identifier: !!python/unicode 'mfa@acme.com'
+  display_title: !!python/unicode 'DevOps Engineer (DevOps)'
+  email: !!python/unicode 'mfa@acme.com'
+  first_name: !!python/unicode 'Marco'
+  full_name: !!python/unicode 'Marco de Almeida'
+  hire_date: !!python/unicode '2012-06-05'
+  id: !!python/unicode '21a3ff20-c58e-4bfb-b912-9b0036bb66cb'
+  image_url: !!python/unicode 'http://api.randomuser.me/portraits/men/11.jpg'
+  last_name: !!python/unicode 'de Almeida'
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba'
+  title: !!python/unicode 'DevOps Engineer'
+  user_id: !!python/unicode '63bc2a9e-ffd2-4e0a-a08e-ba644daf6412'
+- authentication_identifier: !!python/unicode 'marco@acme.com'
+  display_title: !!python/unicode 'CEO'
+  email: !!python/unicode 'marco@acme.com'
+  first_name: !!python/unicode 'Marco'
+  full_name: !!python/unicode 'Marco Zappacosta'
+  hire_date: !!python/unicode '2012-06-05'
+  id: !!python/unicode 'f099890e-0ecb-411b-bf6a-b3282d255b5d'
+  image_url: !!python/unicode 'http://api.randomuser.me/portraits/men/11.jpg'
+  last_name: !!python/unicode 'Zappacosta'
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba'
+  title: !!python/unicode 'CEO'
+  user_id: !!python/unicode 'eb498d83-3953-4e81-bc4b-661943d9d928'
 - authentication_identifier: !!python/unicode 'alan@acme.com'
   contact_methods:
   - {id: !!python/unicode '5fa8e8a7-9b18-45f6-8ef6-f8f9d5d8f8ce', label: !!python/unicode 'Cell

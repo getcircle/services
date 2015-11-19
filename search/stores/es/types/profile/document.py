@@ -5,12 +5,13 @@ from elasticsearch_dsl import (
 from protobufs.services.profile import containers_pb2 as profile_containers
 
 from ..base import BaseDocType
+from ...analysis import raw_search
 from . import analysis
 
 
 class ProfileV1(BaseDocType):
     full_name = String(analyzer=analysis.full_name_analyzer_v1, search_analyzer='default_search')
-    email = String(analyzer=analysis.email_analyzer_v1, search_analyzer='default_search')
+    email = String(analyzer=analysis.email_analyzer_v1, search_analyzer=raw_search)
     display_title = String(
         analyzer=analysis.display_title_analyzer_v1,
         search_analyzer='default_search',

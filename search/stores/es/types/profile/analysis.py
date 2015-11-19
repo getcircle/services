@@ -16,6 +16,6 @@ display_title_analyzer_v1 = analyzer(
 
 email_analyzer_v1 = analyzer(
     'profile_email_analyzer_v1',
-    tokenizer='keyword',
-    filter=['lowercase', edge_ngram_max_gram_20],
+    tokenizer='uax_url_email',
+    filter=['lowercase'],
 )

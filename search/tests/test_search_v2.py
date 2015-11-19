@@ -178,13 +178,6 @@ class Test(ESTestCase):
         self.assertEqual(profile.display_title, 'Customer Service Agent (Customer Support)')
         self.assertEqual(profile.full_name, 'Meghan Ward')
 
-    def test_search_profile_partial_email(self):
-        response = self.client.call_action('search_v2', query='meghan@')
-        results = response.result.results
-        top_hit = results[0]
-        profile = top_hit.profile
-        self.assertEqual(profile.email, 'meghan@acme.com')
-
     def test_search_profile_partial_full_name(self):
         response = self.client.call_action('search_v2', query='meg')
         self.verify_top_results(
@@ -442,8 +435,8 @@ class Test(ESTestCase):
         # verify a normal search returns a person
         response = self.client.call_action('search_v2', query='San Francisco')
         self.verify_top_results(
-            'profile',
-            {'full_name': lambda x: 'Sandra' in x},
+            'post',
+            {'content': lambda x: 'San Francisco' in x},
             response.result.results,
         )
 
@@ -453,8 +446,8 @@ class Test(ESTestCase):
             category=search_pb2.LOCATIONS,
         )
         self.verify_top_results(
-            'profile',
-            {'full_name': lambda x: 'Sandra' in x},
+            'post',
+            {'content': lambda x: 'San Francisco' in x},
             response.result.results,
             top_results=10,
             should_be_present=False,
@@ -512,6 +505,36 @@ class Test(ESTestCase):
         self.verify_top_results(
             'location',
             {'city': 'San Francisco'},
+            response.result.results,
+            top_results=1,
+        )
+
+    def test_search_partial_email_shouldnt_rank_higher_than_partial_name(self):
+        """Several partial matches on a name should rank higher than on an email.
+
+        Given the following two profiles:
+            1:
+                name: Marco Zappacosta
+                email: marco@acme.com
+            2:
+                name: Marco de Almeida
+                email: mfa@acme.com
+
+        Searching for "Marco Almeida" should retrun profile 2 as the top result.
+        """
+        response = self.client.call_action('search_v2', query='marco almeida')
+        self.verify_top_results(
+            'profile',
+            {'email': 'mfa@acme.com'},
+            response.result.results,
+            top_results=1,
+        )
+
+    def test_search_exact_email_match(self):
+        response = self.client.call_action('search_v2', query='marco@acme.com')
+        self.verify_top_results(
+            'profile',
+            {'email': 'marco@acme.com'},
             response.result.results,
             top_results=1,
         )
