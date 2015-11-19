@@ -541,8 +541,6 @@ class Test(ESTestCase):
 
     def test_search_raw_content_match_higher_than_title_match(self):
         response = self.client.call_action('search_v2', query='video conferencing')
-        from protobuf_to_dict import protobuf_to_dict
-        import ipdb; ipdb.set_trace()
         self.verify_top_results(
             'post',
             {'content': lambda x: 'video conferencing' in x},
