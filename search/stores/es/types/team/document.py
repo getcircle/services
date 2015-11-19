@@ -5,10 +5,7 @@ from elasticsearch_dsl import (
 )
 from protobufs.services.organization import containers_pb2 as organization_containers
 
-from ...analysis import (
-    edge_ngram_max_gram_20,
-    parens_strip,
-)
+from ...analysis import edge_ngram_max_gram_20
 from ..base import BaseDocType
 
 
@@ -16,7 +13,6 @@ name_analyzer_v1 = analyzer(
     'team_name_analyzer_v1',
     tokenizer='standard',
     filter=['standard', 'lowercase', edge_ngram_max_gram_20],
-    char_filter=[parens_strip],
 )
 
 
