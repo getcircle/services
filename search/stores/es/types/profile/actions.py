@@ -15,3 +15,10 @@ def get_should_statements_v1(query):
         Q('match', email=query),
     ]
     return statements
+
+
+def get_rescore_statements_v1(query):
+    statements = [
+        Q('match_phrase', full_name={'query': query, 'slop': 5}),
+    ]
+    return statements

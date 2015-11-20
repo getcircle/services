@@ -125,6 +125,14 @@ posts:
   organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How
     do I fill out an expense report?'}
 - {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
+  content: !!python/unicode 'Yes! Below is the most recent version we have.
+
+    Marco Zappacosta is a co-founder and the Chief Executive Officer of Thumbtack. Prior to Thumbtack, Mr. Zappacosta was the Director of Students for Saving Social Security in Washington, DC. The group represented the student voice in the Social Security debate with over 10,000 student members in over 300 campus chapters nationwide. He is a graduate of Columbia University where he majored in Political Science and fell one class shy of another degree in Neuroscience.
+
+    Headshot attached.',
+  created: !!python/unicode '2015-11-04T21:02:20.574942+00:00', id: !!python/unicode '962e3dd7-2bd4-4018-b07b-9c5a78905ed6',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'Do we have a bio for Marco?'}
+- {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
   content: !!python/unicode 'Something about a video I just posted about. Check out the video for more details.',
   created: !!python/unicode '2015-11-04T21:02:20.574942+00:00', id: !!python/unicode '1f3b0e9f-411a-4341-adc0-a67ffbb6fff9',
   organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How do i set my password (video)?'}
