@@ -1,6 +1,5 @@
 import time
 
-from django.conf import settings
 from elasticsearch_dsl import connections
 from protobuf_to_dict import dict_to_protobuf
 from protobufs.services.organization import containers_pb2 as organization_containers
@@ -40,15 +39,6 @@ class Test(ESTestCase):
         with open('search/fixtures/acme.yml') as read_file:
             global _fixtures
             _fixtures = yaml.load(read_file)
-            cls._original = settings.SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS
-            settings.SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS = [
-                _fixtures['profiles'][0]['organization_id']
-            ]
-
-    @classmethod
-    def tearDownClass(cls):
-        settings.SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS = cls._original
-        super(Test, cls).tearDownClass()
 
     def _update_entities(self, entity_type, containers):
         self.client.call_action(
@@ -474,16 +464,6 @@ class Test(ESTestCase):
             top_results=10,
             should_be_present=False,
         )
-
-    def test_search_v2_feature_flag(self):
-        with self.settings(
-            SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS=[],
-            SEARCH_V2_ENABLED=False,
-        ):
-            response = self.client.call_action('search_v2', query='Taylor')
-            self.assertFalse(len(response.result.results))
-        response = self.client.call_action('search_v2', query='Taylor')
-        self.assertTrue(len(response.result.results))
 
     def test_search_hashtags(self):
         response = self.client.call_action('search_v2', query='#engineering')

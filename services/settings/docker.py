@@ -40,9 +40,3 @@ SEARCH_SERVICE_ELASTICSEARCH = {
     'hosts': ['%s:%s' % (es_url.hostname, es_url.port)],
     'timeout': 10,
 }
-
-SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS = _get_delimited_setting_from_environment(
-    'SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS',
-    SEARCH_SERVICE_SEARCH_V2_ENABLED_ORGANIZATION_IDS,
-)
-SEARCH_V2_ENABLED = True
