@@ -22,12 +22,6 @@ class TestGetFlags(MockedTestCase):
         self.mock.instance.dont_mock_service('feature')
 
     def test_feature_get_flags(self):
-        with self.settings(FEATURE_SERVICE_POSTS_ENABLED_ORGANIZATIONS=[self.organization.domain]):
-            response = self.client.call_action('get_flags')
-
-        flags = response.result.flags
-        self.assertTrue(flags.get('posts'))
-
         response = self.client.call_action('get_flags')
         flags = response.result.flags
-        self.assertFalse(flags.get('posts'))
+        self.assertTrue(flags.get('posts'))
