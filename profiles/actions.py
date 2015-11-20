@@ -34,10 +34,6 @@ def valid_tag_list(tag_list):
     return all(map(valid_tag, tag_list))
 
 
-def valid_status(status_id):
-    return models.ProfileStatus.objects.filter(pk=status_id).exists()
-
-
 def get_values_from_date_range(range_key, value_key, start, end):
     # cast to tuple so we can use it as input params to the db cursor
     return tuple(
@@ -346,7 +342,7 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
             container = response_container.add()
             profile = profile_dict.get(profile_id)
             if profile:
-                profile.to_protobuf(container, contact_methods=None, status=None, token=self.token)
+                profile.to_protobuf(container, contact_methods=None, token=self.token)
 
     def _populate_reporting_details(self, client):
         response = client.call_action(
@@ -385,7 +381,6 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
                 manager.to_protobuf(
                     self.response.manager,
                     contact_methods=None,
-                    status=None,
                     token=self.token,
                 )
 
@@ -750,20 +745,3 @@ class ProfileExists(actions.Action):
             self.response.exists = True
             self.response.user_id = str(profile.user_id)
             self.response.profile_id = str(profile.id)
-
-
-class GetStatus(PreRunParseTokenMixin, actions.Action):
-
-    required_fields = ('id',)
-
-    def pre_run(self, *args, **kwargs):
-        super(GetStatus, self).pre_run(*args, **kwargs)
-        self.status = models.ProfileStatus.objects.get_or_none(
-            id=self.request.id,
-            organization_id=self.parsed_token.organization_id,
-        )
-        if self.status is None:
-            raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
-
-    def run(self, *args, **kwargs):
-        self.status.to_protobuf(self.response.status)

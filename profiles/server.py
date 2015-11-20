@@ -26,5 +26,4 @@ class Server(service.control.Server):
         'get_recent_hires': actions.GetRecentHires,
         'get_active_tags': actions.GetActiveTags,
         'profile_exists': actions.ProfileExists,
-        'get_status': actions.GetStatus,
     }

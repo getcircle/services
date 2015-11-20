@@ -146,7 +146,7 @@ class UpdateTeam(TeamPermissionsMixin, actions.Action):
             raise self.PermissionDenied()
 
         action = self._get_update_description_action(team)
-        team.update_from_protobuf(self.request.team, self.parsed_token.profile_id)
+        team.update_from_protobuf(self.request.team)
         team.save()
         if action:
             service.control.call(
@@ -694,7 +694,7 @@ class GetProfileReportingDetails(PreRunParseTokenMixin, actions.Action):
                 manager_profile_id=position.manager_id,
                 organization_id=self.parsed_token.organization_id,
             )
-            team.to_protobuf(self.response.team, status=None, description=None)
+            team.to_protobuf(self.response.team, description=None)
             self.response.manager_profile_id = str(position.manager_id)
 
             peers = position.get_siblings().filter(
@@ -708,7 +708,7 @@ class GetProfileReportingDetails(PreRunParseTokenMixin, actions.Action):
                 manager_profile_id=position.profile_id,
                 organization_id=self.parsed_token.organization_id,
             )
-            team.to_protobuf(self.response.manages_team, status=None, description=None)
+            team.to_protobuf(self.response.manages_team, description=None)
             direct_reports = position.get_children().filter(
                 organization_id=self.parsed_token.organization_id,
             ).values_list('profile_id', flat=True)
@@ -760,7 +760,7 @@ class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
             )
             for team in teams:
                 container = self.response.child_teams.add()
-                team.to_protobuf(container, status=None, description=None)
+                team.to_protobuf(container, description=None)
 
 
 class GetDescendants(PreRunParseTokenMixin, actions.Action):

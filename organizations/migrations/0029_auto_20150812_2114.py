@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import protobufs.services.organization.containers_pb2
 import services.fields
 import timezone_field.fields
 import mptt.fields
@@ -39,9 +38,6 @@ class Migration(migrations.Migration):
                 ('points_of_contact_profile_ids', django.contrib.postgres.fields.ArrayField(null=True, base_field=models.UUIDField(), size=None)),
                 ('organization', models.ForeignKey(editable=False, to='organizations.Organization')),
             ],
-            options={
-                'protobuf': protobufs.services.organization.containers_pb2.LocationV1,
-            },
         ),
         migrations.CreateModel(
             name='LocationMember',
@@ -85,9 +81,6 @@ class Migration(migrations.Migration):
                 ('image_url', models.URLField(max_length=255, null=True)),
                 ('organization', models.ForeignKey(editable=False, to='organizations.Organization')),
             ],
-            options={
-                'protobuf': protobufs.services.organization.containers_pb2.TeamV1,
-            },
         ),
         migrations.CreateModel(
             name='TeamStatus',
@@ -99,9 +92,6 @@ class Migration(migrations.Migration):
                 ('by_profile_id', models.UUIDField(editable=False)),
                 ('team', models.ForeignKey(to='organizations.Team')),
             ],
-            options={
-                'protobuf': protobufs.services.organization.containers_pb2.TeamStatusV1,
-            },
         ),
         migrations.AlterIndexTogether(
             name='teamstatus',

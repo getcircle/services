@@ -86,17 +86,6 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             container = protobuf.contact_methods.add()
             method.to_protobuf(container)
 
-        if 'status' not in overrides:
-            if should_inflate_field('status', inflations):
-                try:
-                    overrides['status'] = self.statuses.all().order_by('-created')[0]
-                except IndexError:
-                    pass
-
-        status = overrides.pop('status', None)
-        if status is not None and status.value is not None:
-            overrides['status'] = status.as_dict()
-
         if 'display_title' not in overrides:
             if should_inflate_field('display_title', inflations) and token:
                 overrides['display_title'] = self._get_display_title(token)
@@ -133,51 +122,11 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         if protobuf.contact_methods:
             contact_methods = self._update_contact_methods(protobuf.contact_methods)
 
-        status = self._update_status(protobuf)
         return super(Profile, self).update_from_protobuf(
             protobuf,
             items=items,
             contact_methods=contact_methods,
-            status=status,
         )
-
-    def _existing_status(self, container):
-        instance = ProfileStatus.objects.get(
-            organization_id=self.organization_id,
-            profile=self,
-            pk=container.status.id,
-        )
-        if container.status.value != instance.value:
-            instance.update_from_protobuf(container.status)
-            instance.save()
-        return instance.to_protobuf()
-
-    def _new_status(self, container):
-        try:
-            current_status = self.statuses.all().order_by('-created')[0]
-            current_value = current_status.value
-        except IndexError:
-            current_value = None
-
-        value = container.status.value if container.HasField('status') else None
-        # support unsetting the current status (creating a stauts with value None, only once)
-        if current_value != value:
-            instance = ProfileStatus.objects.create(
-                profile=self,
-                value=value,
-                organization_id=self.organization_id,
-            )
-            if value is not None:
-                return instance.to_protobuf()
-
-    def _update_status(self, container):
-        next_status = None
-        status = container.status
-        if status.id:
-            next_status = self._existing_status(container)
-        else:
-            next_status = self._new_status(container)
-        return next_status
 
     def _update_contact_methods(self, methods):
         with django.db.transaction.atomic():
@@ -240,7 +189,6 @@ class ProfileStatus(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         index_together = (('profile', 'organization_id', 'created'), ('value', 'organization_id'))
-        protobuf = profile_containers.ProfileStatusV1
 
 
 class ContactMethod(models.UUIDModel, models.TimestampableModel):

@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import protobufs.services.organization.containers_pb2
 import uuid
 
 
@@ -23,9 +22,6 @@ class Migration(migrations.Migration):
                 ('by_profile_id', models.UUIDField()),
                 ('team', models.ForeignKey(to='organizations.Team')),
             ],
-            options={
-                'protobuf': protobufs.services.organization.containers_pb2.TeamStatusV1,
-            },
         ),
         migrations.AlterIndexTogether(
             name='teamstatus',

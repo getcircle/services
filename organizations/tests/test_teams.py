@@ -205,7 +205,6 @@ class OrganizationTeamTests(MockedTestCase):
         manager = mocks.mock_profile(id=str(team.manager_profile_id))
         team.name = 'new name'
         team.image_url = 'http://www.newimage.com'
-        team.status.value = 'new status'
         self._mock_requester_profile()
         self.mock.instance.register_mock_object(
             'profile',
@@ -221,109 +220,9 @@ class OrganizationTeamTests(MockedTestCase):
         self.assertTrue(response.result.team.permissions.can_add)
         self.assertTrue(response.result.team.permissions.can_delete)
         self.assertEqual(response.result.team.image_url, team.image_url)
-        status = response.result.team.status
-        self.assertEqual(status.value, team.status.value)
-        self.assertEqualUUID4(status.by_profile_id, str(self.profile.id))
-        self.assertTrue(status.created)
 
         instance = models.Team.objects.get(pk=team.id)
         self.assertEqual(instance.name, team.name)
-        statuses = instance.teamstatus_set.all()
-        self.assertTrue(len(statuses), 1)
-        self.assertEqual(statuses[0].value, team.status.value)
-        self.assertEqualUUID4(statuses[0].by_profile_id, str(self.profile.id))
-
-    def test_update_team_existing_status(self):
-        by_profile_id = fuzzy.FuzzyUUID().fuzz()
-        self.profile.is_admin = True
-        self._mock_requester_profile()
-        self._mock_requester_profile(by_profile_id)
-        team = factories.TeamFactory.create_protobuf(
-            organization=self.organization,
-            status={'value': 'original status', 'by_profile_id': by_profile_id},
-        )
-        manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=manager,
-            profile_id=team.manager_profile_id,
-        )
-        team.status.value = 'new status'
-        response = self.client.call_action('update_team', team=team)
-        self.assertEqual(response.result.team.status.id, team.status.id)
-        self.assertEqual(response.result.team.status.value, team.status.value)
-        self.assertTrue(response.result.team.status.changed)
-        self.assertTrue(response.result.team.status.created)
-        self.assertEqual(response.result.team.status.created, team.status.created)
-        self.assertNotEqual(response.result.team.status.changed, team.status.changed)
-        statuses = models.TeamStatus.objects.filter(team_id=team.id)
-        self.assertTrue(len(statuses), 1)
-        self.assertEqual(statuses[0].value, team.status.value)
-        self.assertEqualUUID4(statuses[0].by_profile_id, str(self.profile.id))
-
-    def test_update_team_status_didnt_change(self):
-        self.profile.is_admin = True
-        self._mock_requester_profile()
-        team = factories.TeamFactory.create_protobuf(
-            organization=self.organization,
-            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
-        )
-        manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=manager,
-            profile_id=team.manager_profile_id,
-        )
-        response = self.client.call_action('update_team', team=team)
-        self.verify_containers(team.status, response.result.team.status)
-
-    def test_update_team_unset_status(self):
-        self.profile.is_admin = True
-        self._mock_requester_profile()
-        team = factories.TeamFactory.create_protobuf(
-            organization=self.organization,
-            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
-        )
-        manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        team.ClearField('status')
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=manager,
-            profile_id=team.manager_profile_id,
-        )
-        response = self.client.call_action('update_team', team=team)
-        self.assertFalse(response.result.team.HasField('status'))
-
-    def test_update_team_get_team_only_returns_most_recent_status(self):
-        self.profile.is_admin = True
-        self._mock_requester_profile()
-
-        team = factories.TeamFactory.create_protobuf(
-            organization=self.organization,
-            status={'value': 'status', 'by_profile_id': str(self.profile.id)},
-        )
-        manager = mocks.mock_profile(id=str(team.manager_profile_id))
-        new_status = 'new status'
-        team.status.value = new_status
-        self.mock.instance.register_mock_object(
-            'profile',
-            'get_profile',
-            return_object_path='profile',
-            return_object=manager,
-            profile_id=team.manager_profile_id,
-        )
-        response = self.client.call_action('update_team', team=team)
-        self.assertEqual(response.result.team.status.value, team.status.value)
-
-        response = self.client.call_action('get_team', team_id=team.id)
-        self.assertEqual(response.result.team.status.value, team.status.value)
-        self.verify_containers(self.profile, response.result.team.status.by_profile)
 
     def test_update_team_profile_non_admin(self):
         self.profile.is_admin = False

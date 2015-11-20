@@ -70,9 +70,7 @@ class TestProfiles(MockedTestCase):
         self.assertTrue(response.result.profile.is_admin)
 
     def test_get_profile(self):
-        status = profile_containers.ProfileStatusV1(value='some status')
         expected = factories.ProfileFactory.create_protobuf(
-            status=status,
             organization_id=self.organization.id,
         )
         self._mock_display_title()
@@ -81,7 +79,6 @@ class TestProfiles(MockedTestCase):
             profile_id=expected.id,
         )
         self.verify_containers(expected, response.result.profile)
-        self.verify_containers(status, response.result.profile.status)
 
     def test_get_profile_authentication_identifier(self):
         expected = factories.ProfileFactory.create_protobuf(
@@ -142,7 +139,6 @@ class TestProfiles(MockedTestCase):
 
     def test_update_profile(self):
         original = factories.ProfileFactory.create_protobuf(
-            status={'value': 'old status'},
             organization_id=self.organization.id,
         )
         profile = profile_containers.ProfileV1()
@@ -152,87 +148,11 @@ class TestProfiles(MockedTestCase):
         profile.last_name = 'Hahn'
         profile.title = 'Engineer'
 
-        new_status = 'new status'
-        profile.status.CopyFrom(profile_containers.ProfileStatusV1(value=new_status))
-
         # this has no effect, this just makes validating the container easier
         profile.full_name = 'Michael Hahn'
 
         response = self.client.call_action('update_profile', profile=profile)
-        self.verify_containers(profile, response.result.profile, ignore_fields='status')
-        self.assertEqual(new_status, response.result.profile.status.value)
-        self.assertTrue(response.result.profile.status.created)
-        self.assertTrue(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 2)
-        status = response.result.profile.status
-        self.assertTrue(status.created)
-        self.assertTrue(status.changed)
-        self.assertNotEqual(original.status.created, status.created)
-        self.assertNotEqual(original.status.changed, status.changed)
-
-    def test_update_profile_status_didnt_change(self):
-        original = factories.ProfileFactory.create_protobuf(
-            status={'value': 'old status'},
-            organization_id=self.organization.id,
-        )
-        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
-        profile.first_name = 'Michael'
-        self.client.call_action('update_profile', profile=profile)
-        response = self.client.call_action('get_profile', profile_id=profile.id)
-        self.verify_containers(response.result.profile.status, profile.status)
-
-    def test_update_profile_unset_status(self):
-        original = factories.ProfileFactory.create_protobuf(
-            status={'value': 'old status'},
-            organization_id=self.organization.id,
-        )
-        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
-        profile.ClearField('status')
-        self.client.call_action('update_profile', profile=profile)
-        response = self.client.call_action('get_profile', profile_id=profile.id)
-        self.assertFalse(response.result.profile.HasField('status'))
-
-        response = self.client.call_action('update_profile', profile=profile)
-        self.assertFalse(response.result.profile.HasField('status'))
-        self.assertEqual(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 2)
-
-    def test_update_profile_update_status(self):
-        profile = factories.ProfileFactory.create_protobuf(
-            status={'value': 'old status'},
-            organization_id=self.organization.id,
-        )
-        profile.status.value = 'updated value'
-        self.client.call_action('update_profile', profile=profile)
-        response = self.client.call_action('get_profile', profile_id=profile.id)
-        status = response.result.profile.status
-        self.assertEqual(status.id, profile.status.id)
-        self.assertEqual(status.value, profile.status.value)
-        self.assertEqual(models.ProfileStatus.objects.filter(profile_id=profile.id).count(), 1)
-        self.assertTrue(status.changed)
-        self.assertTrue(status.created)
-        self.assertEqual(status.created, profile.status.created)
-        self.assertNotEqual(status.changed, profile.status.changed)
-
-    def test_update_profile_get_profile_only_returns_most_recent_status(self):
-        original = factories.ProfileFactory.create_protobuf(
-            status={'value': 'old status'},
-            organization_id=self.organization.id,
-        )
-        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
-        new_status = 'new status'
-        profile.status.CopyFrom(profile_containers.ProfileStatusV1(value=new_status))
-
-        self.client.call_action('update_profile', profile=profile)
-        response = self.client.call_action('get_profile', profile_id=profile.id)
-        self.assertEqual(response.result.profile.status.value, new_status)
-
-    def test_update_profile_no_previous_status(self):
-        original = factories.ProfileFactory.create_protobuf(organization_id=self.organization.id)
-        profile = profile_containers.ProfileV1.FromString(original.SerializeToString())
-        new_status = 'new status'
-        profile.status.CopyFrom(profile_containers.ProfileStatusV1(value=new_status))
-
-        response = self.client.call_action('update_profile', profile=profile)
-        self.assertEqual(response.result.profile.status.value, new_status)
+        self.verify_containers(profile, response.result.profile)
 
     def test_create_profile_duplicate(self):
         profile = factories.ProfileFactory.create_protobuf()
@@ -641,13 +561,11 @@ class TestProfiles(MockedTestCase):
 
     def test_get_profile_inflation_options(self):
         profile = factories.ProfileFactory.create_protobuf(
-            status={'value': 'status'},
             organization_id=self.organization.id,
             contact_methods=[mocks.mock_contact_method(), mocks.mock_contact_method()],
         )
         response = self.client.call_action('get_profile', profile_id=profile.id)
         # verify objects are expanded by default
-        self.assertEqual(response.result.profile.status.value, 'status')
         self.assertEqual(len(response.result.profile.contact_methods), 2)
 
         response = self.client.call_action(
@@ -655,29 +573,18 @@ class TestProfiles(MockedTestCase):
             profile_id=profile.id,
             inflations={'enabled': False},
         )
-        self.assertFalse(response.result.profile.HasField('status'))
         self.assertFalse(response.result.profile.contact_methods)
 
         response = self.client.call_action(
             'get_profile',
             profile_id=profile.id,
-            inflations={'only': ['status']},
-        )
-        self.assertEqual(response.result.profile.status.value, 'status')
-        self.assertFalse(response.result.profile.contact_methods)
-
-        response = self.client.call_action(
-            'get_profile',
-            profile_id=profile.id,
-            inflations={'exclude': ['status']},
+            inflations={'only': ['contact_methods']},
         )
         self.assertEqual(len(response.result.profile.contact_methods), 2)
-        self.assertFalse(response.result.profile.HasField('status'))
 
     def test_get_profiles_inflation_options(self):
         factories.ProfileFactory.create_batch(
             size=3,
-            status={'value': 'status'},
             organization_id=self.organization.id,
             contact_methods=[
                 mocks.mock_contact_method(id=None),
@@ -688,31 +595,19 @@ class TestProfiles(MockedTestCase):
         for profile in response.result.profiles:
             if profile.id != self.profile.id:
                 self.assertEqual(len(profile.contact_methods), 2)
-                self.assertEqual(profile.status.value, 'status')
 
         response = self.client.call_action('get_profiles', inflations={'enabled': False})
         for profile in response.result.profiles:
             if profile.id != self.profile.id:
                 self.assertFalse(profile.contact_methods)
-                self.assertFalse(profile.HasField('status'))
 
         response = self.client.call_action(
             'get_profiles',
-            inflations={'only': ['status']},
-        )
-        for profile in response.result.profiles:
-            if profile.id != self.profile.id:
-                self.assertFalse(profile.contact_methods)
-                self.assertEqual(profile.status.value, 'status')
-
-        response = self.client.call_action(
-            'get_profiles',
-            inflations={'exclude': ['status']},
+            inflations={'only': ['contact_methods']},
         )
         for profile in response.result.profiles:
             if profile.id != self.profile.id:
                 self.assertEqual(len(profile.contact_methods), 2)
-                self.assertFalse(profile.HasField('status'))
 
     def test_get_profiles_team_id_invalid(self):
         with self.assertFieldError('team_id'):
