@@ -422,6 +422,7 @@ class CompleteAuthorization(actions.Action):
         return self.response.user
 
     def run(self, *args, **kwargs):
+        # we only have token if a logged in user is connecting to a third party
         token = self.token or self.payload.get('token')
         if token:
             token = parse_token(token)
