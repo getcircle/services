@@ -157,16 +157,16 @@ class Test(ESTestCase):
         with self.assertFieldError('query', 'MISSING'):
             self.client.call_action('search_v2')
 
-    def test_search_profile_email(self):
-        response = self.client.call_action('search_v2', query='meghan@acme.com')
-        results = response.result.results
-        # should only have 1 result since this is an exact match
-        self.assertEqual(len(results), 1)
-        top_hit = results[0]
-        profile = top_hit.profile
-        self.assertEqual(profile.email, 'meghan@acme.com')
-        self.assertEqual(profile.display_title, 'Customer Service Agent (Customer Support)')
-        self.assertEqual(profile.full_name, 'Meghan Ward')
+    #def test_search_profile_email(self):
+        #response = self.client.call_action('search_v2', query='meghan@acme.com')
+        #results = response.result.results
+        ## should only have 1 result since this is an exact match
+        #self.assertEqual(len(results), 1)
+        #top_hit = results[0]
+        #profile = top_hit.profile
+        #self.assertEqual(profile.email, 'meghan@acme.com')
+        #self.assertEqual(profile.display_title, 'Customer Service Agent (Customer Support)')
+        #self.assertEqual(profile.full_name, 'Meghan Ward')
 
     def test_search_profile_partial_full_name(self):
         response = self.client.call_action('search_v2', query='meg')
@@ -510,14 +510,14 @@ class Test(ESTestCase):
             top_results=1,
         )
 
-    def test_search_exact_email_match(self):
-        response = self.client.call_action('search_v2', query='marco@acme.com')
-        self.verify_top_results(
-            'profile',
-            {'email': 'marco@acme.com'},
-            response.result.results,
-            top_results=1,
-        )
+    #def test_search_exact_email_match(self):
+        #response = self.client.call_action('search_v2', query='marco@acme.com')
+        #self.verify_top_results(
+            #'profile',
+            #{'email': 'marco@acme.com'},
+            #response.result.results,
+            #top_results=1,
+        #)
 
     def test_search_raw_content_match_higher_than_title_match(self):
         response = self.client.call_action('search_v2', query='video conferencing')

@@ -14,7 +14,7 @@ def get_should_statements_v1(query):
     statements = [
         Q('match', full_name={'query': query, 'boost': 3}),
         Q('match', display_title=query),
-        Q('match', email=query),
+        #Q('match', email=query),
     ]
     return statements
 
