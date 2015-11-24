@@ -27,4 +27,8 @@ def get_highlight_fields_v1(query):
             'location_name',
             {'matched_fields': ['location_name', 'location_name.raw']},
         ),
+        HighlightField(
+            'full_address',
+            {'matched_fields': ['full_address', 'full_address.shingle']},
+        ),
     ]

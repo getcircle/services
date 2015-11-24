@@ -599,3 +599,12 @@ class Test(ESTestCase):
         )
         hit = response.result.results[0]
         self.assertEqual(hit.highlight['name'], '<em>DC</em> <em>Office</em>')
+
+    def test_search_location_full_address_highlighting(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='San Francisco',
+            category=search_pb2.LOCATIONS,
+        )
+        hit = response.result.results[0]
+        self.assertIn('<em>San</em> <em>Francisco</em>', hit.highlight['full_address'])

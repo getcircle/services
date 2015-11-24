@@ -59,6 +59,8 @@ class LocationV1(BaseDocType):
                 search_analyzer=shingle_search,
             ),
         },
+        term_vector='with_positions_offsets',
+        store=True,
     )
 
     class Meta:
