@@ -9,8 +9,6 @@ from protobufs.services.post import containers_pb2 as post_containers
 
 from ...analysis import (
     edge_ngram_max_gram_20,
-    raw_analyzer_v1,
-    raw_search,
     shingle_filter,
     shingle_search,
 )
