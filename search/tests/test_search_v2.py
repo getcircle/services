@@ -527,3 +527,22 @@ class Test(ESTestCase):
             response.result.results,
             top_results=1,
         )
+
+    def test_search_team_display_name_highlighting_partial(self):
+        response = self.client.call_action('search_v2', query='Dev', category=search_pb2.TEAMS)
+        hit = response.result.results[0]
+        self.assertTrue(hit.highlight['display_name'].startswith('<em>Dev</em>Ops'))
+
+    def test_search_team_display_name_highlighting(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='Customer Support',
+            category=search_pb2.TEAMS,
+        )
+        hit = response.result.results[0]
+        self.assertEqual(hit.highlight['display_name'], '<em>Customer Support</em>')
+
+    def test_search_team_description_highlighting(self):
+        response = self.client.call_action('search_v2', query='site up', category=search_pb2.TEAMS)
+        hit = response.result.results[0]
+        self.assertIn('<em>site</em> <em>up</em>', hit.highlight['description'])

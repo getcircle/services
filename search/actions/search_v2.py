@@ -75,6 +75,10 @@ class Action(PreRunParseTokenMixin, actions.Action):
     def _get_rescore_statements(self):
         return self._get_statements('get_rescore_statements_v1')
 
+    def _get_highlight_fields(self):
+        statements = self._get_statements('get_highlight_fields_v1')
+        if statements:
+            return dict((statement.field_name, statement.options) for statement in statements)
 
     def run(self, *args, **kwargs):
         read_alias = get_read_alias(self.parsed_token.organization_id)
@@ -82,6 +86,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
         should_statements = self._get_should_statements()
         rescore_statements = self._get_rescore_statements()
+        highlight_fields = self._get_highlight_fields()
         extra = {}
         if rescore_statements:
             rescore_query = Q('bool', should=rescore_statements)
@@ -90,6 +95,12 @@ class Action(PreRunParseTokenMixin, actions.Action):
                 'query': {
                     'rescore_query': rescore_query.to_dict(),
                 },
+            }
+
+        if highlight_fields:
+            extra['highlight'] = {
+                'order': 'score',
+                'fields': highlight_fields,
             }
 
         q = Q('bool', should=should_statements)
@@ -120,3 +131,12 @@ class Action(PreRunParseTokenMixin, actions.Action):
             result_object_type.prepare_protobuf_dict(data)
             dict_to_protobuf(data, result_object)
             container.score = result.meta.score
+            if hasattr(result.meta, 'highlight'):
+                highlight = result.meta.highlight.to_dict()
+                # handle any document_to_protobuf_mapping
+                result_object_type.prepare_highlight_dict(highlight)
+                # ES returns highlight fragments as a dictionary of <field name:
+                # array of fragments>. We only want to return the top highlight
+                # fragment.
+                for key, value in highlight.iteritems():
+                    container.highlight[key] = value[0]
