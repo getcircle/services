@@ -99,6 +99,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
         if highlight_fields:
             extra['highlight'] = {
+                'number_of_fragments': 1,
                 'order': 'score',
                 'fields': highlight_fields,
             }
