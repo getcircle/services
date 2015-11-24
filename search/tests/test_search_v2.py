@@ -546,3 +546,19 @@ class Test(ESTestCase):
         response = self.client.call_action('search_v2', query='site up', category=search_pb2.TEAMS)
         hit = response.result.results[0]
         self.assertIn('<em>site</em> <em>up</em>', hit.highlight['description'])
+
+    def test_search_profile_full_name_highlighting(self):
+        response = self.client.call_action('search_v2', query='Meg')
+        hit = response.result.results[0]
+        self.assertTrue(hit.highlight['full_name'].startswith('<em>Meg</em>han'))
+        response = self.client.call_action('search_v2', query='Meghan')
+        hit = response.result.results[0]
+        self.assertTrue(hit.highlight['full_name'].startswith('<em>Meghan</em>'))
+
+        response = self.client.call_action('search_v2', query='Ward')
+        hit = response.result.results[0]
+        self.assertTrue(hit.highlight['full_name'].endswith('<em>Ward</em>'))
+
+        response = self.client.call_action('search_v2', query='Meghan Ward')
+        hit = response.result.results[0]
+        self.assertEqual(hit.highlight['full_name'], '<em>Meghan</em> <em>Ward</em>')
