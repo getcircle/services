@@ -3,6 +3,7 @@ from elasticsearch_dsl import (
     token_filter,
     tokenizer,
 )
+
 edge_ngram_max_gram_20 = token_filter(
     'edge_ngram_max_gram_20',
     type='edgeNGram',

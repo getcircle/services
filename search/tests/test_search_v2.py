@@ -582,3 +582,20 @@ class Test(ESTestCase):
         )
         hit = response.result.results[0]
         self.assertIn('<em>Manager</em>', hit.highlight['display_title'])
+
+    def test_search_location_name_highlighting(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='Head',
+            category=search_pb2.LOCATIONS,
+        )
+        hit = response.result.results[0]
+        self.assertEqual(hit.highlight['name'], '<em>Head</em>quarters')
+
+        response = self.client.call_action(
+            'search_v2',
+            query='DC Office',
+            category=search_pb2.LOCATIONS,
+        )
+        hit = response.result.results[0]
+        self.assertEqual(hit.highlight['name'], '<em>DC</em> <em>Office</em>')
