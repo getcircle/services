@@ -40,6 +40,7 @@ class ProfileV1(BaseDocType):
     display_title = String(
         analyzer=display_title_analyzer_v1,
         search_analyzer='default_search',
+        term_vector='with_positions_offsets',
     )
 
     class Meta:

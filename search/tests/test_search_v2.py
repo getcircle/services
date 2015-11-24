@@ -562,3 +562,23 @@ class Test(ESTestCase):
         response = self.client.call_action('search_v2', query='Meghan Ward')
         hit = response.result.results[0]
         self.assertEqual(hit.highlight['full_name'], '<em>Meghan</em> <em>Ward</em>')
+
+    def test_search_profile_display_title_highlighting(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='Sr. Account',
+            category=search_pb2.PROFILES,
+        )
+        hit = response.result.results[0]
+        self.assertEqual(
+            hit.highlight['display_title'],
+            '<em>Sr.</em> <em>Account</em> Manager (Sales, East Coast)',
+        )
+
+        response = self.client.call_action(
+            'search_v2',
+            query='Manager',
+            category=search_pb2.PROFILES,
+        )
+        hit = response.result.results[0]
+        self.assertIn('<em>Manager</em>', hit.highlight['display_title'])

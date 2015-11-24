@@ -29,4 +29,5 @@ def get_rescore_statements_v1(query):
 def get_highlight_fields_v1(query):
     return [
         HighlightField('full_name', {}),
+        HighlightField('display_title', {}),
     ]

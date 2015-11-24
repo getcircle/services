@@ -15,7 +15,7 @@ edge_ngram_tokenizer_v1 = tokenizer(
     type='edgeNGram',
     min_gram=1,
     max_gram=20,
-    token_chars=['letter', 'digit'],
+    token_chars=['letter', 'digit', 'punctuation'],
 )
 
 default_search = analyzer(
