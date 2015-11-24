@@ -10,6 +10,8 @@ from ...analysis import (
     edge_ngram_tokenizer_v1,
     raw_analyzer_v1,
     raw_search,
+    shingle_filter,
+    shingle_search,
 )
 from ..base import BaseDocType
 
@@ -18,6 +20,12 @@ name_analyzer_v1 = analyzer(
     'location_name_analyzer_v1',
     tokenizer=edge_ngram_tokenizer_v1,
     filter=['standard', 'lowercase'],
+)
+
+full_address_shingle_analyzer_v1 = analyzer(
+    'full_address_shingle_analyzer_v1',
+    tokenizer='standard',
+    filter=['standard', 'lowercase', shingle_filter],
 )
 
 
@@ -45,6 +53,12 @@ class LocationV1(BaseDocType):
     full_address = String(
         analyzer=name_analyzer_v1,
         search_analyzer='default_search',
+        fields={
+            'shingle': String(
+                analyzer=full_address_shingle_analyzer_v1,
+                search_analyzer=shingle_search,
+            ),
+        },
     )
 
     class Meta:
