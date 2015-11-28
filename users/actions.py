@@ -234,6 +234,7 @@ class AuthenticateUser(actions.Action):
         user.last_login = timezone.now()
         user.save()
         self.response.token = get_token(user, self.request.client_type)
+        self.service_control.token = self.response.token
         self.response.new_user = user.new
         user.to_protobuf(self.response.user)
 

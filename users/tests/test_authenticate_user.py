@@ -18,12 +18,12 @@ from ..providers import (
 )
 
 
-class TestUsersAuthentication(TestCase):
+class Test(TestCase):
 
     action = 'authenticate_user'
 
     def setUp(self):
-        super(TestUsersAuthentication, self).setUp()
+        super(Test, self).setUp()
         self.client = service.control.Client('user')
         self.user = factories.UserFactory.create_protobuf(password='password')
         self.id_token = {
@@ -51,6 +51,7 @@ class TestUsersAuthentication(TestCase):
 
     def test_authenticate_user(self):
         response = self._authenticate_user()
+        self.assertEqual(response.service_response.control.token, response.result.token)
         self.assertTrue(response.success)
         self.assertTrue(response.result.token)
         self.assertFalse(response.result.new_user)
