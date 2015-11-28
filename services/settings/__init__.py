@@ -18,6 +18,9 @@ ALLOWED_HOSTS = ['api.circlehq.co']
 
 SERVICES_HOSTNAME = 'localhost:8000'
 FRONTEND_URL = 'http://local.lunohq.com:9110'
+AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.lunohq.com'
+# max age of the cookie in seconds
+AUTHENTICATION_TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
 SECRET_KEY = '5rvaf1tsov&kdz!xp-x3785dc0xdmd+gh+#%-nl3ep-!e+ngot'
 SECRET_ENCRYPTION_KEY_V1 = 'q5pFzPB9HgB5IUSrgcuyW94aPLJT_jUcegb-jBdAhTQ='
@@ -230,7 +233,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'services.authentication.ServiceTokenAuthentication',
         'services.authentication.OrganizationTokenAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'services.authentication.ServiceTokenCookieAuthentication',
     )
 }
 

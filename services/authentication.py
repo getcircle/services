@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import exceptions
 from rest_framework.authentication import (
     BaseAuthentication,
@@ -9,22 +10,24 @@ from organizations.models import Token as OrganizationToken
 from .token import parse_token
 
 
+AUTHENTICATION_TOKEN_COOKIE_KEY = 'atv1'
+
+
 class ServiceTokenAuthentication(BaseAuthentication):
-    """
-    Simple token based authentication.
+    """Simple token based authentication.
 
     Clients should authenticate by passing the token key in the "Authorization"
     HTTP header, prepended with the string "Token ".  For example:
 
         Authorization: Token 401f7ac837da42b97f613d789819ff93537bee6a
+
     """
 
     # TODO this should be a service call
     model = UserToken
 
-    def authenticate(self, request):
+    def get_token(self, request):
         auth = get_authorization_header(request).split()
-
         if not auth or auth[0].lower() != b'token':
             return None
 
@@ -34,12 +37,18 @@ class ServiceTokenAuthentication(BaseAuthentication):
         elif len(auth) > 2:
             msg = 'Invalid token header. Token string should not contain spaces.'
             raise exceptions.AuthenticationFailed(msg)
+        return auth[1]
+
+    def authenticate(self, request):
+        token = self.get_token(request)
+        if not token:
+            return None
 
         try:
-            token = parse_token(auth[1])
+            parsed_token = parse_token(token)
         except Exception:
             raise exceptions.AuthenticationFailed('Invalid token.')
-        return self.authenticate_credentials(token.auth_token)
+        return self.authenticate_credentials(parsed_token.auth_token)
 
     def authenticate_credentials(self, key):
         try:
@@ -56,14 +65,26 @@ class ServiceTokenAuthentication(BaseAuthentication):
         return 'Token'
 
 
-class OrganizationTokenAuthentication(BaseAuthentication):
+class ServiceTokenCookieAuthentication(ServiceTokenAuthentication):
+    """Simple cookie based token authentication.
+
+    Instead of the token being stored in the header, we look for the token in
+    the request cookies.
+
     """
-    Simple token based authentication for organizations.
+
+    def get_token(self, request):
+        return request.COOKIES.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
+
+
+class OrganizationTokenAuthentication(BaseAuthentication):
+    """Simple token based authentication for organizations.
 
     Clients should authenticate by pass the token key in the "Authoriation"
     HTTP header, prepended with the string "OrganizationToken ". For example:
 
         Authorization: OrganizationToken 401f7ac837da42b97f613d789819ff93537bee6a
+
     """
     model = OrganizationToken
 
@@ -89,3 +110,14 @@ class OrganizationTokenAuthentication(BaseAuthentication):
 
     def authenticate_header(self, request):
         return 'Organization Token'
+
+
+def set_authentication_cookie(response, token, secure=True):
+    response.set_cookie(
+        AUTHENTICATION_TOKEN_COOKIE_KEY,
+        value=token,
+        domain=settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
+        httponly=True,
+        secure=secure,
+        max_age=settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE,
+    )
