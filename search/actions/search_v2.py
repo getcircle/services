@@ -156,3 +156,6 @@ class Action(PreRunParseTokenMixin, actions.Action):
                 # fragment.
                 for key, value in highlight.iteritems():
                     container.highlight[key] = value[0]
+
+            container.tracking_details.document_id = result.meta.id
+            container.tracking_details.document_type = result.meta.doc_type
