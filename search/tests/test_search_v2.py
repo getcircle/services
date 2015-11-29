@@ -644,11 +644,9 @@ class Test(ESTestCase):
         self.assertEqual(len(hit.highlight['content']), 89)
 
     def test_search_result_has_tracking_details(self):
-        response = self.client.call_action('search_v2', query='meghan@acme.com')
-        results = response.result.results
-        # should only have 1 result since this is an exact match
-        top_hit = results[0]
-        profile = top_hit.profile
-        tracking_details = top_hit.tracking_details
+        response = self.client.call_action('search_v2', query='Meghan Ward')
+        hit = response.result.results[0]
+        profile = hit.profile
+        tracking_details = hit.tracking_details
         self.assertEqual(tracking_details.document_id, profile.id)
         self.assertEqual(tracking_details.document_type, types.ProfileV1._doc_type.name)
