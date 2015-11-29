@@ -270,6 +270,7 @@ class Logout(actions.Action):
             self._delete_all_tokens_for_user(token)
         else:
             self._delete_token_for_client(token, self.request.client_type)
+        self.service_control.token = ''
 
 
 class SendVerificationCode(actions.Action):

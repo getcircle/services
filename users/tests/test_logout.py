@@ -13,7 +13,7 @@ from .. import (
 )
 
 
-class TestUserDevices(TestCase):
+class Test(TestCase):
 
     def setUp(self):
         self.user = factories.UserFactory.create()
@@ -44,8 +44,9 @@ class TestUserDevices(TestCase):
         )
         models.Token.objects.create(user=self.user, client_type=token_pb2.IOS)
         self.assertEqual(models.Token.objects.filter(user=self.user).count(), 2)
-        self.client.call_action('logout', client_type=token_pb2.IOS)
+        response = self.client.call_action('logout', client_type=token_pb2.IOS)
         self.assertEqual(models.Token.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(response.service_response.control.token, '')
 
     def test_logout_token_doesnt_exit(self):
         self.client.call_action('logout', client_type=token_pb2.IOS)
