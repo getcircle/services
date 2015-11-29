@@ -1,6 +1,7 @@
 from elasticsearch_dsl import (
     analyzer,
     token_filter,
+    tokenizer,
 )
 
 edge_ngram_max_gram_20 = token_filter(
@@ -8,6 +9,14 @@ edge_ngram_max_gram_20 = token_filter(
     type='edgeNGram',
     min_gram=1,
     max_gram=20,
+)
+
+edge_ngram_tokenizer_v1 = tokenizer(
+    'edge_ngram_v1',
+    type='edgeNGram',
+    min_gram=1,
+    max_gram=20,
+    token_chars=['letter', 'digit', 'punctuation'],
 )
 
 default_search = analyzer(

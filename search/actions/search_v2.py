@@ -18,6 +18,13 @@ from ..stores.es.types.team import actions as team_actions
 
 logger = logging.getLogger(__file__)
 
+CATEGORY_TO_ACTIONS = {
+    search_pb2.POSTS: [post_actions],
+    search_pb2.PROFILES: [profile_actions],
+    search_pb2.LOCATIONS: [location_actions],
+    search_pb2.TEAMS: [team_actions],
+}
+
 
 def _combine_statements(statement_funcs, query):
     statements = []
@@ -47,43 +54,31 @@ class Action(PreRunParseTokenMixin, actions.Action):
             doc_types.append(types.PostV1._doc_type.name)
         return ','.join(doc_types) or None
 
-    def _get_should_statements(self):
+    def _get_statements(self, statement_type):
+        actions = []
         if not self.request.HasField('category'):
-            statements = [
-                post_actions.get_should_statements_v1,
-                profile_actions.get_should_statements_v1,
-                team_actions.get_should_statements_v1,
-                location_actions.get_should_statements_v1,
-            ]
-        elif self.request.category == search_pb2.PROFILES:
-            statements = [profile_actions.get_should_statements_v1]
-        elif self.request.category == search_pb2.TEAMS:
-            statements = [team_actions.get_should_statements_v1]
-        elif self.request.category == search_pb2.LOCATIONS:
-            statements = [location_actions.get_should_statements_v1]
-        elif self.request.category == search_pb2.POSTS:
-            statements = [post_actions.get_should_statements_v1]
-        return _combine_statements(statements, self.request.query)
+            actions = sum(CATEGORY_TO_ACTIONS.values(), [])
+        else:
+            actions = CATEGORY_TO_ACTIONS[self.request.category]
 
-    def _get_rescore_statements(self):
-        statements = None
-        if not self.request.HasField('category'):
-            statements = [
-                post_actions.get_rescore_statements_v1,
-                profile_actions.get_rescore_statements_v1,
-                location_actions.get_rescore_statements_v1,
-            ]
-        elif self.request.category == search_pb2.POSTS:
-            statements = [post_actions.get_rescore_statements_v1]
-        elif self.request.category == search_pb2.LOCATIONS:
-            statements = [location_actions.get_rescore_statements_v1]
-        elif self.request.category == search_pb2.PROFILES:
-            statements = [profile_actions.get_rescore_statements_v1]
+        statements = []
+        for action in actions:
+            if hasattr(action, statement_type):
+                statements.append(getattr(action, statement_type))
 
         if statements:
-            statements = _combine_statements(statements, self.request.query)
+            return _combine_statements(statements, self.request.query)
 
-        return statements
+    def _get_should_statements(self):
+        return self._get_statements('get_should_statements_v1')
+
+    def _get_rescore_statements(self):
+        return self._get_statements('get_rescore_statements_v1')
+
+    def _get_highlight_fields(self):
+        statements = self._get_statements('get_highlight_fields_v1')
+        if statements:
+            return dict((statement.field_name, statement.options) for statement in statements)
 
     def run(self, *args, **kwargs):
         read_alias = get_read_alias(self.parsed_token.organization_id)
@@ -91,6 +86,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
         should_statements = self._get_should_statements()
         rescore_statements = self._get_rescore_statements()
+        highlight_fields = self._get_highlight_fields()
         extra = {}
         if rescore_statements:
             rescore_query = Q('bool', should=rescore_statements)
@@ -99,6 +95,13 @@ class Action(PreRunParseTokenMixin, actions.Action):
                 'query': {
                     'rescore_query': rescore_query.to_dict(),
                 },
+            }
+
+        if highlight_fields:
+            extra['highlight'] = {
+                'number_of_fragments': 1,
+                'order': 'score',
+                'fields': highlight_fields,
             }
 
         q = Q('bool', should=should_statements)
@@ -129,3 +132,12 @@ class Action(PreRunParseTokenMixin, actions.Action):
             result_object_type.prepare_protobuf_dict(data)
             dict_to_protobuf(data, result_object)
             container.score = result.meta.score
+            if hasattr(result.meta, 'highlight'):
+                highlight = result.meta.highlight.to_dict()
+                # handle any document_to_protobuf_mapping
+                result_object_type.prepare_highlight_dict(highlight)
+                # ES returns highlight fragments as a dictionary of <field name:
+                # array of fragments>. We only want to return the top highlight
+                # fragment.
+                for key, value in highlight.iteritems():
+                    container.highlight[key] = value[0]

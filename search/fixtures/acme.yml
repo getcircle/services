@@ -2867,7 +2867,7 @@ teams:
   organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', profile_count: 5}
 - {child_team_count: 5, display_name: !!python/unicode 'Operations', id: !!python/unicode '7b26cf51-4a83-457f-9634-f416fc9eaccd',
   manager_profile_id: !!python/unicode '3f391e0d-723a-4067-ae28-45fbc2231e14', name: !!python/unicode 'Operations',
-  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', profile_count: 50}
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', profile_count: 50, description: {value: !!python/unicode 'Keeping the site up.'}}
 - {child_team_count: 0, display_name: !!python/unicode 'East Coast Support', id: !!python/unicode '4496e8fd-cca9-4d70-84e7-b1a50af9708b',
   manager_profile_id: !!python/unicode 'f74f33ec-b166-495d-b7b5-0924274f5acf', name: !!python/unicode 'East
     Coast Support', organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba',
