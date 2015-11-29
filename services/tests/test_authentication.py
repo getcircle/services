@@ -47,7 +47,7 @@ class Test(TestCase):
         patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
             control=soa_pb2.ControlV1(token=expected_token),
         )
-        soa_client = SOAClient('user', token=expected_token)
+        soa_client = SOAClient('user')
         request = soa_client._build_request('authenticate_user')
         response = self._send_request(request)
         cookie = response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
@@ -66,7 +66,7 @@ class Test(TestCase):
         patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
             control=soa_pb2.ControlV1(token=expected_token),
         )
-        soa_client = SOAClient('user', token=expected_token)
+        soa_client = SOAClient('user')
 
         # authenticate the user
         request = soa_client._build_request('authenticate_user')
@@ -86,7 +86,7 @@ class Test(TestCase):
         patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
             control=soa_pb2.ControlV1(token=expected_token),
         )
-        soa_client = SOAClient('user', token=expected_token)
+        soa_client = SOAClient('user')
 
         request = soa_client._build_request('get_active_devices')
         self._send_request(
@@ -106,7 +106,7 @@ class Test(TestCase):
         patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
             control=soa_pb2.ControlV1(token=expected_token),
         )
-        soa_client = SOAClient('user', token=expected_token)
+        soa_client = SOAClient('user')
 
         request = soa_client._build_request('get_active_devices')
         response = self._send_request(

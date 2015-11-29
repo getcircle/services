@@ -22,6 +22,12 @@ class ServicesView(APIView):
         # XXX: handle errors if the token fails to parse
         if not request.auth:
             service_request.control.token = ''
+        elif (
+            not service_request.control.token and
+            hasattr(request.successful_authenticator, 'get_token')
+        ):
+            token = request.successful_authenticator.get_token(request)
+            service_request.control.token = token
 
         serialized_request = service_request.SerializeToString()
         service_response = self.transport.process_request(service_request, serialized_request)
