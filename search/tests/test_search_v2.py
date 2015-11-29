@@ -7,6 +7,7 @@ from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import entity_pb2
 from protobufs.services.search.containers import search_pb2
+from ..stores.es import types
 import service.control
 import yaml
 
@@ -641,3 +642,13 @@ class Test(ESTestCase):
         self.assertIn('<mark>Marco</mark> <mark>Zappacosta</mark>', hit.highlight['content'])
         # len is 89 because fragment_size is 70 + tags
         self.assertEqual(len(hit.highlight['content']), 89)
+
+    def test_search_result_has_tracking_details(self):
+        response = self.client.call_action('search_v2', query='meghan@acme.com')
+        results = response.result.results
+        # should only have 1 result since this is an exact match
+        top_hit = results[0]
+        profile = top_hit.profile
+        tracking_details = top_hit.tracking_details
+        self.assertEqual(tracking_details.document_id, profile.id)
+        self.assertEqual(tracking_details.document_type, types.ProfileV1._doc_type.name)
