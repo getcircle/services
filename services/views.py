@@ -29,7 +29,7 @@ class ServicesView(APIView):
             service_response.SerializeToString(),
             content_type='application/x-protobuf',
         )
-        if service_response.control.token:
+        if not request.auth and service_response.control.token:
             set_authentication_cookie(
                 response,
                 service_response.control.token,

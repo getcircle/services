@@ -77,3 +77,44 @@ class Test(TestCase):
 
         processed_request = patched_transport.process_request.call_args[0][0]
         self.assertEqual(processed_request.control.token, expected_token)
+
+    @mock.patch('services.views.import_string')
+    def test_authenticated_request_header(self, patched):
+        token = TokenFactory.create()
+        expected_token = mocks.mock_token(auth_token=token.key)
+        patched_transport = patched()
+        patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
+            control=soa_pb2.ControlV1(token=expected_token),
+        )
+        soa_client = SOAClient('user', token=expected_token)
+
+        request = soa_client._build_request('get_active_devices')
+        self._send_request(
+            request,
+            HTTP_AUTHORIZATION='Token %s' % (expected_token,),
+        )
+        self.assertEqual(
+            patched_transport.process_request.call_args[0][0].control.token,
+            expected_token,
+        )
+
+    @mock.patch('services.views.import_string')
+    def test_authenticated_request_doesnt_set_cookie(self, patched):
+        token = TokenFactory.create()
+        expected_token = mocks.mock_token(auth_token=token.key)
+        patched_transport = patched()
+        patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
+            control=soa_pb2.ControlV1(token=expected_token),
+        )
+        soa_client = SOAClient('user', token=expected_token)
+
+        request = soa_client._build_request('get_active_devices')
+        response = self._send_request(
+            request,
+            HTTP_AUTHORIZATION='Token %s' % (expected_token,),
+        )
+        self.assertEqual(
+            patched_transport.process_request.call_args[0][0].control.token,
+            expected_token,
+        )
+        self.assertIsNone(response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY))
