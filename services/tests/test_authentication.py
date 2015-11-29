@@ -118,3 +118,25 @@ class Test(TestCase):
             expected_token,
         )
         self.assertIsNone(response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY))
+
+    @mock.patch('services.views.import_string')
+    def test_logout_clears_cookie(self, patched):
+        token = TokenFactory.create()
+        expected_token = mocks.mock_token(auth_token=token.key)
+        patched_transport = patched()
+        patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
+            control=soa_pb2.ControlV1(token=expected_token),
+        )
+        soa_client = SOAClient('user')
+
+        # authenticate the user
+        request = soa_client._build_request('authenticate_user')
+        self._send_request(request)
+
+        # simulate logout where the token is no longer on the response.control object
+        patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1()
+
+        request = soa_client._build_request('logout')
+        response = self._send_request(request)
+        cookie = response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
+        self.assertEqual(cookie['expires'], 'Thu, 01-Jan-1970 00:00:00 GMT')

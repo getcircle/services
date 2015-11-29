@@ -4,7 +4,10 @@ from rest_framework.views import APIView
 from service import settings as service_settings
 from service_protobufs import soa_pb2
 
-from .authentication import set_authentication_cookie
+from .authentication import (
+    delete_authentication_cookie,
+    set_authentication_cookie,
+)
 
 
 class ServicesView(APIView):
@@ -41,6 +44,8 @@ class ServicesView(APIView):
                 service_response.control.token,
                 secure=request.is_secure(),
             )
+        elif service_request.control.token and not service_response.control.token:
+            delete_authentication_cookie(response)
         return response
 
     def get(self, request, *args, **kwargs):

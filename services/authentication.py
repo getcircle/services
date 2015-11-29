@@ -121,3 +121,10 @@ def set_authentication_cookie(response, token, secure=True):
         secure=secure,
         max_age=settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE,
     )
+
+
+def delete_authentication_cookie(response):
+    response.delete_cookie(
+        AUTHENTICATION_TOKEN_COOKIE_KEY,
+        domain=settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
+    )
