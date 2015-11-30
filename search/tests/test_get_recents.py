@@ -77,7 +77,10 @@ class Test(ESTestCase):
         document_type = 'profile'
         document_id = _fixtures['profiles'][0]['id']
 
-        factories.RecentFactory.create(profile=self.profile, document_type=document_type, document_id=document_id)
+        # User's recents
+        factories.RecentFactory.create_batch(size=2, profile=self.profile, document_type=document_type, document_id=document_id)
+        # Others' recents
+        factories.RecentFactory.create_batch(size=2, document_type=document_type, document_id=document_id)
 
         response = self.client.call_action('get_recents')
-        self.assertEqual(len(response.result.recents), 1)
+        self.assertEqual(len(response.result.recents), 2)
