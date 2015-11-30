@@ -23,3 +23,19 @@ class Test(MockedTestCase):
             'document_type': types.ProfileV1._doc_type.name,
         })
         self.assertTrue(response.success)
+
+    def test_track_recent_tracking_details_required(self):
+        with self.assertFieldError('tracking_details', 'MISSING'):
+            self.client.call_action('track_recent')
+
+    def test_track_recent_document_type_required(self):
+        with self.assertFieldError('tracking_details.document_type', 'MISSING'):
+            self.client.call_action('track_recent', tracking_details={
+                'document_id': str(uuid.uuid4()),
+            })
+
+    def test_track_recent_document_id_required(self):
+        with self.assertFieldError('tracking_details.document_id', 'MISSING'):
+            self.client.call_action('track_recent', tracking_details={
+                'document_type': types.ProfileV1._doc_type.name,
+            })

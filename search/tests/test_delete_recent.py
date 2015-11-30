@@ -2,6 +2,7 @@ import service.control
 
 from ..stores.es import types
 from services.test import (
+    fuzzy,
     mocks,
     MockedTestCase,
 )
@@ -25,3 +26,11 @@ class Test(MockedTestCase):
         recent = factories.RecentFactory.create(profile=self.profile)
         self.client.call_action('delete_recent', id=str(recent.id))
         self.assertFalse(models.Recent.objects.filter(pk=recent.id).exists())
+
+    def test_delete_recent_id_required(self):
+        with self.assertFieldError('id', 'MISSING'):
+            self.client.call_action('delete_recent')
+
+    def test_delete_recent_does_not_exist(self):
+        with self.assertFieldError('id', 'DOES_NOT_EXIST'):
+            self.client.call_action('delete_recent', id=fuzzy.FuzzyUUID().fuzz())
