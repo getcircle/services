@@ -27,7 +27,8 @@ class Action(PreRunParseTokenMixin, actions.Action):
         read_alias = get_read_alias(self.parsed_token.organization_id)
         es = connections.connections.get_connection()
         response = es.mget(index=read_alias, body={'docs': docs})
-        for doc in response['docs']:
+
+        def serialize_to_recent(doc, container):
             object_type = None
             doc_type = doc['_type']
             if doc_type == types.ProfileV1._doc_type.name:
@@ -41,15 +42,21 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
             if not object_type:
                 logger.warn('unsupported search result doc_type: %s', doc_type)
-                continue
+                return
 
-            container = self.response.recents.add()
+            recent_container = container.add()
             try:
-                result_object = getattr(container, object_type._doc_type.name)
+                result_object = getattr(recent_container, object_type._doc_type.name)
             except AttributeError:
                 logger.warn('object_type: "%s" does not exist', object_type)
-                continue
+                return
 
             data = doc['_source']
             object_type.prepare_protobuf_dict(data)
             dict_to_protobuf(data, result_object)
+
+        self.paginated_response(
+            self.response.recents,
+            response['docs'],
+            serialize_to_recent,
+        )
