@@ -16,6 +16,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
     def run(self, *args, **kwargs):
         try:
             r = models.Recent.objects.get(
+                by_profile_id=self.parsed_token.profile_id,
                 organization_id=self.parsed_token.organization_id,
                 pk=self.request.id,
             )
