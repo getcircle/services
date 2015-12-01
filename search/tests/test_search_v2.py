@@ -608,3 +608,34 @@ class Test(ESTestCase):
         )
         hit = response.result.results[0]
         self.assertIn('<mark>San</mark> <mark>Francisco</mark>', hit.highlight['full_address'])
+
+    def test_search_post_title_highlighting(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='Arbit',
+            category=search_pb2.POSTS,
+        )
+        hit = response.result.results[0]
+        self.assertIn('What is <mark>Arbit</mark>er?', hit.highlight['title'])
+
+    def test_search_post_title_highlighting_return_full_fragment(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='expense',
+            category=search_pb2.POSTS,
+        )
+        hit = response.result.results[0]
+        expected_title = (
+            'How do I fill out an <mark>expense</mark> report with some really really long'
+            ' title to make sure that we return the full field?'
+        )
+        self.assertIn(expected_title, hit.highlight['title'])
+
+    def test_search_post_content_highlighting(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='Marco Zappacosta',
+            category=search_pb2.POSTS,
+        )
+        hit = response.result.results[0]
+        self.assertIn('<mark>Marco</mark> <mark>Zappacosta</mark>', hit.highlight['content'])

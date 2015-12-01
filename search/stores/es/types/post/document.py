@@ -8,7 +8,7 @@ from elasticsearch_dsl import (
 from protobufs.services.post import containers_pb2 as post_containers
 
 from ...analysis import (
-    edge_ngram_max_gram_20,
+    edge_ngram_tokenizer_v1,
     shingle_filter,
     shingle_search,
 )
@@ -17,8 +17,8 @@ from ..base import BaseDocType
 
 title_analyzer_v1 = analyzer(
     'post_title_analyzer_v1',
-    tokenizer='standard',
-    filter=['standard', 'lowercase', edge_ngram_max_gram_20],
+    tokenizer=edge_ngram_tokenizer_v1,
+    filter=['standard', 'lowercase'],
 )
 
 title_shingle_analyzer_v1 = analyzer(
@@ -41,10 +41,15 @@ class PostV1(BaseDocType):
             'shingle': String(
                 analyzer=title_shingle_analyzer_v1,
                 search_analyzer=shingle_search,
+                term_vector='with_positions_offsets',
             ),
-            'stemmed': String(analyzer=stem_analyzer_v1),
+            'stemmed': String(
+                analyzer=stem_analyzer_v1,
+                term_vector='with_positions_offsets',
+            ),
         },
         search_analyzer='default_search',
+        term_vector='with_positions_offsets',
     )
     content = String(analyzer='english')
     state = Integer()
