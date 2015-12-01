@@ -531,7 +531,7 @@ class Test(ESTestCase):
     def test_search_team_display_name_highlighting_partial(self):
         response = self.client.call_action('search_v2', query='Dev', category=search_pb2.TEAMS)
         hit = response.result.results[0]
-        self.assertTrue(hit.highlight['display_name'].startswith('<em>Dev</em>Ops'))
+        self.assertTrue(hit.highlight['display_name'].startswith('<mark>Dev</mark>Ops'))
 
     def test_search_team_display_name_highlighting(self):
         response = self.client.call_action(
@@ -540,28 +540,28 @@ class Test(ESTestCase):
             category=search_pb2.TEAMS,
         )
         hit = response.result.results[0]
-        self.assertEqual(hit.highlight['display_name'], '<em>Customer Support</em>')
+        self.assertEqual(hit.highlight['display_name'], '<mark>Customer Support</mark>')
 
     def test_search_team_description_highlighting(self):
         response = self.client.call_action('search_v2', query='site up', category=search_pb2.TEAMS)
         hit = response.result.results[0]
-        self.assertIn('<em>site</em> <em>up</em>', hit.highlight['description'])
+        self.assertIn('<mark>site</mark> <mark>up</mark>', hit.highlight['description'])
 
     def test_search_profile_full_name_highlighting(self):
         response = self.client.call_action('search_v2', query='Meg')
         hit = response.result.results[0]
-        self.assertTrue(hit.highlight['full_name'].startswith('<em>Meg</em>han'))
+        self.assertTrue(hit.highlight['full_name'].startswith('<mark>Meg</mark>han'))
         response = self.client.call_action('search_v2', query='Meghan')
         hit = response.result.results[0]
-        self.assertTrue(hit.highlight['full_name'].startswith('<em>Meghan</em>'))
+        self.assertTrue(hit.highlight['full_name'].startswith('<mark>Meghan</mark>'))
 
         response = self.client.call_action('search_v2', query='Ward')
         hit = response.result.results[0]
-        self.assertTrue(hit.highlight['full_name'].endswith('<em>Ward</em>'))
+        self.assertTrue(hit.highlight['full_name'].endswith('<mark>Ward</mark>'))
 
         response = self.client.call_action('search_v2', query='Meghan Ward')
         hit = response.result.results[0]
-        self.assertEqual(hit.highlight['full_name'], '<em>Meghan</em> <em>Ward</em>')
+        self.assertEqual(hit.highlight['full_name'], '<mark>Meghan</mark> <mark>Ward</mark>')
 
     def test_search_profile_display_title_highlighting(self):
         response = self.client.call_action(
@@ -572,7 +572,7 @@ class Test(ESTestCase):
         hit = response.result.results[0]
         self.assertEqual(
             hit.highlight['display_title'],
-            '<em>Sr.</em> <em>Account</em> Manager (Sales, East Coast)',
+            '<mark>Sr.</mark> <mark>Account</mark> Manager (Sales, East Coast)',
         )
 
         response = self.client.call_action(
@@ -581,7 +581,7 @@ class Test(ESTestCase):
             category=search_pb2.PROFILES,
         )
         hit = response.result.results[0]
-        self.assertIn('<em>Manager</em>', hit.highlight['display_title'])
+        self.assertIn('<mark>Manager</mark>', hit.highlight['display_title'])
 
     def test_search_location_name_highlighting(self):
         response = self.client.call_action(
@@ -590,7 +590,7 @@ class Test(ESTestCase):
             category=search_pb2.LOCATIONS,
         )
         hit = response.result.results[0]
-        self.assertEqual(hit.highlight['name'], '<em>Head</em>quarters')
+        self.assertEqual(hit.highlight['name'], '<mark>Head</mark>quarters')
 
         response = self.client.call_action(
             'search_v2',
@@ -598,7 +598,7 @@ class Test(ESTestCase):
             category=search_pb2.LOCATIONS,
         )
         hit = response.result.results[0]
-        self.assertEqual(hit.highlight['name'], '<em>DC</em> <em>Office</em>')
+        self.assertEqual(hit.highlight['name'], '<mark>DC</mark> <mark>Office</mark>')
 
     def test_search_location_full_address_highlighting(self):
         response = self.client.call_action(
@@ -607,4 +607,4 @@ class Test(ESTestCase):
             category=search_pb2.LOCATIONS,
         )
         hit = response.result.results[0]
-        self.assertIn('<em>San</em> <em>Francisco</em>', hit.highlight['full_address'])
+        self.assertIn('<mark>San</mark> <mark>Francisco</mark>', hit.highlight['full_address'])

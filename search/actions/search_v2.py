@@ -102,6 +102,8 @@ class Action(PreRunParseTokenMixin, actions.Action):
                 'number_of_fragments': 1,
                 'order': 'score',
                 'fields': highlight_fields,
+                'pre_tags': ['<mark>'],
+                'post_tags': ['</mark>'],
             }
 
         q = Q('bool', should=should_statements)
