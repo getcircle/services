@@ -1,8 +1,8 @@
-import uuid
 import service.control
 
 from ..stores.es import types
 from services.test import (
+    fuzzy,
     mocks,
     MockedTestCase,
 )
@@ -20,7 +20,7 @@ class Test(MockedTestCase):
         self.mock.instance.dont_mock_service('search')
 
     def test_track_recent(self):
-        document_id = str(uuid.uuid4())
+        document_id = fuzzy.uuid()
         response = self.client.call_action('track_recent', tracking_details={
             'document_id': document_id,
             'document_type': types.ProfileV1._doc_type.name,
@@ -35,7 +35,7 @@ class Test(MockedTestCase):
     def test_track_recent_document_type_required(self):
         with self.assertFieldError('tracking_details.document_type', 'MISSING'):
             self.client.call_action('track_recent', tracking_details={
-                'document_id': str(uuid.uuid4()),
+                'document_id': fuzzy.uuid(),
             })
 
     def test_track_recent_document_id_required(self):
