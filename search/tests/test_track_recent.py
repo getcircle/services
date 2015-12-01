@@ -6,6 +6,7 @@ from services.test import (
     mocks,
     MockedTestCase,
 )
+from .. import models
 
 
 class Test(MockedTestCase):
@@ -13,16 +14,19 @@ class Test(MockedTestCase):
     def setUp(self, *args, **kwargs):
         super(Test, self).setUp(*args, **kwargs)
         self.organization = mocks.mock_organization()
-        self.token = mocks.mock_token(organization_id=self.organization.id)
+        self.profile = mocks.mock_profile(organization_id=self.organization.id)
+        self.token = mocks.mock_token(organization_id=self.organization.id, profile_id=self.profile.id)
         self.client = service.control.Client('search', token=self.token)
         self.mock.instance.dont_mock_service('search')
 
     def test_track_recent(self):
+        document_id = str(uuid.uuid4())
         response = self.client.call_action('track_recent', tracking_details={
-            'document_id': str(uuid.uuid4()),
+            'document_id': document_id,
             'document_type': types.ProfileV1._doc_type.name,
         })
         self.assertTrue(response.success)
+        self.assertTrue(models.Recent.objects.filter(by_profile_id=self.profile.id, organization_id=self.organization.id, document_id=document_id).exists())
 
     def test_track_recent_tracking_details_required(self):
         with self.assertFieldError('tracking_details', 'MISSING'):
