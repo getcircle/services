@@ -18,8 +18,4 @@ class RecentFactory(factory.Factory):
             profile = kwargs.pop('profile')
             kwargs['by_profile_id'] = profile.id
             kwargs['organization_id'] = profile.organization_id
-        if 'document_type' in kwargs:
-            kwargs['document_type'] = kwargs.pop('document_type')
-        if 'document_id' in kwargs:
-            kwargs['document_id'] = kwargs.pop('document_id')
         return kwargs
