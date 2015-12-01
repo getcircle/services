@@ -10,8 +10,8 @@ from services.test import (
 )
 
 from .utils import setup_mock_slack_test
-from ..handlers.search import LUNO_SEARCH_HELP
-from ..handlers.search import actions
+from ...slack.handlers.search import LUNO_SEARCH_HELP
+from ...slack.handlers.search import actions
 
 
 class Test(MockedTestCase):
@@ -37,14 +37,14 @@ class Test(MockedTestCase):
         payload.update(overrides)
         return payload
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_handle_search_default_help_text(self, patched):
         setup_mock_slack_test(self.mock, patched, self.organization)
         response = self.api.post('/hooks/slack/', self._request_payload(text='search'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['text'], LUNO_SEARCH_HELP)
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_handle_search_default_help_text_strip_text(self, patched):
         setup_mock_slack_test(self.mock, patched, self.organization)
         response = self.api.post('/hooks/slack/', self._request_payload(text='search    '))
@@ -63,15 +63,15 @@ class Test(MockedTestCase):
         self.assertEqual(attachment['fallback'], pretext)
         self.assertEqual(attachment['pretext'], pretext)
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_handle_search_no_results(self, patched):
         setup_mock_slack_test(self.mock, patched, self.organization)
         response = self.api.post('/hooks/slack/', self._request_payload(text='search None'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['text'], 'No search results found')
 
-    @patch('hooks.handlers.search.requests')
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.handlers.search.requests')
+    @patch('hooks.slack.actions.Slacker')
     def test_handle_search_profiles(self, patched, patched_requests):
         setup_mock_slack_test(self.mock, patched, self.organization)
         profile = mocks.mock_profile(display_title=fuzzy.FuzzyText().fuzz())

@@ -10,7 +10,7 @@ from services.test import (
     MockedTestCase,
 )
 
-from ..handlers import LUNO_HELP
+from ...slack.handlers import LUNO_HELP
 
 
 class Test(MockedTestCase):
@@ -62,7 +62,7 @@ class Test(MockedTestCase):
         response = self.api.post('/hooks/slack/', {'token': fuzzy.FuzzyText().fuzz()})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_slack_hooks_profile_not_found(self, patched):
         expected_email = 'test@acme.com'
         patched().users.info.return_value = Response(
@@ -82,7 +82,7 @@ class Test(MockedTestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_slack_hooks_luno_help(self, patched):
         self._setup_test(patched)
         response = self.api.post('/hooks/slack/', {

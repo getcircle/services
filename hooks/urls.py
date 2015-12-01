@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
-from . import views
+from .slack import views as SlackViews
 
 urlpatterns = [
-    url(r'^slack/$', views.SlackViewSet.as_view({'post': 'slash'}), name='hooks-slack-slash'),
+    url(r'^slack/$', SlackViews.SlackViewSet.as_view({'post': 'slash'}), name='hooks-slack-slash'),
 ]

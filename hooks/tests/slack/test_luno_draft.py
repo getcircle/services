@@ -15,12 +15,12 @@ from .utils import (
     mock_slack_user_info,
     setup_mock_slack_test,
 )
-from ..actions import (
+from ...slack.actions import (
     get_profile_for_slack_user,
     get_email_for_slack_user,
 )
-from ..handlers.draft import LUNO_DRAFT_HELP
-from ..handlers.draft import actions
+from ...slack.handlers.draft import LUNO_DRAFT_HELP
+from ...slack.handlers.draft import actions
 
 
 class Test(MockedTestCase):
@@ -46,7 +46,7 @@ class Test(MockedTestCase):
         payload.update(overrides)
         return payload
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_get_email_for_slack_user(self, patched):
         expected_email = mock_slack_user_info(patched)
 
@@ -54,7 +54,7 @@ class Test(MockedTestCase):
         email = get_email_for_slack_user(self.slack_token, user_id)
         self.assertEqual(email, expected_email)
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_get_profile_for_slack_user(self, patched):
         expected_profile = setup_mock_slack_test(self.mock, patched, self.organization)
         user_id = fuzzy.FuzzyUUID().fuzz()
@@ -66,7 +66,7 @@ class Test(MockedTestCase):
         )
         self.verify_containers(expected_profile, profile)
 
-    @patch('hooks.actions.Slacker')
+    @patch('hooks.slack.actions.Slacker')
     def test_handle_draft_default_help_text(self, patched):
         setup_mock_slack_test(self.mock, patched, self.organization)
         response = self.api.post('/hooks/slack/', self._request_payload(text='draft'))
@@ -107,7 +107,7 @@ class Test(MockedTestCase):
             interval = actions.parse_draft_interval(arrow.utcnow().datetime, i)
             self.assertIsNone(interval, i)
 
-    @patch('hooks.handlers.draft.actions.Slacker')
+    @patch('hooks.slack.handlers.draft.actions.Slacker')
     @freeze_time('2015-11-10 09:30:00')
     def test_get_messages_for_interval_last_5_minutes(self, patched):
         patched().channels.history.return_value = Response(
@@ -130,7 +130,7 @@ class Test(MockedTestCase):
         self.assertEqual(kwargs['oldest'], 1447147500)
         self.assertEqual(kwargs['latest'], 1447147800)
 
-    @patch('hooks.handlers.draft.actions.Slacker')
+    @patch('hooks.slack.handlers.draft.actions.Slacker')
     @freeze_time('2015-11-10 09:30:00')
     def test_get_messages_for_interval_last_5_minutes_private_group(self, patched):
         patched().groups.history.return_value = Response(
