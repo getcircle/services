@@ -12,7 +12,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
     )
 
     def run(self, *args, **kwargs):
-        recent = models.Recent.objects.from_protobuf(
+        models.Recent.objects.from_protobuf(
             self.request.tracking_details,
             organization_id=self.parsed_token.organization_id,
             by_profile_id=self.parsed_token.profile_id,
