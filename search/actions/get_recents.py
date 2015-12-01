@@ -21,14 +21,13 @@ class Action(PreRunParseTokenMixin, actions.Action):
         ).order_by('-changed')
 
         docs = []
-        for recent in recents:
+        for recent in self.get_paginated_objects(recents):
             docs.append({'_type': recent.document_type, '_id': str(recent.document_id)})
 
         read_alias = get_read_alias(self.parsed_token.organization_id)
         es = connections.connections.get_connection()
         response = es.mget(index=read_alias, body={'docs': docs})
-
-        def serialize_to_recent(doc, container):
+        for doc in response['docs']:
             object_type = None
             doc_type = doc['_type']
             if doc_type == types.ProfileV1._doc_type.name:
@@ -42,21 +41,15 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
             if not object_type:
                 logger.warn('unsupported search result doc_type: %s', doc_type)
-                return
+                continue
 
-            recent_container = container.add()
+            container = self.response.recents.add()
             try:
-                result_object = getattr(recent_container, object_type._doc_type.name)
+                result_object = getattr(container, object_type._doc_type.name)
             except AttributeError:
                 logger.warn('object_type: "%s" does not exist', object_type)
-                return
+                continue
 
             data = doc['_source']
             object_type.prepare_protobuf_dict(data)
             dict_to_protobuf(data, result_object)
-
-        self.paginated_response(
-            self.response.recents,
-            response['docs'],
-            serialize_to_recent,
-        )
