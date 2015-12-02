@@ -28,17 +28,9 @@ class Action(PreRunParseTokenMixin, actions.Action):
         es = connections.connections.get_connection()
         response = es.mget(index=read_alias, body={'docs': docs})
         for doc in response['docs']:
-            object_type = None
             doc_type = doc['_type']
-            if doc_type == types.ProfileV1._doc_type.name:
-                object_type = types.ProfileV1
-            elif doc_type == types.TeamV1._doc_type.name:
-                object_type = types.TeamV1
-            elif doc_type == types.LocationV1._doc_type.name:
-                object_type = types.LocationV1
-            elif doc_type == types.PostV1._doc_type.name:
-                object_type = types.PostV1
-
+            object_type = types.type_with_name(doc_type)
+            
             if not object_type:
                 logger.warn('unsupported search result doc_type: %s', doc_type)
                 continue
