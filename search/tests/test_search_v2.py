@@ -639,3 +639,5 @@ class Test(ESTestCase):
         )
         hit = response.result.results[0]
         self.assertIn('<mark>Marco</mark> <mark>Zappacosta</mark>', hit.highlight['content'])
+        # len is 89 because fragment_size is 70 + tags
+        self.assertEqual(len(hit.highlight['content']), 89)

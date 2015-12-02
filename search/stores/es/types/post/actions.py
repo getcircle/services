@@ -29,5 +29,5 @@ def get_highlight_fields_v1(query):
                 'number_of_fragments': 0,
             },
         ),
-        HighlightField('content', {}),
+        HighlightField('content', {'fragment_size': 70}),
     ]
