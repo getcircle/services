@@ -122,7 +122,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
             self.request.query,
         )
         for result in response.hits:
-            result_object_type = types.type_with_name(result.meta.doc_type)
+            result_object_type = types.get_doc_type_with_name(result.meta.doc_type)
             if not result_object_type:
                 logger.warn('unsupported search result doc_type: %s', result.meta.doc_type)
                 continue

@@ -4,7 +4,7 @@ from .profile.document import ProfileV1  # NOQA
 from .team.document import TeamV1  # NOQA
 
 
-def type_with_name(name):
+def get_doc_type_with_name(name):
     doc_type = None
 
     if name == ProfileV1._doc_type.name:

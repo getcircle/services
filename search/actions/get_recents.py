@@ -29,8 +29,8 @@ class Action(PreRunParseTokenMixin, actions.Action):
         response = es.mget(index=read_alias, body={'docs': docs})
         for doc in response['docs']:
             doc_type = doc['_type']
-            object_type = types.type_with_name(doc_type)
-            
+            object_type = types.get_doc_type_with_name(doc_type)
+
             if not object_type:
                 logger.warn('unsupported search result doc_type: %s', doc_type)
                 continue
