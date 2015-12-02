@@ -739,6 +739,7 @@ class ProfileExists(actions.Action):
             parameters['authentication_identifier'] = self.request.authentication_identifier
 
         profile = models.Profile.objects.get_or_none(**parameters)
+        self.response.organization_id = organization.id
         if not profile:
             self.response.exists = False
         else:

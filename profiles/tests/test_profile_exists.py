@@ -34,11 +34,12 @@ class TestProfiles(MockedTestCase):
             self.client.call_action('profile_exists', email='me@example.com')
 
     def test_profile_exists_false(self):
+        organization = mocks.mock_organization()
         self.mock.instance.register_mock_object(
             service='organization',
             action='get_organization',
             return_object_path='organization',
-            return_object=mocks.mock_organization(),
+            return_object=organization,
             domain='example',
         )
         response = self.client.call_action(
@@ -47,6 +48,7 @@ class TestProfiles(MockedTestCase):
             domain='example',
         )
         self.assertFalse(response.result.exists)
+        self.assertEqual(response.result.organization_id, organization.id)
 
     def test_profile_exists_false_authentication_identifier(self):
         self.mock.instance.register_mock_object(
@@ -80,6 +82,7 @@ class TestProfiles(MockedTestCase):
         self.assertTrue(response.result.exists)
         self.assertEqual(response.result.user_id, str(profile.user_id))
         self.assertEqual(response.result.profile_id, str(profile.id))
+        self.assertEqual(response.result.organization_id, str(profile.organization_id))
 
     def test_profile_exists_true(self):
         profile = factories.ProfileFactory.create()
