@@ -1,4 +1,5 @@
 import logging
+import time
 
 from elasticsearch_dsl import (
     Search,
@@ -107,8 +108,19 @@ class Action(PreRunParseTokenMixin, actions.Action):
             }
 
         q = Q('bool', should=should_statements)
+        start = time.time()
         response = search.query(q).extra(**extra).execute()
-        logger.info('search response time: %sms (query: "%s")', response.took, self.request.query)
+        end = time.time()
+        logger.info(
+            'elasticsearch response time: %sms (query: "%s")',
+            response.took,
+            self.request.query,
+        )
+        logger.info(
+            'search response time: %sms (query: "%s")',
+            (end - start) * 1000,
+            self.request.query,
+        )
         for result in response.hits:
             result_object_type = None
             if result.meta.doc_type == types.ProfileV1._doc_type.name:
