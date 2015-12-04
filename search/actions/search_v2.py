@@ -16,7 +16,7 @@ from ..stores.es.types.post import actions as post_actions
 from ..stores.es.types.profile import actions as profile_actions
 from ..stores.es.types.team import actions as team_actions
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger('services.search')
 
 CATEGORY_TO_ACTIONS = {
     search_pb2.POSTS: [post_actions],
