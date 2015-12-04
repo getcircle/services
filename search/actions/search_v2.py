@@ -108,6 +108,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
         q = Q('bool', should=should_statements)
         response = search.query(q).extra(**extra).execute()
+        logger.info('search response time: %sms (query: "%s")', response.took, self.request.query)
         for result in response.hits:
             result_object_type = None
             if result.meta.doc_type == types.ProfileV1._doc_type.name:
