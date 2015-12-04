@@ -68,7 +68,7 @@ def add_locations(filename, token):
     if not os.path.exists(filename):
         raise ValueError('%s path does not exist' % (filename,))
 
-    with open(filename) as read_file:
+    with open(filename, 'rU') as read_file:
         reader = DictReader(read_file)
         for row_data in reader:
             row = LocationRow(row_data)

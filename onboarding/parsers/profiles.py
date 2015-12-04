@@ -1,9 +1,13 @@
 from csv import DictReader
+import hashlib
 import os
 
 import arrow
+import boto3
+from django.conf import settings
 from django.utils.encoding import smart_text
 from protobufs.services.profile import containers_pb2 as profile_containers
+import requests
 import service.control
 
 from .base import Row
@@ -19,6 +23,33 @@ def clean_date(value):
     except arrow.parser.ParserError:
         result = arrow.get(value, 'M/DD/YY')
     return result.format('YYYY-MM-DD')
+
+
+def get_image_key(image_url):
+    return 'profiles/%s' % (
+        hashlib.md5(arrow.utcnow().isoformat() + ':' + image_url).hexdigest(),
+    )
+
+
+def transfer_image_to_s3(image_url):
+    if not image_url:
+        return
+
+    response = requests.get(image_url)
+    if response.ok:
+        image_key = get_image_key(image_url)
+        client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        )
+        client.put_object(
+            Body=response.content,
+            Bucket=settings.AWS_S3_MEDIA_BUCKET,
+            ContentType='image/png',
+            Key=image_key,
+        )
+        return 'https://s3.amazonaws.com/%s/%s' % (settings.AWS_S3_MEDIA_BUCKET, image_key)
 
 
 class ProfileRow(Row):
@@ -39,7 +70,10 @@ class ProfileRow(Row):
     )
 
     profile_translations = {
-        'profile_picture_image_url': 'image_url',
+        'profile_picture_image_url': {
+            'field_name': 'image_url',
+            'func': transfer_image_to_s3,
+        },
         'is_admin_(0_or_1)': {
             'field_name': 'is_admin',
             'func': lambda x: int(x) == 1,
