@@ -80,6 +80,38 @@ def get_valid_profiles():
 
 
 @transaction.atomic
+def create_missing_profiles(okta_profiles, token):
+    emails = []
+    valid_profiles = []
+    for okta_profile in okta_profiles:
+        if is_valid_okta_profile(okta_profile):
+            emails.append(okta_profile['email'])
+            valid_profiles.append(okta_profile)
+
+    users = add_users(emails, token)
+    users_dict = dict((u.primary_email, u) for u in users)
+    profiles_to_save = []
+    for okta_profile in valid_profiles:
+        user = users_dict[okta_profile['email']]
+        data = {
+            'first_name': okta_profile['firstName'],
+            'last_name': okta_profile['lastName'],
+            'email': okta_profile['email'],
+            'title': okta_profile.get('title', ''),
+            'user_id': user.id,
+            'authentication_identifier': okta_profile['employeeNumber'],
+        }
+        profiles_to_save.append(data)
+
+    service.control.call_action(
+        service='profile',
+        action='bulk_create_profiles',
+        client_kwargs={'token': token},
+        profiles=profiles_to_save,
+    )
+
+
+@transaction.atomic
 def sync_profiles(okta_profiles, token):
     for okta_profile in okta_profiles:
         okta_profile['dn'] = construct_dn(okta_profile)
@@ -185,5 +217,5 @@ def sync_profiles(okta_profiles, token):
 def run():
     Bootstrap.bootstrap()
     token = get_token_for_domain('thumbtack')
-    profiles = get_valid_profiles()
-    sync_profiles(profiles, token)
+    profiles = fetch_all_profiles()
+    create_missing_profiles(profiles, token)

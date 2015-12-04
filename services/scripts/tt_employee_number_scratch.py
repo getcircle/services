@@ -1,11 +1,8 @@
 import os
-from django.db import transaction
 import requests
 
-from profiles.models import Profile
-
 API_URL = 'https://thumbtack.okta.com/api/v1/users'
-AUTHORIZATION_HEADER = os.env['AUTHORIZATION_HEADER']
+AUTHORIZATION_HEADER = os.environ['AUTHORIZATION_HEADER']
 
 
 def fetch_all_profiles(url=None):
