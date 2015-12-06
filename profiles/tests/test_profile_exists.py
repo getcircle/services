@@ -33,6 +33,15 @@ class TestProfiles(MockedTestCase):
         with self.assertFieldError('domain', 'MISSING'):
             self.client.call_action('profile_exists', email='me@example.com')
 
+    def test_profile_exists_domain_does_not_exist(self):
+        self.mock.instance.register_mock_call_action_error(
+            service='organization',
+            action='get_organization',
+            domain='example',
+        )
+        with self.assertFieldError('domain', 'DOES_NOT_EXIST'):
+            self.client.call_action('profile_exists', email='me@example.com', domain='example')
+
     def test_profile_exists_false(self):
         organization = mocks.mock_organization()
         self.mock.instance.register_mock_object(

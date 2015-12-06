@@ -730,7 +730,7 @@ class ProfileExists(actions.Action):
                 domain=self.request.domain,
             )
         except service.control.CallActionError:
-            raise self.ActionFieldError('domain')
+            raise self.ActionFieldError('domain', 'DOES_NOT_EXIST')
 
         parameters = {'organization_id': organization.id}
         if self.request.HasField('email'):
