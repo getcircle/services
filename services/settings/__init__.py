@@ -52,6 +52,7 @@ INSTALLED_APPS = (
     'glossary',
     'group',
     'history',
+    'hooks',
     'media',
     'notification',
     'onboarding',
@@ -315,3 +316,11 @@ CELERYD_TASK_SOFT_TIME_LIMIT = 15
 SEARCH_SERVICE_ELASTICSEARCH = None
 
 TESTS_TEARDOWN_ES = False
+
+EMAIL_HOOK_SECRET_KEY_V1 = '$*57y+7k9w4@^t@75_g2wl=kix1ws91g&@cc#x6tin#uko396@'
+EMAIL_HOOK_SECRET_KEYS = [
+    EMAIL_HOOK_SECRET_KEY_V1,
+]
+EMAIL_HOOK_UNPROCESSED_KEY_PREFIX = 'unprocessed'
+EMAIL_HOOK_PROCESSED_KEY_PREFIX = 'processed'
+EMAIL_HOOK_S3_BUCKET = 'dev-lunohq-emails'

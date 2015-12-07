@@ -68,3 +68,6 @@ try:
     from .overrides import *
 except ImportError:
     pass
+
+EMAIL_HOOK_UNPROCESSED_KEY_PREFIX = 'local-unprocessed'
+EMAIL_HOOK_PROCESSED_KEY_PREFIX = 'local-processed'
