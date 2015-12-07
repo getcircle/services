@@ -6,6 +6,9 @@ from .actions import (
     delete_entities,
     search_v2,
     update_entities,
+    track_recent,
+    get_recents,
+    delete_recent,
 )
 
 
@@ -18,4 +21,7 @@ class Server(service.control.Server):
         'search': actions.Search,
         'search_v2': search_v2.Action,
         'update_entities': update_entities.Action,
+        'track_recent': track_recent.Action,
+        'get_recents': get_recents.Action,
+        'delete_recent': delete_recent.Action,
     }
