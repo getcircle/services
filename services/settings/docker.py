@@ -3,7 +3,6 @@ import os
 import urlparse
 
 from .local import *  # NOQA
-from ._utils import _get_delimited_setting_from_environment
 
 database_url = urlparse.urlparse(os.environ['DATABASE_URL'])
 
