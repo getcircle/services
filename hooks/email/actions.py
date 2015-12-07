@@ -93,7 +93,7 @@ def mark_message_as_processed(message_id):
         response = client.copy_object(
             Bucket=settings.EMAIL_HOOK_S3_BUCKET,
             Key=processed_key,
-            CopySource=unprocessed_key,
+            CopySource=os.path.join(settings.EMAIL_HOOK_S3_BUCKET, unprocessed_key),
         )
     except ClientError as e:
         logger.exception('Error copying object: %s', e)
@@ -112,6 +112,9 @@ def mark_message_as_processed(message_id):
         logger.exception('Error deleting object: %s', e)
         raise
 
-    if 'DeleteMarker' not in response or not response['DeleteMarker']:
+    if (
+        'ResponseMetadata' not in response or
+        response['ResponseMetadata']['HTTPStatusCode'] != 204
+    ):
         logger.exception('Unknown response: %s', response)
         raise ValueError('Unknown response: %s' % (response,))

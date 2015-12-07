@@ -53,7 +53,7 @@ class Test(MockedTestCase):
             lambda *args, **kwargs: {'CopyObjectResult': {}}
         )
         patched_boto.client().delete_object.side_effect = (
-            lambda *args, **kwargs: {'DeleteMarker': True}
+            lambda *args, **kwargs: {'ResponseMetadata': {'HTTPStatusCode': 204}}
         )
 
     def test_get_profile_for_source_does_not_exist(self):
@@ -134,7 +134,10 @@ class Test(MockedTestCase):
         actions.mark_message_as_processed(message_id)
         self.assertEqual(patched_boto.client().copy_object.call_count, 1)
         call_kwargs = patched_boto.client().copy_object.call_args[1]
-        self.assertEqual(call_kwargs['CopySource'], 'local-unprocessed/%s' % (message_id,))
+        self.assertEqual(
+            call_kwargs['CopySource'],
+            'dev-lunohq-emails/local-unprocessed/%s' % (message_id,),
+        )
         self.assertEqual(call_kwargs['Key'], 'local-processed/%s' % (message_id,))
         self.assertEqual(call_kwargs['Bucket'], 'dev-lunohq-emails')
 
