@@ -1,5 +1,4 @@
 from common.db import models
-from protobufs.services.search import containers_pb2 as search_containers
 
 
 class Recent(models.UUIDModel, models.TimestampableModel):
