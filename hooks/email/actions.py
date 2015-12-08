@@ -63,7 +63,7 @@ def get_post_from_message(message_id, draft=False):
         return None
 
     plain_text = None
-    for part in message.parts:
+    for part in message.walk():
         if part.content_type.value == 'text/plain':
             plain_text = part.body
             break
