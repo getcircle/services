@@ -109,6 +109,7 @@ def create_missing_profiles(okta_profiles, token):
         client_kwargs={'token': token},
         profiles=profiles_to_save,
     )
+    return valid_profiles
 
 
 @transaction.atomic
@@ -139,9 +140,19 @@ def sync_profiles(okta_profiles, token):
             return True
         return False
 
+    def should_sync_profile(profile):
+        today = arrow.utcnow().floor('day')
+        if profile.created >= today:
+            return True
+        return False
+
     users_to_delete = []
     for profile in profiles:
         print 'parsing profile: %s (%s)' % (profile.email, profile.id)
+        if not should_sync_profile(profile):
+            print 'skipping profile: %s (%s)' % (profile.email, profile.id)
+            continue
+
         okta_profile = employee_number_to_okta_profile.get(profile.authentication_identifier)
         if not okta_profile:
             if not profile.email.endswith('lunohq.com'):
@@ -193,23 +204,24 @@ def sync_profiles(okta_profiles, token):
             )
             profile.save()
 
-    #for key, value in direct_reports.iteritems():
-        #service.control.call_action(
-            #service='organization',
-            #action='add_direct_reports',
-            #client_kwargs={'token': token},
-            #profile_id=key,
-            #direct_reports_profile_ids=value,
-        #)
+    for key, value in direct_reports.iteritems():
+        service.control.call_action(
+            service='organization',
+            action='add_direct_reports',
+            client_kwargs={'token': token},
+            profile_id=key,
+            direct_reports_profile_ids=value,
+        )
 
-    #for key, value in location_members.iteritems():
-        #service.control.call_action(
-            #service='organization',
-            #action='add_location_members',
-            #client_kwargs={'token': token},
-            #location_id=key,
-            #profile_ids=value,
-        #)
+    for key, value in location_members.iteritems():
+        if value:
+            service.control.call_action(
+                service='organization',
+                action='add_location_members',
+                client_kwargs={'token': token},
+                location_id=key,
+                profile_ids=value,
+            )
 
     print 'delete users: %s' % (users_to_delete,)
 
@@ -218,4 +230,5 @@ def run():
     Bootstrap.bootstrap()
     token = get_token_for_domain('thumbtack')
     profiles = fetch_all_profiles()
-    create_missing_profiles(profiles, token)
+    valid_profiles = create_missing_profiles(profiles, token)
+    sync_profiles(valid_profiles, token)
