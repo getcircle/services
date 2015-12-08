@@ -13,6 +13,7 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
     title = models.CharField(max_length=255)
     content = models.TextField()
+    is_rich_text = models.BooleanField(default=False)
     organization_id = models.UUIDField()
     by_profile_id = models.UUIDField()
     state = models.SmallIntegerField(
