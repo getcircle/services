@@ -153,3 +153,10 @@ class Test(MockedTestCase):
         # XXX verify an email is sent with the post URL
         create_post_from_message(fuzzy.uuid(), fuzzy.uuid(), fuzzy.uuid())
         self.assertEqual(patched_boto.client().copy_object.call_count, 1)
+
+    @mock.patch('hooks.email.actions.boto3')
+    def test_create_post_from_message_multipart(self, patched_boto):
+        self._mock_mark_message_as_processed(patched_boto)
+        return_fixture('multipart_email.txt', patched_boto)
+        create_post_from_message(fuzzy.uuid(), fuzzy.uuid(), fuzzy.uuid())
+        self.assertEqual(patched_boto.client().copy_object.call_count, 1)

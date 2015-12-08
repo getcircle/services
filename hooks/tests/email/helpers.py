@@ -23,7 +23,7 @@ def get_fixture_contents(fixture_name):
 
 
 def return_fixture(fixture_name, patched_boto):
-    fixture = get_fixture_contents('simple_email.txt')
+    fixture = get_fixture_contents(fixture_name)
     return_contents(fixture, patched_boto)
 
 
