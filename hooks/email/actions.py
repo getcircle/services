@@ -162,7 +162,7 @@ def send_confirmation_to_user(post, user_email):
         'Congrats! You\'ve completed Step 1 by using the handy create@ feature to publish '
         'knowledge from email. You can view and edit "%(title)s" on Luno here: %(resource_url)s.'
         '\n\nStep 2 is to scale yourself. The next time someone asks you about "%(title)s", '
-        'don\'t waste energy finding and fowarding the email. Instead, politely refer to '
+        'don\'t waste energy finding and fowarding the email. Instead, politely refer them to '
         'https://www.lunohq.com and tell them to search for it.\n\nCheers,\nLuno'
     ) % {
         'title': post.title,
