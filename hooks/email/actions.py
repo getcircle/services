@@ -9,16 +9,19 @@ from flanker import mime
 from protobufs.services.post import containers_pb2 as post_containers
 import service.control
 
+from hooks.helpers import get_post_resource_url
+
 logger = logging.getLogger(__file__)
 
-SourceDetails = namedtuple('SourceDetails', ('profile_id', 'organization_id'))
+SourceDetails = namedtuple('SourceDetails', ('email', 'profile_id', 'organization_id'))
 
 
-def _get_s3_client():
+def _get_boto_client(client_type, **kwargs):
     return boto3.client(
-        's3',
+        client_type,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        **kwargs
     )
 
 
@@ -38,7 +41,11 @@ def get_details_for_source(domain, source):
         email=source,
     )
     if response.result.exists:
-        return SourceDetails(response.result.profile_id, response.result.organization_id)
+        return SourceDetails(
+            email=source,
+            profile_id=response.result.profile_id,
+            organization_id=response.result.organization_id,
+        )
 
 
 def upload_attachment(attachment, token):
@@ -57,7 +64,7 @@ def upload_attachment(attachment, token):
 
 
 def get_post_from_message(message_id, token, draft=False):
-    client = _get_s3_client()
+    client = _get_boto_client('s3')
     key = _get_unprocessed_key(message_id)
     try:
         response = client.get_object(Bucket=settings.EMAIL_HOOK_S3_BUCKET, Key=key)
@@ -110,7 +117,7 @@ def get_post_from_message(message_id, token, draft=False):
 
 
 def mark_message_as_processed(message_id):
-    client = _get_s3_client()
+    client = _get_boto_client('s3')
     unprocessed_key = _get_unprocessed_key(message_id)
     processed_key = _get_processed_key(message_id)
     try:
@@ -142,3 +149,22 @@ def mark_message_as_processed(message_id):
     ):
         logger.exception('Unknown response: %s', response)
         raise ValueError('Unknown response: %s' % (response,))
+
+
+def send_confirmation_to_user(post, source, user_email):
+    # XXX move this to the notification service
+    client = _get_boto_client('ses', region_name=settings.EMAIL_SES_REGION)
+    subject = 'Knowledge Created'
+    post_url = get_post_resource_url(post)
+    message = (
+        'Your knowledge has been published in Luno. '
+        'You can view it here:\n\n%s\n\nCheers,\nLuno Bot'
+    ) % (post_url,)
+    client.send_email(
+        Source='"Luno Bot"<%s>' % (source,),
+        Destination={'ToAddresses': [user_email]},
+        Message={
+            'Subject': {'Data': subject},
+            'Body': {'Text': {'Data': message}},
+        },
+    )

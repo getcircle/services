@@ -121,10 +121,32 @@ class Test(MockedTestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @mock.patch('hooks.email.actions.boto3')
+    def test_process_notification_multipart(self, patched_boto):
+        self._mock_profile_exists()
+        self._mock_mark_message_as_processed(patched_boto)
+        return_fixture('multipart_email.txt', patched_boto)
+        response = self.api.post(
+            '/hooks/email/',
+            {
+                'token': settings.EMAIL_HOOK_SECRET_KEYS[0],
+                'source': 'example@%s.com' % (self.organization.domain,),
+                'recipients': ['create@mail.lunohq.com'],
+                'message_id': fuzzy.uuid(),
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    @mock.patch('hooks.email.actions.boto3')
     def test_create_post_from_message_empty_contents(self, patched_boto):
         return_contents('', patched_boto)
         with self.assertRaises(ValueError):
-            create_post_from_message('invalid id', fuzzy.uuid(), fuzzy.uuid())
+            create_post_from_message(
+                'invalid id',
+                fuzzy.uuid(),
+                fuzzy.uuid(),
+                fuzzy.text(),
+                fuzzy.text(),
+            )
 
     @mock.patch('hooks.email.actions.boto3')
     def test_mark_message_as_processed(self, patched_boto):
@@ -150,13 +172,26 @@ class Test(MockedTestCase):
     def test_create_post_from_message(self, patched_boto):
         self._mock_mark_message_as_processed(patched_boto)
         return_fixture('simple_email.txt', patched_boto)
-        # XXX verify an email is sent with the post URL
-        create_post_from_message(fuzzy.uuid(), fuzzy.uuid(), fuzzy.uuid())
+        create_post_from_message(
+            fuzzy.uuid(),
+            fuzzy.uuid(),
+            fuzzy.uuid(),
+            fuzzy.text(),
+            fuzzy.text(),
+        )
         self.assertEqual(patched_boto.client().copy_object.call_count, 1)
+        self.assertEqual(patched_boto.client().send_email.call_count, 1)
 
     @mock.patch('hooks.email.actions.boto3')
     def test_create_post_from_message_multipart(self, patched_boto):
         self._mock_mark_message_as_processed(patched_boto)
         return_fixture('multipart_email.txt', patched_boto)
-        create_post_from_message(fuzzy.uuid(), fuzzy.uuid(), fuzzy.uuid())
+        create_post_from_message(
+            fuzzy.uuid(),
+            fuzzy.uuid(),
+            fuzzy.uuid(),
+            fuzzy.text(),
+            fuzzy.text(),
+        )
         self.assertEqual(patched_boto.client().copy_object.call_count, 1)
+        self.assertEqual(patched_boto.client().send_email.call_count, 1)

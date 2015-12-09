@@ -19,3 +19,4 @@ class FuzzyTimestamp(BaseFuzzyAttribute):
 
 
 uuid = FuzzyUUID().fuzz
+text = FuzzyText().fuzz

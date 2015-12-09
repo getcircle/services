@@ -43,11 +43,21 @@ class ProcessEmailView(APIView):
         if not message_id:
             raise exceptions.ParseError('message_id is required')
 
-        # XXX `draft` should be something the view accepts as a parameter
+        try:
+            ses_source = request.data['recipients']
+        except KeyError:
+            raise exceptions.ParseError('recipients is required')
+
+        if not isinstance(ses_source, basestring):
+            raise exceptions.ParseError('recipients must be a string')
+
+        # XXX draft should be something the view accepts as a parameter
         tasks.create_post_from_message.delay(
             message_id=message_id,
             organization_id=request.source.organization_id,
             by_profile_id=request.source.profile_id,
+            ses_source=ses_source,
+            notify_email=request.source.email,
             draft=False,
         )
         return Response()
