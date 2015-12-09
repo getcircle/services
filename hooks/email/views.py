@@ -43,6 +43,7 @@ class ProcessEmailView(APIView):
         if not message_id:
             raise exceptions.ParseError('message_id is required')
 
+        # XXX should use ses_source to match up domain for the user
         try:
             ses_source = request.data['recipients']
         except KeyError:
@@ -56,7 +57,6 @@ class ProcessEmailView(APIView):
             message_id=message_id,
             organization_id=request.source.organization_id,
             by_profile_id=request.source.profile_id,
-            ses_source=ses_source,
             notify_email=request.source.email,
             draft=False,
         )

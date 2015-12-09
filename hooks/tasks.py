@@ -11,7 +11,6 @@ def create_post_from_message(
         message_id,
         organization_id,
         by_profile_id,
-        ses_source,
         notify_email,
         draft=False,
     ):
@@ -32,4 +31,4 @@ def create_post_from_message(
     )
 
     actions.mark_message_as_processed(message_id)
-    actions.send_confirmation_to_user(response.result.post, ses_source, notify_email)
+    actions.send_confirmation_to_user(response.result.post, notify_email)

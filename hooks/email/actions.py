@@ -151,7 +151,7 @@ def mark_message_as_processed(message_id):
         raise ValueError('Unknown response: %s' % (response,))
 
 
-def send_confirmation_to_user(post, source, user_email):
+def send_confirmation_to_user(post, user_email):
     # XXX move this to the notification service
     client = _get_boto_client('ses', region_name=settings.EMAIL_SES_REGION)
     subject = 'Knowledge Created'
@@ -161,7 +161,7 @@ def send_confirmation_to_user(post, source, user_email):
         'You can view it here:\n\n%s\n\nCheers,\nLuno Bot'
     ) % (post_url,)
     client.send_email(
-        Source='"Luno Bot"<%s>' % (source,),
+        Source='"Luno"<%s>' % (settings.EMAIL_HOOK_NOTIFICATION_FROM_ADDRESS,),
         Destination={'ToAddresses': [user_email]},
         Message={
             'Subject': {'Data': subject},

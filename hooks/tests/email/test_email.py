@@ -145,7 +145,6 @@ class Test(MockedTestCase):
                 fuzzy.uuid(),
                 fuzzy.uuid(),
                 fuzzy.text(),
-                fuzzy.text(),
             )
 
     @mock.patch('hooks.email.actions.boto3')
@@ -177,7 +176,6 @@ class Test(MockedTestCase):
             fuzzy.uuid(),
             fuzzy.uuid(),
             fuzzy.text(),
-            fuzzy.text(),
         )
         self.assertEqual(patched_boto.client().copy_object.call_count, 1)
         self.assertEqual(patched_boto.client().send_email.call_count, 1)
@@ -190,7 +188,6 @@ class Test(MockedTestCase):
             fuzzy.uuid(),
             fuzzy.uuid(),
             fuzzy.uuid(),
-            fuzzy.text(),
             fuzzy.text(),
         )
         self.assertEqual(patched_boto.client().copy_object.call_count, 1)
