@@ -8,7 +8,7 @@ class File(models.UUIDModel, models.TimestampableModel):
     organization_id = models.UUIDField(db_index=True)
     source_url = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
-    content_type = models.CharField(max_length=64)
+    content_type = models.CharField(max_length=255)
 
     class Meta:
         protobuf = file_containers.FileV1
