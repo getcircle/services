@@ -1,5 +1,6 @@
 import uuid
 
+import boto3
 from boto.s3.connection import S3ResponseError
 from boto.s3.multipart import MultiPartUpload
 from django.conf import settings
@@ -16,6 +17,10 @@ from . import (
 )
 
 
+def get_upload_key(file_name):
+    return '%s/%s' % (uuid.uuid4().hex, file_name)
+
+
 class StartUpload(actions.Action):
 
     required_fields = ('file_name',)
@@ -23,7 +28,7 @@ class StartUpload(actions.Action):
     def run(self, *args, **kwargs):
         s3_manager = utils.S3Manager()
         bucket = s3_manager.get_bucket()
-        upload_key = '%s/%s' % (uuid.uuid4().hex, self.request.file_name)
+        upload_key = get_upload_key(self.request.file_name)
 
         metadata = {}
         if self.request.content_type:
@@ -130,3 +135,46 @@ class Delete(PreRunParseTokenMixin, actions.Action):
             raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
         else:
             f.delete()
+
+
+class Upload(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('file', 'file.name', 'file.bytes')
+
+    def run(self, *args, **kwargs):
+        client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        )
+        upload_key = get_upload_key(self.request.file.name)
+        response = client.put_object(
+            Bucket=settings.AWS_S3_FILE_BUCKET,
+            Body=self.request.file.bytes,
+            ContentType=self.request.file.content_type,
+            Key=upload_key,
+        )
+        try:
+            status_code = response['ResponseMetadata']['HTTPStatusCode']
+            if status_code != 200:
+                raise self.ActionError(
+                    'UPLOAD_ERROR',
+                    ('UPLOAD_ERROR', 'HTTPStatusCode: %s' % (status_code,)),
+                )
+        except KeyError:
+            raise self.ActionError('UPLOAD_ERROR')
+
+        # boto doesn't have a better way for us to get the plain URL to the resource
+        source_url = client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': settings.AWS_S3_FILE_BUCKET, 'Key': upload_key},
+        ).split('?')[0]
+
+        instance = models.File.objects.create(
+            by_profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
+            source_url=source_url,
+            name=self.request.file.name,
+            content_type=self.request.file.content_type,
+        )
+        instance.to_protobuf(self.response.file)
