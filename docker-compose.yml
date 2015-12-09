@@ -12,6 +12,9 @@ services:
   env_file: .env
   environment:
     - SERVICES_ENVIRONMENT=local
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 dev:
   image: lunohq/services-dev
@@ -26,6 +29,9 @@ dev:
   environment:
     - DJANGO_SETTINGS_MODULE=services.settings.dev
     - SERVICES_ENVIRONMENT=local-dev
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 test:
   image: lunohq/services-dev
@@ -40,6 +46,9 @@ test:
   environment:
     - DJANGO_SETTINGS_MODULE=services.settings.test
     - SERVICES_ENVIRONMENT=local-test
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 celery:
   image: lunohq/services
@@ -51,6 +60,9 @@ celery:
     - postgres:postgres
     - redis:redis
     - es:es
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 postgres:
   image: lunohq/postgres
@@ -58,11 +70,17 @@ postgres:
     - "5432:5432"
   volumes_from:
     - postgres-data
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 redis:
   image: redis:2.8
   ports:
     - "6379:6379"
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 postgres-data:
   image: postgres:9.4
@@ -77,12 +95,18 @@ es:
   environment:
     - RUN_AS=root
   command: elasticsearch -Des.network.host=0.0.0.0
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 es-test:
   image: lunohq/es-test
   environment:
     - RUN_AS=root
   command: elasticsearch -Des.network.host=0.0.0.0
+  log_opt:
+    max-size: "100k"
+    max-file: "20"
 
 es-data:
   image: ubuntu:14.04
