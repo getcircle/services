@@ -41,7 +41,22 @@ def get_details_for_source(domain, source):
         return SourceDetails(response.result.profile_id, response.result.organization_id)
 
 
-def get_post_from_message(message_id, draft=False):
+def upload_attachment(attachment, token):
+    name = attachment.content_type.params.get('name', 'unnamed')
+    response = service.control.call_action(
+        service='file',
+        action='upload',
+        client_kwargs={'token': token},
+        file={
+            'name': name,
+            'content_type': attachment.content_type.value,
+            'bytes': attachment.body,
+        },
+    )
+    return response.result.file.id
+
+
+def get_post_from_message(message_id, token, draft=False):
     client = _get_s3_client()
     key = _get_unprocessed_key(message_id)
     try:
@@ -63,10 +78,18 @@ def get_post_from_message(message_id, draft=False):
         return None
 
     plain_text = None
+    attachments = []
     for part in message.walk():
         if part.content_type.value == 'text/plain':
             plain_text = part.body
-            break
+        elif part.is_attachment() or part.is_inline():
+            attachments.append(part)
+
+    # NOTE we could potentially split these up into separate tasks
+    file_ids = []
+    for attachment in attachments:
+        file_id = upload_attachment(attachment, token)
+        file_ids.append(file_id)
 
     # TODO should be handling empty subjects or bodies by notifying the user it
     # failed to parse
@@ -82,6 +105,7 @@ def get_post_from_message(message_id, draft=False):
         title=message.subject,
         content=plain_text,
         state=state,
+        file_ids=file_ids,
     )
 
 
