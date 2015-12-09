@@ -26,7 +26,13 @@ class CreatePost(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             by_profile_id=self.parsed_token.profile_id,
         )
-        post.to_protobuf(self.response.post)
+        for file_id in self.request.post.file_ids:
+            models.Attachment.objects.create(
+                post=post,
+                organization_id=self.parsed_token.organization_id,
+                file_id=file_id,
+            )
+        post.to_protobuf(self.response.post, file_ids=self.request.post.file_ids)
 
 
 class UpdatePost(PostPermissionsMixin, actions.Action):
