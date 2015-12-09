@@ -154,12 +154,20 @@ def mark_message_as_processed(message_id):
 def send_confirmation_to_user(post, user_email):
     # XXX move this to the notification service
     client = _get_boto_client('ses', region_name=settings.EMAIL_SES_REGION)
-    subject = 'Knowledge Created'
+    subject = 'Knowledge Published - %s' % (post.title,)
     post_url = get_post_resource_url(post)
+    # XXX say "hey <persons name>"
+    # XXX get their subdomain link
     message = (
-        'Your knowledge has been published in Luno. '
-        'You can view it here:\n\n%s\n\nCheers,\nLuno Bot'
-    ) % (post_url,)
+        'Congrats! You\'ve completed Step 1 by using the handy create@ feature to publish '
+        'knowledge from email. You can view and edit "%(title)s" on Luno here: %(resource_url)s.'
+        '\n\nStep 2 is to scale yourself. The next time someone asks you about "%(title)s", '
+        'don\'t waste energy finding and fowarding the email. Instead, politely refer to '
+        'https://www.lunohq.com and tell them to search for it.\n\nCheers,\nLuno'
+    ) % {
+        'title': post.title,
+        'resource_url': post_url,
+    }
     client.send_email(
         Source='"Luno"<%s>' % (settings.EMAIL_HOOK_NOTIFICATION_FROM_ADDRESS,),
         Destination={'ToAddresses': [user_email]},

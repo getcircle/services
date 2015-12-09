@@ -192,3 +192,14 @@ class Test(MockedTestCase):
         )
         self.assertEqual(patched_boto.client().copy_object.call_count, 1)
         self.assertEqual(patched_boto.client().send_email.call_count, 1)
+
+    @mock.patch('hooks.email.actions.boto3')
+    def test_send_confirmation_to_user(self, patched_boto):
+        post = mocks.mock_post()
+        email = 'test@example.com'
+        actions.send_confirmation_to_user(post, email)
+        call_kwargs = patched_boto.client().send_email.call_args[1]
+        self.assertEqual(call_kwargs['Source'], '"Luno"<notifications@lunohq.com>')
+        self.assertEqual(call_kwargs['Destination']['ToAddresses'][0], email)
+        self.assertIn(post.title, call_kwargs['Message']['Subject']['Data'])
+        self.assertIn(post.title, call_kwargs['Message']['Body']['Text']['Data'])
