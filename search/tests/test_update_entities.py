@@ -115,7 +115,7 @@ class TestUpdateEntities(MockedTestCase):
             ids=[team.id],
         )
         tasks.update_teams([str(team.id)], str(team.organization_id))
-        self.assertEqual(patched_bulk.call_count, 1)
+        self.assertEqual(patched_bulk.call_count, 2)
 
         documents = patched_bulk.call_args_list[0][0][1]
         called_team = dict_to_protobuf(
