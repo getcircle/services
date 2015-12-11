@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from rest_framework import exceptions
 from rest_framework.authentication import (
@@ -11,6 +13,8 @@ from .token import parse_token
 
 
 AUTHENTICATION_TOKEN_COOKIE_KEY = 'atv1'
+
+logger = logging.getLogger('services.authentication')
 
 
 class ServiceTokenAuthentication(BaseAuthentication):
@@ -74,6 +78,8 @@ class ServiceTokenCookieAuthentication(ServiceTokenAuthentication):
     """
 
     def get_token(self, request):
+        logger.info('request cookies: %s', request.COOKIES)
+        logger.info('token from cookie: %s', request.COOKIES.get(AUTHENTICATION_TOKEN_COOKIE_KEY))
         return request.COOKIES.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
 
 
