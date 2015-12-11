@@ -31,16 +31,20 @@ class ServiceTokenAuthentication(BaseAuthentication):
     model = UserToken
 
     def get_token(self, request):
+        logger.info('attempting to get token from header')
         auth = get_authorization_header(request).split()
         if not auth or auth[0].lower() != b'token':
+            logger.info('no token in header found')
             return None
 
+        logger.info('found token in header')
         if len(auth) == 1:
             msg = 'Invalid token header. No credentials provided.'
             raise exceptions.AuthenticationFailed(msg)
         elif len(auth) > 2:
             msg = 'Invalid token header. Token string should not contain spaces.'
             raise exceptions.AuthenticationFailed(msg)
+        logger.info('valid token header')
         return auth[1]
 
     def authenticate(self, request):
