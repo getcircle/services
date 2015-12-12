@@ -14,7 +14,7 @@ import sys
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-ALLOWED_HOSTS = ['api.circlehq.co']
+ALLOWED_HOSTS = ['api.lunohq.com', 'services']
 
 SERVICES_HOSTNAME = 'localhost:8000'
 FRONTEND_URL = 'http://local.lunohq.com:9110'
