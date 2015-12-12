@@ -14,7 +14,7 @@ from .token import parse_token
 
 AUTHENTICATION_TOKEN_COOKIE_KEY = 'atv1'
 
-logger = logging.getLogger('services.authentication')
+logger = logging.getLogger(__name__)
 
 
 class ServiceTokenAuthentication(BaseAuthentication):

@@ -11,7 +11,7 @@ import service.control
 
 from hooks.helpers import get_post_resource_url
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 SourceDetails = namedtuple('SourceDetails', ('email', 'profile_id', 'organization_id'))
 

@@ -15,7 +15,7 @@ from . import (
     handlers,
 )
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class SlackViewSet(viewsets.ViewSet):

@@ -23,6 +23,8 @@ from service import actions
 from . import base
 from ..authentication import utils
 
+logger = logging.getLogger(__name__)
+
 
 class Provider(base.BaseProvider):
 
@@ -82,7 +84,7 @@ class Provider(base.BaseProvider):
         else:
             parameters['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
 
-        logging.getLogger('user:providers:google').info('requesting credentials: %s', parameters)
+        logger.info('requesting credentials: %s', parameters)
         credentials = credentials_from_code(**parameters)
         if id_token is not None:
             credentials.id_token = id_token

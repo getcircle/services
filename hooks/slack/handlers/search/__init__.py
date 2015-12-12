@@ -12,7 +12,7 @@ LUNO_SEARCH_HELP = """
 Usage: To search within luno: /luno search <query>
 """
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 def handle_search(request, text):

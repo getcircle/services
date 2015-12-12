@@ -18,6 +18,8 @@ from .. import (
 )
 from ... import models
 
+logger = logging.getLogger(__name__)
+
 
 class Provider(base.BaseGroupsProvider):
 
@@ -32,10 +34,6 @@ class Provider(base.BaseGroupsProvider):
             if scope.endswith('readonly'):
                 self.write_access = False
                 break
-
-    @property
-    def logger(self):
-        return logging.getLogger('groups:google')
 
     @property
     def http(self):
@@ -109,7 +107,7 @@ class Provider(base.BaseGroupsProvider):
 
         def handle_new_member(request_id, response, exception, **kwargs):
             if exception is not None:
-                self.logger.error('Error adding new member: %s', exception)
+                logger.error('Error adding new member: %s', exception)
                 return False
             new_members.append(response)
 
@@ -139,7 +137,7 @@ class Provider(base.BaseGroupsProvider):
 
         def handle_groups_settings(request_id, response, exception, **kwargs):
             if exception is not None:
-                self.logger.error('Error fetching group settings: %s', exception)
+                logger.error('Error fetching group settings: %s', exception)
                 return False
             groups_settings[response['email'].lower()] = response
 

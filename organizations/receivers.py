@@ -9,7 +9,7 @@ from services.token import make_admin_token
 
 from . import models
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 def _update_entity(primary_key, organization_id, entity_type):

@@ -8,8 +8,7 @@ from ..stores.es.indices.organization.actions import get_read_alias
 from ..stores.es import types
 from .. import models
 
-
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class Action(PreRunParseTokenMixin, actions.Action):

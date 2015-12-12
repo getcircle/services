@@ -9,7 +9,7 @@ import tldextract
 from . import actions
 from .. import tasks
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class ProcessEmailView(APIView):

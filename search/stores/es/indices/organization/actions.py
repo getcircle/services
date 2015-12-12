@@ -9,8 +9,7 @@ from . import INDEX_VERSION
 from ... import types
 from ...analysis import default_search
 
-# XXX fix this
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class DuplicateIndex(Exception):
