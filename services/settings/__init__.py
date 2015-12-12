@@ -8,10 +8,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 import json
+import logging
+import os
 import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 ALLOWED_HOSTS = ['api.lunohq.com', 'services']
@@ -146,12 +147,16 @@ PASSWORD_HASHERS = (
 
 TEST_RUNNER = 'services.test.runner.ServicesTestSuiteRunner'
 
-# TODO setup proper logging
 LOGGING = {
     'version': 1,
+    'disable_existing_loggers': False,
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console_generic'],
+    },
     'formatters': {
         'generic': {
-            'format': '%(name)s %(message)s',
+            'format': '%(name)s %(levelname)s %(message)s',
         },
     },
     'handlers': {
@@ -165,37 +170,7 @@ LOGGING = {
             'formatter': 'generic',
         },
     },
-    'loggers': {
-        'django': {
-            'level': 'INFO',
-            'handlers': ['console'],
-            'propagate': True,
-        },
-        'django.request': {
-            'level': 'ERROR',
-            'handlers': ['console'],
-            'propagate': False,
-        },
-        'gunicorn.error': {
-            'level': 'INFO',
-            'handlers': ['console_generic'],
-            'propagate': True,
-        },
-        'gunicorn.access': {
-            'level': 'INFO',
-            'handlers': ['console_generic'],
-            'propagate': False,
-        },
-        'services': {
-            'level': 'INFO',
-            'handlers': ['console_generic'],
-            'propagate': False,
-        },
-    },
-    'root': {
-        'level': 'INFO',
-        'handlers': ['console_generic'],
-    },
+    'loggers': {},
 }
 
 # Twilio API Settings

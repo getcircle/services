@@ -1,6 +1,8 @@
 import os
 import urlparse
 
+import raven
+
 # import default settings
 from . import *  # noqa
 from ._utils import _get_delimited_setting_from_environment
@@ -30,6 +32,27 @@ DATABASES = {
         'PORT': database_url.port,
         'CONN_MAX_AGE': conn_max_age,
     }
+}
+
+LOGGING['root']['handlers'].append('sentry')
+LOGGING['handlers']['sentry'] = {
+    'level': 'WARNING',
+    'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+}
+LOGGING['loggers']['django.db.backends'] = {
+    'level': 'ERROR',
+    'handlers': ['console'],
+    'propagate': False,
+}
+LOGGING['loggers']['raven'] = {
+    'level': 'DEBUG',
+    'handlers': ['console'],
+    'propagate': False,
+}
+LOGGING['loggers']['sentry.errors'] = {
+    'level': 'DEBUG',
+    'handlers': ['console'],
+    'propagate': False,
 }
 
 # NB: Specify 'cacheops' as an installed app only when we define redis
@@ -102,6 +125,7 @@ AWS_SNS_TOPIC_NO_SEARCH_RESULTS = os.environ.get(
 
 RAVEN_CONFIG = {
     'dsn': os.environ.get('SENTRY_DSN'),
+    'release': '%s - %s' % (os.environ.get('EMPIRE_RELEASE'), raven.fetch_git_sha('/app')),
 }
 
 # XXX default to api.lunohq.com in the future
