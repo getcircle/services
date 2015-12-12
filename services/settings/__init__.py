@@ -18,7 +18,7 @@ ALLOWED_HOSTS = ['api.circlehq.co']
 
 SERVICES_HOSTNAME = 'localhost:8000'
 FRONTEND_URL = 'http://local.lunohq.com:9110'
-AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.lunohq.com'
+AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.local.lunohq.com'
 # max age of the cookie in seconds
 AUTHENTICATION_TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
