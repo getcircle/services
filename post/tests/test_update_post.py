@@ -38,10 +38,12 @@ class TestPosts(MockedTestCase):
         post = factories.PostFactory.create_protobuf(profile=self.profile)
         post.title = updated_title
         post.content = updated_content
+        post.is_rich_text = True
         response = self.client.call_action('update_post', post=post)
         post = response.result.post
         self.assertEqual(updated_title, post.title)
         self.assertEqual(updated_content, post.content)
+        self.assertTrue(post.is_rich_text)
         self.assertEqual(self.profile.id, post.by_profile_id)
         self.assertEqual(self.organization.id, post.organization_id)
         self.assertTrue(post.permissions.can_edit)

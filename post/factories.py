@@ -14,6 +14,7 @@ class PostFactory(factory.Factory):
     by_profile_id = factory.FuzzyUUID()
     title = factory.FuzzyText()
     content = factory.Faker('text')
+    is_rich_text = False
     state = factory.FuzzyChoice(post_containers.PostStateV1.values())
 
     @classmethod

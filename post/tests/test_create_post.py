@@ -33,6 +33,7 @@ class TestPosts(MockedTestCase):
         post = response.result.post
         self.assertEqual(post_title, post.title)
         self.assertEqual(post_content, post.content)
+        self.assertFalse(post.is_rich_text)
         self.assertEqual(self.profile.id, post.by_profile_id)
         self.assertEqual(self.organization.id, post.organization_id)
 
