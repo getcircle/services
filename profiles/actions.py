@@ -17,6 +17,9 @@ from . import (
     models,
 )
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def valid_profile(profile_id):
     return models.Profile.objects.filter(pk=profile_id).exists()
@@ -402,6 +405,9 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
         return self.request.profile_id or self.parsed_token.profile_id
 
     def run(self, *args, **kwargs):
+        logger.warn('testing sentry', extra={
+            'request': self.request,
+        })
         profile = models.Profile.objects.prefetch_related('contact_methods').get(
             organization_id=self.parsed_token.organization_id,
             pk=self._get_profile_id(),
