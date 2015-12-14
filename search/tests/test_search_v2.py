@@ -425,24 +425,14 @@ class Test(ESTestCase):
     def test_search_category_locations(self):
         # verify a normal search returns a person
         response = self.client.call_action('search_v2', query='San Francisco')
-        self.verify_top_results(
-            'post',
-            {'content': lambda x: 'San Francisco' in x},
-            response.result.results,
-        )
+        self.assertTrue(sum(result.HasField('post') for result in response.result.results) > 0)
 
         response = self.client.call_action(
             'search_v2',
             query='San Francisco',
             category=search_pb2.LOCATIONS,
         )
-        self.verify_top_results(
-            'post',
-            {'content': lambda x: 'San Francisco' in x},
-            response.result.results,
-            top_results=10,
-            should_be_present=False,
-        )
+        self.assertTrue(sum(result.HasField('post') for result in response.result.results) == 0)
 
     def test_search_category_posts(self):
         # verify a normal search returns a person
@@ -522,12 +512,8 @@ class Test(ESTestCase):
 
     def test_search_raw_content_match_higher_than_title_match(self):
         response = self.client.call_action('search_v2', query='video conferencing')
-        self.verify_top_results(
-            'post',
-            {'content': lambda x: 'video conferencing' in x},
-            response.result.results,
-            top_results=1,
-        )
+        hit = response.result.results[0]
+        self.assertIn('<mark>video</mark> <mark>conferencing</mark>', hit.highlight['content'])
 
     def test_search_team_display_name_highlighting_partial(self):
         response = self.client.call_action('search_v2', query='Dev', category=search_pb2.TEAMS)
