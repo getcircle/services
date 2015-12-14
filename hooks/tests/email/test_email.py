@@ -87,6 +87,7 @@ class Test(MockedTestCase):
             {
                 'token': settings.EMAIL_HOOK_SECRET_KEYS[0],
                 'source': 'example@example.com',
+                'recipients': ['create@example.lunohq.com'],
             },
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -105,9 +106,22 @@ class Test(MockedTestCase):
             {
                 'token': settings.EMAIL_HOOK_SECRET_KEYS[0],
                 'source': 'example@%s.com' % (organization.domain,),
+                'recipients': ['create@example.lunohq.com'],
             },
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_extract_domain_from_endpoint(self):
+        domain = actions.extract_domain('michael@example.com', 'create@company.lunohq.com')
+        self.assertEqual(domain, 'company')
+        domain = actions.extract_domain('michael@test.com', 'create@company.dev.lunohq.com')
+        self.assertEqual(domain, 'company')
+
+    def test_extract_domain_from_source(self):
+        domain = actions.extract_domain('michael@example.com', 'create@mail.lunohq.com')
+        self.assertEqual(domain, 'example')
+        domain = actions.extract_domain('michael@example.com', 'create@mail.dev.lunohq.com')
+        self.assertEqual(domain, 'example')
 
     def test_process_notification_message_id_not_present(self):
         self._mock_profile_exists()
@@ -130,7 +144,7 @@ class Test(MockedTestCase):
             {
                 'token': settings.EMAIL_HOOK_SECRET_KEYS[0],
                 'source': 'example@%s.com' % (self.organization.domain,),
-                'recipients': ['create@mail.lunohq.com'],
+                'recipients': ['create@example.lunohq.com'],
                 'message_id': fuzzy.uuid(),
             },
         )
