@@ -1,6 +1,8 @@
 import os
 import urlparse
 
+import raven
+
 # import default settings
 from . import *  # noqa
 from ._utils import _get_delimited_setting_from_environment
@@ -30,6 +32,27 @@ DATABASES = {
         'PORT': database_url.port,
         'CONN_MAX_AGE': conn_max_age,
     }
+}
+
+LOGGING['root']['handlers'].append('sentry')
+LOGGING['handlers']['sentry'] = {
+    'level': 'WARNING',
+    'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+}
+LOGGING['loggers']['django.db.backends'] = {
+    'level': 'ERROR',
+    'handlers': ['console'],
+    'propagate': False,
+}
+LOGGING['loggers']['raven'] = {
+    'level': 'DEBUG',
+    'handlers': ['console'],
+    'propagate': False,
+}
+LOGGING['loggers']['sentry.errors'] = {
+    'level': 'DEBUG',
+    'handlers': ['console'],
+    'propagate': False,
 }
 
 # NB: Specify 'cacheops' as an installed app only when we define redis
@@ -84,6 +107,12 @@ USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST = os.environ.get(
 AWS_ACCESS_KEY_ID = os.environ.get('SERVICES_AWS_ACCESS_KEY_ID', AWS_ACCESS_KEY_ID)
 AWS_SECRET_ACCESS_KEY = os.environ.get('SERVICES_AWS_SECRET_ACCESS_KEY', AWS_SECRET_ACCESS_KEY)
 
+AWS_REGION_NAME = os.environ.get('AWS_REGION_NAME', AWS_REGION_NAME)
+AWS_HOSTED_ZONE_ID = os.environ.get('AWS_HOSTED_ZONE_ID', AWS_HOSTED_ZONE_ID)
+AWS_ALIAS_HOSTED_ZONE_ID = os.environ.get('AWS_ALIAS_HOSTED_ZONE_ID', AWS_ALIAS_HOSTED_ZONE_ID)
+AWS_ALIAS_TARGET = os.environ.get('AWS_ALIAS_TARGET', AWS_ALIAS_TARGET)
+AWS_SES_INBOUND_ENDPOINT = os.environ.get('AWS_SES_INBOUND_ENDPOINT', AWS_SES_INBOUND_ENDPOINT)
+
 AWS_SNS_PLATFORM_APPLICATION_APNS = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_APNS')
 AWS_SNS_PLATFORM_APPLICATION_GCM = os.environ.get('AWS_SNS_PLATFORM_APPLICATION_GCM')
 AWS_SNS_KWARGS = {
@@ -102,6 +131,7 @@ AWS_SNS_TOPIC_NO_SEARCH_RESULTS = os.environ.get(
 
 RAVEN_CONFIG = {
     'dsn': os.environ.get('SENTRY_DSN'),
+    'release': '%s - %s' % (os.environ.get('EMPIRE_RELEASE'), raven.fetch_git_sha('/app')),
 }
 
 # XXX default to api.lunohq.com in the future
@@ -116,7 +146,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'services.authentication.ServiceTokenAuthentication',
         'services.authentication.OrganizationTokenAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'services.authentication.ServiceTokenCookieAuthentication',
     ),
 }
 
@@ -162,3 +192,8 @@ if SEARCH_SERVICE_ELASTICSEARCH_URL:
         'hosts': [SEARCH_SERVICE_ELASTICSEARCH_URL],
         'timeout': 10,
     }
+
+AUTHENTICATION_TOKEN_COOKIE_DOMAIN = os.environ.get(
+    'AUTHENTICATION_TOKEN_COOKIE_DOMAIN',
+    AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
+)

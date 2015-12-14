@@ -8,17 +8,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 import json
+import logging
+import os
 import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-ALLOWED_HOSTS = ['api.circlehq.co']
+ALLOWED_HOSTS = ['api.lunohq.com', 'services']
 
 SERVICES_HOSTNAME = 'localhost:8000'
 FRONTEND_URL = 'http://local.lunohq.com:9110'
-AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.lunohq.com'
+AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.local.lunohq.com'
 # max age of the cookie in seconds
 AUTHENTICATION_TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
@@ -146,12 +147,16 @@ PASSWORD_HASHERS = (
 
 TEST_RUNNER = 'services.test.runner.ServicesTestSuiteRunner'
 
-# TODO setup proper logging
 LOGGING = {
     'version': 1,
+    'disable_existing_loggers': False,
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console_generic'],
+    },
     'formatters': {
         'generic': {
-            'format': '%(name)s %(message)s',
+            'format': '%(name)s %(levelname)s %(message)s',
         },
     },
     'handlers': {
@@ -165,37 +170,7 @@ LOGGING = {
             'formatter': 'generic',
         },
     },
-    'loggers': {
-        'django': {
-            'level': 'INFO',
-            'handlers': ['console'],
-            'propagate': True,
-        },
-        'django.request': {
-            'level': 'ERROR',
-            'handlers': ['console'],
-            'propagate': False,
-        },
-        'gunicorn.error': {
-            'level': 'INFO',
-            'handlers': ['console_generic'],
-            'propagate': True,
-        },
-        'gunicorn.access': {
-            'level': 'INFO',
-            'handlers': ['console_generic'],
-            'propagate': False,
-        },
-        'services': {
-            'level': 'INFO',
-            'handlers': ['console_generic'],
-            'propagate': False,
-        },
-    },
-    'root': {
-        'level': 'INFO',
-        'handlers': ['console_generic'],
-    },
+    'loggers': {},
 }
 
 # Twilio API Settings
@@ -208,6 +183,12 @@ USER_SERVICE_TOTP_INTERVAL = 60 * 2
 
 AWS_ACCESS_KEY_ID = 'AKIAIFWNDY77BUE3MKKA'
 AWS_SECRET_ACCESS_KEY = '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'
+
+AWS_REGION_NAME = 'us-west-2'
+AWS_HOSTED_ZONE_ID = 'Z2RUM0QYIALWAH'
+AWS_ALIAS_HOSTED_ZONE_ID = 'Z1H1FL5HABSF5'
+AWS_ALIAS_TARGET = 'dualstack.2e964c47f614473ba0629f17a5670682-65387849.us-west-2.elb.amazonaws.com.'
+AWS_SES_INBOUND_ENDPOINT = 'inbound-smtp.us-west-2.amazonaws.com'
 
 # AWS SNS Settings
 AWS_SNS_PLATFORM_APPLICATION_APNS = ''

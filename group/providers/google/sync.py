@@ -10,6 +10,8 @@ from profiles import models as profile_models
 
 from ... import models
 
+logger = logging.getLogger(__name__)
+
 
 class Sync(object):
 
@@ -25,7 +27,7 @@ class Sync(object):
 
     def sync_groups(self):
         start = time.time()
-        self.logger.info('starting groups sync: %s', self.sync_id)
+        logger.info('starting groups sync: %s', self.sync_id)
         in_progress = True
         page_token = None
         while in_progress:
@@ -44,7 +46,7 @@ class Sync(object):
         self._clear_stale_groups()
         self._clear_cacheops()
         end = time.time()
-        self.logger.info(
+        logger.info(
             'finished groups sync: %s [took %s minutes]',
             self.sync_id,
             (end - start) / 60,
@@ -102,8 +104,7 @@ class Sync(object):
 
     def _sync_settings(self, groups):
         if not groups:
-            self.logger.error("no groups provided for _sync_settings")
-            # XXX log an error to #sentry
+            logger.error("no groups provided for _sync_settings")
             return False
 
         batch_size = 10
@@ -149,7 +150,7 @@ class Sync(object):
         stale_groups = models.GoogleGroup.objects.filter(
             organization_id=self.organization.id,
         ).exclude(last_sync_id=self.sync_id)
-        self.logger.info(
+        logger.info(
             'removing %s stale google groups not matching sync_id: %s',
             len(stale_groups),
             self.sync_id,
@@ -186,7 +187,7 @@ class Sync(object):
         for provider_member in provider_members:
             profile_id = profiles_dict.get(provider_member.get('email'))
             if not profile_id:
-                self.logger.error('profile not found for: %s', provider_member)
+                logger.error('profile not found for: %s', provider_member)
                 continue
 
             if profile_id in existing_members_dict:

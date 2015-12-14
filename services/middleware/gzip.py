@@ -9,6 +9,8 @@ from service import metrics
 
 re_accepts_gzip = re.compile(r'\bgzip\b')
 
+logger = logging.getLogger(__name__)
+
 
 class GZipMiddleware(object):
     """
@@ -43,7 +45,6 @@ class GZipMiddleware(object):
             if len(compressed_content) >= len(response.content):
                 return response
 
-            logger = logging.getLogger('services')
             logger.info('SIZE BEFORE COMPRESSION: %s', sys.getsizeof(response.content))
             logger.info('SIZE POST COMPRESSION: %s', sys.getsizeof(compressed_content))
             response.content = compressed_content

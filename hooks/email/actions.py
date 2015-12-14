@@ -8,10 +8,11 @@ from django.conf import settings
 from flanker import mime
 from protobufs.services.post import containers_pb2 as post_containers
 import service.control
+import tldextract
 
 from hooks.helpers import get_post_resource_url
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 SourceDetails = namedtuple('SourceDetails', ('email', 'profile_id', 'organization_id'))
 
@@ -31,6 +32,22 @@ def _get_unprocessed_key(message_id):
 
 def _get_processed_key(message_id):
     return os.path.join(settings.EMAIL_HOOK_PROCESSED_KEY_PREFIX, message_id)
+
+
+def extract_domain(source, recipient):
+    """Extract the domain from either the source address or the recipient address"""
+    # by default tldextract makes a web request when first initializes and
+    # uses a cache file, disable these and just use the default snapshot it
+    # comes with
+    extract = tldextract.TLDExtract(suffix_list_url=False, cache_file=False)
+    extracted = extract(recipient)
+    if extracted.subdomain:
+        domain = extract(recipient).subdomain.split('.')[0]
+        if domain != 'mail':
+            return domain
+
+    extracted = extract(source)
+    return extracted.domain
 
 
 def get_details_for_source(domain, source):

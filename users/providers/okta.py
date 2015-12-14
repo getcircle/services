@@ -15,6 +15,8 @@ from . import base
 from .. import models
 from ..authentication import utils
 
+logger = logging.getLogger(__name__)
+
 
 class SAMLMetaDataDoesNotExist(Exception):
     pass
@@ -80,12 +82,6 @@ class Provider(base.BaseProvider):
         ProfileNotFound: 'PROFILE_NOT_FOUND',
     }
 
-    @property
-    def logger(self):
-        if not hasattr(self, '_logger'):
-            self._logger = logging.getLogger('user:provider:okta')
-        return self._logger
-
     def _get_value_for_identity_field(self, field, identity_data, required=True):
         try:
             return identity_data[field][0]
@@ -111,7 +107,7 @@ class Provider(base.BaseProvider):
             entity.BINDING_HTTP_POST,
         )
         if authn_response is None:
-            self.logger.warn('failed to complete saml authorization')
+            logger.warn('failed to complete saml authorization')
             raise ProviderResponseVerificationFailed
 
         if request.saml_details.relay_state:
@@ -133,7 +129,7 @@ class Provider(base.BaseProvider):
         authentication_identifier = employee_id or email
         profile_exists = self._profile_exists(domain, authentication_identifier)
         if not profile_exists.exists:
-            self.logger.warn(
+            logger.warn(
                 'profile not found for: %s in domain: %s (%s)',
                 email,
                 domain,

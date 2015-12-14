@@ -1,5 +1,8 @@
+import logging
+
 from django.http import HttpResponse
 from django.utils.module_loading import import_string
+from rest_framework import status
 from rest_framework.views import APIView
 from service import settings as service_settings
 from service_protobufs import soa_pb2
@@ -8,6 +11,8 @@ from .authentication import (
     delete_authentication_cookie,
     set_authentication_cookie,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ServicesView(APIView):
@@ -18,6 +23,17 @@ class ServicesView(APIView):
 
     def perform_authentication(self, request):
         request.auth
+
+    def handle_exception(self, exc):
+        response = super(ServicesView, self).handle_exception(exc)
+        # Clear the cookie if it failed to authenticate the user. This allows
+        # the user to re-login.
+        if response.status_code == status.HTTP_401_UNAUTHORIZED:
+            logger.warning('deleting invalid authentication cookie', extra={
+                'request': self.request,
+            })
+            delete_authentication_cookie(response)
+        return response
 
     def post(self, request, *args, **kwargs):
         # XXX handle errors if the request.body fails to serialize

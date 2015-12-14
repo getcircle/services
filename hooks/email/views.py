@@ -4,22 +4,14 @@ from django.conf import settings
 from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-import tldextract
 
 from . import actions
 from .. import tasks
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class ProcessEmailView(APIView):
-
-    @property
-    def extract(self):
-        # by default tldextract makes a web request when first initializes and
-        # uses a cache file, disable these and just use the default snapshot it
-        # comes with
-        return tldextract.TLDExtract(suffix_list_url=False, cache_file=False)
 
     def perform_authentication(self, request, *args, **kwargs):
         token = request.data.get('token')
@@ -33,17 +25,6 @@ class ProcessEmailView(APIView):
         if not source:
             raise exceptions.ParseError('source is required')
 
-        extracted = self.extract(source)
-        request.source = actions.get_details_for_source(extracted.domain, source)
-        if not request.source:
-            raise exceptions.NotFound()
-
-    def post(self, request, *args, **kwargs):
-        message_id = request.data.get('message_id')
-        if not message_id:
-            raise exceptions.ParseError('message_id is required')
-
-        # XXX should use ses_source to match up domain for the user
         try:
             ses_source = request.data['recipients']
         except KeyError:
@@ -51,6 +32,16 @@ class ProcessEmailView(APIView):
 
         if not isinstance(ses_source, basestring):
             raise exceptions.ParseError('recipients must be a string')
+
+        domain = actions.extract_domain(source, ses_source)
+        request.source = actions.get_details_for_source(domain, source)
+        if not request.source:
+            raise exceptions.NotFound()
+
+    def post(self, request, *args, **kwargs):
+        message_id = request.data.get('message_id')
+        if not message_id:
+            raise exceptions.ParseError('message_id is required')
 
         # XXX draft should be something the view accepts as a parameter
         tasks.create_post_from_message.delay(
