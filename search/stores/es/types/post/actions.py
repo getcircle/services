@@ -31,3 +31,9 @@ def get_highlight_fields_v1(query):
         ),
         HighlightField('content', {'fragment_size': 70, 'no_match_size': 70}),
     ]
+
+def get_excluded_source_fields_v1(query):
+    fields = [
+        'content',
+    ]
+    return fields

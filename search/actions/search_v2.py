@@ -81,6 +81,9 @@ class Action(PreRunParseTokenMixin, actions.Action):
         if statements:
             return dict((statement.field_name, statement.options) for statement in statements)
 
+    def _get_excluded_source_fields(self):
+        return self._get_statements('get_excluded_source_fields_v1')
+
     def run(self, *args, **kwargs):
         read_alias = get_read_alias(self.parsed_token.organization_id)
         search = Search(index=read_alias, doc_type=self._get_doc_type())
@@ -88,6 +91,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
         should_statements = self._get_should_statements()
         rescore_statements = self._get_rescore_statements()
         highlight_fields = self._get_highlight_fields()
+        excluded_source_fields = self._get_excluded_source_fields()
         extra = {}
         if rescore_statements:
             rescore_query = Q('bool', should=rescore_statements)
@@ -105,6 +109,11 @@ class Action(PreRunParseTokenMixin, actions.Action):
                 'fields': highlight_fields,
                 'pre_tags': ['<mark>'],
                 'post_tags': ['</mark>'],
+            }
+
+        if excluded_source_fields:
+            extra['_source'] = {
+                'exclude': excluded_source_fields,
             }
 
         q = Q('bool', should=should_statements)
