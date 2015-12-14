@@ -4,6 +4,11 @@ from django.conf import settings
 from django.db import connection
 import service.control
 
+from organizations.helpers import (
+    create_a_record_for_subdomain,
+    create_mx_record_for_subdomain,
+    create_ses_verification_record_for_subdomain,
+)
 from services.management.base import (
     BaseCommand,
     CommandError,
@@ -30,6 +35,13 @@ class Command(BaseCommand):
             required=False,
             default=False,
             help='Boolean for whether or not we should reset the schema before creating the org',
+        )
+        parser.add_argument(
+            '--setup-dns',
+            action='store_true',
+            required=False,
+            default=False,
+            help='Boolean for whether or not we should setup dns records for the org',
         )
 
     def handle(self, *args, **options):
@@ -81,6 +93,27 @@ class Command(BaseCommand):
             action='create_index',
             client_kwargs={'token': organization_token},
         )
+
+        # create DNS records for the organization
+        if options['setup_dns']:
+            print 'setting up DNS records...'
+            subdomain = options['organization_domain']
+            create_a_record_for_subdomain(
+                subdomain,
+                settings.AWS_ALIAS_TARGET,
+                settings.AWS_ALIAS_HOSTED_ZONE_ID,
+                settings.AWS_HOSTED_ZONE_ID,
+            )
+            create_mx_record_for_subdomain(
+                subdomain,
+                settings.AWS_SES_INBOUND_ENDPOINT,
+                settings.AWS_HOSTED_ZONE_ID,
+            )
+            create_ses_verification_record_for_subdomain(
+                subdomain,
+                settings.AWS_REGION_NAME,
+                settings.AWS_HOSTED_ZONE_ID,
+            )
 
         print 'created organization "%s": %s' % (
             response.result.organization.name,
