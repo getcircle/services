@@ -636,3 +636,16 @@ class Test(ESTestCase):
         tracking_details = hit.tracking_details
         self.assertEqual(tracking_details.document_id, profile.id)
         self.assertEqual(tracking_details.document_type, types.ProfileV1._doc_type.name)
+
+    def test_search_post_does_not_have_content(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='Arbiter',
+            category=search_pb2.POSTS,
+        )
+        results_have_content = False
+        for result in response.result.results:
+            post = result.post
+            if len(post.content) > 0:
+                results_have_content = True
+        self.assertFalse(results_have_content)
