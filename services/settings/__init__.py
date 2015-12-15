@@ -230,7 +230,7 @@ GOOGLE_SCOPE = (
     'https://www.googleapis.com/auth/plus.profile.emails.read '
     'https://www.google.com/m8/feeds '
 )
-GOOGLE_REDIRECT_URI = 'http://localhost:8000/user/auth/oauth2/google/'
+GOOGLE_REDIRECT_URI = 'http://api.local.lunohq.com:8000/user/auth/oauth2/google/'
 GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
 
 # Google Maps API
