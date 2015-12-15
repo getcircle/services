@@ -571,9 +571,10 @@ class Test(ESTestCase):
             category=search_pb2.PROFILES,
         )
         hit = response.result.results[0]
-        self.assertEqual(
-            hit.highlight['display_title'],
-            '<mark>Sr.</mark> <mark>Account</mark> Manager (Sales, East Coast)',
+        self.assertTrue(
+            hit.highlight['display_title'].startswith(
+                '<mark>Sr.</mark> <mark>Account</mark> Manager',
+            )
         )
 
         response = self.client.call_action(
