@@ -157,3 +157,13 @@ class TestPosts(MockedTestCase):
 
         response = self.client.call_action('get_posts', all_states=True)
         self.assertEqual(len(response.result.posts), 1)
+
+    def test_get_posts_seventy_chars_of_content(self):
+        profile = mocks.mock_profile(organization_id=self.organization.id)
+        factories.PostFactory.create(
+            profile=profile,
+            state=post_containers.LISTED,
+            content='Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus quis aliquam ipsum, egestas vulputate libero. In rutrum tristique ligula, at tristique lorem euismod sed. Vivamus quis posuere metus.'
+        )
+        response = self.client.call_action('get_posts', all_states=True)
+        self.assertEqual(len(response.result.posts[0].content), 70)
