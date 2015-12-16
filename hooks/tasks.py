@@ -12,6 +12,7 @@ def create_post_from_message(
         organization_id,
         by_profile_id,
         notify_email,
+        domain,
         draft=False,
     ):
     token = make_admin_token(
@@ -31,4 +32,4 @@ def create_post_from_message(
     )
 
     actions.mark_message_as_processed(message_id)
-    actions.send_confirmation_to_user(response.result.post, notify_email)
+    actions.send_confirmation_to_user(response.result.post, notify_email, domain)

@@ -74,6 +74,13 @@ class SlackViewSet(viewsets.ViewSet):
             organization_id=request.slash_integration.organization_id,
         )
 
+        request.organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            return_object='organization',
+            client_kwargs={'token': request.token},
+        )
+
     # TODO should override handle_exception to return a text error to the user
     def slash(self, request, *args, **kwargs):
         return handlers.handle_hook(request)

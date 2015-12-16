@@ -14,7 +14,7 @@ from hooks.helpers import get_post_resource_url
 
 logger = logging.getLogger(__name__)
 
-SourceDetails = namedtuple('SourceDetails', ('email', 'profile_id', 'organization_id'))
+SourceDetails = namedtuple('SourceDetails', ('email', 'profile_id', 'organization_id', 'domain'))
 
 
 def _get_boto_client(client_type, **kwargs):
@@ -62,6 +62,7 @@ def get_details_for_source(domain, source):
             email=source,
             profile_id=response.result.profile_id,
             organization_id=response.result.organization_id,
+            domain=domain,
         )
 
 
@@ -168,11 +169,11 @@ def mark_message_as_processed(message_id):
         raise ValueError('Unknown response: %s' % (response,))
 
 
-def send_confirmation_to_user(post, user_email):
+def send_confirmation_to_user(post, user_email, domain):
     # XXX move this to the notification service
     client = _get_boto_client('ses', region_name=settings.EMAIL_SES_REGION)
     subject = 'Knowledge Published - %s' % (post.title,)
-    post_url = get_post_resource_url(post)
+    post_url = get_post_resource_url(domain, post)
     # XXX say "hey <persons name>"
     # XXX get their subdomain link
     message = (

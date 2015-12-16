@@ -8,7 +8,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 import json
-import logging
 import os
 import sys
 
@@ -18,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 ALLOWED_HOSTS = ['.local.lunohq.com', 'services']
 
 SERVICES_HOSTNAME = 'api.local.lunohq.com:8000'
-FRONTEND_URL = 'http://local.lunohq.com:9110'
+FRONTEND_URL = 'http://local.lunohq.com:3000'
 AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.local.lunohq.com'
 # max age of the cookie in seconds
 AUTHENTICATION_TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
