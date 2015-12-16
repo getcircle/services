@@ -76,6 +76,9 @@ class Test(MockedTestCase):
         call_kwargs = patched_boto.client.call_args[1]
         self.assertEqual(call_kwargs['region_name'], settings.AWS_REGION_NAME)
 
+        call_kwargs = patched_boto.client().verify_domain_identity.call_args[1]
+        self.assertEqual(call_kwargs['Domain'], 'example.dev.lunohq.com')
+
         call_kwargs = patched_boto.client().change_resource_record_sets.call_args[1]
         self.assertEqual(call_kwargs['HostedZoneId'], settings.AWS_HOSTED_ZONE_ID)
         action = call_kwargs['ChangeBatch']['Changes'][0]
