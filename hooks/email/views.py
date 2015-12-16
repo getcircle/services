@@ -49,6 +49,7 @@ class ProcessEmailView(APIView):
             organization_id=request.source.organization_id,
             by_profile_id=request.source.profile_id,
             notify_email=request.source.email,
+            domain=request.source.domain,
             draft=False,
         )
         return Response()

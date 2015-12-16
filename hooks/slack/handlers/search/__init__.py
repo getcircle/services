@@ -29,7 +29,7 @@ def handle_search(request, text):
     )
     attachments = []
     for result in results:
-        attachment = actions.result_to_slack_attachment(result)
+        attachment = actions.result_to_slack_attachment(request.organization.domain, result)
         if not attachment:
             logger.warn('no attachment found for: %s' % (protobuf_to_dict(result),))
             continue

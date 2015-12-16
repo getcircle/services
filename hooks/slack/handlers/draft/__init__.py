@@ -1,9 +1,7 @@
-import urlparse
-
-from django.conf import settings
 from rest_framework.response import Response
 import service.control
 
+from hooks.helpers import get_post_resource_url
 from . import actions
 
 LUNO_DRAFT_HELP = """
@@ -39,11 +37,5 @@ def handle_draft(request, text):
         client_kwargs={'token': request.token},
         post={'title': title, 'content': content},
     )
-    parsed_url = urlparse.urlparse(settings.FRONTEND_URL)
-    # XXX the frontend should support different actions, ie:
-        # post_created_from_slack or something so that we don't have to know
-        # about the URL structure of the app, we just send an event that
-        # happend and it needs to handle routing to the correct location
-    parsed_url = parsed_url._replace(path='/'.join(['post', post.id, 'edit']))
-    response_url = urlparse.urlunparse(parsed_url)
+    response_url = get_post_resource_url(request.organization.domain, post, edit=True)
     return Response({'text': 'Draft created: %s' % (response_url,)})

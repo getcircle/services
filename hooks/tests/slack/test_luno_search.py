@@ -25,6 +25,13 @@ class Test(MockedTestCase):
             profile_id=self.profile.id,
         )
         self.api = APIClient()
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_organization',
+            return_object=self.organization,
+            return_object_path='organization',
+            mock_regex_lookup='organization:get_organization.*',
+        )
 
     def _request_payload(self, **overrides):
         payload = {
@@ -54,11 +61,11 @@ class Test(MockedTestCase):
     def test_result_to_slack_attachment_profile(self):
         profile = mocks.mock_profile(display_title=fuzzy.FuzzyText().fuzz())
         result = mocks.mock_search_result(profile=profile)
-        attachment = actions.result_to_slack_attachment(result)
+        attachment = actions.result_to_slack_attachment(self.organization.domain, result)
         pretext = '%s (%s): %s' % (
             profile.full_name,
             profile.display_title,
-            actions.get_profile_resource_url(profile),
+            actions.get_profile_resource_url(self.organization.domain, profile),
         )
         self.assertEqual(attachment['fallback'], pretext)
         self.assertEqual(attachment['pretext'], pretext)
@@ -86,4 +93,7 @@ class Test(MockedTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         payload = json.loads(patched_requests.post.call_args[1]['data'])
         attachment = payload['attachments'][0]
-        self.assertEqual(actions.profile_to_slack_attachment(profile), attachment)
+        self.assertEqual(
+            actions.profile_to_slack_attachment(self.organization.domain, profile),
+            attachment,
+        )
