@@ -23,9 +23,10 @@ def _create_resource_record_sets(client, record_set, comment, hosted_zone_id):
     logger.info('%s:\n%s', comment, {'hosted_zone_id': hosted_zone_id, 'batch': batch})
     return client.change_resource_record_sets(HostedZoneId=hosted_zone_id, ChangeBatch=batch)
 
+
 def _boto_client(*args, **kwargs):
     kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
-    kwargs['aws_secret_access_kye'] = settings.AWS_SECRET_ACCESS_KEY
+    kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
     return boto3.client(*args, **kwargs)
 
 
