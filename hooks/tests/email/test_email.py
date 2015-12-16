@@ -10,6 +10,7 @@ from services.test import (
 )
 
 from hooks.email import actions
+from hooks.helpers import get_root_url
 from hooks.tasks import create_post_from_message
 from .helpers import (
     return_contents,
@@ -219,4 +220,11 @@ class Test(MockedTestCase):
         self.assertEqual(call_kwargs['Source'], '"Luno"<notifications@lunohq.com>')
         self.assertEqual(call_kwargs['Destination']['ToAddresses'][0], email)
         self.assertIn(post.title, call_kwargs['Message']['Subject']['Data'])
-        self.assertIn(post.title, call_kwargs['Message']['Body']['Text']['Data'])
+        body = call_kwargs['Message']['Body']['Text']['Data']
+        self.assertIn(post.title, body)
+        root_url = get_root_url(self.organization.domain)
+        self.assertIn(
+            ' %s ' % (root_url,),
+            body,
+            'Root URL should be a stand alone link within the body',
+        )
