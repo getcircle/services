@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 ALLOWED_HOSTS = ['.local.lunohq.com', 'services']
 
-SERVICES_HOSTNAME = 'localhost:8000'
+SERVICES_HOSTNAME = 'api.local.lunohq.com:8000'
 FRONTEND_URL = 'http://local.lunohq.com:9110'
 AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.local.lunohq.com'
 # max age of the cookie in seconds
@@ -244,7 +244,7 @@ USER_SERVICE_STATE_MAX_AGE = 60 * 5  # number of seconds to allow for state toke
 USER_SERVICE_FORCE_GOOGLE_AUTH = tuple()
 USER_SERVICE_FORCE_INTERNAL_AUTH = tuple()
 USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH = tuple()
-USER_SERVICE_SAML_AUTH_SUCCESS_REDIRECT_URI = 'http://lunohq.com:9110/auth'
+USER_SERVICE_SAML_AUTH_SUCCESS_REDIRECT_URI = 'http://local.lunohq.com:3000/auth'
 USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST = tuple(
     '^(https?://)?([A-Za-z0-9\-_]+\.)?(\w+\.)?(\w+\.)?lunohq\.com/auth$',
 )
