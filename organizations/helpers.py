@@ -64,7 +64,12 @@ def create_ses_verification_record_for_subdomain(subdomain):
     ses = _boto_client('ses', region_name=settings.AWS_REGION_NAME)
     fqn = _get_fqn(route53, subdomain, settings.AWS_HOSTED_ZONE_ID)
 
-    response = ses.verify_domain_identity(Domain=fqn)
+    # remove trailing ".", SES doesn't treat this as a valid domain
+    ses_fqn = fqn
+    if ses_fqn.endswith('.'):
+        ses_fqn = ses_fqn[:-1]
+
+    response = ses.verify_domain_identity(Domain=ses_fqn)
     verification_token = response['VerificationToken']
 
     record_set = {
