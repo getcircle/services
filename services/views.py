@@ -55,11 +55,7 @@ class ServicesView(APIView):
             content_type='application/x-protobuf',
         )
         if not request.auth and service_response.control.token:
-            set_authentication_cookie(
-                response,
-                service_response.control.token,
-                secure=request.is_secure(),
-            )
+            set_authentication_cookie(response, service_response.control.token)
         elif service_request.control.token and not service_response.control.token:
             delete_authentication_cookie(response)
         return response

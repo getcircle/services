@@ -21,6 +21,7 @@ FRONTEND_URL = 'http://local.lunohq.com:3000'
 AUTHENTICATION_TOKEN_COOKIE_DOMAIN = '.local.lunohq.com'
 # max age of the cookie in seconds
 AUTHENTICATION_TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
+AUTHENTICATION_TOKEN_COOKIE_SECURE = False
 
 SECRET_KEY = '5rvaf1tsov&kdz!xp-x3785dc0xdmd+gh+#%-nl3ep-!e+ngot'
 SECRET_ENCRYPTION_KEY_V1 = 'q5pFzPB9HgB5IUSrgcuyW94aPLJT_jUcegb-jBdAhTQ='

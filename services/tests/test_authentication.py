@@ -1,5 +1,9 @@
 from django.conf import settings
-from django.test import Client
+from django.test import (
+    Client,
+    override_settings,
+)
+
 import mock
 from service.control import Client as SOAClient
 from service_protobufs import soa_pb2
@@ -57,6 +61,27 @@ class Test(TestCase):
         self.assertEqual(cookie.get('path'), '/')
         self.assertTrue(cookie.get('httponly'))
         self.assertEqual(cookie.get('max-age'), settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE)
+        self.assertFalse(cookie.get('secure'))
+
+    @override_settings(AUTHENTICATION_TOKEN_COOKIE_SECURE=True)
+    @mock.patch('services.views.import_string')
+    def test_successful_authentication_sets_cookie_secure(self, patched):
+        expected_token = mocks.mock_token()
+        patched_transport = patched()
+        patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
+            control=soa_pb2.ControlV1(token=expected_token),
+        )
+        soa_client = SOAClient('user')
+        request = soa_client._build_request('authenticate_user')
+        response = self._send_request(request)
+        cookie = response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
+        self.assertTrue(cookie)
+        self.assertEqual(cookie.value, expected_token)
+        self.assertEqual(cookie.get('domain'), settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN)
+        self.assertEqual(cookie.get('path'), '/')
+        self.assertTrue(cookie.get('httponly'))
+        self.assertEqual(cookie.get('max-age'), settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE)
+        self.assertTrue(cookie.get('secure'))
 
     @mock.patch('services.views.import_string')
     def test_authenticated_request(self, patched):
