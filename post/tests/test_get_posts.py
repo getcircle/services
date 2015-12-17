@@ -177,4 +177,4 @@ class TestPosts(MockedTestCase):
             content=content
         )
         response = self.client.call_action('get_posts', all_states=True, full_content=True)
-        self.assertEqual(len(response.result.posts[0].content), len(content))
+        self.assertEqual(response.result.posts[0].content, content)
