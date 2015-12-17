@@ -116,13 +116,13 @@ class OrganizationTokenAuthentication(BaseAuthentication):
         return 'Organization Token'
 
 
-def set_authentication_cookie(response, token, secure=True):
+def set_authentication_cookie(response, token):
     response.set_cookie(
         AUTHENTICATION_TOKEN_COOKIE_KEY,
         value=token,
         domain=settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
         httponly=True,
-        secure=secure,
+        secure=settings.AUTHENTICATION_TOKEN_COOKIE_SECURE,
         max_age=settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE,
     )
     logger.info('SETTING AUTHENTICATION COOKIE: %s', response.cookies.output())
