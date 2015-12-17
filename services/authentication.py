@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from rest_framework import exceptions
 from rest_framework.authentication import (
@@ -8,6 +10,8 @@ from rest_framework.authentication import (
 from users.models import Token as UserToken
 from organizations.models import Token as OrganizationToken
 from .token import parse_token
+
+logger = logging.getLogger(__name__)
 
 
 AUTHENTICATION_TOKEN_COOKIE_KEY = 'atv1'
@@ -121,6 +125,7 @@ def set_authentication_cookie(response, token, secure=True):
         secure=secure,
         max_age=settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE,
     )
+    logger.info('SETTING AUTHENTICATION COOKIE: %s', response.cookies.output())
 
 
 def delete_authentication_cookie(response):
