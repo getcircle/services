@@ -164,7 +164,11 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
         self.paginated_response(
             self.response.posts,
             posts,
-            lambda item, container: item.to_protobuf(container.add()),
+            lambda item, container: item.to_protobuf(
+                container.add(),
+                inflations=self.request.inflations,
+                token=self.token,
+            ),
         )
 
 
