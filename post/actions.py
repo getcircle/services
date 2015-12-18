@@ -126,7 +126,7 @@ class GetPost(PostPermissionsMixin, actions.Action):
         if unlisted and not is_author:
             raise self.PermissionDenied()
 
-        post.to_protobuf(self.response.post, inflations=self.request.inflations, token=self.token)
+        post.to_protobuf(self.response.post, inflations=self.request.inflations, token=self.token, fields=self.request.fields)
         self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 
@@ -164,7 +164,7 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
         self.paginated_response(
             self.response.posts,
             posts,
-            lambda item, container: item.to_protobuf(container.add(), content=(item.content if self.request.full_content else item.content[:80])),
+            lambda item, container: item.to_protobuf(container.add(), fields=self.request.fields),
         )
 
 

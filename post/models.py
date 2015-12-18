@@ -79,9 +79,11 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
         return overrides
 
-    def to_protobuf(self, protobuf=None, inflations=None, token=None, **overrides):
+    def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, overrides, token)
+        if utils.should_populate_field('snippet', fields):
+            overrides['snippet'] = self.content[:80]
         return super(Post, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
 

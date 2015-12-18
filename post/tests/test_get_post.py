@@ -142,3 +142,13 @@ class TestPosts(MockedTestCase):
         self.assertEqual(len(response.result.post.files), len(attachments))
         for f in response.result.post.files:
             self.assertTrue(f.source_url)
+
+    def test_get_post_snippet(self):
+        profile = mocks.mock_profile(organization_id=self.organization.id)
+        post = factories.PostFactory.create(
+            profile=profile,
+            state=post_containers.LISTED,
+            content='Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus quis aliquam ipsum, egestas vulputate libero. In rutrum tristique ligula, at tristique lorem euismod sed. Vivamus quis posuere metus.'
+        )
+        response = self.client.call_action('get_post', id=str(post.id))
+        self.assertEqual(len(response.result.post.snippet), 80)
