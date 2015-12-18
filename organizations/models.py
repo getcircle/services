@@ -17,7 +17,6 @@ from protobufs.services.organization.containers import integration_pb2
 from timezone_field import TimeZoneField
 
 from services.fields import DescriptionField
-from services.utils import should_inflate_field
 
 
 class LTreeField(models.Field):
@@ -167,11 +166,14 @@ class Location(models.UUIDModel, models.TimestampableModel):
         )
 
     def _inflate(self, protobuf, inflations, overrides, token):
-        if 'profile_count' not in overrides and should_inflate_field('profile_count', inflations):
+        if (
+            'profile_count' not in overrides and
+            utils.should_inflate_field('profile_count', inflations)
+        ):
             overrides['profile_count'] = self.members.count()
 
         if self.description and self.description.by_profile_id:
-            if token and should_inflate_field('description.by_profile_id', inflations):
+            if token and utils.should_inflate_field('description.by_profile_id', inflations):
                 by_profile = service.control.get_object(
                     'profile',
                     'get_profile',
