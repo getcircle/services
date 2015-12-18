@@ -1,3 +1,4 @@
+from common import utils
 import django.db
 from django.db.models import Count
 from django.utils import timezone
@@ -14,7 +15,6 @@ import service.control
 from services.history import action_container_for_update
 from services.mixins import PreRunParseTokenMixin
 from services.token import parse_token
-from services import utils
 from . import models
 from .mixins import (
     LocationPermissionsMixin,

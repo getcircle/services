@@ -6,8 +6,6 @@ import django.db
 from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 
-from services.utils import should_inflate_field
-
 
 class Tag(models.UUIDModel, models.TimestampableModel):
 
@@ -79,7 +77,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
     def _inflate(self, protobuf, inflations, overrides, token=None):
         if 'contact_methods' not in overrides:
-            if should_inflate_field('contact_methods', inflations):
+            if utils.should_inflate_field('contact_methods', inflations):
                 overrides['contact_methods'] = self.contact_methods.all()
 
         for method in overrides.pop('contact_methods', None) or []:
@@ -87,7 +85,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             method.to_protobuf(container)
 
         if 'display_title' not in overrides:
-            if should_inflate_field('display_title', inflations) and token:
+            if utils.should_inflate_field('display_title', inflations) and token:
                 overrides['display_title'] = self._get_display_title(token)
 
         return overrides
