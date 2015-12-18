@@ -643,9 +643,4 @@ class Test(ESTestCase):
             query='Arbiter',
             category=search_pb2.POSTS,
         )
-        results_have_content = False
-        for result in response.result.results:
-            post = result.post
-            if len(post.content) > 0:
-                results_have_content = True
-        self.assertFalse(results_have_content)
+        self.assertFalse(any([result.post.content for result in response.result.results]))
