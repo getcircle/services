@@ -117,29 +117,10 @@ class OrganizationTokenAuthentication(BaseAuthentication):
         return 'Organization Token'
 
 
-def _get_organization_domain(token):
-    organization = service.control.get_object(
-        service='organization',
-        action='get_organization',
-        client_kwargs={'token': token},
-        return_object='organization',
-        fields={'only': ['domain']},
-        inflations={'disabled': True},
-    )
-    return organization.domain
-
-
-def get_authentication_cookie_domain(token):
-    organization_domain = _get_organization_domain(token)
-    return '%s.%s' % (organization_domain, settings.AUTHENTICATION_TOKEN_COOKIE_BASE_DOMAIN)
-
-
 def set_authentication_cookie(response, token):
-    domain = get_authentication_cookie_domain(token)
     response.set_cookie(
         AUTHENTICATION_TOKEN_COOKIE_KEY,
         value=token,
-        domain=domain,
         httponly=True,
         secure=settings.AUTHENTICATION_TOKEN_COOKIE_SECURE,
         max_age=settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE,
@@ -147,7 +128,4 @@ def set_authentication_cookie(response, token):
 
 
 def delete_authentication_cookie(response, token=None):
-    domain = None
-    if token:
-        domain = get_authentication_cookie_domain(token)
-    response.delete_cookie(AUTHENTICATION_TOKEN_COOKIE_KEY, domain=domain)
+    response.delete_cookie(AUTHENTICATION_TOKEN_COOKIE_KEY)
