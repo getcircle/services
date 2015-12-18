@@ -79,8 +79,7 @@ def update_direct_reports(manager_profile_id, organization_id):
         client_kwargs={'token': make_admin_token(organization_id=organization_id)},
         profile_id=manager_profile_id,
     )
-    direct_reports_profile_id_strs = [str(profile_id) for profile_id in direct_reports_profile_ids]
-    update_profiles.delay(direct_reports_profile_id_strs, organization_id)
+    update_profiles.delay(direct_reports_profile_ids, organization_id)
 
 
 @app.task
