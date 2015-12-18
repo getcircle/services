@@ -423,7 +423,7 @@ class Test(ESTestCase):
         )
 
     def test_search_category_locations(self):
-        # verify a normal search returns a person
+        # verify a normal search returns a post
         response = self.client.call_action('search_v2', query='San Francisco')
         self.assertTrue(sum(result.HasField('post') for result in response.result.results) > 0)
 
