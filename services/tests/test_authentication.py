@@ -12,16 +12,24 @@ from users.factories import TokenFactory
 
 from ..test import (
     mocks,
-    TestCase,
+    MockedTestCase,
 )
 from ..authentication import AUTHENTICATION_TOKEN_COOKIE_KEY
 
 
-class Test(TestCase):
+class Test(MockedTestCase):
 
     def setUp(self):
-        super(TestCase, self).setUp()
+        super(Test, self).setUp()
         self.client = Client()
+        self.organization = mocks.mock_organization()
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_organization',
+            return_object=self.organization,
+            return_object_path='organization',
+            mock_regex_lookup='organization:get_organization.*',
+        )
 
     def _send_request(self, request, **kwargs):
         return self.client.post(
@@ -46,7 +54,7 @@ class Test(TestCase):
 
     @mock.patch('services.views.import_string')
     def test_successful_authentication_sets_cookie(self, patched):
-        expected_token = mocks.mock_token()
+        expected_token = mocks.mock_token(organization_id=self.organization.id)
         patched_transport = patched()
         patched_transport.process_request.return_value = soa_pb2.ServiceResponseV1(
             control=soa_pb2.ControlV1(token=expected_token),
@@ -57,7 +65,11 @@ class Test(TestCase):
         cookie = response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
         self.assertTrue(cookie)
         self.assertEqual(cookie.value, expected_token)
-        self.assertEqual(cookie.get('domain'), settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN)
+        expected_domain = '%s.%s' % (
+            self.organization.domain,
+            settings.AUTHENTICATION_TOKEN_COOKIE_BASE_DOMAIN,
+        )
+        self.assertEqual(cookie.get('domain'), expected_domain)
         self.assertEqual(cookie.get('path'), '/')
         self.assertTrue(cookie.get('httponly'))
         self.assertEqual(cookie.get('max-age'), settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE)
@@ -77,7 +89,12 @@ class Test(TestCase):
         cookie = response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
         self.assertTrue(cookie)
         self.assertEqual(cookie.value, expected_token)
-        self.assertEqual(cookie.get('domain'), settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN)
+
+        expected_domain = '%s.%s' % (
+            self.organization.domain,
+            settings.AUTHENTICATION_TOKEN_COOKIE_BASE_DOMAIN,
+        )
+        self.assertEqual(cookie.get('domain'), expected_domain)
         self.assertEqual(cookie.get('path'), '/')
         self.assertTrue(cookie.get('httponly'))
         self.assertEqual(cookie.get('max-age'), settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE)
