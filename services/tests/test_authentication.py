@@ -65,11 +65,6 @@ class Test(MockedTestCase):
         cookie = response.cookies.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
         self.assertTrue(cookie)
         self.assertEqual(cookie.value, expected_token)
-        expected_domain = '%s.%s' % (
-            self.organization.domain,
-            settings.AUTHENTICATION_TOKEN_COOKIE_BASE_DOMAIN,
-        )
-        self.assertEqual(cookie.get('domain'), expected_domain)
         self.assertEqual(cookie.get('path'), '/')
         self.assertTrue(cookie.get('httponly'))
         self.assertEqual(cookie.get('max-age'), settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE)
@@ -90,11 +85,7 @@ class Test(MockedTestCase):
         self.assertTrue(cookie)
         self.assertEqual(cookie.value, expected_token)
 
-        expected_domain = '%s.%s' % (
-            self.organization.domain,
-            settings.AUTHENTICATION_TOKEN_COOKIE_BASE_DOMAIN,
-        )
-        self.assertEqual(cookie.get('domain'), expected_domain)
+        self.assertFalse(cookie.get('domain'))
         self.assertEqual(cookie.get('path'), '/')
         self.assertTrue(cookie.get('httponly'))
         self.assertEqual(cookie.get('max-age'), settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE)
