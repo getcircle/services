@@ -500,19 +500,19 @@ class Test(ESTestCase):
                 name: Marco de Almeida
                 email: mfa@acme.com
 
-        Searching for "Marco Almeida" should return profile 2 before profile 1.
+        Searching for "Marco Almeida" should return profile 2 as the top result.
         """
-        response = self.client.call_action('search_v2', query='marco almeida')
-        index_partial_email = -1
-        index_partial_name = -1
-        for index, result in enumerate(response.result.results):
-            profile = getattr(result, 'profile', {})
-            email = getattr(profile, 'email', '')
-            if email == 'marco@acme.com':
-                index_partial_email = index
-            elif email == 'mfa@acme.com':
-                index_partial_name = index
-        self.assertTrue(index_partial_email > index_partial_name)
+        response = self.client.call_action(
+            'search_v2',
+            query='marco almeida',
+            category=search_pb2.PROFILES,
+        )
+        self.verify_top_results(
+            'profile',
+            {'email': 'mfa@acme.com'},
+            response.result.results,
+            top_results=1,
+        )
 
     #def test_search_exact_email_match(self):
         #response = self.client.call_action('search_v2', query='marco@acme.com')
