@@ -425,14 +425,14 @@ class Test(ESTestCase):
     def test_search_category_locations(self):
         # verify a normal search returns a post
         response = self.client.call_action('search_v2', query='San Francisco')
-        self.assertTrue(sum(result.HasField('post') for result in response.result.results) > 0)
+        self.assertTrue(any([result.post.id for result in response.result.results]))
 
         response = self.client.call_action(
             'search_v2',
             query='San Francisco',
             category=search_pb2.LOCATIONS,
         )
-        self.assertTrue(sum(result.HasField('post') for result in response.result.results) == 0)
+        self.assertFalse(any([result.post.id for result in response.result.results]))
 
     def test_search_category_posts(self):
         # verify a normal search returns a person
