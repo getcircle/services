@@ -1,5 +1,6 @@
 import arrow
 from cacheops import cached_as
+from common import utils
 import django.db
 from django.db import connection
 from protobufs.services.search.containers import entity_pb2
@@ -11,7 +12,6 @@ from service import (
 
 from services.mixins import PreRunParseTokenMixin
 from services.token import make_admin_token
-from services.utils import should_inflate_field
 
 from . import (
     models,
@@ -298,7 +298,7 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
             'first_name',
             'last_name',
         )
-        if should_inflate_field('contact_methods', self.request.inflations):
+        if utils.should_inflate_field('contact_methods', self.request.inflations):
             profiles = profiles.prefetch_related('contact_methods')
 
         # remote calls have already been paginated, we don't want to overwrite their pagination
@@ -320,7 +320,7 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
                     display_title=None,
                 )
 
-        if should_inflate_field('display_title', self.request.inflations):
+        if utils.should_inflate_field('display_title', self.request.inflations):
             profiles_teams = self._get_profiles_teams(self.response.profiles)
             for profile in self.response.profiles:
                 self._populate_display_title(profile, profiles_teams)

@@ -4,8 +4,6 @@ import uuid
 
 import arrow
 from django.conf import settings
-from protobuf_to_dict import dict_to_protobuf
-from protobufs.services.common import containers_pb2 as common_containers
 import requests
 import service.control
 
@@ -34,22 +32,6 @@ def get_timezone_for_location(latitude, longitude):
     if not response.ok:
         raise ValueError('Failed to update timezone: %s' % (response.content,))
     return response.json()['timeZoneId']
-
-
-def should_inflate_field(field_name, inflations):
-    if isinstance(inflations, dict):
-        inflations = dict_to_protobuf(inflations, common_containers.InflationsV1)
-
-    should_inflate = True
-    if inflations:
-        if (
-            not inflations.enabled or
-            (inflations.exclude and field_name in inflations.exclude) or
-            (inflations.only and field_name not in inflations.only) or
-            inflations.disabled
-        ):
-            should_inflate = False
-    return should_inflate
 
 
 def build_slack_message(attachments, channel, username=None, icon_emoji=None):

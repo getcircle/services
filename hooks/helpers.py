@@ -20,3 +20,7 @@ def get_post_resource_url(domain, post, edit=False):
     if edit:
         path += '/edit'
     return _get_resource_url(domain, path)
+
+
+def get_root_url(domain):
+    return _get_resource_url(domain, '/')
