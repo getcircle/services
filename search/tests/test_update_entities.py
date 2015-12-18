@@ -115,7 +115,7 @@ class TestUpdateEntities(MockedTestCase):
             ids=[team.id],
         )
         tasks.update_teams([str(team.id)], str(team.organization_id))
-        self.assertEqual(patched_bulk.call_count, 1)
+        self.assertEqual(patched_bulk.call_count, 2)
 
         documents = patched_bulk.call_args_list[0][0][1]
         called_team = dict_to_protobuf(
@@ -198,3 +198,36 @@ class TestUpdateEntities(MockedTestCase):
             strict=False,
         )
         self.verify_containers(post, called_post)
+
+    @patch('search.tasks.bulk')
+    def test_tasks_update_direct_reports(self, patched_bulk):
+        manager = mocks.mock_profile()
+        direct_report = mocks.mock_profile(organization_id=manager.organization_id)
+        team = mocks.mock_team(manager_profile_id=manager.id, organization_id=manager.organization_id)
+
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_profile_reporting_details',
+            return_object=[direct_report.id],
+            return_object_path='direct_reports_profile_ids',
+            profile_id=manager.id,
+        )
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profiles',
+            return_object=[direct_report],
+            return_object_path='profiles',
+            ids=[direct_report.id],
+            inflations={'only': ['display_title']},
+        )
+
+        tasks.update_direct_reports(str(manager.id), str(manager.organization_id))
+        self.assertEqual(patched_bulk.call_count, 1)
+
+        documents = patched_bulk.call_args_list[0][0][1]
+        called_profile = dict_to_protobuf(
+            documents[0]['_source'],
+            profile_containers.ProfileV1,
+            strict=False,
+        )
+        self.verify_containers(direct_report, called_profile)
