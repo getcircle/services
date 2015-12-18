@@ -90,15 +90,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
 
         return overrides
 
-    def to_protobuf(
-            self,
-            protobuf=None,
-            strict=False,
-            extra=None,
-            inflations=None,
-            token=None,
-            **overrides
-        ):
+    def to_protobuf(self, protobuf=None, inflations=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, overrides, token)
 
@@ -109,7 +101,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             container.value = item[1]
 
         overrides['items'] = items
-        return super(Profile, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
+        return super(Profile, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
     def update_from_protobuf(self, protobuf):
         items = None

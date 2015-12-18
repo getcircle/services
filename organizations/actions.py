@@ -83,7 +83,10 @@ class GetOrganization(actions.Action):
         return models.Organization.objects.get(**parameters)
 
     def _populate_public_organization(self, organization):
-        organization.to_protobuf(self.response.organization, only=('image_url', 'domain', 'name'))
+        organization.to_protobuf(
+            self.response.organization,
+            fields={'only': ('image_url', 'domain', 'name')},
+        )
 
     def _populate_authenticated_organization(self, organization):
         # XXX THIS IS REALLY BAD!!! XXX
@@ -218,7 +221,7 @@ class GetTeamsForProfileIds(PreRunParseTokenMixin, actions.Action):
             container.profile_id = str(report.profile_id)
             team = team_dict.get(report.manager_id)
             if team:
-                container.team.CopyFrom(team.to_protobuf(only=self.request.fields.only))
+                container.team.CopyFrom(team.to_protobuf(fields=self.request.fields))
 
 
 class CreateLocation(PreRunParseTokenMixin, actions.Action):
