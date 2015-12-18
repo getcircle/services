@@ -64,17 +64,11 @@ class Team(models.UUIDModel, models.TimestampableModel):
     def get_description(self):
         return self.description or {}
 
-    def _should_populate_field(self, field, only):
-        if (only and field in only) or not only:
-            return True
-        return False
-
-    def to_protobuf(self, protobuf=None, strict=False, extra=None, token=None, **overrides):
+    def to_protobuf(self, protobuf=None, token=None, fields=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-        only = overrides.get('only')
 
         if (
-            self._should_populate_field('description', only) and
+            utils.should_populate_field('description', fields) and
             'description' not in overrides and
             self.description and
             self.description.by_profile_id
@@ -89,7 +83,10 @@ class Team(models.UUIDModel, models.TimestampableModel):
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 
-        if 'profile_count' not in overrides and self._should_populate_field('profile_count', only):
+        if (
+            'profile_count' not in overrides and
+            utils.should_populate_field('profile_count', fields)
+        ):
             manager = ReportingStructure.objects.get(
                 pk=self.manager_profile_id,
                 organization_id=self.organization_id,
@@ -103,7 +100,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
                     [child for child in children if child.get_descendant_count() > 0]
                 )
 
-        if self._should_populate_field('display_name', only):
+        if utils.should_populate_field('display_name', fields):
             if not self.name and 'name' not in overrides:
                 # XXX REALLY BAD!!! XXX
                 from profiles import models as profile_models
@@ -121,7 +118,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
             elif 'name' in overrides:
                 overrides['display_name'] = overrides['name']
 
-        return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
+        return super(Team, self).to_protobuf(protobuf, fields=fields, **overrides)
 
 
 class TeamStatus(models.UUIDModel, models.TimestampableModel):
@@ -184,18 +181,10 @@ class Location(models.UUIDModel, models.TimestampableModel):
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 
-    def to_protobuf(
-            self,
-            protobuf=None,
-            strict=False,
-            extra=None,
-            token=None,
-            inflations=None,
-            **overrides
-        ):
+    def to_protobuf(self, protobuf=None, inflations=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, overrides, token)
-        return super(Location, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
+        return super(Location, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
 
 class LocationMember(models.UUIDModel):

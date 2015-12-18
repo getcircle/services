@@ -31,7 +31,7 @@ class ProfileFactory(factory.Factory):
     @classmethod
     def get_protobuf_data(cls, **data):
         model = cls.build(**data)
-        return model.as_dict(exclude=('created', 'changed', 'items'))
+        return model.as_dict(fields={'exclude': ('created', 'changed', 'items')})
 
     @factory.post_generation
     def tags(self, create, extracted, **kwargs):

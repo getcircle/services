@@ -79,25 +79,10 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
         return overrides
 
-    def to_protobuf(
-            self,
-            protobuf=None,
-            strict=False,
-            extra=None,
-            inflations=None,
-            only=None,
-            token=None,
-            **overrides
-        ):
+    def to_protobuf(self, protobuf=None, inflations=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, overrides, token)
-        return super(Post, self).to_protobuf(
-            protobuf,
-            strict=strict,
-            extra=extra,
-            only=only,
-            **overrides
-        )
+        return super(Post, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
 
 class Attachment(models.UUIDModel, models.TimestampableModel):
