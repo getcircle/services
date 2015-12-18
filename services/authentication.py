@@ -6,6 +6,7 @@ from rest_framework.authentication import (
     BaseAuthentication,
     get_authorization_header,
 )
+import service.control
 
 from users.models import Token as UserToken
 from organizations.models import Token as OrganizationToken
@@ -116,20 +117,35 @@ class OrganizationTokenAuthentication(BaseAuthentication):
         return 'Organization Token'
 
 
+def _get_organization_domain(token):
+    organization = service.control.get_object(
+        service='organization',
+        action='get_organization',
+        client_kwargs={'token': token},
+        return_object='organization',
+        fields={'only': ['domain']},
+        inflations={'disabled': True},
+    )
+    return organization.domain
+
+
+def get_authentication_cookie_domain(token):
+    organization_domain = _get_organization_domain(token)
+    return '%s.%s' % (organization_domain, settings.AUTHENTICATION_TOKEN_COOKIE_BASE_DOMAIN)
+
+
 def set_authentication_cookie(response, token):
+    domain = get_authentication_cookie_domain(token)
     response.set_cookie(
         AUTHENTICATION_TOKEN_COOKIE_KEY,
         value=token,
-        domain=settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
+        domain=domain,
         httponly=True,
         secure=settings.AUTHENTICATION_TOKEN_COOKIE_SECURE,
         max_age=settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE,
     )
-    logger.info('SETTING AUTHENTICATION COOKIE: %s', response.cookies.output())
 
 
-def delete_authentication_cookie(response):
-    response.delete_cookie(
-        AUTHENTICATION_TOKEN_COOKIE_KEY,
-        domain=settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
-    )
+def delete_authentication_cookie(response, token):
+    domain = get_authentication_cookie_domain(token)
+    response.delete_cookie(AUTHENTICATION_TOKEN_COOKIE_KEY, domain=domain)

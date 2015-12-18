@@ -57,7 +57,7 @@ class ServicesView(APIView):
         if not request.auth and service_response.control.token:
             set_authentication_cookie(response, service_response.control.token)
         elif service_request.control.token and not service_response.control.token:
-            delete_authentication_cookie(response)
+            delete_authentication_cookie(response, service_request.control.token)
         return response
 
     def get(self, request, *args, **kwargs):
