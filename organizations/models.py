@@ -34,6 +34,37 @@ class Organization(models.UUIDModel, models.TimestampableModel):
     domain = models.CharField(max_length=64, unique=True)
     image_url = models.URLField(max_length=255, null=True)
 
+    def _inflate(self, protobuf, inflations, overrides):
+        if 'team_count' not in overrides and utils.should_inflate_field('team_count', inflations):
+            overrides['team_count'] = Team.objects.filter(organization_id=self.id).count()
+
+        if 'post_count' not in overrides and utils.should_inflate_field('post_count', inflations):
+            # XXX THIS IS REALLY BAD!!! XXX
+            from post import models as post_models
+            overrides['post_count'] = post_models.Post.objects.filter(
+                organization_id=self.id,
+            ).count()
+
+        if (
+            'profile_count' not in overrides and
+            utils.should_inflate_field('profile_count', inflations)
+        ):
+            from profiles import models as profile_models
+            overrides['profile_count'] = profile_models.Profile.objects.filter(
+                organization_id=self.id,
+            ).count()
+
+        if (
+            'location_count' not in overrides and
+            utils.should_inflate_field('location_count', inflations)
+        ):
+            overrides['location_count'] = Location.objects.filter(organization_id=self.id).count()
+
+    def to_protobuf(self, protobuf=None, inflations=None, **overrides):
+        protobuf = self.new_protobuf_container(protobuf)
+        self._inflate(protobuf, inflations, overrides)
+        return super(Organization, self).to_protobuf(protobuf, inflations=inflations, **overrides)
+
 
 class ReportingStructure(MPTTModel, models.TimestampableModel):
 

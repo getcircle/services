@@ -82,36 +82,20 @@ class GetOrganization(actions.Action):
             parameters['pk'] = parsed_token.organization_id
         return models.Organization.objects.get(**parameters)
 
-    def _populate_public_organization(self, organization):
-        organization.to_protobuf(
-            self.response.organization,
-            fields={'only': ('image_url', 'domain', 'name')},
-        )
-
-    def _populate_authenticated_organization(self, organization):
-        # XXX THIS IS REALLY BAD!!! XXX
-        from post import models as post_models
-        from profiles import models as profile_models
-        team_count = models.Team.objects.filter(organization_id=organization.id).count()
-        post_count = post_models.Post.objects.filter(organization_id=organization.id).count()
-        profile_count = profile_models.Profile.objects.filter(
-            organization_id=organization.id,
-        ).count()
-        location_count = models.Location.objects.filter(organization_id=organization.id).count()
-        organization.to_protobuf(
-            self.response.organization,
-            team_count=team_count,
-            post_count=post_count,
-            profile_count=profile_count,
-            location_count=location_count,
-        )
-
     def run(self, *args, **kwargs):
-        model = self._get_organization()
+        organization = self._get_organization()
         if self.token:
-            self._populate_authenticated_organization(model)
+            organization.to_protobuf(
+                self.response.organization,
+                fields=self.request.fields,
+                inflations=self.request.inflations,
+            )
         else:
-            self._populate_public_organization(model)
+            organization.to_protobuf(
+                self.response.organization,
+                fields={'only': ('image_url', 'domain', 'name')},
+                inflations={'disabled': True},
+            )
 
 
 class UpdateTeam(TeamPermissionsMixin, actions.Action):
