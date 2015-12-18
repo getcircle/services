@@ -8,6 +8,7 @@ from protobufs.services.profile import containers_pb2 as profile_containers
 from ..base import BaseDocType
 from ...analysis import (
     edge_ngram_tokenizer_v1,
+    parens_char_filter_v1,
     raw_search,
 )
 
@@ -21,6 +22,7 @@ display_title_analyzer_v1 = analyzer(
     'profile_display_title_analyzer_v1',
     tokenizer=edge_ngram_tokenizer_v1,
     filter=['standard', 'lowercase'],
+    char_filter=[parens_char_filter_v1],
 )
 
 email_analyzer_v1 = analyzer(

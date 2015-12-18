@@ -1,5 +1,6 @@
 from elasticsearch_dsl import (
     analyzer,
+    char_filter,
     token_filter,
     tokenizer,
 )
@@ -43,4 +44,10 @@ raw_analyzer_v1 = analyzer(
     'raw_analyzer_v1',
     tokenizer='keyword',
     filter=['standard', 'lowercase'],
+)
+
+parens_char_filter_v1 = char_filter(
+    'parens_char_filter_v1',
+    type='mapping',
+    mappings=['(=>', ')=>'],
 )
