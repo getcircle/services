@@ -146,6 +146,8 @@ def set_authentication_cookie(response, token):
     )
 
 
-def delete_authentication_cookie(response, token):
-    domain = get_authentication_cookie_domain(token)
+def delete_authentication_cookie(response, token=None):
+    domain = None
+    if token:
+        domain = get_authentication_cookie_domain(token)
     response.delete_cookie(AUTHENTICATION_TOKEN_COOKIE_KEY, domain=domain)
