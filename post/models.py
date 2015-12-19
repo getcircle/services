@@ -84,7 +84,7 @@ class Post(models.UUIDModel, models.TimestampableModel):
         self._inflate(protobuf, inflations, overrides, token)
         if utils.should_populate_field('snippet', fields):
             overrides['snippet'] = self.content[:80]
-        return super(Post, self).to_protobuf(protobuf, inflations=inflations, **overrides)
+        return super(Post, self).to_protobuf(protobuf, inflations=inflations, fields=fields, **overrides)
 
 
 class Attachment(models.UUIDModel, models.TimestampableModel):
