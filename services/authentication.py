@@ -1,13 +1,18 @@
+import logging
+
 from django.conf import settings
 from rest_framework import exceptions
 from rest_framework.authentication import (
     BaseAuthentication,
     get_authorization_header,
 )
+import service.control
 
 from users.models import Token as UserToken
 from organizations.models import Token as OrganizationToken
 from .token import parse_token
+
+logger = logging.getLogger(__name__)
 
 
 AUTHENTICATION_TOKEN_COOKIE_KEY = 'atv1'
@@ -112,19 +117,15 @@ class OrganizationTokenAuthentication(BaseAuthentication):
         return 'Organization Token'
 
 
-def set_authentication_cookie(response, token, secure=True):
+def set_authentication_cookie(response, token):
     response.set_cookie(
         AUTHENTICATION_TOKEN_COOKIE_KEY,
         value=token,
-        domain=settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
         httponly=True,
-        secure=secure,
+        secure=settings.AUTHENTICATION_TOKEN_COOKIE_SECURE,
         max_age=settings.AUTHENTICATION_TOKEN_COOKIE_MAX_AGE,
     )
 
 
-def delete_authentication_cookie(response):
-    response.delete_cookie(
-        AUTHENTICATION_TOKEN_COOKIE_KEY,
-        domain=settings.AUTHENTICATION_TOKEN_COOKIE_DOMAIN,
-    )
+def delete_authentication_cookie(response, token=None):
+    response.delete_cookie(AUTHENTICATION_TOKEN_COOKIE_KEY)

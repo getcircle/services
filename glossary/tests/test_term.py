@@ -44,13 +44,13 @@ class TestGlossaryTerm(TestCase):
         with self.assertFieldError('term.name', 'MISSING'):
             self.client.call_action(
                 'create_term',
-                term=term.as_dict(exclude=('name',)),
+                term=term.as_dict(fields={'exclude': ('name',)}),
             )
 
         with self.assertFieldError('term.definition', 'MISSING'):
             self.client.call_action(
                 'create_term',
-                term=term.as_dict(exclude=('definition',)),
+                term=term.as_dict(fields={'exclude': ('definition',)}),
             )
 
     def test_create_term(self):
@@ -84,19 +84,19 @@ class TestGlossaryTerm(TestCase):
         with self.assertFieldError('term.id', 'MISSING'):
             self.client.call_action(
                 'update_term',
-                term=term.as_dict(exclude=('id',)),
+                term=term.as_dict(fields={'exclude': ('id',)}),
             )
 
         with self.assertFieldError('term.name', 'MISSING'):
             self.client.call_action(
                 'update_term',
-                term=term.as_dict(exclude=('name',)),
+                term=term.as_dict(fields={'exclude': ('name',)}),
             )
 
         with self.assertFieldError('term.definition', 'MISSING'):
             self.client.call_action(
                 'update_term',
-                term=term.as_dict(exclude=('definition',)),
+                term=term.as_dict(fields={'exclude': ('definition',)}),
             )
 
     def test_update_term(self):

@@ -1,14 +1,8 @@
 from elasticsearch_dsl import (
     analyzer,
+    char_filter,
     token_filter,
     tokenizer,
-)
-
-edge_ngram_max_gram_20 = token_filter(
-    'edge_ngram_max_gram_20',
-    type='edgeNGram',
-    min_gram=1,
-    max_gram=20,
 )
 
 edge_ngram_tokenizer_v1 = tokenizer(
@@ -50,4 +44,10 @@ raw_analyzer_v1 = analyzer(
     'raw_analyzer_v1',
     tokenizer='keyword',
     filter=['standard', 'lowercase'],
+)
+
+parens_char_filter_v1 = char_filter(
+    'parens_char_filter_v1',
+    type='mapping',
+    mappings=['(=>', ')=>'],
 )

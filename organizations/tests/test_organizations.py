@@ -58,3 +58,12 @@ class OrganizationTests(MockedTestCase):
         expected = factories.OrganizationFactory.create_protobuf()
         response = self.client.call_action('get_organization', domain=expected.domain)
         self.verify_containers(expected, response.result.organization)
+
+    def test_get_organization_only_fetch_domain(self):
+        expected_organization = factories.OrganizationFactory.create_protobuf()
+        self.client.token = make_admin_token(organization_id=expected_organization.id)
+        response = self.client.call_action('get_organization', fields={'only': ['domain']})
+        organization = response.result.organization
+        self.assertEqual(organization.domain, expected_organization.domain)
+        self.assertFalse(organization.name)
+        self.assertFalse(organization.id)

@@ -10,7 +10,10 @@ from protobufs.services.post import containers_pb2 as post_containers
 import service.control
 import tldextract
 
-from hooks.helpers import get_post_resource_url
+from hooks.helpers import (
+    get_post_resource_url,
+    get_root_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +177,7 @@ def send_confirmation_to_user(post, user_email, domain):
     client = _get_boto_client('ses', region_name=settings.EMAIL_SES_REGION)
     subject = 'Knowledge Published - %s' % (post.title,)
     post_url = get_post_resource_url(domain, post)
+    root_url = get_root_url(domain)
     # XXX say "hey <persons name>"
     # XXX get their subdomain link
     message = (
@@ -181,10 +185,11 @@ def send_confirmation_to_user(post, user_email, domain):
         'knowledge from email. You can view and edit "%(title)s" on Luno here: %(resource_url)s.'
         '\n\nStep 2 is to scale yourself. The next time someone asks you about "%(title)s", '
         'don\'t waste energy finding and fowarding the email. Instead, politely refer them to '
-        'https://www.lunohq.com and tell them to search for it.\n\nCheers,\nLuno'
+        '%(root_url)s and tell them to search for it.\n\nCheers,\nLuno'
     ) % {
         'title': post.title,
         'resource_url': post_url,
+        'root_url': root_url,
     }
     client.send_email(
         Source='"Luno"<%s>' % (settings.EMAIL_HOOK_NOTIFICATION_FROM_ADDRESS,),

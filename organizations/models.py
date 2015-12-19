@@ -17,7 +17,6 @@ from protobufs.services.organization.containers import integration_pb2
 from timezone_field import TimeZoneField
 
 from services.fields import DescriptionField
-from services.utils import should_inflate_field
 
 
 class LTreeField(models.Field):
@@ -34,6 +33,37 @@ class Organization(models.UUIDModel, models.TimestampableModel):
     name = models.CharField(max_length=64)
     domain = models.CharField(max_length=64, unique=True)
     image_url = models.URLField(max_length=255, null=True)
+
+    def _inflate(self, protobuf, inflations, overrides):
+        if 'team_count' not in overrides and utils.should_inflate_field('team_count', inflations):
+            overrides['team_count'] = Team.objects.filter(organization_id=self.id).count()
+
+        if 'post_count' not in overrides and utils.should_inflate_field('post_count', inflations):
+            # XXX THIS IS REALLY BAD!!! XXX
+            from post import models as post_models
+            overrides['post_count'] = post_models.Post.objects.filter(
+                organization_id=self.id,
+            ).count()
+
+        if (
+            'profile_count' not in overrides and
+            utils.should_inflate_field('profile_count', inflations)
+        ):
+            from profiles import models as profile_models
+            overrides['profile_count'] = profile_models.Profile.objects.filter(
+                organization_id=self.id,
+            ).count()
+
+        if (
+            'location_count' not in overrides and
+            utils.should_inflate_field('location_count', inflations)
+        ):
+            overrides['location_count'] = Location.objects.filter(organization_id=self.id).count()
+
+    def to_protobuf(self, protobuf=None, inflations=None, **overrides):
+        protobuf = self.new_protobuf_container(protobuf)
+        self._inflate(protobuf, inflations, overrides)
+        return super(Organization, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
 
 class ReportingStructure(MPTTModel, models.TimestampableModel):
@@ -65,17 +95,11 @@ class Team(models.UUIDModel, models.TimestampableModel):
     def get_description(self):
         return self.description or {}
 
-    def _should_populate_field(self, field, only):
-        if (only and field in only) or not only:
-            return True
-        return False
-
-    def to_protobuf(self, protobuf=None, strict=False, extra=None, token=None, **overrides):
+    def to_protobuf(self, protobuf=None, token=None, fields=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-        only = overrides.get('only')
 
         if (
-            self._should_populate_field('description', only) and
+            utils.should_populate_field('description', fields) and
             'description' not in overrides and
             self.description and
             self.description.by_profile_id
@@ -90,7 +114,10 @@ class Team(models.UUIDModel, models.TimestampableModel):
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 
-        if 'profile_count' not in overrides and self._should_populate_field('profile_count', only):
+        if (
+            'profile_count' not in overrides and
+            utils.should_populate_field('profile_count', fields)
+        ):
             manager = ReportingStructure.objects.get(
                 pk=self.manager_profile_id,
                 organization_id=self.organization_id,
@@ -104,7 +131,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
                     [child for child in children if child.get_descendant_count() > 0]
                 )
 
-        if self._should_populate_field('display_name', only):
+        if utils.should_populate_field('display_name', fields):
             if not self.name and 'name' not in overrides:
                 # XXX REALLY BAD!!! XXX
                 from profiles import models as profile_models
@@ -122,7 +149,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
             elif 'name' in overrides:
                 overrides['display_name'] = overrides['name']
 
-        return super(Team, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
+        return super(Team, self).to_protobuf(protobuf, fields=fields, **overrides)
 
 
 class TeamStatus(models.UUIDModel, models.TimestampableModel):
@@ -167,11 +194,14 @@ class Location(models.UUIDModel, models.TimestampableModel):
         )
 
     def _inflate(self, protobuf, inflations, overrides, token):
-        if 'profile_count' not in overrides and should_inflate_field('profile_count', inflations):
+        if (
+            'profile_count' not in overrides and
+            utils.should_inflate_field('profile_count', inflations)
+        ):
             overrides['profile_count'] = self.members.count()
 
         if self.description and self.description.by_profile_id:
-            if token and should_inflate_field('description.by_profile_id', inflations):
+            if token and utils.should_inflate_field('description.by_profile_id', inflations):
                 by_profile = service.control.get_object(
                     'profile',
                     'get_profile',
@@ -182,18 +212,10 @@ class Location(models.UUIDModel, models.TimestampableModel):
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 
-    def to_protobuf(
-            self,
-            protobuf=None,
-            strict=False,
-            extra=None,
-            token=None,
-            inflations=None,
-            **overrides
-        ):
+    def to_protobuf(self, protobuf=None, inflations=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, overrides, token)
-        return super(Location, self).to_protobuf(protobuf, strict=strict, extra=extra, **overrides)
+        return super(Location, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
 
 class LocationMember(models.UUIDModel):
