@@ -621,7 +621,7 @@ class Test(ESTestCase):
             category=search_pb2.POSTS,
         )
         hit = response.result.results[0]
-        self.assertIn('<mark>Arbit</mark>er?', hit.highlight['title'])
+        self.assertIn('<mark>Arbit</mark>er', hit.highlight['title'])
 
     def test_search_post_title_highlighting_return_full_fragment(self):
         response = self.client.call_action(
