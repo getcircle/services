@@ -173,6 +173,7 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
                 return_object='profiles',
                 ids=author_ids
             )
+            # XXX redundant protobuf_to_dict call
             authors = dict((profile.id, protobuf_to_dict(profile)) for profile in profiles)
         self.paginated_response(
             self.response.posts,
