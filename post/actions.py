@@ -1,3 +1,5 @@
+from common import utils as common_utils
+from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.post import containers_pb2 as post_containers
 from service import (
     actions,
@@ -166,10 +168,28 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
             parameters['state'] = self.request.state
 
         posts = models.Post.objects.filter(**parameters).order_by('-changed')
+        authors = {}
+        if common_utils.should_inflate_field('by_profile', self.request.inflations):
+            author_ids = [str(post.by_profile_id) for post in posts]
+            profiles = service.control.get_object(
+                'profile',
+                client_kwargs={'token': self.token},
+                action='get_profiles',
+                return_object='profiles',
+                ids=author_ids
+            )
+            # XXX redundant protobuf_to_dict call
+            authors = dict((profile.id, protobuf_to_dict(profile)) for profile in profiles)
         self.paginated_response(
             self.response.posts,
             posts,
-            lambda item, container: item.to_protobuf(container.add(), fields=self.request.fields),
+            lambda item, container: item.to_protobuf(
+                container.add(),
+                inflations=self.request.inflations,
+                token=self.token,
+                fields=self.request.fields,
+                by_profile=authors.get(str(item.by_profile_id), {})
+            ),
         )
 
 
