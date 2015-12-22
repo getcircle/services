@@ -126,7 +126,12 @@ class GetPost(PostPermissionsMixin, actions.Action):
         if unlisted and not is_author:
             raise self.PermissionDenied()
 
-        post.to_protobuf(self.response.post, inflations=self.request.inflations, token=self.token, fields=self.request.fields)
+        post.to_protobuf(
+            self.response.post,
+            inflations=self.request.inflations,
+            token=self.token,
+            fields=self.request.fields
+        )
         self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 
