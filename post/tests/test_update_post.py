@@ -199,7 +199,7 @@ class TestPosts(MockedTestCase):
         post.content = updated_content
         response = self.client.call_action('update_post', post=post)
         result = response.result.post
-        self.verify_containers(post, result, ignore_fields=('content', 'created', 'changed'))
+        self.verify_containers(post, result, ignore_fields=('content', 'created', 'changed', 'snippet'))
 
     def test_update_post_non_admin(self):
         post = factories.PostFactory.create_protobuf(organization_id=self.organization.id)

@@ -128,7 +128,12 @@ class GetPost(PostPermissionsMixin, actions.Action):
         if unlisted and not is_author:
             raise self.PermissionDenied()
 
-        post.to_protobuf(self.response.post, inflations=self.request.inflations, token=self.token)
+        post.to_protobuf(
+            self.response.post,
+            inflations=self.request.inflations,
+            token=self.token,
+            fields=self.request.fields
+        )
         self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 
@@ -182,6 +187,7 @@ class GetPosts(PreRunParseTokenMixin, actions.Action):
                 container.add(),
                 inflations=self.request.inflations,
                 token=self.token,
+                fields=self.request.fields,
                 by_profile=authors.get(str(item.by_profile_id), {})
             ),
         )

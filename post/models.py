@@ -9,6 +9,8 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
     as_dict_value_transforms = {'state': int}
 
+    protobuf_include_fields = ('snippet',)
+
     title = models.CharField(max_length=255)
     content = models.TextField()
     organization_id = models.UUIDField()
@@ -17,6 +19,10 @@ class Post(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(post_containers.PostStateV1),
         default=post_containers.DRAFT,
     )
+
+    @property
+    def snippet(self):
+        return self.content[:80]
 
     class Meta:
         index_together = (('organization_id', 'by_profile_id'), ('organization_id', 'state'))
@@ -79,10 +85,10 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
         return overrides
 
-    def to_protobuf(self, protobuf=None, inflations=None, token=None, **overrides):
+    def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, overrides, token)
-        return super(Post, self).to_protobuf(protobuf, inflations=inflations, **overrides)
+        return super(Post, self).to_protobuf(protobuf, inflations=inflations, fields=fields, **overrides)
 
 
 class Attachment(models.UUIDModel, models.TimestampableModel):

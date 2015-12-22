@@ -157,3 +157,24 @@ class TestPosts(MockedTestCase):
 
         response = self.client.call_action('get_posts', all_states=True)
         self.assertEqual(len(response.result.posts), 1)
+
+    def test_get_posts_snippet(self):
+        profile = mocks.mock_profile(organization_id=self.organization.id)
+        content = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus quis aliquam ipsum, egestas vulputate libero. In rutrum tristique ligula, at tristique lorem euismod sed. Vivamus quis posuere metus.'
+        factories.PostFactory.create(
+            profile=profile,
+            state=post_containers.LISTED,
+            content=content
+        )
+        response = self.client.call_action('get_posts', all_states=True)
+        self.assertEqual(response.result.posts[0].snippet, content[:80])
+
+    def test_get_posts_exclude_snippet(self):
+        profile = mocks.mock_profile(organization_id=self.organization.id)
+        factories.PostFactory.create(
+            profile=profile,
+            state=post_containers.LISTED,
+            content='Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus quis aliquam ipsum, egestas vulputate libero. In rutrum tristique ligula, at tristique lorem euismod sed. Vivamus quis posuere metus.'
+        )
+        response = self.client.call_action('get_posts', all_states=True, fields={'exclude': ['snippet']})
+        self.assertFalse(response.result.posts[0].snippet)
