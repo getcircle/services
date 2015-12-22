@@ -61,5 +61,5 @@ class ServicesView(APIView):
         return response
 
     def get(self, request, *args, **kwargs):
-        logger.info('HTTP_X_FORWARDED_PROTO: %s', % (request.META.get('HTTP_X_FORWARDED_PROTO'),))
+        logger.info('HTTP_X_FORWARDED_PROTO: %s', request.META.get('HTTP_X_FORWARDED_PROTO'))
         return HttpResponse('OK', content_type='text')
