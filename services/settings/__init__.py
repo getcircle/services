@@ -170,7 +170,11 @@ LOGGING = {
             'formatter': 'generic',
         },
     },
-    'loggers': {},
+    'loggers': {
+        'py.warnings': {
+            'handlers': ['console_generic'],
+        },
+    },
 }
 
 # Twilio API Settings
