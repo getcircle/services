@@ -2,7 +2,11 @@ import logging
 
 from django.http import HttpResponse
 from django.utils.module_loading import import_string
-from rest_framework import status
+from google.protobuf import message
+from rest_framework import (
+    exceptions,
+    status,
+)
 from rest_framework.views import APIView
 from service import settings as service_settings
 from service_protobufs import soa_pb2
@@ -36,8 +40,11 @@ class ServicesView(APIView):
         return response
 
     def post(self, request, *args, **kwargs):
-        # XXX handle errors if the request.body fails to serialize
-        service_request = soa_pb2.ServiceRequestV1.FromString(request.body)
+        try:
+            service_request = soa_pb2.ServiceRequestV1.FromString(request.body)
+        except message.DecodeError:
+            raise exceptions.ParseError('failed to decode request.body')
+
         # XXX: handle errors if the token fails to parse
         if not request.auth:
             service_request.control.token = ''
