@@ -422,26 +422,16 @@ class Test(ESTestCase):
         )
 
     def test_search_category_locations(self):
-        # verify a normal search returns a person
+        # verify a normal search returns a post
         response = self.client.call_action('search_v2', query='San Francisco')
-        self.verify_top_results(
-            'post',
-            {'content': lambda x: 'San Francisco' in x},
-            response.result.results,
-        )
+        self.assertTrue(any([result.post.id for result in response.result.results]))
 
         response = self.client.call_action(
             'search_v2',
             query='San Francisco',
             category=search_pb2.LOCATIONS,
         )
-        self.verify_top_results(
-            'post',
-            {'content': lambda x: 'San Francisco' in x},
-            response.result.results,
-            top_results=10,
-            should_be_present=False,
-        )
+        self.assertFalse(any([result.post.id for result in response.result.results]))
 
     def test_search_category_posts(self):
         # verify a normal search returns a person
@@ -525,12 +515,8 @@ class Test(ESTestCase):
 
     def test_search_raw_content_match_higher_than_title_match(self):
         response = self.client.call_action('search_v2', query='video conferencing')
-        self.verify_top_results(
-            'post',
-            {'content': lambda x: 'video conferencing' in x},
-            response.result.results,
-            top_results=1,
-        )
+        hit = response.result.results[0]
+        self.assertIn('<mark>video</mark> <mark>conferencing</mark>', hit.highlight['content'])
 
     def test_search_team_display_name_highlighting_partial(self):
         response = self.client.call_action('search_v2', query='Dev', category=search_pb2.TEAMS)
@@ -654,3 +640,11 @@ class Test(ESTestCase):
         tracking_details = hit.tracking_details
         self.assertEqual(tracking_details.document_id, profile.id)
         self.assertEqual(tracking_details.document_type, types.ProfileV1._doc_type.name)
+
+    def test_search_post_does_not_have_content(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='Arbiter',
+            category=search_pb2.POSTS,
+        )
+        self.assertFalse(any([result.post.content for result in response.result.results]))

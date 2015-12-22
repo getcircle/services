@@ -21,6 +21,7 @@ def get_rescore_statements_v1(query):
 
 
 def get_highlight_fields_v1(query):
+    fragment_size = 70
     return [
         HighlightField(
             'title',
@@ -29,5 +30,17 @@ def get_highlight_fields_v1(query):
                 'number_of_fragments': 0,
             },
         ),
-        HighlightField('content', {'fragment_size': 70}),
+        HighlightField(
+            'content',
+            {
+                'fragment_size': fragment_size,
+                'no_match_size': fragment_size,
+            }
+        ),
     ]
+
+def get_excluded_source_fields_v1(query):
+    fields = [
+        'content',
+    ]
+    return fields
