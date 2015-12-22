@@ -187,7 +187,6 @@ class TestUpdateEntities(MockedTestCase):
             return_object_path='posts',
             ids=[post.id],
             state=post_containers.LISTED,
-            fields={'exclude': ['snippet']},
         )
         tasks.update_posts([str(post.id)], str(post.organization_id))
         self.assertEqual(patched_bulk.call_count, 1)

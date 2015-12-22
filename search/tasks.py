@@ -105,7 +105,6 @@ def update_posts(ids, organization_id):
         control={'paginator': {'page_size': len(ids)}},
         ids=ids,
         state=post_containers.LISTED,
-        fields={'exclude': ['snippet']},
     )
     _update_documents(PostV1, posts, organization_id)
 
