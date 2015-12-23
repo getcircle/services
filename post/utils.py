@@ -17,7 +17,7 @@ def white_listed_attributes(*white_list):
     return _inner
 
 
-bleach.ALLOWED_TAGS.extend([
+ALLOWED_TAGS = tuple(bleach.ALLOWED_TAGS + [
     'div',
     'br',
     'pre',
@@ -27,17 +27,18 @@ bleach.ALLOWED_TAGS.extend([
     'figcaption',
 ])
 
-bleach.ALLOWED_ATTRIBUTES['img'] = _compose(
+ALLOWED_ATTRIBUTES = dict(bleach.ALLOWED_ATTRIBUTES)
+ALLOWED_ATTRIBUTES['img'] = _compose(
     white_listed_attributes('src', 'width', 'height'),
     allow_trix_attributes,
 )
-bleach.ALLOWED_ATTRIBUTES['a'] = _compose(
+ALLOWED_ATTRIBUTES['a'] = _compose(
     white_listed_attributes('href', 'title'),
     allow_trix_attributes,
 )
-bleach.ALLOWED_ATTRIBUTES['figure'] = ['class']
-bleach.ALLOWED_ATTRIBUTES['figcaption'] = ['class']
+ALLOWED_ATTRIBUTES['figure'] = ['class']
+ALLOWED_ATTRIBUTES['figcaption'] = ['class']
 
 
 def clean(value):
-    return bleach.clean(value)
+    return bleach.clean(value, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
