@@ -4,10 +4,15 @@ from protobufs.services.post import containers_pb2 as post_containers
 from protobuf_to_dict import protobuf_to_dict
 import service.control
 
+from .utils import clean
+
 
 class Post(models.UUIDModel, models.TimestampableModel):
 
     as_dict_value_transforms = {'state': int}
+    from_protobuf_transforms = {
+        'content': clean,
+    }
 
     protobuf_include_fields = ('snippet',)
 
@@ -88,7 +93,12 @@ class Post(models.UUIDModel, models.TimestampableModel):
     def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, overrides, token)
-        return super(Post, self).to_protobuf(protobuf, inflations=inflations, fields=fields, **overrides)
+        return super(Post, self).to_protobuf(
+            protobuf,
+            inflations=inflations,
+            fields=fields,
+            **overrides
+        )
 
 
 class Attachment(models.UUIDModel, models.TimestampableModel):

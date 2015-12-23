@@ -7,6 +7,7 @@ from services.test import (
 )
 
 from ..models import Attachment
+from ..utils import clean
 
 
 class TestPosts(MockedTestCase):
@@ -66,3 +67,35 @@ class TestPosts(MockedTestCase):
         self.assertEqual(len(response.result.post.file_ids), len(files))
         attachments = Attachment.objects.filter(post_id=response.result.post.id)
         self.assertEqual(len(attachments), len(files))
+
+    def test_create_post_strip_dangerous_html(self):
+        content = """
+            <div>
+                <strong>Some Title</strong>
+                <em>some tldr</em>
+                <p>some text</p>
+                <script type="text/javascript">evil()</script>
+                <iframe src="https://dangerous.com" />
+                <img src="https://kittens.com">
+            </div>
+        """
+        response = self.client.call_action(
+            'create_post',
+            post={'title': 'Some Post', 'content': content},
+        )
+        post = response.result.post
+        self.assertNotIn('<script', post.content)
+        self.assertIn('&lt;script type="text/javascript"&gt;evil()&lt;/script&gt;', post.content)
+        self.assertIn('<strong>Some Title</strong>', post.content)
+        self.assertIn('<p>some text</p>', post.content)
+        self.assertIn('<img src="https://kittens.com">', post.content)
+        self.assertNotIn('<iframe', post.content)
+
+    def test_create_post_with_html(self):
+        content = '<div><strong>some title</strong><a href="https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG" data-trix-attachment="{&quot;contentType&quot;:&quot;image/jpeg&quot;,&quot;filename&quot;:&quot;207.JPG&quot;,&quot;filesize&quot;:298046,&quot;height&quot;:915,&quot;href&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG&quot;,&quot;url&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG&quot;,&quot;width&quot;:1520}" data-trix-content-type="image/jpeg" data-trix-attributes="{&quot;caption&quot;:&quot;some caption here&quot;}"><figure class="attachment attachment-preview jpg"><img src="https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG" width="1520" height="915"><figcaption class="caption caption-edited">some caption here</figcaption></figure></a><br><em>if you have more questions, look&nbsp;</em><a href="https://www.google.com"><em>here</em></a></div><pre>code block</pre><ul><li>list<ul><li>here<ul><li>there</li></ul></li></ul></li></ul><ol><li>numbered list<ol><li>here<ol><li>there</li></ol></li></ol></li></ol><div><strong>another inline image:<br><br></strong><strong><a href="https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG" data-trix-attachment="{&quot;contentType&quot;:&quot;image/jpeg&quot;,&quot;filename&quot;:&quot;210.JPG&quot;,&quot;filesize&quot;:332625,&quot;height&quot;:1013,&quot;href&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG&quot;,&quot;url&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG&quot;,&quot;width&quot;:1520}" data-trix-content-type="image/jpeg" data-trix-attributes="{&quot;caption&quot;:&quot;with another caption&quot;}"><figure class="attachment attachment-preview jpg"><img src="https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG" width="1520" height="1013"><figcaption class="caption caption-edited">with another caption</figcaption></figure></a></strong></div>'
+        response = self.client.call_action(
+            'create_post',
+            post={'title': 'Some Post', 'content': content},
+        )
+        post = response.result.post
+        self.assertEqual(post.content, clean(content))
