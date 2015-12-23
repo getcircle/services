@@ -204,8 +204,6 @@ class TestUpdateEntities(MockedTestCase):
     def test_tasks_update_direct_reports(self, patched_bulk):
         manager = mocks.mock_profile()
         direct_report = mocks.mock_profile(organization_id=manager.organization_id)
-        team = mocks.mock_team(manager_profile_id=manager.id, organization_id=manager.organization_id)
-
         self.mock.instance.register_mock_object(
             service='organization',
             action='get_profile_reporting_details',
