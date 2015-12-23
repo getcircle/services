@@ -39,6 +39,7 @@ def get_highlight_fields_v1(query):
         ),
     ]
 
+
 def get_excluded_source_fields_v1(query):
     fields = [
         'content',
