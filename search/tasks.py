@@ -79,7 +79,9 @@ def update_direct_reports(manager_profile_id, organization_id):
         client_kwargs={'token': make_admin_token(organization_id=organization_id)},
         profile_id=manager_profile_id,
     )
-    update_profiles.delay(direct_reports_profile_ids, organization_id)
+    # NB: We need to cast to a list since celery can't serialize the Protobuf
+    # list type
+    update_profiles.delay(list(direct_reports_profile_ids), organization_id)
 
 
 @app.task
