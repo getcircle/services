@@ -88,10 +88,10 @@ class Test(MockedTestCase):
         types.LocationV1(_index=write_alias, name='Headquarters').save()
         types.TeamV1(_index=write_alias, name='Founders').save()
         types.PostV1(_index=write_alias, title='Some Post').save()
-        time.sleep(1)
+        time.sleep(2)
         self.assertEqual(len(old_index.search().execute().hits), 4)
         new_index = migrate_index(old_index._name, current_version=2)
-        time.sleep(1)
+        time.sleep(2)
         self.assertEqual(len(new_index.search().execute().hits), 4)
 
         # verify we've transitioned the aliases over to the new index
