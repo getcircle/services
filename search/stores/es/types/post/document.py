@@ -13,6 +13,7 @@ from ...analysis import (
     shingle_search,
 )
 from ..base import BaseDocType
+from .utils import transform_html
 
 
 title_analyzer_v1 = analyzer(
@@ -35,6 +36,12 @@ stem_analyzer_v1 = analyzer(
 
 
 class PostV1(BaseDocType):
+
+    from_protobuf_transforms = {
+        'content': transform_html,
+        'snippet': transform_html,
+    }
+
     title = String(
         analyzer=title_analyzer_v1,
         fields={

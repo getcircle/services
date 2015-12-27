@@ -125,6 +125,10 @@ posts:
   organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'How
     do I fill out an expense report with some really really long title to make sure that we return the full field?'}
 - {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
+  content: !!python/unicode '<div><strong>Some Bold Section<br><br></strong><em>some italics<br><br></em><strong><em>some bold italics<br><br></em></strong><a href="http://www.google.com">some link</a></div><pre>some code block</pre><ul><li>a list<ul><li>here<ul><li>there</li></ul></li></ul></li></ul><ol><li>numbered list<ol><li>with</li><li>numbers</li></ol></li></ol>',
+  created: !!python/unicode '2015-11-04T21:02:20.574942+00:00', id: !!python/unicode '8a3552e0-8a06-45b0-ab7a-ccb409f5dd57',
+  organization_id: !!python/unicode '9ba9cbb2-c886-4fc7-a17c-df80b1a8f7ba', title: !!python/unicode 'Formatted post'}
+- {by_profile_id: !!python/unicode '25e4893d-b2a9-4d76-b169-94266c2d03b9', changed: !!python/unicode '2015-11-04T21:02:20.574966+00:00',
   content: !!python/unicode 'Yes! Below is the most recent version we have.
 
     Marco Zappacosta is a co-founder and the Chief Executive Officer of Thumbtack. Prior to Thumbtack, Mr. Zappacosta was the Director of Students for Saving Social Security in Washington, DC. The group represented the student voice in the Social Security debate with over 10,000 student members in over 300 campus chapters nationwide. He is a graduate of Columbia University where he majored in Political Science and fell one class shy of another degree in Neuroscience.

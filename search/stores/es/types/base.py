@@ -51,9 +51,11 @@ class BaseDocTypeMeta(DocTypeMeta):
 class BaseDocType(DocType):
 
     document_to_protobuf_mapping = None
+    from_protobuf_transforms = None
 
     @classmethod
     def from_protobuf(cls, protobuf):
+        from_protobuf_transforms = cls.from_protobuf_transforms or {}
         data = protobuf_to_dict(protobuf)
         if cls.document_to_protobuf_mapping:
             for field_name, proto_field_name in cls.document_to_protobuf_mapping.iteritems():
@@ -66,6 +68,10 @@ class BaseDocType(DocType):
                 value = _get_nested_value(proto_field_name, data)
                 if value is not None:
                     data[field_name] = value
+
+        for field, transform in from_protobuf_transforms.iteritems():
+            if field in data:
+                data[field] = transform(data[field])
 
         return cls(_id=protobuf.id, **data)
 

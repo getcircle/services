@@ -648,3 +648,21 @@ class Test(ESTestCase):
             category=search_pb2.POSTS,
         )
         self.assertFalse(any([result.post.content for result in response.result.results]))
+
+    def test_search_does_not_index_html_content(self):
+        response = self.client.call_action(
+            'search_v2',
+            query='div strong',
+            category=search_pb2.POSTS,
+        )
+        self.assertFalse(response.result.results)
+        response = self.client.call_action(
+            'search_v2',
+            query='some bold section',
+            category=search_pb2.POSTS,
+        )
+        self.assertTrue(response.result.results)
+        self.assertIn(
+            '<mark>Some Bold Section</mark>',
+            response.result.results[0].highlight['content'],
+        )
