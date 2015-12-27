@@ -663,6 +663,6 @@ class Test(ESTestCase):
         )
         self.assertTrue(response.result.results)
         self.assertIn(
-            '<mark>Some Bold Section</mark>',
+            '<mark>Some</mark> <mark>Bold</mark> <mark>Section</mark>',
             response.result.results[0].highlight['content'],
         )
