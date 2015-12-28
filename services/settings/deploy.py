@@ -81,7 +81,14 @@ BROKER_URL = 'redis://%s:%s/3' % (redis_url.hostname, redis_url.port)
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 
 DATADOG_API_KEY = os.environ.get('DATADOG_API_KEY', '')
-METRICS_HANDLER_KWARGS = {'api_key': DATADOG_API_KEY}
+DATADOG_APP_KEY = os.environ.get('DATADOG_APP_KEY', '')
+# assume we're connecting to the statsd container running on the host
+DATADOG_STATSD_HOST = os.environ.get('DATADOG_STATSD_HOST', '172.17.42.1')
+METRICS_HANDLER_KWARGS = {
+    'api_key': DATADOG_API_KEY,
+    'app_key': DATADOG_APP_KEY,
+    'host': DATADOG_STATSD_HOST,
+}
 
 USER_SERVICE_FORCE_GOOGLE_AUTH = _get_delimited_setting_from_environment(
     'USER_SERVICE_FORCE_GOOGLE_AUTH',
