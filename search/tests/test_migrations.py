@@ -68,7 +68,7 @@ class Test(MockedTestCase):
             self.assertTrue(index.startswith(organization_id))
 
         _bulk_actions([profile.to_dict(include_meta=True)], organization_id)
-        time.sleep(1)
+        time.sleep(2)
         self.assertEqual(len(old_index.search().execute().hits), 1)
         self.assertEqual(len(new_index.search().execute().hits), 1)
 
