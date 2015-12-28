@@ -25,6 +25,7 @@ ALLOWED_TAGS = tuple(bleach.ALLOWED_TAGS + [
     'img',
     'figure',
     'figcaption',
+    'span',
 ])
 
 ALLOWED_ATTRIBUTES = dict(bleach.ALLOWED_ATTRIBUTES)
