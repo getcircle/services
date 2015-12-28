@@ -10,10 +10,10 @@ from ..models import Attachment
 from ..utils import clean
 
 
-class TestPosts(MockedTestCase):
+class Test(MockedTestCase):
 
     def setUp(self):
-        super(TestPosts, self).setUp()
+        super(Test, self).setUp()
         self.organization = mocks.mock_organization()
         self.profile = mocks.mock_profile(organization_id=self.organization.id)
         token = mocks.mock_token(organization_id=self.organization.id, profile_id=self.profile.id)
@@ -90,6 +90,28 @@ class TestPosts(MockedTestCase):
         self.assertIn('<p>some text</p>', post.content)
         self.assertIn('<img src="https://kittens.com">', post.content)
         self.assertNotIn('<iframe', post.content)
+
+    def test_create_post_snippet_doesnt_include_html(self):
+        content = """
+            <div>
+                <strong>Some Title</strong>
+                <a href="https://lunohq.com">luno</a>
+                <span>something here</span>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                Phasellus quis aliquam ipsum, egestas vulputate libero. In
+                rutrum tristique ligula, at tristique lorem euismod sed.
+                Vivamus quis posuere metus.</p>
+            </div>
+        """
+        response = self.client.call_action(
+            'create_post',
+            post={'title': 'Some Post', 'content': content},
+        )
+        post = response.result.post
+        self.assertEqual(
+            post.snippet,
+            'Some Title luno something here Lorem ipsum dolor sit amet, consectetur adipiscin',
+        )
 
     def test_create_post_with_html(self):
         content = '<div><strong>some title</strong><a href="https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG" data-trix-attachment="{&quot;contentType&quot;:&quot;image/jpeg&quot;,&quot;filename&quot;:&quot;207.JPG&quot;,&quot;filesize&quot;:298046,&quot;height&quot;:915,&quot;href&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG&quot;,&quot;url&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG&quot;,&quot;width&quot;:1520}" data-trix-content-type="image/jpeg" data-trix-attributes="{&quot;caption&quot;:&quot;some caption here&quot;}"><figure class="attachment attachment-preview jpg"><img src="https://dev-lunohq-files.s3.amazonaws.com/d01a0c489bde41d9a75acbb0947bb150%2F207.JPG" width="1520" height="915"><figcaption class="caption caption-edited">some caption here</figcaption></figure></a><br><em>if you have more questions, look&nbsp;</em><a href="https://www.google.com"><em>here</em></a></div><pre>code block</pre><ul><li>list<ul><li>here<ul><li>there</li></ul></li></ul></li></ul><ol><li>numbered list<ol><li>here<ol><li>there</li></ol></li></ol></li></ol><div><strong>another inline image:<br><br></strong><strong><a href="https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG" data-trix-attachment="{&quot;contentType&quot;:&quot;image/jpeg&quot;,&quot;filename&quot;:&quot;210.JPG&quot;,&quot;filesize&quot;:332625,&quot;height&quot;:1013,&quot;href&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG&quot;,&quot;url&quot;:&quot;https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG&quot;,&quot;width&quot;:1520}" data-trix-content-type="image/jpeg" data-trix-attributes="{&quot;caption&quot;:&quot;with another caption&quot;}"><figure class="attachment attachment-preview jpg"><img src="https://dev-lunohq-files.s3.amazonaws.com/59ac0d91f4b74113a7cbae0be96bae24%2F210.JPG" width="1520" height="1013"><figcaption class="caption caption-edited">with another caption</figcaption></figure></a></strong></div>'

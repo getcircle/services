@@ -1,8 +1,11 @@
+from cacheops import cached_as
 from common import utils
 from common.db import models
 from protobufs.services.post import containers_pb2 as post_containers
 from protobuf_to_dict import protobuf_to_dict
 import service.control
+
+from search.stores.es.types.post.utils import transform_html
 
 from .utils import clean
 
@@ -27,7 +30,12 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
     @property
     def snippet(self):
-        return self.content[:80]
+
+        @cached_as(self)
+        def _get_snippet():
+            return transform_html(self.content)[:80]
+
+        return _get_snippet()
 
     class Meta:
         index_together = (('organization_id', 'by_profile_id'), ('organization_id', 'state'))
