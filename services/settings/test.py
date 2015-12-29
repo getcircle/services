@@ -1,7 +1,7 @@
 from .docker import *  # NOQA
 
 CACHEOPS_FAKE = True
-settings.DEFAULT_METRICS_HANDLER = 'service.metrics.local.instance'
+METRICS_HANDLER = 'service.metrics.local.instance'
 
 LOGGING['handlers']['console'] = {
     'class': 'logging.NullHandler',

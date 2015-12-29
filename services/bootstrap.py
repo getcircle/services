@@ -19,7 +19,9 @@ class Bootstrap(object):
 
     @classmethod
     def start_metrics(cls):
-        """Start DataDog metrics"""
+        """Start metrics"""
+        handler = import_string(settings.METRICS_HANDLER)
+        service.control.set_metrics_handler(handler)
         service.control.start_metrics_handler(**settings.METRICS_HANDLER_KWARGS)
 
     @classmethod

@@ -9,7 +9,6 @@ from ._utils import _get_delimited_setting_from_environment
 
 from service import settings
 settings.MAX_PAGE_SIZE = os.environ.get('MAX_PAGE_SIZE', 100)
-settings.DEFAULT_METRICS_HANDLER = 'service.metrics.datadog.instance'
 settings.LOG_REQUEST_AND_RESPONSE = int(os.environ.get('SERVICE_LOG_REQUEST_AND_RESPONSE', 1))
 
 DEBUG = False
@@ -208,3 +207,5 @@ AUTHENTICATION_TOKEN_COOKIE_SECURE = bool(int(os.environ.get(
     'AUTHENTICATION_TOKEN_COOKIE_SECURE',
     AUTHENTICATION_TOKEN_COOKIE_SECURE,
 )))
+
+METRICS_HANDLER = 'service.metrics.datadog.instance'
