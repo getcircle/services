@@ -22,7 +22,7 @@ class Bootstrap(object):
         """Start metrics"""
         handler = import_string(settings.METRICS_HANDLER)
         service.control.set_metrics_handler(handler)
-        service.control.start_metrics_handler(use_ms=True, **settings.METRICS_HANDLER_KWARGS)
+        service.control.start_metrics_handler(**settings.METRICS_HANDLER_KWARGS)
 
     @classmethod
     def localize_servers(cls):
