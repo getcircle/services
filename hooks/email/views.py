@@ -4,6 +4,7 @@ from django.conf import settings
 from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from service import metrics
 
 from . import actions
 from .. import tasks
@@ -47,6 +48,14 @@ class ProcessEmailView(APIView):
         if not message_id:
             logger.error('message_id is required', extra={'request': request._request})
             raise exceptions.ParseError('message_id is required')
+
+        processing_time = request.data.get('processing_time')
+        if processing_time:
+            metrics.timing(
+                'service.hooks.email.aws.processing_time',
+                processing_time,
+                use_ms=False,
+            )
 
         # XXX draft should be something the view accepts as a parameter
         tasks.create_post_from_message.delay(
