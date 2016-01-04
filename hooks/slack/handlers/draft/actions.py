@@ -20,7 +20,7 @@ def get_messages_for_interval(
         channel_name,
     ):
     slack = Slacker(slack_api_token)
-    parameters = {'latest': latest_timestamp}
+    parameters = {'latest': latest_timestamp, 'count': 1000}
     if draft_interval.from_timestamp:
         parameters['oldest'] = draft_interval.from_timestamp
     elif draft_interval.messages:
