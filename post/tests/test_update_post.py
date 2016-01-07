@@ -187,7 +187,10 @@ class TestPosts(MockedTestCase):
             self.client.call_action('update_post', post=post)
 
     def test_update_post_admin(self):
-        post = factories.PostFactory.create_protobuf(organization_id=self.organization.id)
+        post = factories.PostFactory.create_protobuf(
+            organization_id=self.organization.id,
+            to_protobuf_kwargs={'inflations': {'exclude': ['html_document']}},
+        )
         self.profile.is_admin = True
         self.mock.instance.register_mock_object(
             service='profile',
@@ -199,7 +202,12 @@ class TestPosts(MockedTestCase):
         post.content = updated_content
         response = self.client.call_action('update_post', post=post)
         result = response.result.post
-        self.verify_containers(post, result, ignore_fields=('content', 'created', 'changed', 'snippet'))
+        self.verify_containers(post, result, ignore_fields=(
+            'content',
+            'created',
+            'changed',
+            'snippet',
+        ))
 
     def test_update_post_non_admin(self):
         post = factories.PostFactory.create_protobuf(organization_id=self.organization.id)

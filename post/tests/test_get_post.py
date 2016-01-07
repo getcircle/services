@@ -10,10 +10,10 @@ from services.test import (
 from .. import factories
 
 
-class TestPosts(MockedTestCase):
+class Test(MockedTestCase):
 
     def setUp(self):
-        super(TestPosts, self).setUp()
+        super(Test, self).setUp()
         self.organization = mocks.mock_organization()
         self.profile = mocks.mock_profile(organization_id=self.organization.id)
         token = mocks.mock_token(organization_id=self.organization.id, profile_id=self.profile.id)
@@ -142,3 +142,15 @@ class TestPosts(MockedTestCase):
         self.assertEqual(len(response.result.post.files), len(attachments))
         for f in response.result.post.files:
             self.assertTrue(f.source_url)
+
+    def test_get_post_inflate_html_document(self):
+        post = factories.PostFactory.create(profile=self.profile)
+        response = self.client.call_action(
+            'get_post',
+            id=str(post.id),
+            inflations={'only': ['html_document']},
+        )
+        html_document = response.result.post.html_document
+        self.assertTrue(html_document.startswith('<!doctype html>'))
+        self.assertIn(post.title, html_document)
+        self.assertIn(post.content, html_document)

@@ -7,6 +7,10 @@ import service.control
 
 from search.stores.es.types.post.utils import transform_html
 
+from .template import (
+    TEMPLATE,
+    TEMPLATE_STYLE,
+)
 from .utils import clean
 
 
@@ -28,6 +32,10 @@ class Post(models.UUIDModel, models.TimestampableModel):
         default=post_containers.DRAFT,
     )
 
+    class Meta:
+        index_together = (('organization_id', 'by_profile_id'), ('organization_id', 'state'))
+        protobuf = post_containers.PostV1
+
     @property
     def snippet(self):
 
@@ -37,9 +45,13 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
         return _get_snippet()
 
-    class Meta:
-        index_together = (('organization_id', 'by_profile_id'), ('organization_id', 'state'))
-        protobuf = post_containers.PostV1
+    @property
+    def html_document(self):
+        return TEMPLATE.format(
+            title=self.title,
+            content=self.content,
+            style=TEMPLATE_STYLE,
+        )
 
     def _get_by_profile(self, token):
         return service.control.get_object(
@@ -95,6 +107,12 @@ class Post(models.UUIDModel, models.TimestampableModel):
                     token
                 ):
                     overrides['files'] = self._inflate_files(attachments, token)
+
+        if (
+            'html_document' not in overrides
+            and utils.should_inflate_field('html_document', inflations)
+        ):
+            overrides['html_document'] = self.html_document
 
         return overrides
 

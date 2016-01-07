@@ -103,7 +103,12 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
         )
         post.save()
-        post.to_protobuf(self.response.post, file_ids=file_ids, token=self.token)
+        post.to_protobuf(
+            self.response.post,
+            file_ids=file_ids,
+            token=self.token,
+            inflations={'exclude': ['html_document']},
+        )
         self.response.post.permissions.CopyFrom(self.get_permissions(post))
 
 
