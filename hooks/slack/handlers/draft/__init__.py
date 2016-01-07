@@ -27,7 +27,7 @@ def handle_draft(request, text):
     messages.reverse()
     # XXX should have a `post_content_from_messages` function, we should handle
     # special formatting for the messages
-    text_values = [m['text'] for m in messages if 'text' in m and 'subtype' not in m]
+    text_values = [m['text'] for m in messages if 'text' in m]
     title = 'Slack Draft - %s' % (text,)
     content = '\n'.join(text_values)
     post = service.control.get_object(
