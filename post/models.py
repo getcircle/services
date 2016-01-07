@@ -33,7 +33,7 @@ class Post(models.UUIDModel, models.TimestampableModel):
     )
     source = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(post_containers.PostSourceV1),
-        default=post_containers.LUNO,
+        default=post_containers.WEB,
     )
     source_id = models.CharField(max_length=255, null=True)
 
