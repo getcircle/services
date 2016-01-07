@@ -1,3 +1,4 @@
+from protobufs.services.post import containers_pb2 as post_containers
 from rest_framework.response import Response
 import service.control
 
@@ -35,7 +36,11 @@ def handle_draft(request, text):
         action='create_post',
         return_object='post',
         client_kwargs={'token': request.token},
-        post={'title': title, 'content': content},
+        post={
+            'title': title,
+            'content': content,
+            'source': post_containers.SLACK,
+        },
     )
     response_url = get_post_resource_url(request.organization.domain, post, edit=True)
     return Response({'text': 'Draft created: %s' % (response_url,)})

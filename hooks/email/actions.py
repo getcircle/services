@@ -134,6 +134,8 @@ def get_post_from_message(message_id, token, draft=False):
         content=plain_text,
         state=state,
         file_ids=file_ids,
+        source=post_containers.EMAIL,
+        source_id=message_id,
     )
 
 

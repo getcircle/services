@@ -1,6 +1,7 @@
 from botocore.exceptions import ClientError
 import mock
 
+from protobufs.services.post import containers_pb2 as post_containers
 from services.test import (
     mocks,
     MockedTestCase,
@@ -34,6 +35,8 @@ class Test(MockedTestCase):
         self.assertIsNotNone(post)
         self.assertEqual(post.title, 'test')
         self.assertEqual(post.content, 'test\n')
+        self.assertEqual(post.source, post_containers.EMAIL)
+        self.assertEqual(post.source_id, 'some id')
 
     @mock.patch('hooks.email.actions.boto3')
     def test_get_post_from_message_multipart(self, patched_boto):

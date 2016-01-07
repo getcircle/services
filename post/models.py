@@ -31,6 +31,11 @@ class Post(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(post_containers.PostStateV1),
         default=post_containers.DRAFT,
     )
+    source = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(post_containers.PostSourceV1),
+        default=post_containers.LUNO,
+    )
+    source_id = models.CharField(max_length=255, null=True)
 
     class Meta:
         index_together = (('organization_id', 'by_profile_id'), ('organization_id', 'state'))
