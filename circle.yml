@@ -32,4 +32,3 @@ deployment:
       - docker tag lunohq/services lunohq/services:$CIRCLE_SHA1
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push lunohq/services
-
