@@ -34,7 +34,11 @@ class CreatePost(PreRunParseTokenMixin, actions.Action):
                 organization_id=self.parsed_token.organization_id,
                 file_id=file_id,
             )
-        post.to_protobuf(self.response.post, file_ids=self.request.post.file_ids)
+        post.to_protobuf(
+            self.response.post,
+            file_ids=self.request.post.file_ids,
+            inflations={'exclude': ['html_document']},
+        )
 
 
 class UpdatePost(PostPermissionsMixin, actions.Action):
