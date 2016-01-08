@@ -176,5 +176,6 @@ class Upload(PreRunParseTokenMixin, actions.Action):
             source_url=source_url,
             name=self.request.file.name,
             content_type=self.request.file.content_type,
+            size=len(self.request.file.bytes),
         )
         instance.to_protobuf(self.response.file)
