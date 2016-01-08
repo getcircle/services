@@ -16,7 +16,10 @@ from .utils import clean
 
 class Post(models.UUIDModel, models.TimestampableModel):
 
-    as_dict_value_transforms = {'state': int}
+    as_dict_value_transforms = {
+        'state': int,
+        'source': int,
+    }
     from_protobuf_transforms = {
         'content': clean,
     }
