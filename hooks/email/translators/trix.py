@@ -110,7 +110,7 @@ def _translate_inline_image(element, attachments):
 def _is_grandparent_root(element):
     root = element.getroottree().getroot()
     parent = element.getparent()
-    if parent:
+    if parent is not None:
         return root == parent.getparent()
     return False
 
@@ -123,7 +123,7 @@ def _translate_parent_div(element):
     grandparent_is_root = _is_grandparent_root(element)
     if (
         not grandparent_is_root and
-        parent and
+        parent is not None and
         parent.tag.endswith('div') and
         parent.getchildren()[-1] == element
     ):
