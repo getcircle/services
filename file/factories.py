@@ -14,3 +14,4 @@ class FileFactory(factory.Factory):
     organization_id = factory.FuzzyUUID()
     source_url = factory.FuzzyText(prefix='https://', suffix='.txt')
     name = factory.FuzzyText()
+    size = factory.FuzzyInteger(1000, 10000)

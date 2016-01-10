@@ -13,6 +13,13 @@ from .. import (
 )
 
 
+class MockFile(object):
+
+    def __init__(self, content_type='image/png', size=2323):
+        self.content_type = content_type
+        self.size = size
+
+
 class TestCompleteUpload(MockedTestCase):
 
     def setUp(self):
@@ -52,7 +59,7 @@ class TestCompleteUpload(MockedTestCase):
 
     @patch.object(actions.CompleteUpload, '_complete_upload')
     def test_complete_upload(self, patched):
-        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), 'text/plain'
+        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), MockFile('text/plain')
         response = self.client.call_action(
             'complete_upload',
             upload_id=fuzzy.FuzzyUUID().fuzz(),
@@ -70,7 +77,7 @@ class TestCompleteUpload(MockedTestCase):
 
     @patch.object(actions.CompleteUpload, '_complete_upload')
     def test_complete_upload_content_type_not_required(self, patched):
-        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), 'text/plain'
+        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), MockFile('text/plain')
         response = self.client.call_action(
             'complete_upload',
             upload_id=fuzzy.FuzzyUUID().fuzz(),

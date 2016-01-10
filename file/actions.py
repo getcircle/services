@@ -82,10 +82,10 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
 
         location = response.location
         key = bucket.get_key(self.request.upload_key)
-        return location, key.content_type
+        return location, key
 
     def run(self, *args, **kwargs):
-        source_url, content_type = self._complete_upload()
+        source_url, s3_file = self._complete_upload()
         if not source_url:
             return
 
@@ -94,7 +94,8 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             source_url=source_url,
             name=self.request.file_name,
-            content_type=content_type,
+            content_type=s3_file.content_type,
+            size=s3_file.size,
         )
         instance.to_protobuf(self.response.file)
 
