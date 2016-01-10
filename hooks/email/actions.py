@@ -15,9 +15,18 @@ from hooks.helpers import (
     get_root_url,
 )
 
+from .translators.trix import translate_html
+
 logger = logging.getLogger(__name__)
 
 SourceDetails = namedtuple('SourceDetails', ('email', 'profile_id', 'organization_id', 'domain'))
+
+
+class Attachment(object):
+
+    def __init__(self, mime):
+        self.mime = mime
+        self.file = None
 
 
 def _get_boto_client(client_type, **kwargs):
@@ -78,13 +87,13 @@ def upload_attachment(attachment, token):
         file={
             'name': name,
             'content_type': attachment.content_type.value,
-            'bytes': attachment.body,
+            'bytes': str(attachment.body),
         },
     )
-    return response.result.file.id
+    return response.result.file
 
 
-def get_post_from_message(message_id, token, draft=False):
+def _get_message(message_id):
     client = _get_boto_client('s3')
     key = _get_unprocessed_key(message_id)
     try:
@@ -104,36 +113,52 @@ def get_post_from_message(message_id, token, draft=False):
     except mime.DecodingError as e:
         logger.exception('failed to parse message body: %s', e)
         return None
+    return message
 
-    plain_text = None
+
+def get_post_from_message(message_id, token, draft=False):
+    message = _get_message(message_id)
+    if not message:
+        return None
+
+    html = None
     attachments = []
+    inline_attachments = []
     for part in message.walk():
-        if part.content_type.value == 'text/plain':
-            plain_text = part.body
+        if part.content_type.value == 'text/html' and not part.is_attachment():
+            html = part.body
         elif part.is_attachment() or part.is_inline():
-            attachments.append(part)
+            attachment = Attachment(part)
+            if part.is_inline():
+                inline_attachments.append(attachment)
+            else:
+                attachments.append(attachment)
 
-    # NOTE we could potentially split these up into separate tasks
-    file_ids = []
-    for attachment in attachments:
-        file_id = upload_attachment(attachment, token)
-        file_ids.append(file_id)
+    # TODO split these up into separate tasks
+    for attachment in attachments + inline_attachments:
+        attachment.file = upload_attachment(attachment.mime, token)
+
+    inline_attachment_dict = {}
+    for attachment in inline_attachments:
+        attachment_id = attachment.mime.headers.get('x-attachment-id')
+        if attachment_id:
+            inline_attachment_dict[attachment_id] = attachment
 
     # TODO should be handling empty subjects or bodies by notifying the user it
     # failed to parse
-    if not plain_text or not message.subject:
+    if not html or not message.subject:
         if not message.subject:
             logger.error('message subject is required to create a post')
         else:
             logger.error('only plain text is supported currently')
         return None
 
+    content = translate_html(html, inline_attachment_dict, attachments)
     state = post_containers.DRAFT if draft else post_containers.LISTED
     return post_containers.PostV1(
         title=message.subject,
-        content=plain_text,
+        content=content,
         state=state,
-        file_ids=file_ids,
         source=post_containers.EMAIL,
         source_id=message_id,
     )

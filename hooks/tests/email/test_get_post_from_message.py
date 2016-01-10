@@ -34,7 +34,7 @@ class Test(MockedTestCase):
         post = actions.get_post_from_message('some id', self.token)
         self.assertIsNotNone(post)
         self.assertEqual(post.title, 'test')
-        self.assertEqual(post.content, 'test\n')
+        self.assertEqual(post.content, '<div dir="ltr">test</div>')
         self.assertEqual(post.source, post_containers.EMAIL)
         self.assertEqual(post.source_id, 'some id')
 
@@ -51,7 +51,7 @@ class Test(MockedTestCase):
 
         return_fixture('multipart_email.txt', patched_boto)
         post = actions.get_post_from_message('some id', self.token)
-        self.assertEqual(len(post.file_ids), 2)
+        self.assertEqual(post.content.count('data-trix-attachment'), 2)
 
     @mock.patch('hooks.email.actions.boto3')
     def test_get_post_from_message_multipart_inline_attachments(self, patched_boto):
@@ -66,4 +66,23 @@ class Test(MockedTestCase):
 
         return_fixture('multipart_email_inline_attachments.txt', patched_boto)
         post = actions.get_post_from_message('some id', self.token)
-        self.assertEqual(len(post.file_ids), 4)
+        self.assertEqual(post.content.count('data-trix-attachment'), 4)
+
+    @mock.patch('hooks.email.actions.boto3')
+    def test_get_post_from_message_multipart_attachments(self, patched_boto):
+        # i'm cheating here since the same file will be returned for each upload call
+        self.mock.instance.register_mock_object(
+            service='file',
+            action='upload',
+            return_object=mocks.mock_file(),
+            return_object_path='file',
+            mock_regex_lookup='file:upload.*',
+        )
+
+        return_fixture('multipart_email_attachments.txt', patched_boto)
+        post = actions.get_post_from_message('some id', self.token)
+        self.assertEqual(post.content.count('data-trix-attachment'), 5)
+        self.assertNotIn('<div><br></div>', post.content)
+        # NOTE: allow attributes in the opening div
+        self.assertEqual(post.content.count('<div'), 1)
+        self.assertEqual(post.content.count('</div>'), 1)

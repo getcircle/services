@@ -87,6 +87,7 @@ ipaddress==1.0.15
 regex==2015.11.22
 bleach==1.4.2
 html5lib==0.999
+lxml==3.5.0
 
 # more recent version of datadog
 git+https://git@github.com/DataDog/datadogpy.git#51173b4b702f1b64e921681138020e966785d0de

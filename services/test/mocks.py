@@ -317,11 +317,17 @@ def mock_file(container=None, **overrides):
     if container is None:
         container = file_containers.FileV1()
 
+    defaults = {
+        'content_type': 'image/png',
+    }
+
     mock_dict = {
         fuzzy.FuzzyUUID: ['id', 'by_profile_id', 'organization_id'],
         fuzzy.FuzzyText(prefix='https://', suffix='.txt'): ['source_url'],
     }
-    return _mock_container(container, mock_dict, **overrides)
+
+    defaults.update(overrides)
+    return _mock_container(container, mock_dict, **defaults)
 
 
 def mock_search_result(container=None, **overrides):
