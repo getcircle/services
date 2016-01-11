@@ -12,6 +12,7 @@ from services import utils
 
 from . import models
 from .mixins import PostPermissionsMixin
+from .editors import trix
 
 
 class CreatePost(PreRunParseTokenMixin, actions.Action):
@@ -222,4 +223,5 @@ class DeletePost(PostPermissionsMixin, actions.Action):
         if not permissions.can_delete:
             raise self.PermissionDenied()
 
+        trix.delete_post(post.content, self.token)
         post.delete()
