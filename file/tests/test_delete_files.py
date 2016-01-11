@@ -25,24 +25,29 @@ class TestDeleteFiles(MockedTestCase):
         self.client = service.control.Client('file', token=token)
         self.mock.instance.dont_mock_service('file')
 
-    def test_delete_file_id_required(self):
-        with self.assertFieldError('id', 'MISSING'):
+    def test_delete_file_ids_required(self):
+        with self.assertFieldError('ids', 'MISSING'):
             self.client.call_action('delete')
 
     def test_delete_file(self):
         f = factories.FileFactory.create(organization_id=self.organization.id)
-        self.client.call_action('delete', id=str(f.id))
+        self.client.call_action('delete', ids=[str(f.id)])
         self.assertFalse(models.File.objects.filter(pk=f.id).exists())
 
+    def test_delete_multiple_files(self):
+        files = factories.FileFactory.create_batch(size=4, organization_id=self.organization.id)
+        self.client.call_action('delete', ids=[str(f.id) for f in files])
+        self.assertFalse(models.File.objects.filter(pk__in=[f.id for f in files]).exists())
+
     def test_delete_file_does_not_exist(self):
-        with self.assertFieldError('id', 'DOES_NOT_EXIST'):
-            self.client.call_action('delete', id=fuzzy.FuzzyUUID().fuzz())
+        with self.assertFieldError('ids', 'DO_NOT_EXIST'):
+            self.client.call_action('delete', ids=[fuzzy.FuzzyUUID().fuzz()])
 
     def test_delete_file_invalid_id(self):
-        with self.assertFieldError('id'):
-            self.client.call_action('delete', id='invalid')
+        with self.assertFieldError('ids'):
+            self.client.call_action('delete', ids=['invalid'])
 
     def test_delete_file_wrong_organization(self):
         f = factories.FileFactory.create()
-        with self.assertFieldError('id', 'DOES_NOT_EXIST'):
-            self.client.call_action('delete', id=str(f.id))
+        with self.assertFieldError('ids', 'DO_NOT_EXIST'):
+            self.client.call_action('delete', ids=[str(f.id)])

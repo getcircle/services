@@ -59,7 +59,7 @@ class UpdatePost(PostPermissionsMixin, actions.Action):
             service='file',
             action='delete',
             client_kwargs={'token': self.token},
-            id=str(attachment.file_id),
+            ids=[str(attachment.file_id)],
         )
         attachment.delete()
 

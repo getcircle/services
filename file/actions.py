@@ -122,20 +122,19 @@ class GetFiles(PreRunParseTokenMixin, actions.Action):
 class Delete(PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
-        'id': [validators.is_uuid4],
+        'ids': [validators.is_uuid4_list],
     }
-    required_fields = ('id',)
+    required_fields = ('ids',)
 
     def run(self, *args, **kwargs):
-        try:
-            f = models.File.objects.get(
-                organization_id=self.parsed_token.organization_id,
-                pk=self.request.id,
-            )
-        except models.File.DoesNotExist:
-            raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
+        files = models.File.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            pk__in=self.request.ids,
+        )
+        if not files:
+            raise self.ActionFieldError('ids', 'DO_NOT_EXIST')
         else:
-            f.delete()
+            files.delete()
 
 
 class Upload(PreRunParseTokenMixin, actions.Action):
