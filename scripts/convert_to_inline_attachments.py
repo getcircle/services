@@ -21,11 +21,15 @@ def run():
     for _, data in posts_dict.iteritems():
         post = data['post']
         attachments = data['attachments']
-        inline_attachments = translate_html(post.content, {}, attachments)
+        content = post.content
+        if not content.startswith('<div'):
+            content = '<div>%s</div>' % (content,)
+
+        inline_attachments = translate_html(content, {}, attachments)
         print '--- original post content: %s' % (post.id)
-        print post.content
+        print post.content.encode('utf-8')
         print '--- new post content: %s' % (post.id)
-        print inline_attachments
+        print inline_attachments.encode('utf-8')
         print '---> %s deleting attachments: %s' % (post.id, str([(a.id, a.file_id) for a in attachments]))
         post.content = inline_attachments
         post.save()
