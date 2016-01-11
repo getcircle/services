@@ -52,6 +52,7 @@ def generate_trix_inline_attachment(f):
         'filename': f.name,
         'href': f.source_url,
         'url': f.source_url,
+        'fileId': f.id,
     }
 
     previewable = is_previewable(f.content_type)

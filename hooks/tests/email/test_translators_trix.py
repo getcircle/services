@@ -22,14 +22,15 @@ class Test(MockedTestCase):
         content_type = 'image/png'
         size = 6799
         url = fuzzy.FuzzyText(prefix='https://', suffix='.com').fuzz()
-        expected = '<a data-trix-content-type="%(content_type)s" data-trix-attachment=\'{"contentType":"%(content_type)s","filename":"%(name)s","href":"%(url)s","url":"%(url)s"}\' href="%(url)s"><figure class="attachment attachment-preview %(content_sub_type)s"><img src="%(url)s"><figcaption class="caption">%(name)s <span>6.64 KB</span></figcaption></figure></a>' % {
+        f = mocks.mock_file(name=name, content_type=content_type, size=size, source_url=url)
+        expected = '<a data-trix-content-type="%(content_type)s" data-trix-attachment=\'{"contentType":"%(content_type)s","fileId":"%(id)s","filename":"%(name)s","href":"%(url)s","url":"%(url)s"}\' href="%(url)s"><figure class="attachment attachment-preview %(content_sub_type)s"><img src="%(url)s"><figcaption class="caption">%(name)s <span>6.64 KB</span></figcaption></figure></a>' % {
+            'id': f.id,
             'name': name,
             'url': url,
             'content_type': content_type,
             'content_sub_type': 'png',
         }
-        _file = mocks.mock_file(name=name, content_type=content_type, size=size, source_url=url)
-        result = generate_trix_inline_attachment(_file)
+        result = generate_trix_inline_attachment(f)
         serialized = self._serialize(result)
         self.assertEqual(expected, serialized)
 
@@ -38,14 +39,15 @@ class Test(MockedTestCase):
         content_type = 'video/mp4'
         size = 858092
         url = fuzzy.FuzzyText(prefix='https://', suffix='.com').fuzz()
-        expected = '<a data-trix-content-type="%(content_type)s" data-trix-attachment=\'{"contentType":"%(content_type)s","filename":"%(name)s","href":"%(url)s","url":"%(url)s"}\' href="%(url)s"><figure class="attachment attachment-file %(content_sub_type)s"><figcaption class="caption">%(name)s <span>837.98 KB</span></figcaption></figure></a>' % {
+        f = mocks.mock_file(name=name, content_type=content_type, size=size, source_url=url)
+        expected = '<a data-trix-content-type="%(content_type)s" data-trix-attachment=\'{"contentType":"%(content_type)s","fileId":"%(id)s","filename":"%(name)s","href":"%(url)s","url":"%(url)s"}\' href="%(url)s"><figure class="attachment attachment-file %(content_sub_type)s"><figcaption class="caption">%(name)s <span>837.98 KB</span></figcaption></figure></a>' % {
+            'id': f.id,
             'name': name,
             'url': url,
             'content_type': content_type,
             'content_sub_type': 'mp4',
         }
-        _file = mocks.mock_file(name=name, content_type=content_type, size=size, source_url=url)
-        result = generate_trix_inline_attachment(_file)
+        result = generate_trix_inline_attachment(f)
         serialized = self._serialize(result)
         self.assertEqual(expected, serialized)
 
