@@ -41,5 +41,10 @@ ALLOWED_ATTRIBUTES['figure'] = ['class']
 ALLOWED_ATTRIBUTES['figcaption'] = ['class']
 
 
-def clean(value):
-    return bleach.clean(value, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
+def clean(value, **kwargs):
+    defaults = {
+        'tags': ALLOWED_TAGS,
+        'attributes': ALLOWED_ATTRIBUTES,
+    }
+    defaults.update(kwargs)
+    return bleach.clean(value, **defaults)

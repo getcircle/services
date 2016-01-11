@@ -4,6 +4,11 @@ import re
 
 from lxml import html
 
+from post.utils import (
+    clean,
+    ALLOWED_TAGS,
+)
+
 from .base import make_translator
 
 SIZES = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
@@ -107,36 +112,9 @@ def _translate_inline_image(element, attachments):
     parent.remove(element)
 
 
-def _is_grandparent_root(element):
-    root = element.getroottree().getroot()
-    parent = element.getparent()
-    if parent is not None:
-        return root == parent.getparent()
-    return False
-
-
-def _translate_parent_div(element):
-    parent = element.getparent()
-    # we want to preserve one top level div, while removing all other divs.
-    # lxml will create an "html" wrapper root which will be the grandparent of
-    # the div we want to preserve.
-    grandparent_is_root = _is_grandparent_root(element)
-    if (
-        not grandparent_is_root and
-        parent is not None and
-        parent.tag.endswith('div') and
-        parent.getchildren()[-1] == element
-    ):
-        for e in parent.getchildren():
-            parent.addprevious(e)
-
-        parent.getparent().remove(parent)
-
-
 def translate_element(element, attachments):
     if element.tag.endswith('img'):
         _translate_inline_image(element, attachments)
-    _translate_parent_div(element)
 
 
 def translate_attachments(tree, attachments):
@@ -145,4 +123,18 @@ def translate_attachments(tree, attachments):
         tree.append(element)
 
 
-translate_html = make_translator(translate_element, translate_attachments)
+def clean_html(html):
+    """Clean the HTML after translations.
+
+    Trix doesn't support nested div tags so in this process we strip out any
+    divs along with any other invalid HTML, finally wrapping it in a single
+    div.
+
+    """
+    tags = list(ALLOWED_TAGS)
+    tags.remove('div')
+    bleached = clean(html, strip=True, tags=tags)
+    return '<div>%s</div>' % (bleached,)
+
+
+translate_html = make_translator(translate_element, translate_attachments, clean_html)
