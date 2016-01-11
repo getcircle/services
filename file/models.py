@@ -2,9 +2,14 @@ from common.db import models
 from protobufs.services.file import containers_pb2 as file_containers
 
 
+def _safe_int(value):
+    if value is not None:
+        return int(value)
+
+
 class File(models.UUIDModel, models.TimestampableModel):
 
-    as_dict_value_transforms = {'size': int}
+    as_dict_value_transforms = {'size': _safe_int}
 
     by_profile_id = models.UUIDField()
     organization_id = models.UUIDField(db_index=True)
