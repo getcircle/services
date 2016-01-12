@@ -115,4 +115,5 @@ class Test(MockedTestCase):
         return_fixture('forwarded_email_weird_spacing.txt', patched_boto)
         post = actions.get_post_from_message('some id', self.token)
         self.assertNotIn('\n', post.content)
-        self.assertIn(u'<span>Co-Founder &amp; CEO,\xa0</span> <a', post.content)
+        self.assertIn(u'<span>Co-Founder &amp; CEO,\xa0</span><a', post.content)
+        self.assertIn('<p><span>We would love', post.content)

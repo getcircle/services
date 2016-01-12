@@ -1,6 +1,12 @@
+import re
+
 from bleach.encoding import force_unicode
 import html5lib
 from html5lib.serializer import serialize
+
+
+def _remove_insignificant_whitespace(html):
+    return re.sub('>\s+<', '><', html)
 
 
 def make_translator(translate_element, translate_attachments, clean):
@@ -17,5 +23,6 @@ def make_translator(translate_element, translate_attachments, clean):
             quote_attr_values=True,
             strip_whitespace=True,
         ).strip()
-        return clean(serialized)
+        without_whitespace = _remove_insignificant_whitespace(serialized)
+        return clean(without_whitespace)
     return _inner
