@@ -11,6 +11,11 @@ def make_translator(translate_element, translate_attachments, clean):
             translate_element(element, inline_attachments_dict)
 
         translate_attachments(tree, attachments)
-        serialized = serialize(tree, tree='lxml', quote_attr_values=True).strip()
+        serialized = serialize(
+            tree,
+            tree='lxml',
+            quote_attr_values=True,
+            strip_whitespace=True,
+        ).strip()
         return clean(serialized)
     return _inner

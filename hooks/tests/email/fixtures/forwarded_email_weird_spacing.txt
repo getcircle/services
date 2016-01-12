@@ -1,0 +1,260 @@
+Return-Path: <ravi@lunohq.com>
+Received: from mail-oi0-f41.google.com (mail-oi0-f41.google.com [209.85.218.41])
+ by inbound-smtp.us-east-1.amazonaws.com with SMTP id 8erqmuht7sh1n0b0hhq6t0tn03goudgto7nnqgo1
+ for create@team.lunohq.com;
+ Tue, 12 Jan 2016 17:27:28 +0000 (UTC)
+Received: by mail-oi0-f41.google.com with SMTP id k206so77123757oia.1
+        for <create@team.lunohq.com>; Tue, 12 Jan 2016 09:27:27 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=lunohq-com.20150623.gappssmtp.com; s=20150623;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type;
+        bh=rOBbpoI4Rf3xFDg0crU/p0sCOxqHpxC9g50xu8TudTc=;
+        b=p2auGAWPatYP/EBH6DghDoaVihKl0VgPoK+4kGkyzQVNb6vC/8yzVHNuds6mzG0rnY
+         igH1dI7ud6F+49hJDTIsBmNB0aoPC+0263IP1joGMEE/w+bKg9+DEV8HmKDfJo7ElToc
+         /ufwCDSYNyv3l+iqkwolO4MMTkZpjlBA9U8PrC+RFMcryePYs0JuEVgMR2AHPU1Wbt2J
+         sPd341q7pi5JpSUYEScUOQAmSqckjEv7c0K7THN64pWzxNy1O5wBBz60xynpZu6xrfFK
+         9QjELFBwhHuMfYP9igHuyJj8aI5NRJlsTi1NTrBRLUqmgGmPcPdpTiJJOa5goNoUXclL
+         Dasg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20130820;
+        h=x-gm-message-state:mime-version:in-reply-to:references:from:date
+         :message-id:subject:to:content-type;
+        bh=rOBbpoI4Rf3xFDg0crU/p0sCOxqHpxC9g50xu8TudTc=;
+        b=hdYkulfw/26ch4eSVN5Zl/99TZ8/jd7DgKI80AkuU1dpLpurnEHbxEBpHBSeFdv1fa
+         3tlmgXf2C/KhyqM5VjKehwYBnZulVbn2gX2HEg7YGOswCxlsCohwuWGR+A8j4FG6V9m5
+         GEObBY8MzAM6dR8cdsk1DH1ZkRPxrQFkQGpH2CU8Iw0efewR5mqKMnhLfTRNkqCBHw8a
+         zLbLmpGzNAhdCvjPJ9cY6U/dze/AicnZcdU7cWau0o65Mf9o5w+rj0koHB09VR+yRTGd
+         d+YT0tLIYqCp7U0G3Ug9NTwAsgAkXCGRMsGACcAFaTNUYtNXbwfV9fn+llabmnli4Uyc
+         oLKQ==
+X-Gm-Message-State: ALoCoQn6SoGRbdDdHNmaa2pZfIUe+jiakArRSK6m6naPXeUk7+Bn4yH9+k1GilwQzTknAwJ+N3xWrk1T6lBzw4x24Y2kV8Hyy+0jhuG91+zl9tcXOS3C9gA=
+X-Received: by 10.202.172.80 with SMTP id v77mr94308522oie.18.1452619647242;
+ Tue, 12 Jan 2016 09:27:27 -0800 (PST)
+MIME-Version: 1.0
+Received: by 10.76.37.99 with HTTP; Tue, 12 Jan 2016 09:26:47 -0800 (PST)
+In-Reply-To: <814223186.1598.1452614508225.JavaMail.storm@usw2b-8bo57iw4-grunt-drone-prod.amz.relateiq.com>
+References: <814223186.1598.1452614508225.JavaMail.storm@usw2b-8bo57iw4-grunt-drone-prod.amz.relateiq.com>
+From: Ravi Rani <ravi@lunohq.com>
+Date: Tue, 12 Jan 2016 09:26:47 -0800
+Message-ID: <CA+EczP7Jd62XqkUdPBnvAe-82ASgzvMaPxsSMxwLk0PKUwPWBQ@mail.gmail.com>
+Subject: Fwd: Luno Update - Rich Text Editor, Email Ingestion 2.0, File
+ Previews in iOS
+To: create@team.lunohq.com
+Content-Type: multipart/alternative; boundary=001a113ce6e2116a1d0529265e8b
+
+--001a113ce6e2116a1d0529265e8b
+Content-Type: text/plain; charset=UTF-8
+
+---------- Forwarded message ----------
+From: Ravi Rani <ravi@lunohq.com>
+Date: Tue, Jan 12, 2016 at 8:01 AM
+Subject: Luno Update - Rich Text Editor, Email Ingestion 2.0, File Previews
+in iOS
+To: ferren@thumbtack.com, manuel@thumbtack.com, matt@thumbtack.com,
+quinn@thumbtack.com, rlgc@thumbtack.com
+
+
+Hey everyone,
+
+Happy New Year!! Hope you are off to a great start this year.
+
+We have been busy with some neat updates we think you will like.
+
+Rich Text Editor
+
+First off, our new editor is out in production. It supports all the
+standard rich text abilities like bold, italic, links, lists, and code
+blocks. In addition, you can easily upload files by simple drag and drop.
+
+
+
+Email Ingestion 2.0
+
+Posts created by forwarding an email keep the formatting intact and also
+add attachments inline if present. In our previous version, we only
+supported plain text emails. We have also improved the performance of email
+ingestion and new posts should appear in less than a minute on the site.
+
+To test, forward any emails to create@thumbtack.lunohq.com and you will get
+an email back with the link to the post on Luno.
+
+
+Rich text posts, sharing, and file preview in iOS app ( live later this week
+)
+
+Luno iOS app now supports viewing rich text posts and all the attached
+files. This means you can see presentations, word documents, PDFs, and
+other popular file types all within the app itself.
+
+
+We would love to get your feedback on these updates. Please check them out
+and let me know if you have questions.
+
+Best,
+
+Ravi
+
+
+
+
+Ravi Rani
+Co-Founder & CEO,  Luno <http://www.lunohq.com/>
+c: 213-321-0100
+@ravirani <http://www.twitter.com/ravirani>
+
+--001a113ce6e2116a1d0529265e8b
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><br><div class=3D"gmail_quote">---------- Forwarded messag=
+e ----------<br>From: <b class=3D"gmail_sendername">Ravi Rani</b> <span dir=
+=3D"ltr">&lt;<a href=3D"mailto:ravi@lunohq.com">ravi@lunohq.com</a>&gt;</sp=
+an><br>Date: Tue, Jan 12, 2016 at 8:01 AM<br>Subject: Luno Update - Rich Te=
+xt Editor, Email Ingestion 2.0, File Previews in iOS<br>To: <a href=3D"mail=
+to:ferren@thumbtack.com">ferren@thumbtack.com</a>, <a href=3D"mailto:manuel=
+@thumbtack.com">manuel@thumbtack.com</a>, <a href=3D"mailto:matt@thumbtack.=
+com">matt@thumbtack.com</a>, <a href=3D"mailto:quinn@thumbtack.com">quinn@t=
+humbtack.com</a>, <a href=3D"mailto:rlgc@thumbtack.com">rlgc@thumbtack.com<=
+/a><br><br><br><div><div>   <span>     <p style=3D"line-height:1.38;margin-=
+top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">Hey
+    everyone,</span></p>     <br>     <p style=3D"line-height:1.38;margin-t=
+op:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">Happy
+        New Year!! Hope you are off to a great start this
+    year.</span></p>     <p style=3D"line-height:1.38;margin-top:0.0pt;marg=
+in-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">We
+        have been busy with some neat updates we think you will
+    like.</span></p>     <br>     <p style=3D"line-height:1.38;margin-top:0=
+.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);font-weight:700;vertical-align:baseline;background-color:transparent">Ri=
+ch
+        Text Editor</span></p>     <br>     <p style=3D"line-height:1.38;ma=
+rgin-top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">First
+        off, our new editor is out in production. It supports all the
+        standard rich text abilities like bold, italic, links, lists,
+        and code blocks. In addition, you can easily upload files by
+        simple drag and drop. </span></p>     <br>     <p style=3D"line-hei=
+ght:1.38;margin-top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">
+          <img src=3D"https://lh3.googleusercontent.com/zO4W8mWXxPdtr3496rL=
+GBbtyOZTQ-uf0Y23kiYKCdE61MBQBTD77C4YTetq6HR4X3GXHBO4lexRa49-SPoywCcHU0pWW-K=
+0ffGsMjUuVFuF3EKYmV1cspho13y_1cMPvd93ZCbBs" style=3D"border:1.0px solid rgb=
+(217,217,217)"></span></p>
+    <br>     <br>     <p style=3D"line-height:1.38;margin-top:0.0pt;margin-=
+bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);font-weight:700;vertical-align:baseline;background-color:transparent">Em=
+ail
+        Ingestion 2.0</span></p>     <br>     <p style=3D"line-height:1.38;=
+margin-top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">Posts
+        created by forwarding an email keep the formatting intact and
+        also add attachments inline if present. In our previous version,
+        we only supported plain text emails. We have also improved the
+        performance of email ingestion and new posts should appear in
+        less than a minute on the site.</span></p>     <br>     <p style=3D=
+"line-height:1.38;margin-top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">To
+        test, forward any emails to </span>       <a href=3D"mailto:create@=
+thumbtack.lunohq.com" style=3D"text-decoration:none" target=3D"_blank"><spa=
+n style=3D"font-size:14.6667px;font-family:Arial;text-decoration:underline;=
+vertical-align:baseline;background-color:transparent">create@thumbtack.luno=
+hq.com</span></a>
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">
+        and you will get an email back with the link to the post on
+    Luno.</span></p>     <br>     <br>     <p style=3D"line-height:1.38;mar=
+gin-top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);font-weight:700;vertical-align:baseline;background-color:transparent">Ri=
+ch
+        text posts, sharing, and file preview in iOS app </span>
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">(</span>
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);font-style:italic;vertical-align:baseline;background-color:transparent">=
+live
+        later this week</span>       <span style=3D"font-size:14.6667px;fon=
+t-family:Arial;color:rgb(0,0,0);vertical-align:baseline;background-color:tr=
+ansparent">)</span></p>
+    <br>     <p style=3D"line-height:1.38;margin-top:0.0pt;margin-bottom:0.=
+0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">Luno
+        iOS app now supports viewing rich text posts and all the
+        attached files. This means you can see presentations, word
+        documents, PDFs, and other popular file types all within the app
+        itself. </span></p>     <br>     <p style=3D"line-height:1.38;margi=
+n-top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">
+          <img src=3D"https://lh6.googleusercontent.com/NkT6xuKZzaoQUhC8dw8=
+wkock3m0d6jDhr-jnmLp67ymBBQwyKPcCY55kZjdU1swRk_mbdP7BhmwlK9ky8Z1xvbzMff4AIS=
+eZYxZ0DJ0I7LFvq0E7oHf7avVGjvleg3q_qnVmtJwM" style=3D"border:1.0px solid rgb=
+(204,204,204)"></span>
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">
+          <img src=3D"https://lh6.googleusercontent.com/y-0HGjlffUM9gTR-Loo=
+Vgq0c8sDyaH7O3ihZeibb1h_f_HP-fO789BkoR1Dw7I2hiBodlgVD2dEKBLmr1-jTLnWttJMNEa=
+U7uyQxrTKWcSZN7AmrsQfVYjEYvkIVtEU1BNFaOwGt" style=3D"border:1.0px solid rgb=
+(204,204,204)"></span></p>
+    <br>     <p style=3D"line-height:1.38;margin-top:0.0pt;margin-bottom:0.=
+0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">We
+        would love to get your feedback on these updates. Please check
+        them out and let me know if you have questions.</span></p>
+    <br>     <p style=3D"line-height:1.38;margin-top:0.0pt;margin-bottom:0.=
+0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">Best,</span></p>
+      <p style=3D"line-height:1.38;margin-top:0.0pt;margin-bottom:0.0pt">
+        <span style=3D"font-size:14.6667px;font-family:Arial;color:rgb(0,0,=
+0);vertical-align:baseline;background-color:transparent">Ravi</span></p><sp=
+an class=3D"HOEnZb"><font color=3D"#888888">
+      <div>       <span style=3D"font-size:14.6667px;font-family:Arial;colo=
+r:rgb(0,0,0);vertical-align:baseline;background-color:transparent">
+    <br></span></div>     <div>       <span style=3D"font-size:14.6667px;fo=
+nt-family:Arial;color:rgb(0,0,0);vertical-align:baseline;background-color:t=
+ransparent">
+    <br></span></div>     <div>       <span style=3D"font-size:14.6667px;fo=
+nt-family:Arial;color:rgb(0,0,0);vertical-align:baseline;background-color:t=
+ransparent">
+    <br></span></div>     <div>       <span style=3D"font-size:14.6667px;fo=
+nt-family:Arial;color:rgb(0,0,0);vertical-align:baseline;background-color:t=
+ransparent">
+  <br></span></div></font></span></span><span class=3D"HOEnZb"><font color=
+=3D"#888888">   <div>     <div>
+        <div>         <div>           <div>             <div>
+                <div>                 <div>                   <div>
+                      <span style=3D"font-size:12.8px">Ravi
+                  Rani</span></div>                   <div>
+                      <span style=3D"font-size:12.8px">Co-Founder &amp;
+                    CEO,=C2=A0</span>                     <a href=3D"http:/=
+/www.lunohq.com/" style=3D"color:rgb(17,85,204);font-size:12.8px" target=3D=
+"_blank"><font color=3D"#3d85c6">Luno</font></a>
+                  <br></div>                   <div>
+                      <span style=3D"font-size:12.8px">c:=C2=A0<a style=3D"=
+color:rgb(17,85,204)">213-321-0100</a></span>
+                  <br></div>                   <div>
+                      <div style=3D"color:rgb(136,136,136);font-size:12.8px=
+">
+                        <font color=3D"#3d85c6" style=3D"color:rgb(17,85,20=
+4)">
+                          <a href=3D"http://www.twitter.com/ravirani" style=
+=3D"color:rgb(17,85,204)" target=3D"_blank">@ravirani</a></font></div></div=
+></div></div></div></div></div></div></div></div>
+    </font></span></div></div></div><br></div>
+
+--001a113ce6e2116a1d0529265e8b--

@@ -109,3 +109,10 @@ class Test(MockedTestCase):
         self.assertIn('From: Michael Hahn', post.content)
         self.assertIn('exciting', post.content)
         self.assertIn('you posted', post.content)
+
+    @mock.patch('hooks.email.actions.boto3')
+    def test_get_post_from_message_forwarded_email_weird_spacing(self, patched_boto):
+        return_fixture('forwarded_email_weird_spacing.txt', patched_boto)
+        post = actions.get_post_from_message('some id', self.token)
+        self.assertNotIn('\n', post.content)
+        self.assertIn(u'<span>Co-Founder &amp; CEO,\xa0</span> <a', post.content)
