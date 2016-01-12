@@ -38,5 +38,8 @@ def transform_html(text):
     text = force_unicode(text)
     parser = html5lib.HTMLParser(tokenizer=PostSanitizer)
     tree = parser.parseFragment(text)
-    serialized = serialize(tree).strip()
+    try:
+        serialized = serialize(tree).strip()
+    except TypeError:
+        serialized = ''
     return force_unicode(serialized)
