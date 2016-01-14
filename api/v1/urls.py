@@ -4,6 +4,4 @@ from django.conf.urls import (
 )
 
 
-urlpatterns = [
-    url(r'^sync/', include('api.v1.sync.urls')),
-]
+urlpatterns = []
