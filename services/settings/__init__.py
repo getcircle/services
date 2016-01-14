@@ -115,7 +115,6 @@ LOCALIZED_SERVICES = [
     'post.server.Server',
     'profiles.server.Server',
     'search.server.Server',
-    'sync.server.Server',
     'users.server.Server',
 ]
 
