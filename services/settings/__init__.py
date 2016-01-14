@@ -47,7 +47,6 @@ INSTALLED_APPS = (
 
     'services',
 
-    'api',
     'feature',
     'file',
     'glossary',
