@@ -60,7 +60,6 @@ INSTALLED_APPS = (
     'post',
     'profiles',
     'search',
-    'sync',
     'users',
 )
 
