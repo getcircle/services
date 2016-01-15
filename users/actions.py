@@ -538,24 +538,7 @@ class RecordDevice(mixins.PreRunParseTokenMixin, actions.Action):
 
 class RequestAccess(actions.Action):
 
-    type_validators = {
-        'user_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'user_id': {
-            valid_user: 'DOES_NOT_EXIST',
-        },
-    }
-
-    def validate(self, *args, **kwargs):
-        super(RequestAccess, self).validate(*args, **kwargs)
-        if not self.is_error():
-            if not (self.request.HasField('user_id') or self.request.HasField('anonymous_user')):
-                raise self.ActionError(
-                    'MISSING_ARGUMENTS',
-                    ('MISSING_ARGUMENTS', 'must provide either user_id or anonymous_user'),
-                )
+    required_fields = ('anonymous_user',)
 
     def _get_provider_name(self, provider):
         provider_dict = dict(zip(
@@ -642,13 +625,7 @@ class RequestAccess(actions.Action):
         )
 
     def run(self, *args, **kwargs):
-        if self.request.user_id:
-            access_request, _ = models.AccessRequest.objects.get_or_create(
-                user_id=self.request.user_id,
-            )
-            access_request.to_protobuf(self.response.access_request)
-        else:
-            self._anonymous_user_request()
+        self._anonymous_user_request()
 
 
 class GetAuthenticationInstructions(actions.Action):

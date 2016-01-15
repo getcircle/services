@@ -197,8 +197,3 @@ class Device(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         index_together = ('user', 'last_token_id')
-
-
-class AccessRequest(models.UUIDModel, models.TimestampableModel):
-
-    user = models.OneToOneField(User)
