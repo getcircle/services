@@ -16,8 +16,6 @@ from service import (
     validators,
 )
 import service.control
-from twilio.rest import TwilioRestClient
-from twilio.rest.exceptions import TwilioRestException
 
 from services import mixins
 from services.token import (
@@ -271,77 +269,6 @@ class Logout(actions.Action):
         else:
             self._delete_token_for_client(token, self.request.client_type)
         self.service_control.token = ''
-
-
-class SendVerificationCode(actions.Action):
-
-    type_validators = {
-        'user_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'user_id': {
-            valid_user: 'DOES_NOT_EXIST',
-        }
-    }
-
-    def __init__(self, *args, **kwargs):
-        super(SendVerificationCode, self).__init__(*args, **kwargs)
-        self.twilio_client = TwilioRestClient(
-            settings.TWILIO_ACCOUNT_SID,
-            settings.TWILIO_AUTH_TOKEN,
-        )
-
-    def validate(self, *args, **kwargs):
-        super(SendVerificationCode, self).validate(*args, **kwargs)
-        if not self.is_error():
-            self.user = models.User.objects.get(pk=self.request.user_id)
-            if not self.user.phone_number:
-                # XXX we should be raising actual exceptions here and mapping them
-                self.note_error(
-                    'NO_PHONE_NUMBER',
-                    ('NO_PHONE_NUMBER', 'user must have a phone number set'),
-                )
-
-    def run(self, *args, **kwargs):
-        totp = models.TOTPToken.objects.totp_for_user(self.user)
-        # TODO we should be logging the response of this message
-        try:
-            message = self.twilio_client.messages.create(
-                body='Your verification code: %s' % (totp,),
-                to=self.user.phone_number.as_international,
-                from_=settings.TWILIO_PHONE_NUMBER,
-            )
-        except TwilioRestException as e:
-            self.note_error('FAILED', ('FAILED', e.msg))
-        else:
-            self.response.message_id = message.sid
-
-
-class VerifyVerificationCode(actions.Action):
-
-    type_validators = {
-        'user_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'user_id': {
-            valid_user: 'DOES_NOT_EXIST',
-        }
-    }
-
-    def run(self, *args, **kwargs):
-        valid = models.TOTPToken.objects.verify_totp_for_user_id(
-            self.request.code,
-            self.request.user_id,
-        )
-        if not valid:
-            self.note_field_error('code', 'INVALID')
-        else:
-            user = models.User.objects.get(pk=self.request.user_id)
-            user.phone_number_verified = True
-            user.save()
-            self.response.verified = True
 
 
 class GetAuthorizationInstructions(actions.Action):

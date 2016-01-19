@@ -24,8 +24,6 @@ class Server(service.control.Server):
         'valid_user': actions.ValidUser,
         'authenticate_user': actions.AuthenticateUser,
         'logout': actions.Logout,
-        'send_verification_code': actions.SendVerificationCode,
-        'verify_verification_code': actions.VerifyVerificationCode,
         'get_authorization_instructions': actions.GetAuthorizationInstructions,
         'complete_authorization': actions.CompleteAuthorization,
         'get_identities': actions.GetIdentities,
