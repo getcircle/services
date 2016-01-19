@@ -60,7 +60,7 @@ class UserManager(BaseUserManager, models.CommonManager):
 class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
 
     USERNAME_FIELD = 'primary_email'
-    protobuf_exclude_fields = ['password']
+    protobuf_exclude_fields = ('password',)
 
     objects = UserManager()
 
