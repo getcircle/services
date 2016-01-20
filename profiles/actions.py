@@ -2,7 +2,6 @@ import arrow
 from cacheops import cached_as
 from common import utils
 import django.db
-from django.db import connection
 from protobufs.services.search.containers import entity_pb2
 import service.control
 from service import (
