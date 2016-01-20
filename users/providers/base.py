@@ -1,4 +1,5 @@
 import json
+import logging
 
 from cryptography.fernet import (
     Fernet,
@@ -13,6 +14,8 @@ from itsdangerous import (
 )
 
 from .. import models
+
+logger = logging.getLogger(__name__)
 
 CSRF_KEY_LENGTH = 32
 
@@ -38,8 +41,8 @@ def parse_state_token(provider, token):
         payload = json.loads(
             crypt.decrypt(encrypted_token, ttl=settings.USER_SERVICE_STATE_MAX_AGE)
         )
-    except (BadSignature, InvalidToken, ValueError):
-        # XXX we should be logging what went wrong here
+    except (BadSignature, InvalidToken, ValueError) as e:
+        logger.error('failed to decrypt state payload: %s', e)
         payload = None
     return payload
 
