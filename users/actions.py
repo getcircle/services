@@ -130,30 +130,6 @@ class BulkCreateUsers(actions.Action):
             user.to_protobuf(container)
 
 
-class UpdateUser(actions.Action):
-
-    # XXX this isn't working if a protobuf instance is passed
-    type_validators = {
-        'user.id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'user.id': {
-            valid_user: 'DOES_NOT_EXIST',
-        },
-        'user.phone_number': {
-            unique_phone_number: 'DUPLICATE',
-            validate_phone_number: 'INVALID',
-        },
-    }
-
-    def run(self, *args, **kwargs):
-        user = models.User.objects.get(pk=self.request.user.id)
-        user.update_from_protobuf(self.request.user)
-        user.save()
-        user.to_protobuf(self.response.user)
-
-
 class GetUser(actions.Action):
 
     def run(self, *args, **kwargs):
