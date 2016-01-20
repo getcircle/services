@@ -18,12 +18,6 @@ class ProfileSearchAdapter(SearchAdapter):
         return obj.to_protobuf(token=make_admin_token(organization_id=obj.organization_id))
 
 
-class TagSearchAdapter(SearchAdapter):
-
-    def get_title(self, obj):
-        return obj.name
-
-
 class ProfileStatusSearchAdapter(SearchAdapter):
 
     def get_title(self, obj):
@@ -51,9 +45,6 @@ class AppConfig(BaseAppConfig):
             ProfileSearchAdapter,
             fields=('title', 'email', 'first_name', 'last_name', 'nickname'),
         )
-
-        Tag = self.get_model('Tag')
-        watson.register(Tag, TagSearchAdapter, fields=('name', 'type'))
 
         ProfileStatus = self.get_model('ProfileStatus')
         watson.register(

@@ -11,10 +11,7 @@ from services.test import (
     MockedTestCase,
 )
 
-from .. import (
-    factories,
-    models,
-)
+from .. import factories
 
 
 class TestProfiles(MockedTestCase):
@@ -384,73 +381,6 @@ class TestProfiles(MockedTestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
 
-    def test_get_active_tags_invalid_organization_id(self):
-        with self.assertFieldError('organization_id'):
-            self.client.call_action(
-                'get_active_tags',
-                organization_id='invalid',
-                tag_type=profile_containers.TagV1.SKILL,
-            )
-
-    def test_get_active_tags(self):
-        organization_id = fuzzy.FuzzyUUID().fuzz()
-        skills = factories.TagFactory.create_batch(
-            size=3,
-            organization_id=organization_id,
-            type=profile_containers.TagV1.SKILL,
-        )
-        # create interests that SHOULD be included
-        interests = factories.TagFactory.create_batch(
-            size=3,
-            organization_id=organization_id,
-            type=profile_containers.TagV1.INTEREST,
-        )
-        profile = factories.ProfileFactory.create(
-            tags=[skills[1], interests[1]],
-            organization_id=organization_id,
-        )
-        # create a profile in another organization
-        factories.ProfileFactory.create(tags=[factories.TagFactory.create()])
-        # add duplicate
-        factories.ProfileFactory.create(tags=[skills[1]])
-        response = self.client.call_action(
-            'get_active_tags',
-            organization_id=str(profile.organization_id),
-        )
-        self.assertTrue(response.success)
-        # since we didn't specify tag_type we should get back all active tags
-        # for the organization
-        self.assertEqual(len(response.result.tags), 2)
-
-    def test_get_active_tags_skills(self):
-        organization_id = fuzzy.FuzzyUUID().fuzz()
-        skills = factories.TagFactory.create_batch(
-            size=3,
-            organization_id=organization_id,
-            type=profile_containers.TagV1.SKILL,
-        )
-        # create interests that shouldn't be included
-        interests = factories.TagFactory.create_batch(
-            size=3,
-            organization_id=organization_id,
-            type=profile_containers.TagV1.INTEREST,
-        )
-        profile = factories.ProfileFactory.create(
-            tags=[skills[1], interests[1]],
-            organization_id=organization_id,
-        )
-        # create a profile in another organization
-        factories.ProfileFactory.create(tags=[factories.TagFactory.create()])
-        # add duplicate
-        factories.ProfileFactory.create(tags=[skills[1]])
-        response = self.client.call_action(
-            'get_active_tags',
-            organization_id=str(profile.organization_id),
-            tag_type=profile_containers.TagV1.SKILL,
-        )
-        self.assertTrue(response.success)
-        self.assertEqual(len(response.result.tags), 1)
-
     def test_bulk_create_profiles(self):
         profiles = []
         for _ in range(3):
@@ -494,23 +424,6 @@ class TestProfiles(MockedTestCase):
         self.assertTrue(response.success)
         self.assertEqual(len(response.result.profiles), 1)
         self.verify_containers(self.profile, response.result.profiles[0])
-
-    def test_get_profiles_invalid_tag_id(self):
-        with self.assertFieldError('tag_id'):
-            self.client.call_action('get_profiles', tag_id='invalid')
-
-    def test_get_profiles_skills(self):
-        skill = factories.TagFactory.create(organization_id=self.profile.organization_id)
-        factories.ProfileFactory.create_batch(
-            size=4,
-            tags=[skill],
-            organization_id=self.profile.organization_id,
-        )
-        response = self.client.call_action(
-            'get_profiles',
-            tag_id=str(skill.id),
-        )
-        self.assertEqual(len(response.result.profiles), 4)
 
     def test_get_profiles_invalid_id_list(self):
         with self.assertFieldError('ids'):

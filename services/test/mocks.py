@@ -121,18 +121,6 @@ def mock_profile(container=None, **overrides):
     return _mock_container(container, mock_dict, **overrides)
 
 
-def mock_tag(container=None, **overrides):
-    if container is None:
-        container = profile_containers.TagV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id'],
-        fuzzy.FuzzyText: ['name'],
-        fuzzy.FuzzyChoice(profile_containers.TagV1.TagTypeV1.values()): ['tag_type'],
-    }
-    return _mock_container(container, mock_dict, **overrides)
-
-
 def mock_identity(container=None, **overrides):
     if container is None:
         container = user_containers.IdentityV1()

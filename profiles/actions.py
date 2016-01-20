@@ -26,14 +26,6 @@ def valid_profile_with_user_id(user_id):
     return models.Profile.objects.filter(user_id=user_id).exists()
 
 
-def valid_tag(tag):
-    return tag.name
-
-
-def valid_tag_list(tag_list):
-    return all(map(valid_tag, tag_list))
-
-
 def get_values_from_date_range(range_key, value_key, start, end):
     # cast to tuple so we can use it as input params to the db cursor
     return tuple(
@@ -212,7 +204,6 @@ class GetProfile(PreRunParseTokenMixin, actions.Action):
 class GetProfiles(PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
-        'tag_id': [validators.is_uuid4],
         'ids': [validators.is_uuid4_list],
         'location_id': [validators.is_uuid4],
         'team_id': [validators.is_uuid4],
@@ -277,9 +268,7 @@ class GetProfiles(PreRunParseTokenMixin, actions.Action):
             'organization_id': self.parsed_token.organization_id,
         }
         should_paginate = True
-        if self.request.tag_id:
-            parameters['tags__id'] = self.request.tag_id
-        elif self.request.ids:
+        if self.request.ids:
             parameters['id__in'] = list(self.request.ids)
         elif self.request.team_id or self.request.location_id:
             should_paginate = False
@@ -422,122 +411,6 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
         self._populate_locations(organization_client)
 
 
-class CreateTags(actions.Action):
-
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-        'tags': [valid_tag_list],
-    }
-
-    def _create_tags(self, organization_id, tags):
-        # dedupe the tags
-        tags = dict((tag.name, tag) for tag in tags).values()
-        objects = [models.Tag.objects.from_protobuf(
-            tag,
-            commit=False,
-            organization_id=organization_id,
-        ) for tag in tags]
-        models.Tag.objects.bulk_create(objects)
-        return models.Tag.objects.filter(
-            name__in=[tag.name for tag in tags],
-            organization_id=organization_id,
-        )
-
-    def run(self, *args, **kwargs):
-        tags = self._create_tags(self.request.organization_id, self.request.tags)
-        for tag in tags:
-            container = self.response.tags.add()
-            tag.to_protobuf(container)
-
-
-class AddTags(CreateTags):
-
-    type_validators = {
-        'profile_id': [validators.is_uuid4],
-    }
-
-    field_validators = {
-        'profile_id': {
-            valid_profile: 'DOES_NOT_EXIST',
-        },
-    }
-
-    def _dedupe_tags(self, tag_ids):
-        # NOTE: this is subject to a race condition, but since we only have 1
-        # interface to add tags we're not going to worry about this for now.
-        through_model = models.Profile.tags.through
-        current_tag_ids = map(str, through_model.objects.filter(
-            profile_id=self.request.profile_id,
-        ).values_list('tag_id', flat=True))
-        return list(set(tag_ids) - set(current_tag_ids))
-
-    def _add_tags(self, tags):
-        tag_ids = [tag.id for tag in tags]
-        deduped_tag_ids = self._dedupe_tags(tag_ids)
-        through_model = models.Profile.tags.through
-        objects = [through_model(
-            profile_id=self.request.profile_id,
-            tag_id=tag_id,
-        ) for tag_id in deduped_tag_ids]
-        return through_model.objects.bulk_create(objects)
-
-    def run(self, *args, **kwargs):
-        tags_to_create = [tag for tag in self.request.tags if not tag.id]
-        tags_to_add = [tag for tag in self.request.tags if tag.id]
-        if tags_to_create:
-            organization_id = models.Profile.objects.get(
-                pk=self.request.profile_id
-            ).organization_id
-            tags_to_add.extend(self._create_tags(organization_id, tags_to_create))
-
-        if tags_to_add:
-            self._add_tags(tags_to_add)
-
-
-class RemoveTags(actions.Action):
-
-    required_fields = ('profile_id', 'tags')
-
-    type_validators = {
-        'profile_id': [validators.is_uuid4],
-    }
-
-    def run(self, *args, **kwargs):
-        models.ProfileTags.objects.filter(
-            profile_id=self.request.profile_id,
-            tag_id__in=set([tag.id for tag in self.request.tags]),
-        ).delete()
-
-
-class GetTags(actions.Action):
-
-    # XXX should we have field_validators for whether or not organization and profile exist?
-
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-        'profile_id': [validators.is_uuid4],
-        'ids': [validators.is_uuid4_list],
-    }
-
-    def run(self, *args, **kwargs):
-        parameters = {}
-        if self.request.HasField('organization_id'):
-            parameters['organization_id'] = self.request.organization_id
-        elif self.request.ids:
-            # XXX add organization filter
-            parameters['id__in'] = self.request.ids
-        else:
-            parameters['profile'] = self.request.profile_id
-
-        if self.request.HasField('tag_type'):
-            parameters['type'] = self.request.tag_type
-
-        tags = models.Tag.objects.filter(**parameters)
-        for tag in tags:
-            container = self.response.tags.add()
-            tag.to_protobuf(container)
-
-
 class GetUpcomingAnniversaries(actions.Action):
 
     required_fields = ('organization_id',)
@@ -632,73 +505,6 @@ class GetRecentHires(actions.Action):
         for profile in profiles:
             container = self.response.profiles.add()
             profile.to_protobuf(container)
-
-
-class GetActiveTags(actions.Action):
-
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-    }
-
-    def _get_main_query(self):
-        tag_type_condition = ''
-        if self.request.HasField('tag_type'):
-            tag_type_condition = 'AND "%s"."type" = %%s' % (models.Tag._meta.db_table,)
-        return (
-            '"%(profiles_tag)s" where "%(profiles_tag)s"."id" in ('
-            'SELECT DISTINCT id FROM ('
-            'SELECT "%(profiles_tag)s"."id" FROM "%(profiles_tag)s" INNER JOIN '
-            '"%(profiles_profiletags)s" ON ('
-            '"%(profiles_tag)s"."id" = "%(profiles_profiletags)s"."tag_id")'
-            ' WHERE ("%(profiles_profiletags)s"."tag_id" IS NOT NULL '
-            'AND "%(profiles_tag)s"."organization_id" = %%s) %(tag_type_condition)s ORDER BY'
-            ' "%(profiles_profiletags)s"."created" DESC) as nested_query)'
-        ) % {
-            'profiles_tag': models.Tag._meta.db_table,
-            'profiles_profiletags': models.ProfileTags._meta.db_table,
-            'tag_type_condition': tag_type_condition,
-        }
-
-    def _build_count_query(self):
-        return 'SELECT COUNT(*) FROM %s' % (self._get_main_query(),)
-
-    def _build_tags_query(self, offset, limit):
-        return 'SELECT * FROM %s OFFSET %s LIMIT %s' % (self._get_main_query(), offset, limit)
-
-    def _get_count(self, params):
-        cursor = connection.cursor()
-        cursor.execute(self._build_count_query(), params)
-        return cursor.fetchone()[0]
-
-    def run(self, *args, **kwargs):
-        main_params = [self.request.organization_id]
-        cache_queryset = models.ProfileTags.objects.filter(
-            tag__organization_id=self.request.organization_id
-        )
-        if self.request.HasField('tag_type'):
-            main_params.append(self.request.tag_type)
-            cache_queryset = cache_queryset.filter(tag__type=self.request.tag_type)
-
-        @cached_as(cache_queryset)
-        def _get_count_block():
-            return self._get_count(main_params)
-
-        count = _get_count_block()
-        offset, limit = self.get_pagination_offset_and_limit(count)
-
-        @cached_as(cache_queryset, extra='%s.%s' % (offset, limit))
-        def _get_tags_block():
-            # NB: Cast the raw queryset to a list so that it doesn't raise a
-            # TypeError within paginated_response since RawQuerySet has no length
-            # attribute
-            return list(models.Tag.objects.raw(self._build_tags_query(offset, limit), main_params))
-
-        self.paginated_response(
-            self.response.tags,
-            _get_tags_block(),
-            lambda item, container: item.to_protobuf(container.add()),
-            count=count,
-        )
 
 
 class ProfileExists(actions.Action):

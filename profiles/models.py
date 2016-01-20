@@ -7,23 +7,6 @@ from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
 
 
-class Tag(models.UUIDModel, models.TimestampableModel):
-
-    model_to_protobuf_mapping = {'type': 'tag_type'}
-    as_dict_value_transforms = {'type': int}
-
-    organization_id = models.UUIDField(db_index=True)
-    name = models.CharField(max_length=64)
-    type = models.SmallIntegerField(
-        choices=utils.model_choices_from_protobuf_enum(profile_containers.TagV1.TagTypeV1),
-        default=0,
-    )
-
-    class Meta:
-        unique_together = ('organization_id', 'name', 'type')
-        protobuf = profile_containers.TagV1
-
-
 class Profile(models.UUIDModel, models.TimestampableModel):
 
     bulk_manager = BulkUpdateManager()
@@ -41,7 +24,6 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     birth_date = models.DateField(null=True)
     hire_date = models.DateField(null=True)
     verified = models.BooleanField(default=False)
-    tags = models.ManyToManyField(Tag, through='ProfileTags')
     items = ArrayField(
         ArrayField(models.CharField(max_length=255, null=True), size=2),
         null=True,
@@ -154,15 +136,6 @@ class Profile(models.UUIDModel, models.TimestampableModel):
             ('organization_id', 'authentication_identifier'),
         )
         protobuf = profile_containers.ProfileV1
-
-
-class ProfileTags(models.TimestampableModel):
-
-    tag = models.ForeignKey(Tag)
-    profile = models.ForeignKey(Profile)
-
-    class Meta:
-        unique_together = ('tag', 'profile')
 
 
 class ProfileStatus(models.UUIDModel, models.TimestampableModel):

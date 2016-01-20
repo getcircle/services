@@ -1,6 +1,5 @@
 from base64 import b64decode
 
-from django.db.models import Q
 from django.utils.module_loading import import_string
 from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
@@ -19,10 +18,7 @@ from organizations.models import (
     ReportingStructure,
     Team,
 )
-from profiles.models import (
-    Profile,
-    Tag,
-)
+from profiles.models import Profile
 
 
 class Search(mixins.PreRunParseTokenMixin, actions.Action):
@@ -99,16 +95,6 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 category_queryset = Team.objects.filter(**parameters)
             elif category == search_pb2.LOCATIONS:
                 category_queryset = Location.objects.filter(**parameters)
-            elif category == search_pb2.SKILLS:
-                category_queryset = Tag.objects.filter(
-                    type=profile_containers.TagV1.SKILL,
-                    **parameters
-                )
-            elif category == search_pb2.INTERESTS:
-                category_queryset = Tag.objects.filter(
-                    type=profile_containers.TagV1.INTEREST,
-                    **parameters
-                )
             elif category == search_pb2.GROUPS:
                 category_queryset = self._get_group_category_queryset()
             else:

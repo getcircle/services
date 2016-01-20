@@ -73,13 +73,3 @@ class ProfileFactory(factory.Factory):
                 value=value,
                 organization_id=self.organization_id,
             )
-
-
-class TagFactory(factory.Factory):
-    class Meta:
-        model = models.Tag
-        protobuf = profile_containers.TagV1
-
-    organization_id = factory.FuzzyUUID()
-    name = factory.FuzzyText()
-    type = factory.FuzzyChoice(profile_containers.TagV1.TagTypeV1.values())
