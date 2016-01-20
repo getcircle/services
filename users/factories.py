@@ -16,6 +16,7 @@ class UserFactory(factory.Factory):
 
     primary_email = fuzzy.FuzzyText(suffix='@example.com')
     phone_number = factory.Sequence(lambda n: '+1949293%04d' % (n,))
+    organization_id = factory.FuzzyUUID()
 
     @factory.post_generation
     def password(self, create, extracted, **kwargs):
@@ -32,6 +33,7 @@ class TOTPTokenFactory(factory.Factory):
 
     user = factory.SubFactory(UserFactory)
     token = fuzzy.FuzzyText(length=16)
+    organization_id = factory.FuzzyUUID()
 
 
 class IdentityFactory(factory.Factory):
@@ -46,6 +48,7 @@ class IdentityFactory(factory.Factory):
     access_token = fuzzy.FuzzyUUID()
     provider_uid = fuzzy.FuzzyUUID()
     expires_at = fuzzy.FuzzyTimestamp()
+    organization_id = factory.FuzzyUUID()
 
 
 class DeviceFactory(factory.Factory):
@@ -62,6 +65,7 @@ class DeviceFactory(factory.Factory):
     language_preference = 'en'
     last_token_id = fuzzy.FuzzyUUID()
     provider = user_containers.DeviceV1.APPLE
+    organization_id = fuzzy.FuzzyUUID()
 
 
 class TokenFactory(factory.Factory):
@@ -70,3 +74,4 @@ class TokenFactory(factory.Factory):
 
     user = factory.SubFactory(UserFactory)
     client_type = token_pb2.IOS
+    organization_id = fuzzy.FuzzyUUID()
