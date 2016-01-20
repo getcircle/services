@@ -18,6 +18,7 @@ class UserManager(BaseUserManager, models.CommonManager):
 
     def _create_user(
         self,
+        organization_id,
         primary_email,
         password,
         is_active,
@@ -26,6 +27,7 @@ class UserManager(BaseUserManager, models.CommonManager):
     ):
         primary_email = self.normalize_email(primary_email)
         user = self.model(
+            organization_id=organization_id,
             primary_email=primary_email,
             is_active=is_active,
             is_admin=is_admin,
@@ -38,21 +40,23 @@ class UserManager(BaseUserManager, models.CommonManager):
         user.save(using=self._db)
         return user
 
-    def create_user(self, primary_email, password=None, **extra_fields):
+    def create_user(self, organization_id, primary_email, password=None, **extra_fields):
         return self._create_user(
-            primary_email,
-            password,
-            True,
-            False,
+            organization_id=organization_id,
+            primary_email=primary_email,
+            password=password,
+            is_active=True,
+            is_admin=False,
             **extra_fields
         )
 
-    def create_superuser(self, primary_email, password, **extra_fields):
+    def create_superuser(self, organization_id, primary_email, password, **extra_fields):
         return self._create_user(
-            primary_email,
-            password,
-            True,
-            True,
+            organization_id=organization_id,
+            primary_email=primary_email,
+            password=password,
+            is_active=True,
+            is_admin=True,
             **extra_fields
         )
 
@@ -66,7 +70,8 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
 
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    primary_email = models.EmailField(unique=True)
+    primary_email = models.EmailField()
+    organization_id = models.UUIDField(db_index=True)
     phone_number = PhoneNumberField(null=True, unique=True)
     phone_number_verified = models.BooleanField(default=False)
 
@@ -94,16 +99,21 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         protobuf = user_containers.UserV1
+        unique_together = ('primary_email', 'organization_id')
 
 
 class Token(models.UUIDModel):
 
     key = models.CharField(max_length=40, db_index=True)
-    user = models.ForeignKey(User, related_name='auth_token', db_index=True)
+    user = models.ForeignKey(User, related_name='auth_token')
     client_type = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(token_pb2.ClientTypeV1),
     )
     created = models.DateTimeField(auto_now_add=True)
+    organization_id = models.UUIDField()
+
+    class Meta:
+        index_together = ('user', 'organization_id')
 
     def save(self, *args, **kwargs):
         if not self.key:
@@ -154,6 +164,10 @@ class TOTPToken(models.UUIDModel, models.TimestampableModel):
 
     user = models.OneToOneField(User)
     token = models.CharField(max_length=16, default=pyotp.random_base32)
+    organization_id = models.UUIDField()
+
+    class Meta:
+        index_together = ('user', 'organization_id')
 
 
 class Identity(models.UUIDModel, models.TimestampableModel):
@@ -169,13 +183,14 @@ class Identity(models.UUIDModel, models.TimestampableModel):
     access_token = models.CharField(max_length=255, null=True)
     refresh_token = models.CharField(max_length=255, null=True)
     expires_at = models.PositiveIntegerField(null=True)
+    organization_id = models.UUIDField()
 
     def to_protobuf(self, *args, **kwargs):
         # override "provider" to prevent casting as a string
         return super(Identity, self).to_protobuf(provider=self.provider, *args, **kwargs)
 
     class Meta:
-        unique_together = ('user', 'provider', 'provider_uid')
+        unique_together = ('user', 'provider', 'provider_uid', 'organization_id')
 
 
 class Device(models.UUIDModel, models.TimestampableModel):
@@ -194,6 +209,7 @@ class Device(models.UUIDModel, models.TimestampableModel):
         null=True,
     )
     last_token_id = models.UUIDField(null=True)
+    organization_id = models.UUIDField()
 
     class Meta:
-        index_together = ('user', 'last_token_id')
+        index_together = ('user', 'last_token_id', 'organization_id')
