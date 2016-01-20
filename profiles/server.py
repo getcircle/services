@@ -17,7 +17,5 @@ class Server(service.control.Server):
         'get_profile': actions.GetProfile,
         'get_profiles': actions.GetProfiles,
         'get_extended_profile': actions.GetExtendedProfile,
-        'get_upcoming_anniversaries': actions.GetUpcomingAnniversaries,
-        'get_upcoming_birthdays': actions.GetUpcomingBirthdays,
         'profile_exists': actions.ProfileExists,
     }
