@@ -57,7 +57,8 @@ class NotificationToken(models.UUIDModel, models.TimestampableModel):
         ),
         null=True,
     )
+    organization_id = models.UUIDField()
 
     class Meta:
-        index_together = ('user_id', 'provider')
+        index_together = ('user_id', 'provider', 'organization_id')
         protobuf = notification_containers.NotificationTokenV1
