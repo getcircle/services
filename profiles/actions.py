@@ -488,24 +488,6 @@ class GetUpcomingBirthdays(actions.Action):
             profile.to_protobuf(container)
 
 
-class GetRecentHires(actions.Action):
-
-    type_validators = {
-        'organization_id': [validators.is_uuid4],
-    }
-
-    def run(self, *args, **kwargs):
-        now = arrow.utcnow()
-        # XXX sort by hire_date
-        profiles = models.Profile.objects.filter(
-            organization_id=self.request.organization_id,
-            hire_date__gte=now.replace(days=-7).date,
-        ).prefetch_related('contact_methods')
-        for profile in profiles:
-            container = self.response.profiles.add()
-            profile.to_protobuf(container)
-
-
 class ProfileExists(actions.Action):
 
     required_fields = ('domain',)
