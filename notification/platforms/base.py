@@ -34,7 +34,7 @@ class BasePlatform(object):
     def construct_message(self, to_profile_id, notification):
         notification_types = notification_containers.NotificationTypeV1
         if notification.notification_type_id == notification_types.GOOGLE_GROUPS:
-            if notification.HasField('group_membership_request'):
+            if notification.group_membership_request.ByteSize():
                 message = self.group_membership_request_message(
                     to_profile_id,
                     notification.group_membership_request,

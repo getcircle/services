@@ -155,7 +155,7 @@ class Provider(base.BaseProvider):
         return models.Identity.objects.get(provider=self.type, user_id=user_id)
 
     def complete_authorization(self, request, response, **kwargs):
-        if request.saml_details.HasField('auth_state'):
+        if request.saml_details.auth_state:
             return self._complete_authorization_auth_state(request, response)
         else:
             return self._complete_authorization(request, response)

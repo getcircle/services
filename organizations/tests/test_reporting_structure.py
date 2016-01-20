@@ -126,8 +126,8 @@ class OrganizationTeamTests(MockedTestCase):
             'get_profile_reporting_details',
             profile_id=fuzzy.FuzzyUUID().fuzz(),
         )
-        self.assertFalse(response.result.HasField('manages_team'))
-        self.assertFalse(response.result.HasField('team'))
+        self.assertFalse(response.result.manages_team.ByteSize())
+        self.assertFalse(response.result.team.ByteSize())
         self.assertFalse(response.result.peers_profile_ids)
         self.assertFalse(response.result.manager_profile_id)
         self.assertFalse(response.result.direct_reports_profile_ids)

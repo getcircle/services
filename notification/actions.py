@@ -146,7 +146,7 @@ class SendNotification(mixins.PreRunParseTokenMixin, actions.Action):
     def validate(self, *args, **kwargs):
         super(SendNotification, self).validate(*args, **kwargs)
         if not self.is_error():
-            if not any([self.request.HasField('to_profile_id'), self.request.to_profile_ids]):
+            if not any([self.request.to_profile_id, self.request.to_profile_ids]):
                 raise self.ActionError(
                     'MISSING_RECIPIENTS',
                     (

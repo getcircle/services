@@ -75,7 +75,7 @@ class GetOrganization(actions.Action):
     def _get_organization(self):
         parameters = {}
         # XXX we shouldn't expose this
-        if self.request.HasField('domain'):
+        if self.request.domain:
             parameters['domain'] = self.request.domain
         else:
             parsed_token = parse_token(self.token)
@@ -306,7 +306,7 @@ class GetLocation(BaseLocationAction):
             'organization_id': self.parsed_token.organization_id,
         }
         lookup_field = 'location_id'
-        if self.request.HasField('name'):
+        if self.request.name:
             parameters['name'] = self.request.name
             lookup_field = 'name'
         else:

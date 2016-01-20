@@ -41,7 +41,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
     required_fields = ('query',)
 
     def _get_doc_type(self):
-        if not self.request.HasField('category'):
+        if not self.request.has_category:
             return None
 
         doc_types = []
@@ -57,7 +57,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
 
     def _get_statements(self, statement_type):
         actions = []
-        if not self.request.HasField('category'):
+        if not self.request.has_category:
             actions = sum(CATEGORY_TO_ACTIONS.values(), [])
         else:
             actions = CATEGORY_TO_ACTIONS[self.request.category]

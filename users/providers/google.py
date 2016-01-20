@@ -103,7 +103,7 @@ class Provider(base.BaseProvider):
         identity.access_token = access_token
 
     def _get_authorization_code(self, request):
-        if request.HasField('oauth2_details'):
+        if request.oauth2_details.ByteSize():
             return request.oauth2_details.code
         else:
             return request.oauth_sdk_details.code
@@ -141,7 +141,7 @@ class Provider(base.BaseProvider):
 
     def complete_authorization(self, request, response, redirect_uri=None):
         authorization_code = self._get_authorization_code(request)
-        is_sdk = request.HasField('oauth_sdk_details')
+        is_sdk = bool(request.oauth_sdk_details.ByteSize())
         if is_sdk:
             identity, credentials = self._get_identity_and_credentials_oauth_sdk(request)
         else:

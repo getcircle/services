@@ -207,8 +207,8 @@ class Logout(actions.Action):
         super(Logout, self).validate(*args, **kwargs)
         if (
             not self.is_error() and
-            not self.request.HasField('client_type') and
-            not self.request.HasField('revoke_all')
+            not self.request.client_type and
+            not self.request.revoke_all
         ):
             raise self.ActionFieldError('client_type', 'MISSING')
 
@@ -279,7 +279,7 @@ class CompleteAuthorization(actions.Action):
         super(CompleteAuthorization, self).validate(*args, **kwargs)
         self.provider_class = self._get_provider_class()
         self.payload = {}
-        if self.request.HasField('oauth2_details'):
+        if self.request.oauth2_details.ByteSize():
             self.payload = providers.parse_state_token(
                 self.request.provider,
                 self.request.oauth2_details.state,
@@ -528,7 +528,7 @@ class GetAuthenticationInstructions(actions.Action):
 
     def validate(self, *args, **kwargs):
         super(GetAuthenticationInstructions, self).validate(*args, **kwargs)
-        if not (self.request.HasField('email') or self.request.HasField('organization_domain')):
+        if not (self.request.email or self.request.organization_domain):
             raise self.ActionError(
                 'MISSING_REQUIRED_PARAMETERS',
                 (
@@ -578,7 +578,7 @@ class GetAuthenticationInstructions(actions.Action):
         except service.control.CallActionError:
             return None
 
-        if not response.result.HasField('sso'):
+        if not bool(response.result.sso.ByteSize()):
             return None
 
         return response.result.sso
@@ -595,7 +595,7 @@ class GetAuthenticationInstructions(actions.Action):
         return response.result.organization.image_url
 
     def _get_domain(self):
-        if self.request.HasField('organization_domain'):
+        if self.request.organization_domain:
             return self.request.organization_domain
 
         try:
@@ -604,7 +604,7 @@ class GetAuthenticationInstructions(actions.Action):
             return None
 
     def _is_email_google_domain(self):
-        if self.request.HasField('email'):
+        if self.request.email:
             domain = self.request.email.split('@', 1)[1]
             return is_google_domain(domain)
 
@@ -618,7 +618,7 @@ class GetAuthenticationInstructions(actions.Action):
         return domain in settings.USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH
 
     def run(self, *args, **kwargs):
-        if self.request.HasField('email'):
+        if self.request.email:
             self.response.user_exists = models.User.objects.filter(
                 primary_email=self.request.email,
             ).exists()

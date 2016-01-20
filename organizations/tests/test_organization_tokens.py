@@ -78,7 +78,7 @@ class OrganizationTokenTests(TestCase):
         response = client.call_action('create_token')
         token = response.result.token
         self.assertTrue(token.key)
-        self.assertFalse(token.HasField('requested_by_user_id'))
+        self.assertFalse(token.requested_by_user_id)
         model_token = models.Token.objects.get(key=token.key)
         self.assertEqual(model_token.organization_id, self.organization.id)
 

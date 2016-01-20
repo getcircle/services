@@ -158,10 +158,10 @@ class TestGetExtendedProfile(MockedTestCase):
         )
 
         response = self.client.call_action('get_extended_profile', profile_id=self.profile.id)
-        self.assertFalse(response.result.HasField('manager'))
+        self.assertFalse(response.result.manager.ByteSize())
         self.assertFalse(response.result.locations)
-        self.assertFalse(response.result.HasField('team'))
-        self.assertFalse(response.result.HasField('manages_team'))
+        self.assertFalse(response.result.team.ByteSize())
+        self.assertFalse(response.result.manages_team.ByteSize())
         self.verify_containers(self.profile, response.result.profile)
         self.assertEqual(len(self.identities), len(response.result.identities))
 
@@ -180,9 +180,9 @@ class TestGetExtendedProfile(MockedTestCase):
         )
 
         response = self.client.call_action('get_extended_profile')
-        self.assertFalse(response.result.HasField('manager'))
+        self.assertFalse(response.result.manager.ByteSize())
         self.assertFalse(response.result.locations)
-        self.assertFalse(response.result.HasField('team'))
-        self.assertFalse(response.result.HasField('manages_team'))
+        self.assertFalse(response.result.team.ByteSize())
+        self.assertFalse(response.result.manages_team.ByteSize())
         self.verify_containers(self.profile, response.result.profile)
         self.assertEqual(len(self.identities), len(response.result.identities))

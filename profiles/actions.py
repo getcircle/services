@@ -346,7 +346,7 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
         ):
             profile_ids.extend(container)
 
-        if reporting_details.HasField('manager_profile_id'):
+        if reporting_details.manager_profile_id:
             profile_ids.append(reporting_details.manager_profile_id)
 
         if profile_ids:
@@ -373,9 +373,9 @@ class GetExtendedProfile(PreRunParseTokenMixin, actions.Action):
                     token=self.token,
                 )
 
-        if reporting_details.HasField('team'):
+        if reporting_details.team.ByteSize():
             self.response.team.CopyFrom(reporting_details.team)
-        if reporting_details.HasField('manages_team'):
+        if reporting_details.manages_team.ByteSize():
             self.response.manages_team.CopyFrom(reporting_details.manages_team)
 
     def _populate_locations(self, client):
@@ -514,13 +514,7 @@ class ProfileExists(actions.Action):
     def validate(self, *args, **kwargs):
         super(ProfileExists, self).validate(*args, **kwargs)
         if not self.is_error():
-            if not (
-                (self.request.HasField('email') and self.request.email) or
-                (
-                    self.request.HasField('authentication_identifier') and
-                    self.request.authentication_identifier
-                )
-            ):
+            if not (self.request.email or self.request.authentication_identifier):
                 raise self.ActionError(
                     'MISSING_ARGUMENTS',
                     ('MISSING_ARGUMENTS', 'email or authentication_identifier required'),
@@ -539,7 +533,7 @@ class ProfileExists(actions.Action):
             raise self.ActionFieldError('domain', 'DOES_NOT_EXIST')
 
         parameters = {'organization_id': organization.id}
-        if self.request.HasField('email'):
+        if self.request.email:
             parameters['email'] = self.request.email
         else:
             parameters['authentication_identifier'] = self.request.authentication_identifier

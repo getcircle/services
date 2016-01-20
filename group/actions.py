@@ -50,7 +50,7 @@ class GetGroups(PreRunParseTokenMixin, actions.Action):
             token=self.token,
             integration=self.integration,
         )
-        if self.request.HasField('profile_id'):
+        if self.request.profile_id:
             for_profile = service.control.get_object(
                 'profile',
                 client_kwargs={'token': self.token},
@@ -251,7 +251,7 @@ class GetMembershipRequests(PreRunParseTokenMixin, actions.Action):
         request_kwargs = {
             'approver_profile_ids__contains': [self.profile.id],
         }
-        if self.request.HasField('status'):
+        if self.request.has_status and self.request.status:
             request_kwargs['status'] = self.request.status
 
         requests = models.GroupMembershipRequest.objects.filter(**request_kwargs)

@@ -26,18 +26,18 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
     def validate(self, *args, **kwargs):
         super(Search, self).validate(*args, **kwargs)
         if not self.is_error():
-            if self.request.HasField('attribute') and not self.request.HasField('attribute_value'):
+            if self.request.has_attribute and not self.request.attribute_value:
                 raise self.ActionFieldError('attribute_value', 'MISSING')
             elif (
-                not self.request.HasField('attribute') and
-                self.request.HasField('attribute_value')
+                not self.request.has_attribute and
+                self.request.attribute_value
             ):
                 raise self.ActionFieldError('attribute_value', 'MISSING')
 
-            if self.request.HasField('attribute') and not self.request.HasField('category'):
+            if self.request.has_attribute and not self.request.has_category:
                 raise self.ActionFieldError('category', 'MISSING')
 
-            if self.request.HasField('attribute') and self.request.category != search_pb2.PROFILES:
+            if self.request.has_attribute and self.request.category != search_pb2.PROFILES:
                 raise self.ActionFieldError(
                     'attribute',
                     'attribute is only supported for "PROFILES" category',
@@ -64,7 +64,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
 
     def _get_search_kwargs(self):
         kwargs = {}
-        if not self.request.HasField('category'):
+        if not self.request.has_category:
             kwargs['models'] = (
                 Profile.objects.filter(organization_id=self.organization_id),
                 Location.objects.filter(organization_id=self.organization_id),
@@ -75,7 +75,7 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
             category_queryset = None
             parameters = {'organization_id': self.organization_id}
             if category == search_pb2.PROFILES:
-                if self.request.HasField('attribute'):
+                if self.request.has_attribute:
                     if self.request.attribute == search_pb2.TEAM_ID:
                         manager_profile_id = Team.objects.values('manager_profile_id').get(
                             id=self.request.attribute_value,

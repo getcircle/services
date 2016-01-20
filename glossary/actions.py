@@ -89,18 +89,18 @@ class GetTerm(mixins.PreRunParseTokenMixin, TermPermissionsMixin, actions.Action
 
     def run(self, *args, **kwargs):
         parameters = {'organization_id': self.parsed_token.organization_id}
-        if self.request.HasField('id'):
+        if self.request.id:
             parameters['id'] = self.request.id
-        elif self.request.HasField('name'):
+        elif self.request.name:
             parameters['name'] = self.request.name
 
         try:
             term = models.Term.objects.get(**parameters)
         except models.Term.DoesNotExist:
             lookup_key = None
-            if self.request.HasField('id'):
+            if self.request.id:
                 lookup_key = 'id'
-            elif self.request.HasField('name'):
+            elif self.request.name:
                 lookup_key = 'name'
             raise self.ActionFieldError(lookup_key, 'DOES_NOT_EXIST')
 
