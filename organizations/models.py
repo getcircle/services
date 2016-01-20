@@ -208,7 +208,7 @@ class Location(models.UUIDModel, models.TimestampableModel):
                     client_kwargs={'token': token},
                     return_object='profile',
                     profile_id=str(self.description.by_profile_id),
-                    inflations={'enabled': False},
+                    inflations={'disabled': True},
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 

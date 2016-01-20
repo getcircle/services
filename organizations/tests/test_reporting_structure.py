@@ -224,7 +224,7 @@ class OrganizationTeamTests(MockedTestCase):
             return_object_path='profile',
             return_object=mocks.mock_profile(id=str(manager.profile_id)),
             profile_id=str(manager.profile_id),
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         response = self.client.call_action('get_team_reporting_details', team_id=team.id)
         self.assertEqual(len(response.result.child_teams), 1)

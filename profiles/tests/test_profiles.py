@@ -484,7 +484,7 @@ class TestProfiles(MockedTestCase):
         response = self.client.call_action(
             'get_profile',
             profile_id=profile.id,
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         self.assertFalse(response.result.profile.contact_methods)
 
@@ -509,7 +509,7 @@ class TestProfiles(MockedTestCase):
             if profile.id != self.profile.id:
                 self.assertEqual(len(profile.contact_methods), 2)
 
-        response = self.client.call_action('get_profiles', inflations={'enabled': False})
+        response = self.client.call_action('get_profiles', inflations={'disabled': True})
         for profile in response.result.profiles:
             if profile.id != self.profile.id:
                 self.assertFalse(profile.contact_methods)
@@ -547,7 +547,7 @@ class TestProfiles(MockedTestCase):
         response = self.client.call_action(
             'get_profiles',
             team_id=team_id,
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         self.assertEqual(len(response.result.profiles), 3)
 
@@ -587,7 +587,7 @@ class TestProfiles(MockedTestCase):
         response = self.client.call_action(
             'get_profiles',
             team_id=team_id,
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         self.assertEqual(len(response.result.profiles), 3)
         self.assertEqual(response.control.paginator.next_page, 10)
@@ -620,6 +620,6 @@ class TestProfiles(MockedTestCase):
         response = self.client.call_action(
             'get_profiles',
             emails=[p.email for p in profiles],
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         self.assertEqual(len(response.result.profiles), 3)

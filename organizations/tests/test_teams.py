@@ -37,7 +37,7 @@ class OrganizationTeamTests(MockedTestCase):
             return_object_path='profile',
             return_object=profile,
             profile_id=profile.id,
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         self.mock.instance.register_mock_object(
             'profile',

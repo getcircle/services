@@ -451,7 +451,8 @@ class RequestAccess(actions.Action):
             action='get_profiles',
             return_object='profiles',
             client_kwargs={'token': make_admin_token(organization_id=organization.id)},
-            inflations={'enabled': False, 'only': ['email']},
+            inflations={'disabled': True},
+            fields={'only': ['email']},
             is_admin=True,
         )
         return [p.email for p in profiles]

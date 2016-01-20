@@ -16,5 +16,5 @@ def get_profile_for_slack_user(token, slack_api_token, user_id):
         return_object='profile',
         client_kwargs={'token': token},
         email=email,
-        inflations={'enabled': False},
+        inflations={'disabled': True},
     )

@@ -22,6 +22,6 @@ def setup_mock_slack_test(mock, patched, organization):
         return_object=expected_profile,
         return_object_path='profile',
         email=expected_email,
-        inflations={'enabled': False},
+        inflations={'disabled': True},
     )
     return expected_profile

@@ -146,7 +146,7 @@ class ProfileStatus(models.UUIDModel, models.TimestampableModel):
 
     def to_protobuf(self, *args, **kwargs):
         protobuf = super(ProfileStatus, self).to_protobuf(*args, **kwargs)
-        profile = self.profile.to_protobuf(inflations={'enabled': False})
+        profile = self.profile.to_protobuf(inflations={'disabled': True})
         protobuf.profile.CopyFrom(profile)
         return protobuf
 

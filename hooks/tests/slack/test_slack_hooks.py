@@ -74,7 +74,7 @@ class Test(MockedTestCase):
             action='get_profile',
             error=error,
             email=expected_email,
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         response = self.api.post('/hooks/slack/', {
             'token': fuzzy.FuzzyText().fuzz(),

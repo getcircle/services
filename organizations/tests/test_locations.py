@@ -34,7 +34,7 @@ class OrganizationLocationTests(MockedTestCase):
             return_object_path='profile',
             return_object=self.profile,
             profile_id=self.profile.id,
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
 
     def _build_location_protobuf(self, **kwargs):
@@ -71,7 +71,7 @@ class OrganizationLocationTests(MockedTestCase):
             return_object_path='profile',
             return_object=self.profile,
             profile_id=self.profile.id,
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         self.mock.instance.register_empty_response(
             'history',
@@ -443,7 +443,7 @@ class OrganizationLocationTests(MockedTestCase):
 
         response = self.client.call_action(
             'get_locations',
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         for location in response.result.locations:
             self.assertEqual(location.profile_count, 0)

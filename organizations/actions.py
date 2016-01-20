@@ -729,7 +729,7 @@ class GetTeamReportingDetails(PreRunParseTokenMixin, actions.Action):
             client_kwargs={'token': self.token},
             return_object='profile',
             profile_id=str(manager.profile_id),
-            inflations={'enabled': False},
+            inflations={'disabled': True},
         )
         self.response.manager.CopyFrom(manager_profile)
 
