@@ -316,7 +316,7 @@ class CompleteAuthorization(actions.Action):
             provider_class = providers.Okta
 
         if provider_class is None:
-            self.ActionFieldError('provider', 'UNSUPPORTED')
+            raise self.ActionFieldError('provider', 'UNSUPPORTED')
 
         self.exception_to_error_map.update(provider_class.exception_to_error_map)
         return provider_class
