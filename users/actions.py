@@ -242,29 +242,68 @@ class Logout(actions.Action):
         self.service_control.token = ''
 
 
+def get_authorization_instructions(
+        provider,
+        organization_domain=None,
+        redirect_uri=None,
+        login_hint=None,
+    ):
+    """Return authorization instructions for the given provider.
+
+    Args:
+        provider (protobufs.services.user.containers_pb2.IdentityV1): identity
+            provider we're requesting authorization instructions for.
+        organization_domain (Optional[str]): the organization's domain if
+            applicable. If the identity is being used for authentication, this
+            is required.
+        redirect_uri (Optional[str]): redirect_uri we want the identity
+            provider to redirect to.
+        login_hint (Optional[str]): the login_hint we want the identity
+            provider to use
+
+    Returns:
+        tuple: tuple of authorization_url (str), provider_name (str)
+
+    Raises:
+        providers.okta.SAMLMetaDataDoesNotExist: If
+            `protobufs.services.user.containers_pb2.IdentityV1.OKTA` is
+            specified but the organization doesn't have Okta configured.
+
+    """
+    authorization_url = None
+    provider_name = None
+    if provider == user_containers.IdentityV1.GOOGLE:
+        authorization_url = providers.google.Provider.get_authorization_url(
+            domain=organization_domain,
+            login_hint=login_hint,
+            redirect_uri=redirect_uri,
+        )
+        provider_name = 'Google'
+    elif provider == user_containers.IdentityV1.OKTA:
+        authorization_url = providers.okta.Provider.get_authorization_url(
+            domain=organization_domain,
+            redirect_uri=redirect_uri,
+        )
+        provider_name = 'Okta'
+    return authorization_url, provider_name
+
+
 class GetAuthorizationInstructions(actions.Action):
+
+    required_fields = ('provider',)
 
     type_validators = {
         'redirect_uri': [valid_redirect_uri],
     }
 
     def run(self, *args, **kwargs):
-        if self.request.provider == user_containers.IdentityV1.GOOGLE:
-            self.response.authorization_url = providers.google.Provider.get_authorization_url(
-                token=self.token,
-                login_hint=self.request.login_hint,
-                redirect_uri=self.request.redirect_uri,
-            )
-            self.response.provider_name = 'Google'
-        elif self.request.provider == user_containers.IdentityV1.OKTA:
-            try:
-                self.response.authorization_url = providers.okta.Provider.get_authorization_url(
-                    domain=self.request.organization_domain,
-                    redirect_uri=self.request.redirect_uri,
-                )
-                self.response.provider_name = 'Okta'
-            except providers.okta.SAMLMetaDataDoesNotExist:
-                raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
+        instructions = get_authorization_instructions(
+            provider=self.request.provider,
+            organization_domain=self.request.organization_domain,
+            login_hint=self.request.login_hint,
+            redirect_uri=self.request.redirect_uri,
+        )
+        self.response.authorization_url, self.response.provider_name = instructions
 
 
 class CompleteAuthorization(actions.Action):
@@ -529,52 +568,32 @@ class RequestAccess(actions.Action):
 
 class GetAuthenticationInstructions(actions.Action):
 
+    required_fields = ('organization_domain',)
+
     type_validators = {
         'email': [validate_email],
         'redirect_uri': [valid_redirect_uri],
     }
 
-    def validate(self, *args, **kwargs):
-        super(GetAuthenticationInstructions, self).validate(*args, **kwargs)
-        if not (self.request.email or self.request.organization_domain):
-            raise self.ActionError(
-                'MISSING_REQUIRED_PARAMETERS',
-                (
-                    'MISSING_REQUIRED_PARAMETERS',
-                    'must provide either "email" or "organization_domain"',
-                ),
-            )
-
     def _get_authorization_instructions(self, provider, **kwargs):
-        if self.request.redirect_uri:
-            kwargs['redirect_uri'] = self.request.redirect_uri
-
-        response = service.control.call_action(
-            service='user',
-            action='get_authorization_instructions',
-            client_kwargs={'token': self.token},
+        return get_authorization_instructions(
             provider=provider,
             login_hint=self.request.email,
-            **kwargs
+            organization_domain=self.request.organization_domain,
+            redirect_uri=self.request.redirect_uri,
         )
-        return response.result
+
+    def _populate_instructions(self, provider):
+        instructions = self._get_authorization_instructions(provider)
+        self.response.authorization_url, self.response.provider_name = instructions
 
     def _populate_google_instructions(self):
         self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
-        instructions = self._get_authorization_instructions(
-            user_containers.IdentityV1.GOOGLE,
-        )
-        self.response.authorization_url = instructions.authorization_url
-        self.response.provider_name = instructions.provider_name
+        self._populate_instructions(user_containers.IdentityV1.GOOGLE)
 
     def _populate_okta_instructions(self, domain):
         self.response.backend = authenticate_user_pb2.RequestV1.OKTA
-        instructions = self._get_authorization_instructions(
-            user_containers.IdentityV1.OKTA,
-            organization_domain=domain,
-        )
-        self.response.authorization_url = instructions.authorization_url
-        self.response.provider_name = instructions.provider_name
+        self._populate_instructions(user_containers.IdentityV1.OKTA)
 
     def _get_organization_sso(self, domain):
         try:
@@ -591,31 +610,6 @@ class GetAuthenticationInstructions(actions.Action):
 
         return response.result.sso
 
-    def _get_organization_image_url(self, domain):
-        try:
-            response = service.control.call_action(
-                'organization',
-                'get_organization',
-                domain=domain,
-            )
-        except service.control.CallActionError:
-            return None
-        return response.result.organization.image_url
-
-    def _get_domain(self):
-        if self.request.organization_domain:
-            return self.request.organization_domain
-
-        try:
-            return self.request.email.split('@', 1)[1].split('.', 1)[0]
-        except IndexError:
-            return None
-
-    def _is_email_google_domain(self):
-        if self.request.email:
-            domain = self.request.email.split('@', 1)[1]
-            return is_google_domain(domain)
-
     def _should_force_internal_authentication(self):
         return self.request.email in settings.USER_SERVICE_FORCE_INTERNAL_AUTH
 
@@ -625,30 +619,51 @@ class GetAuthenticationInstructions(actions.Action):
     def _should_force_organization_internal_auth(self, domain):
         return domain in settings.USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH
 
+    def _get_organization(self, domain):
+        try:
+            response = service.control.call_action(
+                'organization',
+                'get_organization',
+                domain=domain,
+                fields={'only': ['image_url']},
+                inflations={'disabled': True},
+            )
+        except service.control.CallActionError as e:
+            error_details = e.response.error_details
+            if error_details:
+                details = error_details[0]
+                if details.key == 'domain' and details.detail == 'DOES_NOT_EXIST':
+                    raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
+            raise
+        return response.result.organization
+
+    def _user_exists(self, email, organization):
+        return models.User.objects.filter(
+            primary_email=self.request.email,
+            organization_id=organization.id,
+        ).exists()
+
     def run(self, *args, **kwargs):
+        organization = self._get_organization(self.request.organization_domain)
+
         if self.request.email:
-            self.response.user_exists = models.User.objects.filter(
-                primary_email=self.request.email,
-            ).exists()
+            self.response.user_exists = self._user_exists(self.request.email, organization)
 
-        domain = self._get_domain()
-        if domain:
-            image_url = self._get_organization_image_url(domain)
-            if image_url:
-                self.response.organization_image_url = image_url
+        if organization.image_url:
+            self.response.organization_image_url = organization.image_url
 
-        sso = self._get_organization_sso(domain)
+        sso = self._get_organization_sso(organization.domain)
         if self._should_force_internal_authentication():
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
-        elif self._should_force_google_authentication() and self._is_email_google_domain():
+        elif self._should_force_google_authentication() and is_google_domain(organization.domain):
             self._populate_google_instructions()
-        elif self._should_force_organization_internal_auth(domain):
+        elif self._should_force_organization_internal_auth(organization.domain):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif sso:
             # in the future when we support more than Okta, we would want to
             # check the `sso.provider`
-            self._populate_okta_instructions(domain)
-        elif self._is_email_google_domain():
+            self._populate_okta_instructions(organization.domain)
+        elif is_google_domain(organization.domain):
             self._populate_google_instructions()
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL

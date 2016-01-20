@@ -205,11 +205,10 @@ class Provider(base.BaseProvider):
         return identity
 
     @classmethod
-    def get_authorization_url(self, token=None, redirect_uri=None, **kwargs):
-        payload = {}
-        if token:
-            payload['token'] = token
-
+    def get_authorization_url(cls, domain, redirect_uri=None, **kwargs):
+        payload = {
+            'domain': domain,
+        }
         if redirect_uri:
             payload['redirect_uri'] = redirect_uri
 
@@ -219,7 +218,7 @@ class Provider(base.BaseProvider):
             'scope': scope,
             'client_id': settings.GOOGLE_CLIENT_ID,
             'redirect_uri': settings.GOOGLE_REDIRECT_URI,
-            'state': base.get_state_token(self.type, payload=payload),
+            'state': base.get_state_token(cls.type, payload=payload),
             'access_type': 'offline',
         }
         if kwargs.get('login_hint'):

@@ -90,7 +90,7 @@ class BaseProvider(object):
         return identity, new
 
     @classmethod
-    def get_authorization_url(self, token=None, **kwargs):
+    def get_authorization_url(self, domain, **kwargs):
         raise NotImplementedError('Subclasses must override this method')
 
     def complete_authorization(self, request, response):
