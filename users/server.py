@@ -20,7 +20,6 @@ class Server(service.control.Server):
         'create_user': actions.CreateUser,
         'bulk_create_users': actions.BulkCreateUsers,
         'get_user': actions.GetUser,
-        'valid_user': actions.ValidUser,
         'authenticate_user': actions.AuthenticateUser,
         'logout': actions.Logout,
         'get_authorization_instructions': actions.GetAuthorizationInstructions,

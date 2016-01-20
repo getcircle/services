@@ -147,18 +147,6 @@ class GetUser(actions.Action):
             user.to_protobuf(self.response.user)
 
 
-class ValidUser(actions.Action):
-
-    type_validators = {
-        'user_id': [validators.is_uuid4],
-    }
-
-    def run(self, *args, **kwargs):
-        self.response.exists = models.User.objects.filter(
-            pk=self.request.user_id,
-        ).exists()
-
-
 class AuthenticateUser(actions.Action):
 
     required_fields = ('client_type',)
