@@ -6,14 +6,15 @@ from services.test import (
     fuzzy,
     TestCase,
 )
-
-from .. import factories
+from services.token import make_admin_token
 
 
 class TestUserActions(TestCase):
 
     def setUp(self):
-        self.client = service.control.Client('user', token='test-token')
+        self.organization_id = fuzzy.uuid()
+        token = make_admin_token(organization_id=self.organization_id)
+        self.client = service.control.Client('user', token=token)
         self.email = fuzzy.FuzzyText(suffix='@example.com').fuzz()
 
     def test_create_user_minimum_password_length(self):
@@ -22,6 +23,7 @@ class TestUserActions(TestCase):
                 'create_user',
                 password='s',
                 email=self.email,
+                organization_id=self.organization_id,
             )
 
     def test_create_user_maximum_password_length(self):
@@ -30,6 +32,7 @@ class TestUserActions(TestCase):
                 'create_user',
                 password='s' * 100,
                 email=self.email,
+                organization_id=self.organization_id,
             )
 
     def test_create_user(self):
@@ -37,67 +40,79 @@ class TestUserActions(TestCase):
             'create_user',
             password='a_valid_password',
             email=self.email,
+            organization_id=self.organization_id,
         )
         self.assertTrue(response.success)
 
-        self.assertTrue(uuid.UUID(response.result.user.id, version=4))
-        self.assertEqual(
-            response.result.user.primary_email,
-            self.email,
-        )
+        user = response.result.user
+        self.assertTrue(uuid.UUID(user.id, version=4))
+        self.assertEqual(user.primary_email, self.email)
+        self.assertEqual(user.organization_id, self.organization_id)
         self.assertTrue(response.result.user.is_active)
         self.assertFalse(response.result.user.is_admin)
         self.assertFalse(response.result.user.password)
 
     def test_create_user_no_password(self):
-        response = self.client.call_action('create_user', email=self.email)
+        response = self.client.call_action(
+            'create_user',
+            email=self.email,
+            organization_id=self.organization_id,
+        )
         self.assertTrue(response.success)
 
-        self.assertEqual(response.result.user.primary_email, self.email)
+        user = response.result.user
+        self.assertEqual(user.primary_email, self.email)
+        self.assertEqual(user.organization_id, self.organization_id)
 
     def test_create_user_duplicate(self):
-        response = self.client.call_action('create_user', email=self.email)
+        response = self.client.call_action(
+            'create_user',
+            email=self.email,
+            organization_id=self.organization_id,
+        )
         self.assertTrue(response.success)
 
         with self.assertRaises(service.control.CallActionError) as expected:
-            self.client.call_action('create_user', email=self.email)
+            self.client.call_action(
+                'create_user',
+                email=self.email,
+                organization_id=self.organization_id,
+            )
+
         response = expected.exception.response
         self.assertEqual(response.error_details[0].detail, 'ALREADY_EXISTS')
 
+    def test_create_user_duplicate_email_different_organization(self):
+        organization_id_1 = fuzzy.uuid()
+        organization_id_2 = fuzzy.uuid()
+        response = self.client.call_action(
+            'create_user',
+            email=self.email,
+            organization_id=organization_id_1,
+        )
+        user_1 = response.result.user
+        self.assertEqual(user_1.organization_id, organization_id_1)
+        self.assertEqual(user_1.primary_email, self.email)
+
+        response = self.client.call_action(
+            'create_user',
+            email=self.email,
+            organization_id=organization_id_2,
+        )
+        user_2 = response.result.user
+        self.assertEqual(user_2.organization_id, organization_id_2)
+        self.assertEqual(user_2.primary_email, self.email)
+        self.assertNotEqual(user_1.id, user_2.id)
+        self.assertNotEqual(user_1.organization_id, user_2.organization_id)
+
     def test_get_user(self):
-        response = self.client.call_action('create_user', email=self.email)
+        response = self.client.call_action(
+            'create_user',
+            email=self.email,
+            organization_id=self.organization_id,
+        )
         self.assertTrue(response.success)
-
         response = self.client.call_action('get_user', email=self.email)
-
-    def test_update_user_invalid_user_id(self):
-        with self.assertFieldError('user.id'):
-            self.client.call_action('update_user', user={'id': 'invalid'})
-
-    def test_update_user_does_not_exist(self):
-        with self.assertFieldError('user.id', 'DOES_NOT_EXIST'):
-            self.client.call_action('update_user', user={'id': fuzzy.FuzzyUUID().fuzz()})
-
-    def test_update_user(self):
-        user = factories.UserFactory.create_protobuf()
-        user.phone_number = '+13109991557'
-        response = self.client.call_action('update_user', user=user)
-        self.assertTrue(response.success)
-        self.assertEqual(user.id, response.result.user.id)
-        self.assertEqual(user.phone_number, response.result.user.phone_number)
-
-    def test_update_user_duplicate_phone_number(self):
-        other_user = factories.UserFactory.create_protobuf(phone_number='+13109991557')
-        user = factories.UserFactory.create_protobuf()
-        user.phone_number = other_user.phone_number
-        with self.assertFieldError('user.phone_number', 'DUPLICATE'):
-            self.client.call_action('update_user', user=user)
-
-    def test_update_user_phone_number_invalid(self):
-        user = factories.UserFactory.create_protobuf()
-        user.phone_number = 'invalid'
-        with self.assertFieldError('user.phone_number', 'INVALID'):
-            self.client.call_action('update_user', user=user)
 
     def test_bulk_create_users(self):
         users = []
@@ -105,7 +120,23 @@ class TestUserActions(TestCase):
             users.append({
                 'primary_email': fuzzy.FuzzyText(suffix='@example.com').fuzz(),
                 'password': fuzzy.FuzzyText().fuzz(),
+                # this organization_id should be ignored
+                'organization_id': fuzzy.uuid(),
             })
 
-        response = self.client.call_action('bulk_create_users', users=users)
+        response = self.client.call_action(
+            'bulk_create_users',
+            users=users,
+            organization_id=self.organization_id,
+        )
         self.assertEqual(len(response.result.users), len(users))
+        for user in response.result.users:
+            self.assertEqual(user.organization_id, self.organization_id)
+
+    def test_bulk_create_users_users_required(self):
+        with self.assertFieldError('users', 'MISSING'):
+            self.client.call_action('bulk_create_users', organization_id=self.organization_id)
+
+    def test_bulk_create_users_organization_id_required(self):
+        with self.assertFieldError('organization_id', 'MISSING'):
+            self.client.call_action('bulk_create_users', users=[{'primary_email': 'email'}])

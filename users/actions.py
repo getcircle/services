@@ -85,7 +85,7 @@ def is_google_domain(domain):
 
 class CreateUser(actions.Action):
 
-    required_fields = ('email',)
+    required_fields = ('email', 'organization_id')
 
     def validate(self, *args, **kwargs):
         super(CreateUser, self).validate(*args, **kwargs)
@@ -101,6 +101,7 @@ class CreateUser(actions.Action):
                 user = models.User.objects.create_user(
                     primary_email=self.request.email,
                     password=self.request.password,
+                    organization_id=self.request.organization_id,
                 )
             user.to_protobuf(self.response.user)
         except django.db.IntegrityError:
@@ -109,14 +110,20 @@ class CreateUser(actions.Action):
 
 class BulkCreateUsers(actions.Action):
 
-    @classmethod
-    def bulk_create_users(cls, protobufs):
-        objects = [models.User.objects.from_protobuf(user, commit=False) for user in protobufs]
+    required_fields = ('users', 'organization_id')
+
+    def bulk_create_users(self, protobufs):
+        objects = [models.User.objects.from_protobuf(
+            user,
+            commit=False,
+            organization_id=self.request.organization_id,
+        ) for user in protobufs]
         return models.User.objects.bulk_create(objects)
 
     def run(self, *args, **kwargs):
         existing_users = models.User.objects.filter(
             primary_email__in=[x.primary_email for x in self.request.users],
+            organization_id=self.request.organization_id,
         )
         existing_users_dict = dict((user.primary_email, user) for user in existing_users)
         users_to_create = []
@@ -130,10 +137,10 @@ class BulkCreateUsers(actions.Action):
             user.to_protobuf(container)
 
 
-class GetUser(actions.Action):
+class GetUser(mixins.PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
-        parameters = {}
+        parameters = {'organization_id': self.parsed_token.organization_id}
         if self.request.email:
             parameters['primary_email'] = self.request.email
         else:
