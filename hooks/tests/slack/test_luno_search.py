@@ -88,6 +88,7 @@ class Test(MockedTestCase):
             return_object_path='results',
             return_object=[mocks.mock_search_result(profile=profile)],
             query='Ralph',
+            mock_regex_lookup='search:search_v2.*',
         )
         response = self.api.post('/hooks/slack/', self._request_payload(text='search Ralph'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
