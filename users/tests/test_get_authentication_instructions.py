@@ -13,10 +13,10 @@ from .. import factories
 from ..providers.base import parse_state_token
 
 
-class TestUsersGetAuthenticationInstructions(MockedTestCase):
+class Test(MockedTestCase):
 
     def setUp(self):
-        super(TestUsersGetAuthenticationInstructions, self).setUp()
+        super(Test, self).setUp()
         self.organization = mocks.mock_organization()
         self.client = service.control.Client('user')
         self.mock.instance.dont_mock_service('user')
@@ -68,7 +68,9 @@ class TestUsersGetAuthenticationInstructions(MockedTestCase):
                 organization_domain='doesnotexist',
             )
 
-    def test_get_authentication_instructions_organization_domain_no_sso(self):
+    @patch('users.actions.DNS.mxlookup')
+    def test_get_authentication_instructions_organization_domain_no_sso(self, mocked_dns):
+        self._mock_dns(mocked_dns, is_google=False)
         response = self.client.call_action(
             'get_authentication_instructions',
             organization_domain=self.organization.domain,
