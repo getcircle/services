@@ -20,8 +20,6 @@ from . import (
 
 class GetPreferences(mixins.PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('channel',)
-
     def run(self, *args, **kwargs):
         parameters = {}
         if self.request.channel == notification_containers.MOBILE_PUSH:

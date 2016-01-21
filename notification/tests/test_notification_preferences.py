@@ -26,10 +26,6 @@ class TestNotificationPreferences(TestCase):
             ),
         )
 
-    def test_get_preferences_channel_required(self):
-        with self.assertFieldError('channel', 'MISSING'):
-            self.client.call_action('get_preferences')
-
     def test_get_preferences_default_in(self):
         models.NotificationType.objects.all().update(opt_in=False)
         response = self.client.call_action(
