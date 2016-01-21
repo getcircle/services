@@ -433,8 +433,8 @@ class DeleteIdentity(actions.Action):
         if identity:
             if identity.provider == user_containers.IdentityV1.GOOGLE:
                 try:
-                    provider = providers.Google(token=self.token)
-                    provider.revoke(identity)
+                    provider = providers.Google()
+                    provider.revoke(identity, self.token)
                 except providers.ProviderAPIError as e:
                     raise self.ActionError(
                         'PROVIDER_API_ERROR',
