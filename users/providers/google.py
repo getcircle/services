@@ -139,6 +139,17 @@ class Provider(base.BaseProvider):
         return identity, credentials
 
     def complete_authorization(self, request, response, redirect_uri=None):
+        """Complete the authorization from Google.
+
+        We have two types of authorization requests for Google:
+            1. `oauth_sdk_details`: these are present when using the Google SDK
+                or after we've authenticated with `oauth2_details`
+            2. `oauth2_details`: these are present when using the Google OAuth2
+                flow (ie. handling the redirect response from the user
+                authenticating with Google)
+
+        """
+
         authorization_code = self._get_authorization_code(request)
         is_sdk = bool(request.oauth_sdk_details.ByteSize())
         if is_sdk:
