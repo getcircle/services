@@ -350,8 +350,7 @@ class CompleteAuthorization(actions.Action):
     def _get_or_create_user(self, identity):
         user_id = identity.user_id
         if not user_id:
-            # XXX add some concept of "generate_one_time_use_admin_token"
-            client = service.control.Client('user', token='one-time-use-token')
+            client = service.control.Client('user', token=make_admin_token())
             try:
                 response = client.call_action('create_user', email=identity.email)
                 self.response.new_user = True
