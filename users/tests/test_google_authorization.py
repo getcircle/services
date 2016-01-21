@@ -19,8 +19,9 @@ import service.control
 from services.test import (
     fuzzy,
     mocks,
-    TestCase,
+    MockedTestCase,
 )
+from services.token import make_admin_token
 
 from . import MockCredentials
 from .. import (
@@ -31,10 +32,10 @@ from .. import (
 from ..providers import google as google_provider
 
 
-class TestGoogleAuthorization(TestCase):
+class Test(MockedTestCase):
 
     def setUp(self):
-        super(TestGoogleAuthorization, self).setUp()
+        super(Test, self).setUp()
         self.client = service.control.Client('user')
         self.id_token = {
             'at_hash': 'MfuEK9IFxPzEZpYwqNklfQ',
@@ -47,9 +48,13 @@ class TestGoogleAuthorization(TestCase):
             'iss': 'accounts.google.com',
             'sub': '100900090880587164138',
         }
+        self.organization = mocks.mock_organization()
+        token = make_admin_token(organization_id=self.organization.id)
+        self.authenticated_client = service.control.Client('user', token=token)
+        self.mock.instance.dont_mock_service('user')
 
     def test_get_authorization_instructions_google(self):
-        response = self.client.call_action(
+        response = self.authenticated_client.call_action(
             'get_authorization_instructions',
             provider=user_containers.IdentityV1.GOOGLE,
             login_hint='mwhahn@gmail.com',
@@ -86,6 +91,7 @@ class TestGoogleAuthorization(TestCase):
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
+            organization_id=self.organization.id,
         )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -115,6 +121,7 @@ class TestGoogleAuthorization(TestCase):
                 'code': 'some-code',
             },
             client_type=token_pb2.WEB,
+            organization_id=self.organization.id,
         )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -140,6 +147,7 @@ class TestGoogleAuthorization(TestCase):
                 'code': 'some-code',
                 'state': 'some-state',
             },
+            organization_id=self.organization.id,
         )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -179,6 +187,7 @@ class TestGoogleAuthorization(TestCase):
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
+            organization_id=self.organization.id,
         )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -207,6 +216,7 @@ class TestGoogleAuthorization(TestCase):
                     'code': 'some-code',
                     'id_token': 'id-token',
                 },
+                organization_id=self.organization.id,
             )
 
         self.assertIn('PROVIDER_API_ERROR', expected.exception.response.errors)
@@ -231,6 +241,7 @@ class TestGoogleAuthorization(TestCase):
                     'code': 'some-code',
                     'id_token': 'id-token',
                 },
+                organization_id=self.organization.id,
             )
 
         self.assertIn('PROVIDER_PROFILE_FIELD_MISSING', expected.exception.response.errors)
@@ -260,6 +271,7 @@ class TestGoogleAuthorization(TestCase):
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
+            organization_id=self.organization.id,
         )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -285,6 +297,7 @@ class TestGoogleAuthorization(TestCase):
                     'code': 'some-code',
                     'id_token': 'id-token',
                 },
+                organization_id=self.organization.id,
             )
 
         self.assertIn('FIELD_ERROR', expected.exception.response.errors)
@@ -321,6 +334,7 @@ class TestGoogleAuthorization(TestCase):
                     'code': 'some-code',
                     'id_token': 'id-token',
                 },
+                organization_id=self.organization.id,
             )
 
         self.assertIn('TOKEN_EXPIRED', expected.exception.response.errors)
@@ -364,6 +378,7 @@ class TestGoogleAuthorization(TestCase):
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
+            organization_id=self.organization.id,
         )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -397,6 +412,7 @@ class TestGoogleAuthorization(TestCase):
                 'code': 'some-code',
                 'id_token': 'id-token',
             },
+            organization_id=self.organization.id,
         )
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
@@ -411,8 +427,16 @@ class TestGoogleAuthorization(TestCase):
             provider=user_containers.IdentityV1.GOOGLE,
         )
         # create tokens for several platforms
-        token = models.Token.objects.create(user=user, client_type=token_pb2.IOS)
-        models.Token.objects.create(user=user, client_type=token_pb2.ANDROID)
+        token = models.Token.objects.create(
+            user=user,
+            client_type=token_pb2.IOS,
+            organization_id=self.organization.id,
+        )
+        models.Token.objects.create(
+            user=user,
+            client_type=token_pb2.ANDROID,
+            organization_id=self.organization.id,
+        )
 
         self.assertEqual(models.Token.objects.filter(user=token.user).count(), 2)
         client = service.control.Client('user', token=mocks.mock_token(user_id=user.id))

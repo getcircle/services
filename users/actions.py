@@ -330,10 +330,24 @@ class CompleteAuthorization(actions.Action):
         self.exception_to_error_map.update(provider_class.exception_to_error_map)
         return provider_class
 
+    def _get_organization(self, domain):
+        try:
+            organization = service.control.get_object(
+                service='organization',
+                action='get_organization',
+                return_object='organization',
+                domain=domain,
+                fields={'only': ['id']},
+            )
+        except service.control.CallActionError:
+            raise self.ActionFieldError('organization_id', 'MISSING')
+        return organization
+
     def validate(self, *args, **kwargs):
         super(CompleteAuthorization, self).validate(*args, **kwargs)
         self.provider_class = self._get_provider_class()
         self.payload = {}
+        self.organization_id = self.request.organization_id
         if self.request.oauth2_details.ByteSize():
             self.payload = providers.parse_state_token(
                 self.request.provider,
@@ -345,12 +359,24 @@ class CompleteAuthorization(actions.Action):
                 else:
                     self.payload = {}
 
+        if not self.organization_id:
+            domain = self.payload.get('domain')
+            organization = self._get_organization(domain)
+            self.organization_id = organization.id
+
+        if not self.organization_id:
+            raise self.ActionFieldError('organization_id', 'MISSING')
+
     def _get_or_create_user(self, identity):
         user_id = identity.user_id
         if not user_id:
             client = service.control.Client('user', token=make_admin_token())
             try:
-                response = client.call_action('create_user', email=identity.email)
+                response = client.call_action(
+                    'create_user',
+                    email=identity.email,
+                    organization_id=self.organization_id,
+                )
                 self.response.new_user = True
             except service.control.CallActionError as e:
                 if 'FIELD_ERROR' in e.response.errors:
