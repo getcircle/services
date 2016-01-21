@@ -297,9 +297,16 @@ class GetAuthorizationInstructions(actions.Action):
     }
 
     def run(self, *args, **kwargs):
+        organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            return_object='organization',
+            client_kwargs={'token': self.token},
+        )
+
         instructions = get_authorization_instructions(
             provider=self.request.provider,
-            organization_domain=self.request.organization_domain,
+            organization_domain=organization.domain,
             login_hint=self.request.login_hint,
             redirect_uri=self.request.redirect_uri,
         )
@@ -575,31 +582,31 @@ class GetAuthenticationInstructions(actions.Action):
         'redirect_uri': [valid_redirect_uri],
     }
 
-    def _get_authorization_instructions(self, provider, **kwargs):
+    def _get_authorization_instructions(self, provider, organization_domain, **kwargs):
         return get_authorization_instructions(
             provider=provider,
             login_hint=self.request.email,
-            organization_domain=self.request.organization_domain,
+            organization_domain=organization_domain,
             redirect_uri=self.request.redirect_uri,
         )
 
-    def _populate_instructions(self, provider):
-        instructions = self._get_authorization_instructions(provider)
+    def _populate_instructions(self, provider, organization_domain):
+        instructions = self._get_authorization_instructions(provider, organization_domain)
         self.response.authorization_url, self.response.provider_name = instructions
 
-    def _populate_google_instructions(self):
+    def _populate_google_instructions(self, organization_domain):
         self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
-        self._populate_instructions(user_containers.IdentityV1.GOOGLE)
+        self._populate_instructions(user_containers.IdentityV1.GOOGLE, organization_domain)
 
-    def _populate_okta_instructions(self, domain):
+    def _populate_okta_instructions(self, organization_domain):
         self.response.backend = authenticate_user_pb2.RequestV1.OKTA
-        self._populate_instructions(user_containers.IdentityV1.OKTA)
+        self._populate_instructions(user_containers.IdentityV1.OKTA, organization_domain)
 
     def _get_organization_sso(self, domain):
         try:
             response = service.control.call_action(
-                'organization',
-                'get_sso_metadata',
+                service='organization',
+                action='get_sso_metadata',
                 organization_domain=domain,
             )
         except service.control.CallActionError:
@@ -625,8 +632,6 @@ class GetAuthenticationInstructions(actions.Action):
                 'organization',
                 'get_organization',
                 domain=domain,
-                fields={'only': ['image_url']},
-                inflations={'disabled': True},
             )
         except service.control.CallActionError as e:
             error_details = e.response.error_details
@@ -656,7 +661,7 @@ class GetAuthenticationInstructions(actions.Action):
         if self._should_force_internal_authentication():
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif self._should_force_google_authentication() and is_google_domain(organization.domain):
-            self._populate_google_instructions()
+            self._populate_google_instructions(organization.domain)
         elif self._should_force_organization_internal_auth(organization.domain):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
         elif sso:
@@ -664,7 +669,7 @@ class GetAuthenticationInstructions(actions.Action):
             # check the `sso.provider`
             self._populate_okta_instructions(organization.domain)
         elif is_google_domain(organization.domain):
-            self._populate_google_instructions()
+            self._populate_google_instructions(organization.domain)
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
 

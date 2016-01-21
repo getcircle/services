@@ -35,8 +35,6 @@ class TestUsersGetAuthenticationInstructions(MockedTestCase):
             return_object_path='organization',
             return_object=organization,
             domain=organization.domain,
-            fields={'only': ['image_url']},
-            inflations={'disabled': True},
         )
 
     def test_get_authentication_instructions_organization_domain_required(self):
@@ -63,8 +61,6 @@ class TestUsersGetAuthenticationInstructions(MockedTestCase):
             action='get_organization',
             error=error,
             domain='doesnotexist',
-            fields={'only': ['image_url']},
-            inflations={'disabled': True},
         )
         with self.assertFieldError('organization_domain', 'DOES_NOT_EXIST'):
             self.client.call_action(
@@ -190,6 +186,7 @@ class TestUsersGetAuthenticationInstructions(MockedTestCase):
         query = dict(urlparse.parse_qsl(parsed_url.query))
         parsed_state = parse_state_token(user_containers.IdentityV1.GOOGLE, query['state'])
         self.assertIn('frontend.lunohq', parsed_state['redirect_uri'])
+        self.assertEqual(parsed_state['domain'], self.organization.domain)
         self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
