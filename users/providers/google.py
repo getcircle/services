@@ -84,7 +84,6 @@ class Provider(base.BaseProvider):
         else:
             parameters['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
 
-        logger.info('requesting credentials: %s', parameters)
         credentials = credentials_from_code(**parameters)
         if id_token is not None:
             credentials.id_token = id_token
