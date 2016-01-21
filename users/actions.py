@@ -304,12 +304,16 @@ class GetAuthorizationInstructions(actions.Action):
             client_kwargs={'token': self.token},
         )
 
-        instructions = get_authorization_instructions(
-            provider=self.request.provider,
-            organization_domain=organization.domain,
-            login_hint=self.request.login_hint,
-            redirect_uri=self.request.redirect_uri,
-        )
+        try:
+            instructions = get_authorization_instructions(
+                provider=self.request.provider,
+                organization_domain=organization.domain,
+                login_hint=self.request.login_hint,
+                redirect_uri=self.request.redirect_uri,
+            )
+        except providers.okta.SAMLMetaDataDoesNotExist:
+            raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
+
         self.response.authorization_url, self.response.provider_name = instructions
 
 
