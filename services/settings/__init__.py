@@ -104,7 +104,6 @@ STATIC_ROOT = 'static'
 LOCALIZED_SERVICES = [
     'feature.server.Server',
     'file.server.Server',
-    'glossary.server.Server',
     'group.server.Server',
     'history.server.Server',
     'media.server.Server',
