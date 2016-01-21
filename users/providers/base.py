@@ -73,10 +73,9 @@ class BaseProvider(object):
     csrf_exempt = False
     exception_to_error_map = {}
 
-    def __init__(self, token):
-        self.token = token
+    def __init__(self):
         if self.type is None:
-            raise ImproperlyConfiguredError
+            raise ImproperlyConfiguredError('type is required')
 
     def get_identity(self, provider_uid):
         new = False

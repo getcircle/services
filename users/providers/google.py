@@ -229,7 +229,7 @@ class Provider(base.BaseProvider):
             urllib.urlencode(parameters),
         )
 
-    def revoke(self, identity):
+    def revoke(self, identity, token):
         response = requests.get(
             settings.GOOGLE_REVOKE_TOKEN_URL,
             params={'token': identity.access_token},
@@ -238,5 +238,5 @@ class Provider(base.BaseProvider):
             raise base.ProviderAPIError(response)
 
         # NB: Since google is our primary form of auth, ensure the user is logged out
-        client = service.control.Client('user', token=self.token)
+        client = service.control.Client('user', token=token)
         client.call_action('logout', revoke_all=True)
