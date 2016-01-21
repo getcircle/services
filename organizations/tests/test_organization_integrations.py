@@ -25,17 +25,6 @@ class OrganizationIntegrationTests(TestCase):
         )
         self.client = service.control.Client('organization', token=self.token)
 
-    def test_organization_enable_integration_integartion_required(self):
-        with self.assertFieldError('integration', 'MISSING'):
-            self.client.call_action('enable_integration')
-
-    def test_organization_enable_integration_integration_type_required(self):
-        with self.assertFieldError('integration.integration_type', 'MISSING'):
-            self.client.call_action(
-                'enable_integration',
-                integration={'google_groups': {'admin_email': 'michael@circlehq.co'}},
-            )
-
     def test_organization_enable_integration_google(self):
         response = self.client.call_action(
             'enable_integration',
@@ -149,10 +138,6 @@ class OrganizationIntegrationTests(TestCase):
         with self.assertFieldError('integration.integration_type', 'DUPLICATE'):
             self.client.call_action('enable_integration', integration=integration)
 
-    def test_organization_disable_integration_integration_type_required(self):
-        with self.assertFieldError('integration_type', 'MISSING'):
-            self.client.call_action('disable_integration')
-
     def test_organization_disable_integration_does_not_exist(self):
         with self.assertFieldError('integration_type', 'DOES_NOT_EXIST'):
             self.client.call_action(
@@ -174,10 +159,6 @@ class OrganizationIntegrationTests(TestCase):
             integration_type=integration_pb2.GOOGLE_GROUPS,
         )
         self.assertFalse(queryset.exists())
-
-    def test_organization_get_integration_integration_type_required(self):
-        with self.assertFieldError('integration_type', 'MISSING'):
-            self.client.call_action('get_integration')
 
     def test_organization_get_integration(self):
         expected = factories.IntegrationFactory.create_protobuf(organization=self.organization)

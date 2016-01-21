@@ -422,8 +422,6 @@ class AddLocationMembers(PreRunParseTokenMixin, actions.Action):
 
 class EnableIntegration(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('integration', 'integration.integration_type',)
-
     def _default_google_group_scopes(self):
         return (
             'https://www.googleapis.com/auth/admin.directory.user',
@@ -474,8 +472,6 @@ class EnableIntegration(PreRunParseTokenMixin, actions.Action):
 
 
 class DisableIntegration(PreRunParseTokenMixin, actions.Action):
-
-    required_fields = ('integration_type',)
 
     def _get_integration(self):
         try:
