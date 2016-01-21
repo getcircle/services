@@ -234,25 +234,6 @@ class LocationMember(models.UUIDModel):
         )
 
 
-class Token(models.UUIDModel):
-
-    key = models.CharField(max_length=40)
-    organization = models.ForeignKey(Organization, related_name='auth_token')
-    requested_by_user_id = models.UUIDField(null=True)
-    created = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        if not self.key:
-            self.key = self.generate_key()
-        return super(Token, self).save(*args, **kwargs)
-
-    def generate_key(self):
-        return binascii.hexlify(os.urandom(20)).decode()
-
-    def __unicode__(self):
-        return self.key
-
-
 class SSO(models.UUIDModel, models.Model):
 
     as_dict_value_transforms = {'provider': int}

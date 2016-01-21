@@ -6,10 +6,8 @@ from rest_framework.authentication import (
     BaseAuthentication,
     get_authorization_header,
 )
-import service.control
 
 from users.models import Token as UserToken
-from organizations.models import Token as OrganizationToken
 from .token import parse_token
 
 logger = logging.getLogger(__name__)
@@ -80,41 +78,6 @@ class ServiceTokenCookieAuthentication(ServiceTokenAuthentication):
 
     def get_token(self, request):
         return request.COOKIES.get(AUTHENTICATION_TOKEN_COOKIE_KEY)
-
-
-class OrganizationTokenAuthentication(BaseAuthentication):
-    """Simple token based authentication for organizations.
-
-    Clients should authenticate by pass the token key in the "Authoriation"
-    HTTP header, prepended with the string "OrganizationToken ". For example:
-
-        Authorization: OrganizationToken 401f7ac837da42b97f613d789819ff93537bee6a
-
-    """
-    model = OrganizationToken
-
-    def authenticate(self, request):
-        auth = get_authorization_header(request).split()
-
-        if not auth or len(auth) < 3 or ' '.join(auth[:2]).lower() != b'organization token':
-            return None
-
-        if len(auth) > 3:
-            msg = 'Invalid token header.'
-            raise exceptions.AuthenticationFailed(msg)
-
-        return self.authenticate_credentials(auth[2])
-
-    def authenticate_credentials(self, key):
-        try:
-            token = self.model.objects.select_related('organization').get(key=key)
-        except self.model.DoesNotExist:
-            raise exceptions.AuthenticationFailed('Invalid organization token')
-
-        return (token.organization.to_protobuf(), token)
-
-    def authenticate_header(self, request):
-        return 'Organization Token'
 
 
 def set_authentication_cookie(response, token):

@@ -420,59 +420,6 @@ class AddLocationMembers(PreRunParseTokenMixin, actions.Action):
         models.LocationMember.objects.bulk_create(objects)
 
 
-class CreateToken(actions.Action):
-
-    def validate(self, *args, **kwargs):
-        super(CreateToken, self).validate(*args, **kwargs)
-        if not self.is_error():
-            self.service_token = parse_token(self.token)
-            if not self.service_token.organization_id:
-                raise self.ActionFieldError('token.organization_id', 'MISSING')
-
-            if not validators.is_uuid4(self.service_token.organization_id):
-                raise self.ActionFieldError('token.organization_id', 'INVALID')
-
-            if not self.service_token.is_admin() and not self.service_token.user_id:
-                raise self.ActionFieldError('token.user_id', 'MISSING')
-
-            if (
-                not self.service_token.is_admin() and
-                not validators.is_uuid4(self.service_token.user_id)
-            ):
-                raise self.ActionFieldError('token.user_id', 'INVALID')
-
-    def run(self, *args, **kwargs):
-        if not valid_organization(self.service_token.organization_id):
-            raise self.ActionFieldError('token.organization_id', 'DOES_NOT_EXIST')
-
-        token = models.Token.objects.create(
-            requested_by_user_id=self.service_token.user_id,
-            organization_id=self.service_token.organization_id,
-        )
-        token.to_protobuf(self.response.token)
-
-
-class GetTokens(actions.Action):
-
-    def validate(self, *args, **kwargs):
-        super(GetTokens, self).validate(*args, **kwargs)
-        if not self.is_error():
-            self.service_token = parse_token(self.token)
-            if not validators.is_uuid4(self.service_token.organization_id):
-                raise self.ActionFieldError('token.organization_id', 'INVALID')
-
-    def run(self, *args, **kwargs):
-        if not valid_organization(self.service_token.organization_id):
-            raise self.ActionFieldError('token.organization_id', 'DOES_NOT_EXIST')
-
-        tokens = models.Token.objects.filter(organization_id=self.service_token.organization_id)
-        self.paginated_response(
-            self.response.tokens,
-            tokens,
-            lambda item, container: item.to_protobuf(container.add()),
-        )
-
-
 class EnableIntegration(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('integration', 'integration.integration_type',)

@@ -8,7 +8,6 @@ class Server(service.control.Server):
 
     auth_exempt_actions = (
         'get_organization',
-        'get_sso_metadata',
     )
 
     actions = {
@@ -21,8 +20,6 @@ class Server(service.control.Server):
         'update_location': actions.UpdateLocation,
         'get_location': actions.GetLocation,
         'get_locations': actions.GetLocations,
-        'create_token': actions.CreateToken,
-        'get_tokens': actions.GetTokens,
         'enable_integration': actions.EnableIntegration,
         'get_integration': actions.GetIntegration,
         'disable_integration': actions.DisableIntegration,

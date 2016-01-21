@@ -101,15 +101,6 @@ class LocationMemberFactory(factory.Factory):
     organization = factory.SubFactory(OrganizationFactory)
 
 
-class TokenFactory(factory.Factory):
-    class Meta:
-        model = models.Token
-        protobuf = organization_containers.TokenV1
-
-    organization = factory.SubFactory(OrganizationFactory)
-    requested_by_user_id = factory.FuzzyUUID()
-
-
 class IntegrationFactory(factory.Factory):
     class Meta:
         model = models.Integration

@@ -77,11 +77,6 @@ class Command(BaseCommand):
         )
 
         organization_token = make_admin_token(organization_id=response.result.organization.id)
-        client = service.control.Client(
-            'organization',
-            token=organization_token,
-        )
-        client.call_action('create_token')
         if not response.success:
             raise CommandError('Error creating organization: %s' % (
                 response.errors,
