@@ -50,10 +50,6 @@ class TestNoSearchResults(MockedTestCase):
             ids=[self.profile.id, manager.id],
         )
 
-    def test_no_search_results_client_type_required(self):
-        with self.assertFieldError('client_type', 'MISSING'):
-            self.client.call_action('no_search_results', query='query')
-
     def test_no_search_results_query_required(self):
         with self.assertFieldError('query', 'MISSING'):
             self.client.call_action('no_search_results', client_type=token_pb2.WEB)

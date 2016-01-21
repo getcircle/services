@@ -162,6 +162,7 @@ class SendNotification(mixins.PreRunParseTokenMixin, actions.Action):
         elif notification_preference and not notification_preference.subscribed:
             raise self.ActionFieldError('notification.notification_type_id', 'UNSUBSCRIBED')
 
+        # XXX should be bulk fetching profiles and only specifying the "user_id" field.
         profile = service.control.get_object(
             service='profile',
             action='get_profile',
@@ -238,7 +239,7 @@ class SendNotification(mixins.PreRunParseTokenMixin, actions.Action):
 
 class NoSearchResults(mixins.PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('client_type', 'query')
+    required_fields = ('query',)
 
     def _get_profile_and_manager(self):
         response = service.control.call_action(
