@@ -347,8 +347,8 @@ class CompleteAuthorization(actions.Action):
                 else:
                     self.payload = {}
 
-    def _get_or_create_user(self, identity, token):
-        user_id = identity.user_id or getattr(token, 'user_id', None)
+    def _get_or_create_user(self, identity):
+        user_id = identity.user_id
         if not user_id:
             # XXX add some concept of "generate_one_time_use_admin_token"
             client = service.control.Client('user', token='one-time-use-token')
@@ -372,19 +372,15 @@ class CompleteAuthorization(actions.Action):
         return self.response.user
 
     def run(self, *args, **kwargs):
-        # we only have token if a logged in user is connecting to a third party
-        token = self.token or self.payload.get('token')
-        if token:
-            token = parse_token(token)
-
-        provider = self.provider_class(token)
+        provider = self.provider_class()
         identity = provider.complete_authorization(
             self.request,
             self.response,
             redirect_uri=self.payload.get('redirect_uri'),
         )
-        user = self._get_or_create_user(identity, token)
+        user = self._get_or_create_user(identity)
         identity.user_id = user.id
+        identity.organization_id = user.organization_id
         identity.save()
         identity.to_protobuf(self.response.identity)
         provider.finalize_authorization(
