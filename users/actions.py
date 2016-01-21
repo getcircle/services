@@ -229,18 +229,8 @@ class AuthenticateUser(actions.Action):
 
 class Logout(actions.Action):
 
-    def validate(self, *args, **kwargs):
-        super(Logout, self).validate(*args, **kwargs)
-        if (
-            not self.is_error() and
-            not self.request.client_type and
-            not self.request.revoke_all
-        ):
-            raise self.ActionFieldError('client_type', 'MISSING')
-
     def _delete_token_for_client(self, service_token, client_type):
         try:
-            # TODO see if we really need client_type
             models.Token.objects.get(
                 key=service_token.auth_token,
                 user_id=service_token.user_id,
