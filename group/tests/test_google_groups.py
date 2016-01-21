@@ -1,5 +1,6 @@
 from mock import patch
 import service.control
+import unittest
 
 from services.test import (
     fuzzy,
@@ -12,6 +13,7 @@ from protobufs.services.group.actions import respond_to_membership_request_pb2
 from ..factories import models as model_factories
 
 
+@unittest.skip('skip')
 class TestGoogleGroups(TestCase):
 
     def setUp(self):

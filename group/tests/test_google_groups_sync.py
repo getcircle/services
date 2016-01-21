@@ -1,5 +1,6 @@
 from mock import MagicMock
 import uuid
+import unittest
 
 from services.test import (
     fuzzy,
@@ -14,6 +15,7 @@ from ..providers.google import Provider
 from ..providers.google.sync import Sync
 
 
+@unittest.skip('skip')
 class TestGoogleGroupsCache(TestCase):
 
     def setUp(self):

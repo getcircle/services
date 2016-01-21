@@ -5,6 +5,7 @@ from mock import (
     patch,
 )
 from pprint import pprint
+import unittest
 
 from apiclient.errors import HttpError
 from protobufs.services.group import containers_pb2 as group_containers
@@ -150,6 +151,7 @@ class BaseGoogleCase(TestCase):
                 group.delete()
 
 
+@unittest.skip('skip')
 @patch('group.providers.google.provider.service.control.get_object')
 @patch('group.providers.google.provider.SignedJwtAssertionCredentials')
 class TestGoogleGetGroups(BaseGoogleCase):
@@ -1297,6 +1299,7 @@ class TestGoogleGetGroups(BaseGoogleCase):
             self._execute_test_cases('approve_request_to_join', test_cases, test_func=test)
 
 
+@unittest.skip('skip')
 class TestGoogleListMembers(BaseGoogleCase):
 
     def _execute_test(
@@ -1479,6 +1482,7 @@ class TestGoogleListMembers(BaseGoogleCase):
         self._execute_test_cases('get_members_for_group', test_cases)
 
 
+@unittest.skip('skip')
 @patch('group.providers.google.provider.service.control.get_object')
 @patch('group.providers.google.provider.SignedJwtAssertionCredentials')
 class TestGoogleGroups(BaseGoogleCase):
