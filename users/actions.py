@@ -22,7 +22,10 @@ from services.token import (
     make_admin_token,
     parse_token,
 )
-from services.utils import build_slack_message
+from services.utils import (
+    build_slack_message,
+    has_field_error,
+)
 
 from . import (
     models,
@@ -156,6 +159,8 @@ class GetUser(mixins.PreRunParseTokenMixin, actions.Action):
 
 class AuthenticateUser(actions.Action):
 
+    required_fields = ('organization_domain',)
+
     def _is_internal_backend(self):
         return self.request.backend == self.request.INTERNAL
 
@@ -165,8 +170,10 @@ class AuthenticateUser(actions.Action):
     def _is_okta_backend(self):
         return self.request.backend == self.request.OKTA
 
-    def _get_auth_params(self):
-        auth_params = {}
+    def _get_auth_params(self, organization):
+        auth_params = {
+            'organization_id': organization.id,
+        }
         if self._is_internal_backend():
             auth_params['username'] = self.request.credentials.key
             auth_params['password'] = self.request.credentials.secret
@@ -180,8 +187,8 @@ class AuthenticateUser(actions.Action):
             raise self.ActionFieldError('backend', 'INVALID')
         return auth_params
 
-    def _handle_authentication(self):
-        auth_params = self._get_auth_params()
+    def _handle_authentication(self, organization):
+        auth_params = self._get_auth_params(organization)
         user = authenticate(**auth_params)
         if user is not None:
             if not user.is_active:
@@ -196,8 +203,22 @@ class AuthenticateUser(actions.Action):
             )
         return user
 
+    def _get_organization(self, domain):
+        try:
+            organization = service.control.get_object(
+                service='organization',
+                action='get_organization',
+                return_object='organization',
+                domain=domain,
+            )
+        except service.control.CallActionError as e:
+            if has_field_error(e.response, 'domain', 'DOES_NOT_EXIST'):
+                raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
+        return organization
+
     def run(self, *args, **kwargs):
-        user = self._handle_authentication()
+        organization = self._get_organization(self.request.organization_domain)
+        user = self._handle_authentication(organization)
         user.last_login = timezone.now()
         user.save()
         self.response.token = get_token(user, self.request.client_type)

@@ -79,3 +79,32 @@ def execute_handler_on_paginated_items(
             next_page = response.control.paginator.next_page
         else:
             break
+
+
+def has_field_error(response, field, error):
+    """Determine whether or not the response has the given field error.
+
+    Args:
+        response (service.control.Response): service response
+        field (str): name of the field
+        error (str): error code
+
+    Returns:
+        bool: True if the response has the field error, False if not.
+
+    """
+    error_details = response.error_details or []
+    errors = response.errors or []
+    if 'FIELD_ERROR' not in errors:
+        return False
+
+    has_error = False
+    for error_detail in error_details:
+        if (
+            error_detail.key == field and
+            error_detail.detail == error and
+            error_detail.error == 'FIELD_ERROR'
+        ):
+            has_error = True
+            break
+    return has_error
