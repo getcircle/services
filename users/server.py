@@ -8,7 +8,6 @@ class Server(service.control.Server):
 
     auth_exempt_actions = (
         'authenticate_user',
-        'get_authorization_instructions',
         'complete_authorization',
         'get_authentication_instructions',
         'request_access',
