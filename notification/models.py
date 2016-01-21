@@ -30,7 +30,7 @@ class NotificationPreference(models.UUIDModel, models.TimestampableModel):
 
     profile_id = models.UUIDField()
     notification_type = models.ForeignKey(NotificationType, related_name='preferences')
-    subscribed = models.BooleanField()
+    subscribed = models.BooleanField(default=False)
     organization_id = models.UUIDField()
 
     class Meta:
