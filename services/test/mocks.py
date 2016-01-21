@@ -132,7 +132,7 @@ def mock_identity(container=None, **overrides):
     defaults.update(overrides)
 
     mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'access_token', 'provider_uid', 'user_id'],
+        fuzzy.FuzzyUUID: ['id', 'access_token', 'provider_uid', 'user_id', 'organization_id'],
         fuzzy.FuzzyText: ['full_name'],
         fuzzy.FuzzyText(suffix='@example.com'): ['email'],
     }
