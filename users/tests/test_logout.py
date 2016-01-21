@@ -16,22 +16,27 @@ from .. import (
 class Test(TestCase):
 
     def setUp(self):
-        self.user = factories.UserFactory.create()
-        self.service_token = mocks.mock_token(user_id=self.user.id)
+        self.organization = mocks.mock_organization()
+        self.user = factories.UserFactory.create(organization_id=self.organization.id)
+        self.service_token = mocks.mock_token(
+            user_id=self.user.id,
+            organization_id=self.organization.id,
+        )
         self.parsed_token = parse_token(self.service_token)
         self.client = service.control.Client('user', token=self.service_token)
-
-    def test_logout_client_type_required(self):
-        with self.assertFieldError('client_type', 'MISSING'):
-            self.client.call_action('logout')
 
     def test_logout_single_client_type(self):
         models.Token.objects.create(
             key=self.parsed_token.auth_token,
             user=self.user,
             client_type=token_pb2.IOS,
+            organization_id=self.organization.id,
         )
-        models.Token.objects.create(user=self.user, client_type=token_pb2.ANDROID)
+        models.Token.objects.create(
+            user=self.user,
+            client_type=token_pb2.ANDROID,
+            organization_id=self.organization.id,
+        )
         self.assertEqual(models.Token.objects.filter(user=self.user).count(), 2)
         self.client.call_action('logout', client_type=token_pb2.IOS)
         self.assertEqual(models.Token.objects.filter(user=self.user).count(), 1)
@@ -41,8 +46,13 @@ class Test(TestCase):
             key=self.parsed_token.auth_token,
             user=self.user,
             client_type=token_pb2.IOS,
+            organization_id=self.organization.id,
         )
-        models.Token.objects.create(user=self.user, client_type=token_pb2.IOS)
+        models.Token.objects.create(
+            user=self.user,
+            client_type=token_pb2.IOS,
+            organization_id=self.organization.id,
+        )
         self.assertEqual(models.Token.objects.filter(user=self.user).count(), 2)
         response = self.client.call_action('logout', client_type=token_pb2.IOS)
         self.assertEqual(models.Token.objects.filter(user=self.user).count(), 1)
@@ -58,10 +68,15 @@ class Test(TestCase):
             key=self.parsed_token.auth_token,
             user=self.user,
             client_type=token_pb2.IOS,
+            organization_id=self.organization.id,
         )
-        users = factories.UserFactory.create_batch(size=4)
+        users = factories.UserFactory.create_batch(size=4, organization_id=self.organization.id)
         for user in users:
-            models.Token.objects.create(user=user, client_type=token_pb2.IOS)
+            models.Token.objects.create(
+                user=user,
+                client_type=token_pb2.IOS,
+                organization_id=self.organization.id,
+            )
 
         self.assertEqual(len(models.Token.objects.all()), len(users) + 1)
 
@@ -69,12 +84,16 @@ class Test(TestCase):
         self.assertEqual(len(models.Token.objects.all()), len(users))
 
     def test_logout_invalid_token_no_user_id(self):
-        service_token = mocks.mock_token(user_id=None)
+        service_token = mocks.mock_token(user_id=None, organization_id=self.organization.id)
         client = service.control.Client('user', token=service_token)
 
-        users = factories.UserFactory.create_batch(size=4)
+        users = factories.UserFactory.create_batch(size=4, organization_id=self.organization.id)
         for user in users:
-            models.Token.objects.create(user=user, client_type=token_pb2.IOS)
+            models.Token.objects.create(
+                user=user,
+                client_type=token_pb2.IOS,
+                organization_id=self.organization.id,
+            )
 
         self.assertEqual(models.Token.objects.all().count(), len(users))
         client.call_action('logout', client_type=token_pb2.IOS)
@@ -82,7 +101,11 @@ class Test(TestCase):
 
     def test_logout_revoke_all_tokens(self):
         for key, value in token_pb2.ClientTypeV1.items():
-            models.Token.objects.create(user=self.user, client_type=value)
+            models.Token.objects.create(
+                user=self.user,
+                client_type=value,
+                organization_id=self.organization.id,
+            )
 
         self.assertEqual(
             models.Token.objects.filter(user=self.user).count(),
