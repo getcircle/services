@@ -763,16 +763,14 @@ class GetDescendants(PreRunParseTokenMixin, actions.Action):
         )
 
 
-class GetSSOMetadata(actions.Action):
-
-    required_fields = ('organization_domain',)
+class GetSSOMetadata(PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
         try:
             sso = models.SSO.objects.get(
-                organization__domain=self.request.organization_domain,
+                organization_id=self.parsed_token.organization_id,
             )
         except models.SSO.DoesNotExist:
-            raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
+            raise self.ActionFieldError('organization_id', 'DOES_NOT_EXIST')
 
         sso.to_protobuf(self.response.sso)
