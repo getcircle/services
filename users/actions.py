@@ -8,7 +8,6 @@ from django.core import validators as django_validators
 import django.db
 from django.utils import timezone
 import DNS
-from phonenumber_field.validators import validate_international_phonenumber
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
 from service import (
@@ -57,20 +56,6 @@ def validate_email(value):
     except django_validators.ValidationError:
         pass
     return valid
-
-
-def validate_phone_number(value):
-    valid = False
-    try:
-        validate_international_phonenumber(value)
-        valid = True
-    except django_validators.ValidationError:
-        pass
-    return valid
-
-
-def unique_phone_number(value):
-    return not models.User.objects.filter(phone_number=value).exists()
 
 
 @cached(timeout=settings.CACHEOPS_FUNC_IS_GOOGLE_DOMAIN_TIMEOUT)

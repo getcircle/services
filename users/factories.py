@@ -15,7 +15,6 @@ class UserFactory(factory.Factory):
         protobuf = user_containers.UserV1
 
     primary_email = fuzzy.FuzzyText(suffix='@example.com')
-    phone_number = factory.Sequence(lambda n: '+1949293%04d' % (n,))
     organization_id = factory.FuzzyUUID()
 
     @factory.post_generation

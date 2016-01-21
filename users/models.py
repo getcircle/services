@@ -8,7 +8,6 @@ from django.contrib.auth.models import (
     BaseUserManager,
 )
 from django.conf import settings
-from phonenumber_field.modelfields import PhoneNumberField
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
 import pyotp
@@ -72,8 +71,6 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
     is_active = models.BooleanField(default=True)
     primary_email = models.EmailField()
     organization_id = models.UUIDField(db_index=True)
-    phone_number = PhoneNumberField(null=True, unique=True)
-    phone_number_verified = models.BooleanField(default=False)
 
     def __init__(self, *args, **kwargs):
         super(User, self).__init__(*args, **kwargs)
