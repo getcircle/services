@@ -51,12 +51,6 @@ class GetPreferences(mixins.PreRunParseTokenMixin, actions.Action):
 
 class UpdatePreference(mixins.PreRunParseTokenMixin, actions.Action):
 
-    required_fields = (
-        'preference',
-        'preference.notification_type_id',
-        'preference.subscribed',
-    )
-
     def run(self, *args, **kwargs):
         if not self.request.preference.id:
             preference = models.NotificationPreference.objects.from_protobuf(
@@ -84,7 +78,6 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
         'device',
         'device.id',
         'device.notification_token',
-        'device.provider',
     )
 
     def _register_token(self, provider, provider_platform):
@@ -138,11 +131,6 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
 
 
 class SendNotification(mixins.PreRunParseTokenMixin, actions.Action):
-
-    required_fields = (
-        'notification',
-        'notification.notification_type_id',
-    )
 
     def validate(self, *args, **kwargs):
         super(SendNotification, self).validate(*args, **kwargs)
