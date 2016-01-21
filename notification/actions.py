@@ -95,6 +95,7 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
                 token=self.request.device.notification_token,
                 platform=provider_platform,
                 user_id=self.parsed_token.user_id,
+                organization_id=self.parsed_token.organization_id,
             )
         except providers.exceptions.TokenAlreadyRegistered:
             # if a notification token exists for this device_id, delete it
@@ -122,6 +123,7 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
                 user_id=self.parsed_token.user_id,
                 provider=provider.provider,
                 provider_platform=provider_platform,
+                organization_id=self.parsed_token.organization_id,
             )
         except models.NotificationToken.DoesNotExist:
             provider_token = self._register_token(provider, provider_platform)
@@ -131,6 +133,7 @@ class RegisterDevice(mixins.PreRunParseTokenMixin, actions.Action):
                 provider_token=provider_token,
                 provider=provider.provider,
                 provider_platform=provider_platform,
+                organization_id=self.parsed_token.organization_id,
             )
 
         notification_token.to_protobuf(self.response.notification_token)
