@@ -72,7 +72,7 @@ def get_saml_client(domain, metadata):
 
 def get_token(user, client_type):
 
-    def _get_profile(user_id, token):
+    def _get_profile(token):
         profile = None
         client = service.control.Client('profile', token=token)
         try:
@@ -85,6 +85,7 @@ def get_token(user, client_type):
     token, _ = models.Token.objects.get_or_create(
         user_id=user.id,
         client_type=client_type,
+        organization_id=user.organization_id,
     )
     # XXX this assumes that we have profiles already set up
     temporary_token = make_token(
@@ -92,8 +93,9 @@ def get_token(user, client_type):
         auth_token_id=token.id,
         user_id=user.id,
         client_type=client_type,
+        organization_id=user.organization_id,
     )
-    profile = _get_profile(user.id, temporary_token)
+    profile = _get_profile(temporary_token)
     return make_token(
         auth_token=token.key,
         auth_token_id=token.id,
