@@ -390,6 +390,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Customer Support',
             category=search_pb2.PROFILES,
+            has_category=True,
         )
         self.verify_top_results(
             'profile',
@@ -412,6 +413,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Customer Support',
             category=search_pb2.TEAMS,
+            has_category=True,
         )
         self.verify_top_results(
             'profile',
@@ -430,6 +432,7 @@ class Test(ESTestCase):
             'search_v2',
             query='San Francisco',
             category=search_pb2.LOCATIONS,
+            has_category=True,
         )
         self.assertFalse(any([result.post.id for result in response.result.results]))
 
@@ -446,6 +449,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Taylor',
             category=search_pb2.POSTS,
+            has_category=True,
         )
         self.verify_top_results(
             'profile',
@@ -496,6 +500,7 @@ class Test(ESTestCase):
             'search_v2',
             query='marco almeida',
             category=search_pb2.PROFILES,
+            has_category=True
         )
         self.verify_top_results(
             'profile',
@@ -519,7 +524,12 @@ class Test(ESTestCase):
         self.assertIn('<mark>video</mark> <mark>conferencing</mark>', hit.highlight['content'])
 
     def test_search_team_display_name_highlighting_partial(self):
-        response = self.client.call_action('search_v2', query='Dev', category=search_pb2.TEAMS)
+        response = self.client.call_action(
+            'search_v2',
+            query='Dev',
+            category=search_pb2.TEAMS,
+            has_category=True,
+        )
         hit = response.result.results[0]
         self.assertTrue(hit.highlight['display_name'].startswith('<mark>Dev</mark>Ops'))
 
@@ -528,12 +538,18 @@ class Test(ESTestCase):
             'search_v2',
             query='Customer Support',
             category=search_pb2.TEAMS,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertEqual(hit.highlight['display_name'], '<mark>Customer Support</mark>')
 
     def test_search_team_description_highlighting(self):
-        response = self.client.call_action('search_v2', query='site up', category=search_pb2.TEAMS)
+        response = self.client.call_action(
+            'search_v2',
+            query='site up',
+            category=search_pb2.TEAMS,
+            has_category=True,
+        )
         hit = response.result.results[0]
         self.assertIn('<mark>site</mark> <mark>up</mark>', hit.highlight['description'])
 
@@ -558,6 +574,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Sr. Account',
             category=search_pb2.PROFILES,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertTrue(
@@ -570,6 +587,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Manager',
             category=search_pb2.PROFILES,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertIn('<mark>Manager</mark>', hit.highlight['display_title'])
@@ -579,6 +597,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Head',
             category=search_pb2.LOCATIONS,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertEqual(hit.highlight['name'], '<mark>Head</mark>quarters')
@@ -587,6 +606,7 @@ class Test(ESTestCase):
             'search_v2',
             query='DC Office',
             category=search_pb2.LOCATIONS,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertEqual(hit.highlight['name'], '<mark>DC</mark> <mark>Office</mark>')
@@ -596,6 +616,7 @@ class Test(ESTestCase):
             'search_v2',
             query='San Francisco',
             category=search_pb2.LOCATIONS,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertIn('<mark>San</mark> <mark>Francisco</mark>', hit.highlight['full_address'])
@@ -605,6 +626,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Arbit',
             category=search_pb2.POSTS,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertIn('<mark>Arbit</mark>er', hit.highlight['title'])
@@ -614,6 +636,7 @@ class Test(ESTestCase):
             'search_v2',
             query='expense',
             category=search_pb2.POSTS,
+            has_category=True,
         )
         hit = response.result.results[0]
         expected_title = (
@@ -627,6 +650,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Marco Zappacosta',
             category=search_pb2.POSTS,
+            has_category=True,
         )
         hit = response.result.results[0]
         self.assertIn('<mark>Marco</mark> <mark>Zappacosta</mark>', hit.highlight['content'])
@@ -646,6 +670,7 @@ class Test(ESTestCase):
             'search_v2',
             query='Arbiter',
             category=search_pb2.POSTS,
+            has_category=True,
         )
         self.assertFalse(any([result.post.content for result in response.result.results]))
 
@@ -654,12 +679,14 @@ class Test(ESTestCase):
             'search_v2',
             query='div strong',
             category=search_pb2.POSTS,
+            has_category=True,
         )
         self.assertFalse(response.result.results)
         response = self.client.call_action(
             'search_v2',
             query='some bold section',
             category=search_pb2.POSTS,
+            has_category=True,
         )
         self.assertTrue(response.result.results)
         self.assertIn(
