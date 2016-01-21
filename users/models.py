@@ -137,8 +137,8 @@ class TOTPTokenManager(models.CommonManager):
 
     def _token_for_user(self, user):
         # clear any previously created tokens
-        self.filter(user_id=user.id).delete()
-        return self.create(user_id=user.id)
+        self.filter(user_id=user.id, organization_id=user.organization_id).delete()
+        return self.create(user_id=user.id, organization_id=user.organization_id)
 
     def totp_for_user(self, user):
         token = self._token_for_user(user)
