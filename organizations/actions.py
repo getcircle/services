@@ -74,7 +74,6 @@ class GetOrganization(actions.Action):
 
     def _get_organization(self):
         parameters = {}
-        # XXX we shouldn't expose this
         if self.request.domain:
             parameters['domain'] = self.request.domain
         else:
@@ -93,7 +92,8 @@ class GetOrganization(actions.Action):
         else:
             organization.to_protobuf(
                 self.response.organization,
-                fields={'only': ('image_url', 'domain', 'name')},
+                # XXX look into not exposing id
+                fields={'only': ('image_url', 'domain', 'name', 'id')},
                 inflations={'disabled': True},
             )
 
