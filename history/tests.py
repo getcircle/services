@@ -19,10 +19,10 @@ from . import (
 )
 
 
-class TestHistoryRecordAction(TestCase):
+class Test(TestCase):
 
     def setUp(self):
-        super(TestHistoryRecordAction, self).setUp()
+        super(Test, self).setUp()
         self.organization = mocks.mock_organization()
         self.profile = mocks.mock_profile(organization_id=self.organization.id)
         self.client = service.control.Client(
@@ -42,8 +42,6 @@ class TestHistoryRecordAction(TestCase):
             'table_name',
             'column_name',
             'data_type',
-            'action_type',
-            'method_type',
         ]
         payload = {
             'table_name': 'some_table',
