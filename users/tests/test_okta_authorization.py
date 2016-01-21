@@ -42,6 +42,15 @@ class TestOktaAuthorization(MockedTestCase):
             'LastName': ['Hahn'],
         }
 
+    def _mock_get_organization(self, organization=None):
+        organization = organization or self.organization
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_organization',
+            return_object_path='organization',
+            return_object=organization,
+        )
+
     def _setup_test(self, saml_client, profile_exists=True, user_id=None, **overrides):
         domain = overrides.get('domain', 'lunohq')
         self.mock.instance.register_mock_object(
@@ -51,6 +60,7 @@ class TestOktaAuthorization(MockedTestCase):
             return_object=mocks.mock_sso(),
             organization_domain=domain,
         )
+        self._mock_get_organization()
         response = get_mockable_response('profile', 'profile_exists')
         if profile_exists:
             response.user_id = user_id or fuzzy.FuzzyUUID().fuzz()
@@ -68,6 +78,7 @@ class TestOktaAuthorization(MockedTestCase):
         return mocks.mock_saml_details(**overrides)
 
     def test_get_authorization_instructions_does_not_exist(self):
+        self._mock_get_organization()
         self.mock.instance.register_mock_call_action_error(
             service='organization',
             action='get_sso_metadata',
@@ -83,6 +94,7 @@ class TestOktaAuthorization(MockedTestCase):
 
     def test_get_authorization_instructions(self):
         self._setup_test(MagicMock())
+        self._mock_get_organization()
         response = self.authenticated_client.call_action(
             'get_authorization_instructions',
             provider=user_containers.IdentityV1.OKTA,
