@@ -137,6 +137,7 @@ class TestOktaAuthorization(MockedTestCase):
     def test_complete_authorization(self, patched_saml_client):
         user = factories.UserFactory.create_protobuf(
             primary_email='michael@lunohq.com',
+            organization_id=self.organization.id,
         )
         saml_details = self._setup_test(patched_saml_client, user_id=user.id)
         response = self.client.call_action(
@@ -153,6 +154,7 @@ class TestOktaAuthorization(MockedTestCase):
     def test_complete_authorization_identity_exists(self, patched_saml_client):
         user = factories.UserFactory.create(
             primary_email='michael@lunohq.com',
+            organization_id=self.organization.id,
         )
         identity = factories.IdentityFactory.create_protobuf(
             email='michael@lunohq.com',
@@ -161,6 +163,7 @@ class TestOktaAuthorization(MockedTestCase):
             full_name='Michael Hahn',
             data=json.dumps(self._mock_user_info()),
             user=user,
+            organization_id=self.organization.id,
         )
         # above facotry requires user model, below we test with the protobuf
         user = user.to_protobuf()
