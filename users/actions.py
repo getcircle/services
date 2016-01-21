@@ -364,12 +364,13 @@ class CompleteAuthorization(actions.Action):
             organization = self._get_organization(domain)
             self.organization_id = organization.id
 
-        if not self.organization_id:
-            raise self.ActionFieldError('organization_id', 'MISSING')
-
     def _get_or_create_user(self, identity):
         user_id = identity.user_id
+        organization_id = identity.organization_id or self.organization_id
         if not user_id:
+            if not organization_id:
+                raise self.ActionFieldError('organization_id', 'MISSING')
+
             client = service.control.Client('user', token=make_admin_token())
             try:
                 response = client.call_action(
