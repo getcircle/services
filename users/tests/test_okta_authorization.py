@@ -12,6 +12,7 @@ from services.test import (
     mocks,
     MockedTestCase,
 )
+from services.token import make_admin_token
 
 from .. import factories
 from ..providers.okta import (
@@ -27,6 +28,9 @@ class TestOktaAuthorization(MockedTestCase):
         super(TestOktaAuthorization, self).setUp()
         self.client = service.control.Client('user')
         self.mock.instance.dont_mock_service('user')
+        self.organization = mocks.mock_organization(domain='lunohq')
+        token = make_admin_token(organization_id=self.organization.id)
+        self.authenticated_client = service.control.Client('user', token=token)
 
     def _patch_saml_client(self, saml_client, identity_data):
         saml_client().parse_authn_request_response().get_identity.return_value = identity_data
@@ -69,21 +73,19 @@ class TestOktaAuthorization(MockedTestCase):
             action='get_sso_metadata',
             errors=['DOES_NOT_EXIST'],
             error_details={},
-            organization_domain='example',
+            organization_domain=self.organization.domain,
         )
         with self.assertFieldError('organization_domain', 'DOES_NOT_EXIST'):
-            self.client.call_action(
+            self.authenticated_client.call_action(
                 'get_authorization_instructions',
                 provider=user_containers.IdentityV1.OKTA,
-                organization_domain='example',
             )
 
     def test_get_authorization_instructions(self):
         self._setup_test(MagicMock())
-        response = self.client.call_action(
+        response = self.authenticated_client.call_action(
             'get_authorization_instructions',
             provider=user_containers.IdentityV1.OKTA,
-            organization_domain='lunohq',
         )
         self.assertTrue(response.result.authorization_url)
         self.assertTrue(response.result.provider_name, 'Okta')
@@ -92,10 +94,9 @@ class TestOktaAuthorization(MockedTestCase):
         redirect_uri = 'testredirecturi'
         self._setup_test(MagicMock())
         with self.settings(USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST=(redirect_uri,)):
-            response = self.client.call_action(
+            response = self.authenticated_client.call_action(
                 'get_authorization_instructions',
                 provider=user_containers.IdentityV1.OKTA,
-                organization_domain='lunohq',
                 redirect_uri='testredirecturi',
             )
         self.assertTrue(response.result.authorization_url)
