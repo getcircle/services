@@ -74,17 +74,6 @@ class Test(TestCase):
                 },
             )
 
-    def test_authenticate_user_client_type_required(self):
-        with self.assertFieldError('client_type', 'MISSING'):
-            self.client.call_action(
-                self.action,
-                backend=0,
-                credentials={
-                    'key': self.user.primary_email,
-                    'secret': 'invalid',
-                },
-            )
-
     def test_authenticate_user_decode_token(self):
         response = self._authenticate_user()
         self.assertTrue(response.success)

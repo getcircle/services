@@ -156,8 +156,6 @@ class GetUser(mixins.PreRunParseTokenMixin, actions.Action):
 
 class AuthenticateUser(actions.Action):
 
-    required_fields = ('client_type',)
-
     def _is_internal_backend(self):
         return self.request.backend == self.request.INTERNAL
 
