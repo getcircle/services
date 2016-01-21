@@ -28,18 +28,6 @@ class TestSendNotification(TestCase):
             ),
         )
 
-    def test_send_notification_notification_required(self):
-        with self.assertFieldError('notification', 'MISSING'):
-            self.client.call_action('send_notification', to_profile_id=self.profile.id)
-
-    def test_send_notification_notification_type_required(self):
-        with self.assertFieldError('notification.notification_type_id', 'MISSING'):
-            self.client.call_action(
-                'send_notification',
-                to_profile_id=self.profile.id,
-                notification={'group_membership_request': {'group_id': fuzzy.FuzzyUUID().fuzz()}},
-            )
-
     def test_send_notification_recipients_required(self):
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
@@ -144,6 +132,7 @@ class TestSendNotification(TestCase):
             user_id=to_profile.user_id,
             device_id=device.id,
             provider_platform=notification_containers.NotificationTokenV1.APNS,
+            organization_id=self.organization.id,
         )
 
         with self.mock_transport() as mock:
@@ -276,6 +265,7 @@ class TestSendNotification(TestCase):
                 user_id=profile.user_id,
                 device_id=device.id,
                 provider_platform=notification_containers.NotificationTokenV1.APNS,
+                organization_id=self.organization.id,
             )
             device_map[profile.id] = device
 

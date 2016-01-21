@@ -29,19 +29,26 @@ class TestProviderSNS(TestCase):
                 'fake_token',
                 'invalid',
                 fuzzy.FuzzyUUID().fuzz(),
+                fuzzy.FuzzyUUID().fuzz()
             )
 
     @patch('notification.providers.sns.boto')
     def test_provider_register_notification_token_stores_user_id(self, patched_boto):
         user_id = fuzzy.FuzzyUUID().fuzz()
+        organization_id = fuzzy.FuzzyUUID().fuzz()
         self.provider.register_notification_token(
             'fake_token',
             notification_containers.NotificationTokenV1.APNS,
             user_id,
+            organization_id,
         )
 
         kwargs = patched_boto.connect_sns().create_platform_endpoint.call_args[1]
         self.assertEqual(json.loads(kwargs['custom_user_data'])['user_id'], user_id)
+        self.assertEqual(
+            json.loads(kwargs['custom_user_data'])['organization_id'],
+            organization_id,
+        )
 
     @patch('notification.providers.sns.boto.connect_sns')
     def test_provider_register_notification_token_already_registered(self, patched_boto):
@@ -56,6 +63,7 @@ class TestProviderSNS(TestCase):
                 'duplicate',
                 notification_containers.NotificationTokenV1.APNS,
                 fuzzy.FuzzyUUID().fuzz(),
+                fuzzy.FuzzyUUID().fuzz()
             )
 
     def test_provider_get_platform_for_device_device_provider_apple(self):

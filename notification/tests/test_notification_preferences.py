@@ -13,10 +13,10 @@ from .. import (
 )
 
 
-class TestNotificationPreferences(TestCase):
+class Test(TestCase):
 
     def setUp(self):
-        super(TestNotificationPreferences, self).setUp()
+        super(Test, self).setUp()
         self.profile = mocks.mock_profile()
         self.client = service.control.Client(
             'notification',
@@ -87,18 +87,6 @@ class TestNotificationPreferences(TestCase):
                 tested = True
                 break
         self.assertTrue(tested)
-
-    def test_update_preference_preference_required(self):
-        with self.assertFieldError('preference', 'MISSING'):
-            self.client.call_action('update_preference')
-
-    def test_update_preference_preference_notification_type_id_required(self):
-        with self.assertFieldError('preference.notification_type_id', 'MISSING'):
-            self.client.call_action('update_preference', preference={'subscribed': False})
-
-    def test_update_preference_preference_subscribed_required(self):
-        with self.assertFieldError('preference.subscribed', 'MISSING'):
-            self.client.call_action('update_preference', preference={'notification_type_id': 0})
 
     def test_update_preference_opt_out(self):
         models.NotificationType.objects.all().update(opt_in=False)
