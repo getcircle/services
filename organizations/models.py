@@ -1,6 +1,3 @@
-import binascii
-import os
-
 from common.db import models
 from common import utils
 from django.contrib.postgres.fields import ArrayField
