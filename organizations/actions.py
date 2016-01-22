@@ -759,7 +759,7 @@ class GetDescendants(PreRunParseTokenMixin, actions.Action):
         )
 
 
-class GetSSOMetadata(actions.Action):
+class GetSSO(actions.Action):
 
     required_fields = ('organization_domain',)
 

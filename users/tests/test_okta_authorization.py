@@ -55,7 +55,7 @@ class TestOktaAuthorization(MockedTestCase):
         domain = overrides.get('domain', 'lunohq')
         self.mock.instance.register_mock_object(
             service='organization',
-            action='get_sso_metadata',
+            action='get_sso',
             return_object_path='sso',
             return_object=mocks.mock_sso(),
             organization_domain=domain,
@@ -81,7 +81,7 @@ class TestOktaAuthorization(MockedTestCase):
         self._mock_get_organization()
         self.mock.instance.register_mock_call_action_error(
             service='organization',
-            action='get_sso_metadata',
+            action='get_sso',
             errors=['DOES_NOT_EXIST'],
             error_details={},
             organization_domain=self.organization.domain,

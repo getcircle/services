@@ -8,7 +8,7 @@ class Server(service.control.Server):
 
     auth_exempt_actions = (
         'get_organization',
-        'get_sso_metadata',
+        'get_sso',
     )
 
     actions = {
@@ -31,6 +31,6 @@ class Server(service.control.Server):
         'get_location_members': actions.GetLocationMembers,
         'add_location_members': actions.AddLocationMembers,
         'get_descendants': actions.GetDescendants,
-        'get_sso_metadata': actions.GetSSOMetadata,
+        'get_sso': actions.GetSSO,
         'get_teams_for_profile_ids': actions.GetTeamsForProfileIds,
     }

@@ -627,7 +627,7 @@ class GetAuthenticationInstructions(actions.Action):
         try:
             response = service.control.call_action(
                 service='organization',
-                action='get_sso_metadata',
+                action='get_sso',
                 organization_domain=domain,
             )
         except service.control.CallActionError:

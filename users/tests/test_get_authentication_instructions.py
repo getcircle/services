@@ -81,7 +81,7 @@ class Test(MockedTestCase):
     def test_get_authentication_instructions_organization_sso_organization_domain(self):
         self.mock.instance.register_mock_object(
             service='organization',
-            action='get_sso_metadata',
+            action='get_sso',
             return_object_path='sso',
             return_object=mocks.mock_sso(),
             organization_domain=self.organization.domain,
@@ -99,7 +99,7 @@ class Test(MockedTestCase):
     def test_get_authentication_instructions_organization_domain(self):
         self.mock.instance.register_mock_object(
             service='organization',
-            action='get_sso_metadata',
+            action='get_sso',
             return_object_path='sso',
             return_object=mocks.mock_sso(),
             organization_domain=self.organization.domain,
@@ -118,7 +118,7 @@ class Test(MockedTestCase):
         email = 'example@example.com'
         self.mock.instance.register_mock_object(
             service='organization',
-            action='get_sso_metadata',
+            action='get_sso',
             return_object_path='sso',
             return_object=mocks.mock_sso(),
             organization_domain=self.organization.domain,
@@ -140,7 +140,7 @@ class Test(MockedTestCase):
         with self.settings(USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH=(self.organization.domain,)):
             self.mock.instance.register_mock_object(
                 service='organization',
-                action='get_sso_metadata',
+                action='get_sso',
                 return_object_path='sso',
                 return_object=mocks.mock_sso(),
                 organization_domain=self.organization.domain,

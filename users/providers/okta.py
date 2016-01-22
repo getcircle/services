@@ -44,7 +44,7 @@ class ProviderResponseMissingRequiredField(Exception):
 def get_sso_for_domain(domain):
     client = service.control.Client('organization')
     try:
-        response = client.call_action('get_sso_metadata', organization_domain=domain)
+        response = client.call_action('get_sso', organization_domain=domain)
     except service.control.CallActionError:
         raise SAMLMetaDataDoesNotExist
     return response.result.sso
