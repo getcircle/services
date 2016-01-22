@@ -158,6 +158,7 @@ class AuthenticateUser(actions.Action):
     def _get_auth_params(self, organization):
         auth_params = {
             'organization_id': organization.id,
+            'backend': self.request.backend,
         }
         if self._is_internal_backend():
             auth_params['username'] = self.request.credentials.key

@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.user.actions import authenticate_user_pb2
 import service.control
 
 from . import models
@@ -8,7 +9,14 @@ from . import models
 
 class UserBackend(ModelBackend):
 
-    def authenticate(self, username=None, password=None, organization_id=None, **kwargs):
+    def authenticate(
+            self,
+            username=None,
+            password=None,
+            organization_id=None,
+            backend=None,
+            **kwargs
+        ):
         """Fork of Django's ModelBackend.authenticate method.
 
         Since we scope user's by organization, we don't require "username" to
@@ -16,6 +24,9 @@ class UserBackend(ModelBackend):
         when fetching the user.
 
         """
+        if backend != authenticate_user_pb2.RequestV1.INTERNAL:
+            return None
+
         UserModel = get_user_model()
         if username is None:
             username = kwargs.get(UserModel.USERNAME_FIELD)
@@ -43,8 +54,12 @@ class GoogleAuthenticationBackend(object):
             id_token=None,
             client_type=None,
             organization_id=None,
+            backend=None,
             **kwargs
         ):
+        if backend != authenticate_user_pb2.RequestV1.GOOGLE:
+            return None
+
         client = service.control.Client('user')
         params = {}
         if id_token:
@@ -75,7 +90,10 @@ class GoogleAuthenticationBackend(object):
 
 class OktaAuthenticationBackend(object):
 
-    def authenticate(self, auth_state=None, organization_id=None, **kwargs):
+    def authenticate(self, auth_state=None, organization_id=None, backend=None, **kwargs):
+        if backend != authenticate_user_pb2.RequestV1.OKTA:
+            return None
+
         client = service.control.Client('user')
         try:
             response = client.call_action(
