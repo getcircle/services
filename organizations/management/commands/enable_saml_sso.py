@@ -1,4 +1,4 @@
-from protobufs.services.organization import containers_pb2 as organization_containers
+from protobufs.services.organization.containers import sso_pb2
 import requests
 from services.management.base import (
     BaseCommand,
@@ -18,7 +18,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--overwrite',
             action='store_true',
-            help='If specified, we\'ll overwrite existing metadata',
+            help='If specified, we\'ll overwrite existing SSO settings',
         )
 
     def handle(self, *args, **options):
@@ -41,20 +41,19 @@ class Command(BaseCommand):
         except Exception as e:
             raise CommandError('Invalid metadata: %s' % (e,))
 
+        details = sso_pb2.SAMLDetailsV1(metadata_url=metadata_url, metadata=metadata)
         sso, created = models.SSO.objects.get_or_create(
             organization=organization,
             defaults={
-                'provider': organization_containers.SSOV1.OKTA,
-                'metadata_url': metadata_url,
-                'metadata': metadata,
+                'provider': sso_pb2.OKTA,
+                'details': details,
             },
         )
         if not created and options['overwrite']:
-            print 'overwriting existing sso metadata'
-            sso.metadata_url = metadata_url
-            sso.metadata = metadata
+            print 'overwriting existing SSO details'
+            sso.details = details
             sso.save()
         elif created:
-            print 'metadata loaded for: %s' % (organization_domain,)
+            print 'SAML SSO details loaded for: %s' % (organization_domain,)
         else:
-            print 'metadata exists, run with `--overwrite` to overwrite.'
+            print 'SAML SSO details exist, run with `--overwrite` to overwrite.'

@@ -8,6 +8,7 @@ from itsdangerous import (
     URLSafeSerializer,
 )
 from protobufs.services.user import containers_pb2 as user_containers
+from protobufs.services.organization.containers import sso_pb2
 from saml2 import entity
 import service.control
 
@@ -45,9 +46,12 @@ def get_sso_for_domain(domain):
     client = service.control.Client('organization')
     try:
         response = client.call_action('get_sso', organization_domain=domain)
+        sso = response.result.sso
+        if not sso.provider == sso_pb2.OKTA:
+            raise SAMLMetaDataDoesNotExist
     except service.control.CallActionError:
         raise SAMLMetaDataDoesNotExist
-    return response.result.sso
+    return sso
 
 
 def get_state_for_user(user, domain):
@@ -101,7 +105,7 @@ class Provider(base.BaseProvider):
     def _complete_authorization(self, request, response):
         domain = request.saml_details.domain
         sso = get_sso_for_domain(domain)
-        saml_client = utils.get_saml_client(domain, sso.metadata)
+        saml_client = utils.get_saml_client(domain, sso.saml.metadata)
         authn_response = saml_client.parse_authn_request_response(
             request.saml_details.saml_response,
             entity.BINDING_HTTP_POST,
@@ -167,7 +171,7 @@ class Provider(base.BaseProvider):
     @classmethod
     def get_authorization_url(self, domain, redirect_uri=None, **kwargs):
         sso = get_sso_for_domain(domain)
-        saml_client = utils.get_saml_client(domain, sso.metadata)
+        saml_client = utils.get_saml_client(domain, sso.saml.metadata)
 
         if redirect_uri:
             signer = get_signer(domain)

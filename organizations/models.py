@@ -11,6 +11,7 @@ import service.control
 
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.containers import integration_pb2
+from protobufs.services.organization.containers import sso_pb2
 from timezone_field import TimeZoneField
 
 from services.fields import DescriptionField
@@ -235,17 +236,29 @@ class SSO(models.UUIDModel, models.Model):
 
     as_dict_value_transforms = {'provider': int}
 
-    organization = models.ForeignKey(Organization, related_name='sso', db_index=True)
-    metadata_url = models.CharField(max_length=255, null=True)
-    metadata = models.TextField(null=True)
+    organization = models.OneToOneField(Organization, related_name='sso')
+    details = models.ProtobufField(
+        protobuf_classes=[
+            sso_pb2.SAMLDetailsV1,
+            sso_pb2.GoogleDetailsV1,
+        ],
+        null=True,
+    )
     provider = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(
-            organization_containers.SSOV1.ProviderV1,
+            sso_pb2.ProviderV1,
         ),
     )
 
     class Meta:
-        protobuf = organization_containers.SSOV1
+        protobuf = sso_pb2.SSOV1
+
+    def to_protobuf(self, *args, **kwargs):
+        if self.details and self.provider == sso_pb2.OKTA:
+            kwargs.update({'saml': protobuf_to_dict(self.details)})
+        elif self.details and self.provider == sso_pb2.GOOGLE:
+            kwargs.update({'google': protobuf_to_dict(self.details)})
+        return super(SSO, self).to_protobuf(*args, **kwargs)
 
 
 class Integration(models.UUIDModel, models.Model):
