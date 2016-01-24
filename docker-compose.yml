@@ -13,7 +13,7 @@ services:
   environment:
     - SERVICES_ENVIRONMENT=local
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 dev:
@@ -30,7 +30,7 @@ dev:
     - DJANGO_SETTINGS_MODULE=services.settings.dev
     - SERVICES_ENVIRONMENT=local-dev
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 test:
@@ -47,7 +47,7 @@ test:
     - DJANGO_SETTINGS_MODULE=services.settings.test
     - SERVICES_ENVIRONMENT=local-test
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 celery:
@@ -61,7 +61,7 @@ celery:
     - redis:redis
     - es:es
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 postgres:
@@ -71,7 +71,7 @@ postgres:
   volumes_from:
     - postgres-data
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 redis:
@@ -79,7 +79,7 @@ redis:
   ports:
     - "6379:6379"
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 postgres-data:
@@ -96,7 +96,7 @@ es:
     - RUN_AS=root
   command: elasticsearch -Des.network.host=0.0.0.0
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 es-test:
@@ -105,7 +105,7 @@ es-test:
     - RUN_AS=root
   command: elasticsearch -Des.network.host=0.0.0.0
   log_opt:
-    max-size: "100k"
+    max-size: "50k"
     max-file: "20"
 
 es-data:
