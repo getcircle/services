@@ -242,7 +242,6 @@ class SSO(models.UUIDModel, models.Model):
             sso_pb2.SAMLDetailsV1,
             sso_pb2.GoogleDetailsV1,
         ],
-        null=True,
     )
     provider = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(
