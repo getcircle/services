@@ -249,6 +249,10 @@ def mock_sso(container=None, **overrides):
     if container is None:
         container = sso_pb2.SSOV1()
 
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['organization_id'],
+    }
+
     defaults = {
         'saml': sso_pb2.SAMLDetailsV1(
             metadata_url=fuzzy.FuzzyText(suffix='.com', prefix='http://').fuzz(),
@@ -257,7 +261,7 @@ def mock_sso(container=None, **overrides):
         'provider': sso_pb2.OKTA,
     }
     defaults.update(overrides)
-    return _mock_container(container, {}, **defaults)
+    return _mock_container(container, mock_dict, **defaults)
 
 
 def mock_saml_details(container=None, **overrides):
