@@ -1,5 +1,4 @@
 import arrow
-from cacheops import cached_as
 from common import utils
 import django.db
 from protobufs.services.search.containers import entity_pb2
@@ -32,19 +31,15 @@ def get_values_from_date_range(range_key, value_key, start, end):
     )
 
 
-class CreateProfile(actions.Action):
-
-    type_validators = {
-        'profile.organization_id': [validators.is_uuid4],
-        'profile.team_id': [validators.is_uuid4],
-        'profile.user_id': [validators.is_uuid4],
-    }
+class CreateProfile(PreRunParseTokenMixin, actions.Action):
 
     def _create_profile(self):
         profile = None
         try:
             profile = models.Profile.objects.from_protobuf(
                 self.request.profile,
+                organization_id=self.parsed_token.organization_id,
+                user_id=self.parsed_token.user_id,
             )
         except django.db.IntegrityError:
             self.note_error(

@@ -34,35 +34,6 @@ class TestProfiles(MockedTestCase):
             mock_regex_lookup='organization:get_teams_for_profile_ids:.*',
         )
 
-    def test_create_profile_invalid_organization_id(self):
-        self.profile.organization_id = 'invalid'
-        with self.assertFieldError('profile.organization_id'):
-            self.client.call_action(
-                'create_profile',
-                profile=self.profile,
-            )
-
-    def test_create_profile_invalid_user_id(self):
-        self.profile.user_id = 'invalid'
-        with self.assertFieldError('profile.user_id'):
-            self.client.call_action(
-                'create_profile',
-                profile=self.profile,
-            )
-
-    def test_create_profile(self):
-        profile_data = factories.ProfileFactory.get_protobuf_data()
-        response = self.client.call_action('create_profile', profile=profile_data)
-        self.assertTrue(response.success)
-        self.assertFalse(response.result.profile.is_admin)
-        self.verify_container_matches_data(response.result.profile, profile_data)
-
-    def test_create_profile_admin(self):
-        profile_data = factories.ProfileFactory.get_protobuf_data()
-        profile_data['is_admin'] = True
-        response = self.client.call_action('create_profile', profile=profile_data)
-        self.assertTrue(response.result.profile.is_admin)
-
     def test_get_profile(self):
         expected = factories.ProfileFactory.create_protobuf(
             organization_id=self.organization.id,
@@ -147,12 +118,6 @@ class TestProfiles(MockedTestCase):
 
         response = self.client.call_action('update_profile', profile=profile)
         self.verify_containers(profile, response.result.profile)
-
-    def test_create_profile_duplicate(self):
-        profile = factories.ProfileFactory.create_protobuf()
-        with self.assertRaisesCallActionError() as expected:
-            self.client.call_action('create_profile', profile=profile)
-        self.assertIn('DUPLICATE', expected.exception.response.errors)
 
     def test_bulk_create_profiles(self):
         profiles = []

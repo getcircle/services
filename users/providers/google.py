@@ -19,6 +19,8 @@ from protobufs.services.organization.containers import sso_pb2
 import requests
 import service.control
 
+from services.token import make_admin_token
+
 from . import base
 from .. import models
 from ..authentication import utils
@@ -153,12 +155,6 @@ class Provider(base.BaseProvider):
         identity.expires_at = arrow.get(token_expiry).timestamp
         identity.access_token = access_token
 
-    def _get_authorization_code(self, request):
-        if request.oauth2_details.ByteSize():
-            return request.oauth2_details.code
-        else:
-            return request.oauth_sdk_details.code
-
     def complete_authorization(self, request, response, state):
         """Complete the authorization from Google.
 
@@ -175,7 +171,7 @@ class Provider(base.BaseProvider):
         domain = state['domain']
         sso = get_sso_for_domain(domain)
 
-        authorization_code = self._get_authorization_code(request)
+        authorization_code = request.oauth2_details.code
         credentials = self._get_credentials_from_code(
             authorization_code,
         )
@@ -247,6 +243,43 @@ class Provider(base.BaseProvider):
         except models.User.DoesNotExist:
             raise AuthenticationFailed
         return user
+
+    def _get_name_from_provider(self):
+        first_name = None
+        last_name = None
+        if self.provider_profile:
+            try:
+                first_name = self.provider_profile['name']['givenName']
+                last_name = self.provider_profile['name']['familyName']
+            except KeyError:
+                pass
+
+            if not first_name or not last_name:
+                try:
+                    first_name, last_name = self.provider_profile['displayName'].split(' ', 1)
+                except ValueError:
+                    pass
+
+        return first_name, last_name
+
+    def finalize_authorization(self, user, identity, request, response):
+        token = make_admin_token(organization_id=user.organization_id, user_id=user.id)
+        first_name, last_name = self._get_name_from_provider()
+        try:
+            service.control.call_action(
+                service='profile',
+                action='create_profile',
+                client_kwargs={'token': token},
+                profile={
+                    'email': user.primary_email,
+                    'authentication_identifier': user.primary_email,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                },
+            )
+        except service.control.CallActionError as e:
+            if 'DUPLICATE' not in e.response.errors:
+                raise
 
     def revoke(self, identity, token):
         response = requests.get(

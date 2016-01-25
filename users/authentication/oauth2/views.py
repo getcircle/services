@@ -29,7 +29,7 @@ class OAuth2Handler(APIView):
         protobuf_parameters = {
             'user': response.result.user,
             'identity': response.result.identity,
-            'oauth_sdk_details': response.result.oauth_sdk_details,
+            'google_credentials': response.result.google_credentials,
         }
         return authorization_redirect(
             name='auth-success',
