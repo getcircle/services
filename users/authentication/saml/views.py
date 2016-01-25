@@ -49,7 +49,7 @@ class SAMLHandler(APIView):
         protobuf_parameters = {
             'user': response.result.user,
             'identity': response.result.identity,
-            'saml_details': response.result.saml_details,
+            'saml_credentials': response.result.saml_credentials,
         }
         return authorization_redirect(
             redirect_uri=redirect_uri,
