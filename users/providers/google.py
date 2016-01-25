@@ -35,12 +35,12 @@ class DomainNotVerified(Exception):
     pass
 
 
-def get_sso(organization):
+def get_sso_for_domain(domain):
     try:
         sso = service.control.get_object(
             service='organization',
             action='get_sso',
-            organization_domain=organization.domain,
+            organization_domain=domain,
             return_object='sso',
         )
         if not sso.provider == sso_pb2.GOOGLE:
@@ -50,198 +50,37 @@ def get_sso(organization):
     return sso
 
 
+def _fetch_provider_profile(access_token):
+    response = requests.get(
+        settings.GOOGLE_PROFILE_URL,
+        headers={'Authorization': 'Bearer %s' % (access_token,)},
+    )
+    if not response.ok:
+        raise base.ExchangeError(response)
+
+    try:
+        payload = response.json()
+    except ValueError:
+        raise base.ExchangeError(response)
+    return payload
+
+
 class Provider(base.BaseProvider):
 
     type = user_containers.IdentityV1.GOOGLE
-    csrf_exempt = True
+    provider_profile = None
 
     exception_to_error_map = {
         FlowExchangeError: 'PROVIDER_API_ERROR',
         base.MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
         AccessTokenRefreshError: 'TOKEN_EXPIRED',
+        DomainNotVerified: 'INVALID_DOMAIN',
     }
-
-    def _get_credentials_from_identity(self, identity):
-        return OAuth2Credentials(
-            identity.access_token,
-            settings.GOOGLE_CLIENT_ID,
-            settings.GOOGLE_CLIENT_SECRET,
-            identity.refresh_token,
-            arrow.get(identity.expires_at).naive,
-            GOOGLE_TOKEN_URI,
-            settings.GOOGLE_USER_AGENT,
-        )
-
-    def _get_profile(self, access_token):
-        response = requests.get(
-            settings.GOOGLE_PROFILE_URL,
-            headers={'Authorization': 'Bearer %s' % (access_token,)},
-        )
-        if not response.ok:
-            raise base.ExchangeError(response)
-
-        try:
-            payload = response.json()
-        except ValueError:
-            raise base.ExchangeError(response)
-        return payload
-
-    def _get_credentials_from_code(
-            self,
-            code,
-            identity=None,
-            id_token=None,
-            is_sdk=False,
-            client_type=None,
-        ):
-        parameters = {
-            'client_id': settings.GOOGLE_CLIENT_ID,
-            'client_secret': settings.GOOGLE_CLIENT_SECRET,
-            'scope': settings.GOOGLE_SCOPE,
-            'code': code,
-        }
-        # NB: For native app SDKs, Google requires a redirect_uri of an empty string
-        if is_sdk:
-            parameters['redirect_uri'] = ''
-        elif client_type == token_pb2.WEB:
-            parameters['redirect_uri'] = 'postmessage'
-        else:
-            parameters['redirect_uri'] = settings.GOOGLE_REDIRECT_URI
-
-        credentials = credentials_from_code(**parameters)
-        if id_token is not None:
-            credentials.id_token = id_token
-        if identity:
-            self._update_identity_with_credentials(identity, credentials)
-        return credentials
-
-    def _update_identity_with_credentials(self, identity, credentials):
-        identity.email = self._extract_required_profile_field(credentials.id_token, 'email')
-        identity.expires_at = arrow.get(credentials.token_expiry).timestamp
-        identity.access_token = credentials.access_token
-        identity.refresh_token = credentials.refresh_token
-
-    def _update_identity_access_token(self, identity, access_token, token_expiry):
-        identity.expires_at = arrow.get(token_expiry).timestamp
-        identity.access_token = access_token
-
-    def _get_authorization_code(self, request):
-        if request.oauth2_details.ByteSize():
-            return request.oauth2_details.code
-        else:
-            return request.oauth_sdk_details.code
-
-    def _get_identity_and_credentials_oauth2(self, request):
-        credentials = self._get_credentials_from_code(
-            self._get_authorization_code(request),
-            client_type=request.client_type,
-        )
-        identity, new = self.get_identity(credentials.id_token['sub'])
-        self._update_identity_with_credentials(identity, credentials)
-        return identity, credentials
-
-    def _get_identity_and_credentials_oauth_sdk(self, request):
-        try:
-            id_token = verify_id_token(
-                request.oauth_sdk_details.id_token,
-                settings.GOOGLE_CLIENT_ID,
-            )
-        except AppIdentityError:
-            raise actions.Action.ActionFieldError('oauth_sdk_details.id_token', 'INVALID')
-
-        identity, new = self.get_identity(id_token['sub'])
-        if new:
-            credentials = self._get_credentials_from_code(
-                self._get_authorization_code(request),
-                identity=identity,
-                id_token=id_token,
-                is_sdk=True,
-                client_type=request.client_type,
-            )
-        else:
-            credentials = self._get_credentials_from_identity(identity)
-        return identity, credentials
-
-    def complete_authorization(self, request, response, redirect_uri=None):
-        """Complete the authorization from Google.
-
-        We have two types of authorization requests for Google:
-            1. `oauth_sdk_details`: these are present when using the Google SDK
-                or after we've authenticated with `oauth2_details`
-            2. `oauth2_details`: these are present when using the Google OAuth2
-                flow (ie. handling the redirect response from the user
-                authenticating with Google)
-
-        """
-
-        authorization_code = self._get_authorization_code(request)
-        is_sdk = bool(request.oauth_sdk_details.ByteSize())
-        if is_sdk:
-            identity, credentials = self._get_identity_and_credentials_oauth_sdk(request)
-        else:
-            identity, credentials = self._get_identity_and_credentials_oauth2(request)
-            # include the details to authenticate via the sdk in the response
-            response.oauth_sdk_details.code = authorization_code
-            response.oauth_sdk_details.id_token = credentials.token_response.get('id_token', '')
-
-        if redirect_uri and utils.valid_redirect_uri(redirect_uri):
-            response.redirect_uri = redirect_uri
-
-        try:
-            token_info = credentials.get_access_token()
-        except AccessTokenRefreshError:
-            # Token has expired based on expiry time
-            # Attempt to fetch new credentials based on the code submitted by the client
-            credentials = self._get_credentials_from_code(
-                authorization_code,
-                identity=identity,
-                is_sdk=is_sdk,
-                client_type=request.client_type,
-            )
-            token_info = credentials.get_access_token()
-
-        if token_info.access_token != identity.access_token:
-            self._update_identity_access_token(
-                identity,
-                token_info.access_token,
-                credentials.token_expiry,
-            )
-
-        try:
-            profile = self._get_profile(token_info.access_token)
-        except base.ExchangeError as e:
-            if e.response.status_code == 401:
-                # Token has been revoked
-                # Attempt to refresh the credentials
-                try:
-                    credentials.refresh(httplib2.Http())
-                except AccessTokenRefreshError:
-                    credentials = self._get_credentials_from_code(
-                        authorization_code,
-                        identity=identity,
-                        is_sdk=is_sdk,
-                        client_type=request.client_type,
-                    )
-
-                self._update_identity_access_token(
-                    identity,
-                    credentials.access_token,
-                    credentials.token_expiry,
-                )
-                profile = self._get_profile(credentials.access_token)
-
-        identity.full_name = self._extract_required_profile_field(
-            profile,
-            'displayName',
-            alias='full_name',
-        )
-        identity.data = json.dumps(profile)
-        return identity
 
     @classmethod
     def get_authorization_url(cls, organization, sso=None, redirect_uri=None, **kwargs):
         if not sso:
-            sso = get_sso(organization)
+            sso = get_sso_for_domain(organization.domain)
 
         payload = {
             'domain': organization.domain,
@@ -265,6 +104,142 @@ class Provider(base.BaseProvider):
             settings.GOOGLE_AUTHORIZATION_URL,
             urllib.urlencode(parameters),
         )
+
+    def _get_credentials_from_identity(self, identity):
+        return OAuth2Credentials(
+            identity.access_token,
+            settings.GOOGLE_CLIENT_ID,
+            settings.GOOGLE_CLIENT_SECRET,
+            identity.refresh_token,
+            arrow.get(identity.expires_at).naive,
+            GOOGLE_TOKEN_URI,
+            settings.GOOGLE_USER_AGENT,
+        )
+
+    def _fetch_provider_profile(self, access_token):
+        self.provider_profile = _fetch_provider_profile(access_token)
+
+    def _get_credentials_from_code(
+            self,
+            code,
+            identity=None,
+            id_token=None,
+            is_sdk=False,
+            client_type=None,
+        ):
+        parameters = {
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'client_secret': settings.GOOGLE_CLIENT_SECRET,
+            'scope': settings.GOOGLE_SCOPE,
+            'code': code,
+            'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+        }
+        credentials = credentials_from_code(**parameters)
+        if id_token is not None:
+            credentials.id_token = id_token
+        if identity:
+            self._update_identity_with_credentials(identity, credentials)
+        return credentials
+
+    def _update_identity_with_credentials(self, identity, credentials):
+        identity.email = self.extract_required_profile_field(credentials.id_token, 'email')
+        identity.expires_at = arrow.get(credentials.token_expiry).timestamp
+        identity.access_token = credentials.access_token
+        identity.refresh_token = credentials.refresh_token
+
+    def _update_identity_access_token(self, identity, access_token, token_expiry):
+        identity.expires_at = arrow.get(token_expiry).timestamp
+        identity.access_token = access_token
+
+    def _get_authorization_code(self, request):
+        if request.oauth2_details.ByteSize():
+            return request.oauth2_details.code
+        else:
+            return request.oauth_sdk_details.code
+
+    def _get_identity_and_credentials_oauth_sdk(self, request):
+        try:
+            id_token = verify_id_token(
+                request.oauth_sdk_details.id_token,
+                settings.GOOGLE_CLIENT_ID,
+            )
+        except AppIdentityError:
+            raise actions.Action.ActionFieldError('oauth_sdk_details.id_token', 'INVALID')
+
+        identity, new = self.get_identity(id_token['sub'])
+        if new:
+            credentials = self._get_credentials_from_code(
+                self._get_authorization_code(request),
+                identity=identity,
+                id_token=id_token,
+                is_sdk=True,
+                client_type=request.client_type,
+            )
+        else:
+            credentials = self._get_credentials_from_identity(identity)
+        return identity, credentials
+
+    def complete_authorization(self, request, response, state):
+        """Complete the authorization from Google.
+
+        After the user successfully logs in with google, we'll receive the
+        `user.containers.OAuth2DetailsV1` object (`oauth2_details`). We use
+        these to:
+            - retrieve the profile from Google
+            - create or update an Identity for the user
+            - return credentials the user can then use to authenticate with
+            Google in the future.
+
+        """
+        redirect_uri = state.get('redirect_uri')
+        domain = state['domain']
+        sso = get_sso_for_domain(domain)
+
+        authorization_code = self._get_authorization_code(request)
+        credentials = self._get_credentials_from_code(
+            authorization_code,
+            client_type=request.client_type,
+        )
+        identity, _ = self.get_identity(credentials.id_token['sub'], sso.organization_id)
+        self._update_identity_with_credentials(identity, credentials)
+
+        if redirect_uri and utils.valid_redirect_uri(redirect_uri):
+            response.redirect_uri = redirect_uri
+
+        token_info = credentials.get_access_token()
+
+        try:
+            self._fetch_provider_profile(token_info.access_token)
+        except base.ExchangeError as e:
+            if e.response.status_code == 401:
+                credentials.refresh(httplib2.Http())
+                self._update_identity_access_token(
+                    identity,
+                    credentials.access_token,
+                    credentials.token_expiry,
+                )
+                self._fetch_provider_profile(credentials.access_token)
+
+        provider_domain = self.extract_required_profile_field(self.provider_profile, 'domain')
+        if provider_domain not in sso.google.domains:
+            logger.error(
+                'unverified domain attempt: %s [%s]',
+                self.provider_profile['domain'],
+                list(sso.google.domains),
+            )
+            raise DomainNotVerified
+
+        identity.full_name = self.extract_required_profile_field(
+            self.provider_profile,
+            'displayName',
+            alias='full_name',
+        )
+        identity.data = json.dumps(self.provider_profile)
+
+        # include details to authenticate via google
+        response.google_credentials.code = authorization_code
+        response.google_credentials.id_token = credentials.token_response.get('id_token', '')
+        return identity
 
     def revoke(self, identity, token):
         response = requests.get(

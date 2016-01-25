@@ -70,22 +70,26 @@ class ImproperlyConfiguredError(Exception):
 class BaseProvider(object):
 
     type = None
-    csrf_exempt = False
     exception_to_error_map = {}
 
     def __init__(self):
         if self.type is None:
             raise ImproperlyConfiguredError('type is required')
 
-    def get_identity(self, provider_uid):
+    def get_identity(self, provider_uid, organization_id):
         new = False
         identity = models.Identity.objects.get_or_none(
             provider_uid=provider_uid,
             provider=self.type,
+            organization_id=organization_id,
         )
         if identity is None:
             new = True
-            identity = models.Identity(provider=self.type, provider_uid=provider_uid)
+            identity = models.Identity(
+                provider=self.type,
+                provider_uid=provider_uid,
+                organization_id=organization_id,
+            )
         return identity, new
 
     @classmethod
@@ -95,10 +99,13 @@ class BaseProvider(object):
     def complete_authorization(self, request, response):
         raise NotImplementedError('Subclasses must override this method')
 
+    def authenticate(self):
+        pass
+
     def finalize_authorization(self, identity, user, request, response):
         pass
 
-    def _extract_required_profile_field(self, profile, field_name, alias=None):
+    def extract_required_profile_field(self, profile, field_name, alias=None):
         try:
             value = profile[field_name]
         except KeyError:

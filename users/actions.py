@@ -57,6 +57,14 @@ def validate_email(value):
     return valid
 
 
+def create_user(primary_email, organization_id, password=None):
+    return models.User.objects.create_user(
+        primary_email=primary_email,
+        password=password,
+        organization_id=organization_id,
+    )
+
+
 class CreateUser(actions.Action):
 
     required_fields = ('email', 'organization_id')
@@ -72,7 +80,7 @@ class CreateUser(actions.Action):
     def run(self, *args, **kwargs):
         try:
             with django.db.transaction.atomic():
-                user = models.User.objects.create_user(
+                user = create_user(
                     primary_email=self.request.email,
                     password=self.request.password,
                     organization_id=self.request.organization_id,
@@ -249,7 +257,7 @@ def get_authorization_instructions(
         tuple: tuple of authorization_url (str), provider_name (str)
 
     Raises:
-        providers.okta.SAMLMetaDataDoesNotExist: If
+        providers.okta.OktaSSONotEnabled: If
             `user.containers.IdentityV1.OKTA` is specified but the organization
             doesn't have Okta configured for SSO.
         providers.google.GoogleSSONotEnabled: If
@@ -279,7 +287,7 @@ def get_authorization_instructions(
 
 class CompleteAuthorization(actions.Action):
 
-    def _get_provider_class(self):
+    def _get_provider(self):
         provider_class = None
         if self.request.provider == user_containers.IdentityV1.GOOGLE:
             provider_class = providers.Google
@@ -290,79 +298,47 @@ class CompleteAuthorization(actions.Action):
             raise self.ActionFieldError('provider', 'UNSUPPORTED')
 
         self.exception_to_error_map.update(provider_class.exception_to_error_map)
-        return provider_class
+        return provider_class()
 
-    def _get_organization(self, domain):
-        try:
-            organization = service.control.get_object(
-                service='organization',
-                action='get_organization',
-                return_object='organization',
-                domain=domain,
-                fields={'only': ['id']},
-            )
-        except service.control.CallActionError:
-            raise self.ActionFieldError('organization_id', 'MISSING')
-        return organization
-
-    def validate(self, *args, **kwargs):
-        super(CompleteAuthorization, self).validate(*args, **kwargs)
-        self.provider_class = self._get_provider_class()
-        self.payload = {}
-        self.organization_id = self.request.organization_id
+    def _get_state(self):
+        state = {}
         if self.request.oauth2_details.ByteSize():
-            self.payload = providers.parse_state_token(
+            state = providers.parse_state_token(
                 self.request.provider,
                 self.request.oauth2_details.state,
             )
-            if self.payload is None:
-                if not self.provider_class.csrf_exempt:
-                    raise self.ActionFieldError('oauth2_details.state', 'INVALID')
-                else:
-                    self.payload = {}
-
-        if not self.organization_id:
-            domain = self.payload.get('domain')
-            organization = self._get_organization(domain)
-            self.organization_id = organization.id
+        return state
 
     def _get_or_create_user(self, identity):
         user_id = identity.user_id
-        organization_id = identity.organization_id or self.organization_id
+        organization_id = identity.organization_id
         if not user_id:
-            if not organization_id:
-                raise self.ActionFieldError('organization_id', 'MISSING')
-
-            client = service.control.Client('user', token=make_admin_token())
             try:
-                response = client.call_action(
-                    'create_user',
-                    email=identity.email,
-                    organization_id=self.organization_id,
+                user = create_user(
+                    primary_email=identity.email,
+                    organization_id=organization_id,
                 )
                 self.response.new_user = True
-            except service.control.CallActionError as e:
-                if 'FIELD_ERROR' in e.response.errors:
-                    field_error = e.response.error_details[0]
-                    if field_error.key == 'email' and field_error.detail == 'ALREADY_EXISTS':
-                        response = client.call_action('get_user', email=identity.email)
-                    else:
-                        raise
-                else:
-                    raise
-
-            user = response.result.user
-            self.response.user.CopyFrom(user)
+            except django.db.IntegrityError:
+                user = models.User.objects.get(
+                    organization_id=organization_id,
+                    primary_email=identity.email,
+                )
+            user.to_protobuf(self.response.user)
         else:
-            user = models.User.objects.get(pk=user_id).to_protobuf(self.response.user)
+            user = models.User.objects.get(
+                pk=user_id,
+                organization_id=organization_id,
+            ).to_protobuf(self.response.user)
         return self.response.user
 
     def run(self, *args, **kwargs):
-        provider = self.provider_class()
+        provider = self._get_provider()
+        state = self._get_state()
         identity = provider.complete_authorization(
             self.request,
             self.response,
-            redirect_uri=self.payload.get('redirect_uri'),
+            state=state,
         )
         user = self._get_or_create_user(identity)
         identity.user_id = user.id
