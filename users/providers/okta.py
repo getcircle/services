@@ -27,11 +27,11 @@ class ProviderResponseVerificationFailed(Exception):
     pass
 
 
-class InvalidAuthState(Exception):
+class ProfileNotFound(Exception):
     pass
 
 
-class ProfileNotFound(Exception):
+class AuthenticationFailed(Exception):
     pass
 
 
@@ -82,11 +82,30 @@ class Provider(base.BaseProvider):
     type = user_containers.IdentityV1.OKTA
     exception_to_error_map = {
         BadSignature: 'PROVIDER_RESPONSE_VERIFICATION_FAILED',
-        InvalidAuthState: 'INVALID_AUTH_STATE',
         ProviderResponseMissingRequiredField: 'PROVIDER_RESPONSE_MISSING_REQUIRED_FIELD',
         ProviderResponseVerificationFailed: 'PROVIDER_RESPONSE_VERIFICATION_FAILED',
         ProfileNotFound: 'PROFILE_NOT_FOUND',
     }
+
+    @classmethod
+    def get_authorization_url(self, organization, sso=None, redirect_uri=None, **kwargs):
+        if not sso:
+            sso = get_sso_for_domain(organization.domain)
+
+        saml_client = utils.get_saml_client(organization.domain, sso.saml.metadata)
+        if redirect_uri:
+            signer = get_signer(organization.domain)
+            redirect_uri = signer.sign(redirect_uri)
+        else:
+            redirect_uri = None
+
+        _, info = saml_client.prepare_for_authenticate(relay_state=redirect_uri)
+        authorization_url = None
+        # info['headers'] is an array of key, value tuples
+        for key, value in info['headers']:
+            if key == 'Location':
+                authorization_url = value
+        return authorization_url
 
     def _get_value_for_identity_field(self, field, identity_data, required=True):
         try:
@@ -103,14 +122,6 @@ class Provider(base.BaseProvider):
             authentication_identifier=authentication_identifier,
         )
         return response.result
-
-    def _complete_authorization_auth_state(self, request, response):
-        parsed_state = parse_state(request.saml_details.auth_state)
-        user_id = parsed_state['user_id']
-        valid = models.TOTPToken.objects.verify_totp_for_user_id(parsed_state['totp'], user_id)
-        if not valid:
-            raise InvalidAuthState
-        return models.Identity.objects.get(provider=self.type, user_id=user_id)
 
     def complete_authorization(self, request, response, **kwargs):
         domain = request.saml_details.domain
@@ -164,25 +175,23 @@ class Provider(base.BaseProvider):
         # generate an auth_state the user can use to authenticate with the SAML backend once
         response.saml_credentials.state = get_state_for_user(user, request.saml_details.domain)
 
-    @classmethod
-    def get_authorization_url(self, organization, sso=None, redirect_uri=None, **kwargs):
-        if not sso:
-            sso = get_sso_for_domain(organization.domain)
+    def authenticate(self, state, organization):
+        try:
+            get_sso_for_domain(organization.domain)
+        except OktaSSONotEnabled:
+            raise AuthenticationFailed
 
-        saml_client = utils.get_saml_client(organization.domain, sso.saml.metadata)
-        if redirect_uri:
-            signer = get_signer(organization.domain)
-            redirect_uri = signer.sign(redirect_uri)
-        else:
-            redirect_uri = None
+        parsed_state = parse_state(state)
+        user_id = parsed_state['user_id']
+        try:
+            valid = models.TOTPToken.objects.verify_totp_for_user_id(parsed_state['totp'], user_id)
+        except models.TOTPToken.DoesNotExist:
+            raise AuthenticationFailed
 
-        _, info = saml_client.prepare_for_authenticate(relay_state=redirect_uri)
-        authorization_url = None
-        # info['headers'] is an array of key, value tuples
-        for key, value in info['headers']:
-            if key == 'Location':
-                authorization_url = value
-        return authorization_url
+        if not valid:
+            raise AuthenticationFailed
+
+        return models.User.objects.get(pk=user_id, organization_id=organization.id)
 
     def revoke(self, identity):
         pass

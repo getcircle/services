@@ -5,6 +5,10 @@ from protobufs.services.user.actions import authenticate_user_pb2
 import service.control
 
 from . import models
+from .providers import (
+    google,
+    okta,
+)
 
 
 class UserBackend(ModelBackend):
@@ -13,7 +17,7 @@ class UserBackend(ModelBackend):
             self,
             username=None,
             password=None,
-            organization_id=None,
+            organization=None,
             backend=None,
             **kwargs
         ):
@@ -34,7 +38,7 @@ class UserBackend(ModelBackend):
         try:
             user = UserModel.objects.get(**{
                 UserModel.USERNAME_FIELD: username,
-                'organization_id': organization_id,
+                'organization_id': organization.id,
             })
             if user.check_password(password):
                 return user
@@ -48,65 +52,35 @@ class UserBackend(ModelBackend):
 
 class GoogleAuthenticationBackend(object):
 
-    def authenticate(
-            self,
-            code=None,
-            id_token=None,
-            client_type=None,
-            organization_id=None,
-            backend=None,
-            **kwargs
-        ):
+    def authenticate(self, code=None, id_token=None, organization=None, backend=None, **kwargs):
         if backend != authenticate_user_pb2.RequestV1.GOOGLE:
             return None
 
-        client = service.control.Client('user')
-        params = {}
-        if id_token:
-            params['oauth_sdk_details'] = {
-                'code': code,
-                'id_token': id_token,
-            }
-        else:
-            params['oauth2_details'] = {
-                'code': code,
-            }
-
+        provider = google.Provider()
         try:
-            response = client.call_action(
-                'complete_authorization',
-                provider=user_containers.IdentityV1.GOOGLE,
-                client_type=client_type,
-                organization_id=organization_id,
-                **params
+            user = provider.authenticate(
+                organization=organization,
+                code=code,
+                id_token=id_token,
             )
-        except service.control.CallActionError:
-            pass
-        else:
-            user = models.User.objects.get(pk=response.result.user.id)
-            user.new = response.result.new_user
-            return user
+        except google.AuthenticationFailed:
+            return None
+
+        return user
 
 
 class OktaAuthenticationBackend(object):
 
-    def authenticate(self, auth_state=None, organization_id=None, backend=None, **kwargs):
+    def authenticate(self, state=None, organization=None, backend=None, **kwargs):
         if backend != authenticate_user_pb2.RequestV1.OKTA:
             return None
 
-        client = service.control.Client('user')
+        provider = okta.Provider()
         try:
-            response = client.call_action(
-                'complete_authorization',
-                provider=user_containers.IdentityV1.OKTA,
-                saml_details={
-                    'auth_state': auth_state,
-                },
-                organization_id=organization_id,
+            user = provider.authenticate(
+                state=state,
+                organization=organization,
             )
-        except service.control.CallActionError:
-            pass
-        else:
-            user = models.User.objects.get(pk=response.result.user.id)
-            user.new = response.result.new_user
-            return user
+        except okta.AuthenticationFailed:
+            return None
+        return user

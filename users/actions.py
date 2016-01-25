@@ -151,7 +151,7 @@ class AuthenticateUser(actions.Action):
 
     def _get_auth_params(self, organization):
         auth_params = {
-            'organization_id': organization.id,
+            'organization': organization,
             'backend': self.request.backend,
         }
         if self._is_internal_backend():
@@ -160,9 +160,8 @@ class AuthenticateUser(actions.Action):
         elif self._is_google_backend():
             auth_params['code'] = self.request.credentials.key
             auth_params['id_token'] = self.request.credentials.secret
-            auth_params['client_type'] = self.request.client_type
         elif self._is_okta_backend():
-            auth_params['auth_state'] = self.request.credentials.secret
+            auth_params['state'] = self.request.credentials.secret
         else:
             raise self.ActionFieldError('backend', 'INVALID')
         return auth_params

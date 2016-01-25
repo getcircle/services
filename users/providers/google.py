@@ -15,13 +15,12 @@ from oauth2client.client import (
 )
 from oauth2client.crypt import AppIdentityError
 from protobufs.services.user import containers_pb2 as user_containers
-from protobufs.services.user.containers import token_pb2
 from protobufs.services.organization.containers import sso_pb2
 import requests
 import service.control
-from service import actions
 
 from . import base
+from .. import models
 from ..authentication import utils
 
 logger = logging.getLogger(__name__)
@@ -32,6 +31,10 @@ class GoogleSSONotEnabled(Exception):
 
 
 class DomainNotVerified(Exception):
+    pass
+
+
+class AuthenticationFailed(Exception):
     pass
 
 
@@ -125,7 +128,6 @@ class Provider(base.BaseProvider):
             identity=None,
             id_token=None,
             is_sdk=False,
-            client_type=None,
         ):
         parameters = {
             'client_id': settings.GOOGLE_CLIENT_ID,
@@ -157,28 +159,6 @@ class Provider(base.BaseProvider):
         else:
             return request.oauth_sdk_details.code
 
-    def _get_identity_and_credentials_oauth_sdk(self, request):
-        try:
-            id_token = verify_id_token(
-                request.oauth_sdk_details.id_token,
-                settings.GOOGLE_CLIENT_ID,
-            )
-        except AppIdentityError:
-            raise actions.Action.ActionFieldError('oauth_sdk_details.id_token', 'INVALID')
-
-        identity, new = self.get_identity(id_token['sub'])
-        if new:
-            credentials = self._get_credentials_from_code(
-                self._get_authorization_code(request),
-                identity=identity,
-                id_token=id_token,
-                is_sdk=True,
-                client_type=request.client_type,
-            )
-        else:
-            credentials = self._get_credentials_from_identity(identity)
-        return identity, credentials
-
     def complete_authorization(self, request, response, state):
         """Complete the authorization from Google.
 
@@ -198,7 +178,6 @@ class Provider(base.BaseProvider):
         authorization_code = self._get_authorization_code(request)
         credentials = self._get_credentials_from_code(
             authorization_code,
-            client_type=request.client_type,
         )
         identity, _ = self.get_identity(credentials.id_token['sub'], sso.organization_id)
         self._update_identity_with_credentials(identity, credentials)
@@ -240,6 +219,34 @@ class Provider(base.BaseProvider):
         response.google_credentials.code = authorization_code
         response.google_credentials.id_token = credentials.token_response.get('id_token', '')
         return identity
+
+    def authenticate(self, code, id_token, organization):
+        try:
+            get_sso_for_domain(organization.domain)
+        except GoogleSSONotEnabled:
+            raise AuthenticationFailed
+
+        try:
+            id_token = verify_id_token(id_token, settings.GOOGLE_CLIENT_ID)
+        except AppIdentityError:
+            logger.error('error verifying token')
+            raise AuthenticationFailed
+
+        identity, new = self.get_identity(id_token['sub'], organization.id)
+        if new:
+            logger.error('identity not found', extra={
+                'data': {
+                    'id_token': id_token,
+                    'organization_domain': organization.domain,
+                },
+            })
+            raise AuthenticationFailed
+
+        try:
+            user = models.User.objects.get(pk=identity.user_id, organization_id=organization.id)
+        except models.User.DoesNotExist:
+            raise AuthenticationFailed
+        return user
 
     def revoke(self, identity, token):
         response = requests.get(

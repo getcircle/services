@@ -1,5 +1,6 @@
 import service.control
 from mock import patch
+from protobufs.services.organization.containers import sso_pb2
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user.containers import token_pb2
@@ -14,7 +15,6 @@ from . import MockCredentials
 from .. import (
     factories,
     models,
-    providers,
 )
 from ..providers import (
     google as google_provider,
@@ -133,27 +133,53 @@ class Test(MockedTestCase):
         self.assertTrue(token.auth_token)
         self.assertTrue(token.user_id)
 
+    def test_authenticate_user_google_sso_not_configured(self):
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action(
+                'authenticate_user',
+                backend=authenticate_user_pb2.RequestV1.GOOGLE,
+                credentials={
+                    'key': 'some-code',
+                    'secret': 'some-id-token',
+                },
+                client_type=token_pb2.IOS,
+                organization_domain=self.organization.domain,
+            )
+        self.assertIn('INVALID_LOGIN', expected.exception.response.errors)
+
     @patch.object(google_provider.OAuth2Credentials, '_refresh')
     @patch('users.providers.google.verify_id_token')
-    @patch.object(providers.Google, '_get_profile')
+    @patch('users.providers.google._fetch_provider_profile')
     @patch('users.providers.google.credentials_from_code')
     def test_authenticate_user_google_user_exists(
             self,
             mocked_credentials_from_code,
-            mocked_get_profile,
+            mocked_fetch_profile,
             mocked_verify_id_token,
             *args,
             **kwargs
         ):
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_sso',
+            return_object_path='sso',
+            return_object=mocks.mock_sso(
+                saml=None,
+                google=sso_pb2.GoogleDetailsV1(domains=['example.com']),
+                provider=sso_pb2.GOOGLE,
+            ),
+            organization_domain=self.organization.domain,
+        )
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_fetch_profile.return_value = {'displayName': 'Michael Hahn'}
         mocked_verify_id_token.return_value = self.id_token
         self._mock_get_organization()
-        user = factories.UserFactory.create()
+        user = factories.UserFactory.create(organization_id=self.organization.id)
         factories.IdentityFactory.create(
             provider=user_containers.IdentityV1.GOOGLE,
             provider_uid=self.id_token['sub'],
             user=user,
+            organization_id=self.organization.id,
         )
         response = self.client.call_action(
             'authenticate_user',
@@ -173,66 +199,49 @@ class Test(MockedTestCase):
 
     @patch.object(google_provider.OAuth2Credentials, '_refresh')
     @patch('users.providers.google.verify_id_token')
-    @patch.object(providers.Google, '_get_profile')
+    @patch('users.providers.google._fetch_provider_profile')
     @patch('users.providers.google.credentials_from_code')
     def test_authenticate_user_google_new_user(
             self,
             mocked_credentials_from_code,
-            mocked_get_profile,
+            mocked_fetch_profile,
             mocked_verify_id_token,
             *args,
             **kwargs
         ):
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_fetch_profile.return_value = {
+            'displayName': 'Michael Hahn',
+            'domain': '%s.com' % (self.organization.domain,),
+        }
         mocked_verify_id_token.return_value = self.id_token
         self._mock_get_organization()
-        response = self.client.call_action(
-            'authenticate_user',
-            backend=authenticate_user_pb2.RequestV1.GOOGLE,
-            credentials={
-                'key': 'some-code',
-                'secret': 'some-id-token',
-            },
-            client_type=token_pb2.ANDROID,
-            organization_domain=self.organization.domain,
-        )
-        self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
-        self.assertTrue(response.result.new_user)
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action(
+                'authenticate_user',
+                backend=authenticate_user_pb2.RequestV1.GOOGLE,
+                credentials={
+                    'key': 'some-code',
+                    'secret': 'some-id-token',
+                },
+                client_type=token_pb2.ANDROID,
+                organization_domain=self.organization.domain,
+            )
 
-    @patch.object(google_provider.OAuth2Credentials, '_refresh')
-    @patch('users.providers.google.verify_id_token')
-    @patch.object(providers.Google, '_get_profile')
-    @patch('users.providers.google.credentials_from_code')
-    def test_authenticate_user_google_new_user_web(
-            self,
-            mocked_credentials_from_code,
-            mocked_get_profile,
-            mocked_verify_id_token,
-            *args,
-            **kwargs
-        ):
-        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_get_profile.return_value = {'displayName': 'Michael Hahn'}
-        mocked_verify_id_token.return_value = self.id_token
-        self._mock_get_organization()
-        response = self.client.call_action(
-            'authenticate_user',
-            backend=authenticate_user_pb2.RequestV1.GOOGLE,
-            credentials={
-                'key': 'some-code',
-            },
-            client_type=token_pb2.WEB,
-            organization_domain=self.organization.domain,
+        self.assertIn(
+            'INVALID_LOGIN',
+            expected.exception.response.errors,
+            'We don\'t provision users at authentication time',
         )
-        self.assertEqual(response.result.user.primary_email, 'mwhahn@gmail.com')
-        self.assertTrue(response.result.new_user)
-        self.assertEqual(mocked_credentials_from_code.call_args[1]['redirect_uri'], 'postmessage')
 
     def test_authenticate_user_okta(self):
-        identity = factories.IdentityFactory.create(provider=user_containers.IdentityV1.OKTA)
-        user = identity.user.to_protobuf()
-        auth_state = okta_provider.get_state_for_user(user, 'example')
+        user = factories.UserFactory.create(organization_id=self.organization.id)
+        factories.IdentityFactory.create(
+            provider=user_containers.IdentityV1.OKTA,
+            user=user,
+            organization_id=self.organization.id,
+        )
+        auth_state = okta_provider.get_state_for_user(user.to_protobuf(), 'example')
         self._mock_get_organization()
         response = self.client.call_action(
             'authenticate_user',
@@ -245,30 +254,15 @@ class Test(MockedTestCase):
         )
         self.verify_containers(response.result.user, user)
 
-    # def test_complete_authorization_auth_state(self):
-        # user = factories.UserFactory.create()
-        # factories.IdentityFactory.create(
-            # user=user,
-            # provider=user_containers.IdentityV1.OKTA,
-        # )
-        # user = user.to_protobuf()
-        # auth_state = get_state_for_user(user, 'lunohq')
-        # response = self.client.call_action(
-            # 'complete_authorization',
-            # provider=user_containers.IdentityV1.OKTA,
-            # saml_details={
-                # 'auth_state': auth_state,
-            # },
-        # )
-        # self.verify_containers(user, response.result.user)
-
-        # # verify that the auth_state can no longer be used
-        # with self.assertRaisesCallActionError() as e:
-            # self.client.call_action(
-                # 'complete_authorization',
-                # provider=user_containers.IdentityV1.OKTA,
-                # saml_details={
-                    # 'auth_state': auth_state,
-                # },
-            # )
-        # self.assertIn('INVALID_AUTH_STATE', e.exception.response.errors)
+        # verify that the auth_state can no longer be used
+        with self.assertRaisesCallActionError() as e:
+            self.client.call_action(
+                'authenticate_user',
+                backend=authenticate_user_pb2.RequestV1.OKTA,
+                credentials={
+                    'secret': auth_state,
+                },
+                client_type=token_pb2.WEB,
+                organization_domain=self.organization.domain,
+            )
+        self.assertIn('INVALID_LOGIN', e.exception.response.errors)

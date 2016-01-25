@@ -99,8 +99,8 @@ class BaseProvider(object):
     def complete_authorization(self, request, response):
         raise NotImplementedError('Subclasses must override this method')
 
-    def authenticate(self):
-        pass
+    def authenticate(self, organization, **kwargs):
+        raise NotImplementedError('Subclass must override this method')
 
     def finalize_authorization(self, identity, user, request, response):
         pass
