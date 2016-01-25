@@ -1,3 +1,4 @@
+from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.organization.containers import sso_pb2
 from services.management.base import (
     BaseCommand,
@@ -44,7 +45,10 @@ class Command(BaseCommand):
             print 'overwriting existing SSO details'
             sso.details = details
             sso.save()
+            sso.provider = sso_pb2.GOOGLE
         elif created:
             print 'Google SSO details loaded for: %s' % (organization_domain,)
         else:
-            print 'SSO details exist, run with `--overwrite` to overwrite.'
+            print 'SSO details exist:\n%s\nrun with `--overwrite` to overwrite.' % (
+                protobuf_to_dict(sso.to_protobuf()),
+            )

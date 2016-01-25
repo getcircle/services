@@ -53,6 +53,7 @@ class Command(BaseCommand):
         if not created and options['overwrite']:
             print 'overwriting existing SSO details'
             sso.details = details
+            sso.provider = sso_pb2.OKTA
             sso.save()
         elif created:
             print 'SAML SSO details loaded for: %s' % (organization_domain,)
