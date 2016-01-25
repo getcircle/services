@@ -15,10 +15,11 @@ from services.test import (
 from services.token import make_admin_token
 
 from .. import factories
+from ..actions import get_authorization_instructions
 from ..providers.okta import (
     get_signer,
     get_state_for_user,
-    parse_state,
+    OktaSSONotEnabled,
 )
 
 
@@ -57,7 +58,7 @@ class TestOktaAuthorization(MockedTestCase):
             service='organization',
             action='get_sso',
             return_object_path='sso',
-            return_object=mocks.mock_sso(),
+            return_object=mocks.mock_sso(organization_id=self.organization.id),
             organization_domain=domain,
         )
         self._mock_get_organization()
@@ -86,41 +87,44 @@ class TestOktaAuthorization(MockedTestCase):
             error_details={},
             organization_domain=self.organization.domain,
         )
-        with self.assertFieldError('organization_domain', 'DOES_NOT_EXIST'):
-            self.authenticated_client.call_action(
-                'get_authorization_instructions',
-                provider=user_containers.IdentityV1.OKTA,
+        with self.assertRaises(OktaSSONotEnabled):
+            get_authorization_instructions(
+                user_containers.IdentityV1.OKTA,
+                organization=self.organization,
             )
 
     def test_get_authorization_instructions(self):
         self._setup_test(MagicMock())
         self._mock_get_organization()
-        response = self.authenticated_client.call_action(
-            'get_authorization_instructions',
-            provider=user_containers.IdentityV1.OKTA,
+        authorization_url, provider_name = get_authorization_instructions(
+            user_containers.IdentityV1.OKTA,
+            organization=self.organization,
         )
-        self.assertTrue(response.result.authorization_url)
-        self.assertTrue(response.result.provider_name, 'Okta')
+        self.assertTrue(authorization_url)
+        self.assertEqual(provider_name, 'Okta')
 
     def test_get_authorization_instructions_redirect_uri(self):
         redirect_uri = 'testredirecturi'
         self._setup_test(MagicMock())
         with self.settings(USER_SERVICE_ALLOWED_REDIRECT_URIS_REGEX_WHITELIST=(redirect_uri,)):
-            response = self.authenticated_client.call_action(
-                'get_authorization_instructions',
-                provider=user_containers.IdentityV1.OKTA,
-                redirect_uri='testredirecturi',
+            authorization_url, provider_name = get_authorization_instructions(
+                user_containers.IdentityV1.OKTA,
+                organization=self.organization,
+                redirect_uri=redirect_uri,
             )
-        self.assertTrue(response.result.authorization_url)
+        self.assertTrue(authorization_url)
         # testing for the period at the end of the string is for verifying its signed
-        self.assertIn('testredirecturi.', response.result.authorization_url)
+        self.assertIn('testredirecturi.', authorization_url)
 
     @patch('users.authentication.utils.get_saml_client')
     def test_complete_authorization_redirect_uri_specified(self, patched_saml_client):
         redirect_uri = 'testredirecturi'
         signer = get_signer('lunohq')
         relay_state = signer.sign(redirect_uri)
-        user = factories.UserFactory.create_protobuf(primary_email='michael@lunohq.com')
+        user = factories.UserFactory.create_protobuf(
+            primary_email='michael@lunohq.com',
+            organization_id=self.organization.id,
+        )
         saml_details = self._setup_test(
             patched_saml_client,
             relay_state=relay_state,
@@ -205,31 +209,3 @@ class TestOktaAuthorization(MockedTestCase):
                 saml_details=saml_details,
             )
         self.assertIn('PROFILE_NOT_FOUND', expected.exception.response.errors)
-
-    def test_complete_authorization_auth_state(self):
-        user = factories.UserFactory.create()
-        factories.IdentityFactory.create(
-            user=user,
-            provider=user_containers.IdentityV1.OKTA,
-        )
-        user = user.to_protobuf()
-        auth_state = get_state_for_user(user, 'lunohq')
-        response = self.client.call_action(
-            'complete_authorization',
-            provider=user_containers.IdentityV1.OKTA,
-            saml_details={
-                'auth_state': auth_state,
-            },
-        )
-        self.verify_containers(user, response.result.user)
-
-        # verify that the auth_state can no longer be used
-        with self.assertRaisesCallActionError() as e:
-            self.client.call_action(
-                'complete_authorization',
-                provider=user_containers.IdentityV1.OKTA,
-                saml_details={
-                    'auth_state': auth_state,
-                },
-            )
-        self.assertIn('INVALID_AUTH_STATE', e.exception.response.errors)

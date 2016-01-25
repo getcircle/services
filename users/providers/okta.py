@@ -19,7 +19,7 @@ from ..authentication import utils
 logger = logging.getLogger(__name__)
 
 
-class SAMLMetaDataDoesNotExist(Exception):
+class OktaSSONotEnabled(Exception):
     pass
 
 
@@ -42,18 +42,18 @@ class ProviderResponseMissingRequiredField(Exception):
         super(ProviderResponseMissingRequiredField, self).__init__(message)
 
 
-def get_sso(organization):
+def get_sso_for_domain(domain):
     try:
         sso = service.control.get_object(
             service='organization',
             action='get_sso',
             return_object='sso',
-            organization_domain=organization.domain,
+            organization_domain=domain,
         )
         if not sso.provider == sso_pb2.OKTA:
-            raise SAMLMetaDataDoesNotExist
+            raise OktaSSONotEnabled
     except service.control.CallActionError:
-        raise SAMLMetaDataDoesNotExist
+        raise OktaSSONotEnabled
     return sso
 
 
@@ -85,7 +85,6 @@ class Provider(base.BaseProvider):
         InvalidAuthState: 'INVALID_AUTH_STATE',
         ProviderResponseMissingRequiredField: 'PROVIDER_RESPONSE_MISSING_REQUIRED_FIELD',
         ProviderResponseVerificationFailed: 'PROVIDER_RESPONSE_VERIFICATION_FAILED',
-        SAMLMetaDataDoesNotExist: 'SAML_METADATA_DOES_NOT_EXIST',
         ProfileNotFound: 'PROFILE_NOT_FOUND',
     }
 
@@ -105,7 +104,15 @@ class Provider(base.BaseProvider):
         )
         return response.result
 
-    def _complete_authorization(self, request, response):
+    def _complete_authorization_auth_state(self, request, response):
+        parsed_state = parse_state(request.saml_details.auth_state)
+        user_id = parsed_state['user_id']
+        valid = models.TOTPToken.objects.verify_totp_for_user_id(parsed_state['totp'], user_id)
+        if not valid:
+            raise InvalidAuthState
+        return models.Identity.objects.get(provider=self.type, user_id=user_id)
+
+    def complete_authorization(self, request, response, **kwargs):
         domain = request.saml_details.domain
         sso = get_sso_for_domain(domain)
         saml_client = utils.get_saml_client(domain, sso.saml.metadata)
@@ -144,7 +151,7 @@ class Provider(base.BaseProvider):
             )
             raise ProfileNotFound(json.dumps(user_info))
 
-        identity, created = self.get_identity(authentication_identifier)
+        identity, created = self.get_identity(authentication_identifier, sso.organization_id)
         identity.email = email
         full_name = ' '.join([first_name, last_name]).strip()
         if full_name:
@@ -153,28 +160,14 @@ class Provider(base.BaseProvider):
         identity.user_id = profile_exists.user_id
         return identity
 
-    def _complete_authorization_auth_state(self, request, response):
-        parsed_state = parse_state(request.saml_details.auth_state)
-        user_id = parsed_state['user_id']
-        valid = models.TOTPToken.objects.verify_totp_for_user_id(parsed_state['totp'], user_id)
-        if not valid:
-            raise InvalidAuthState
-        return models.Identity.objects.get(provider=self.type, user_id=user_id)
-
-    def complete_authorization(self, request, response, **kwargs):
-        if request.saml_details.auth_state:
-            return self._complete_authorization_auth_state(request, response)
-        else:
-            return self._complete_authorization(request, response)
-
     def finalize_authorization(self, identity, user, request, response):
         # generate an auth_state the user can use to authenticate with the SAML backend once
-        response.saml_details.auth_state = get_state_for_user(user, request.saml_details.domain)
+        response.saml_credentials.state = get_state_for_user(user, request.saml_details.domain)
 
     @classmethod
     def get_authorization_url(self, organization, sso=None, redirect_uri=None, **kwargs):
         if not sso:
-            sso = get_sso(organization)
+            sso = get_sso_for_domain(organization.domain)
 
         saml_client = utils.get_saml_client(organization.domain, sso.saml.metadata)
         if redirect_uri:

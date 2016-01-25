@@ -244,3 +244,31 @@ class Test(MockedTestCase):
             organization_domain=self.organization.domain,
         )
         self.verify_containers(response.result.user, user)
+
+    # def test_complete_authorization_auth_state(self):
+        # user = factories.UserFactory.create()
+        # factories.IdentityFactory.create(
+            # user=user,
+            # provider=user_containers.IdentityV1.OKTA,
+        # )
+        # user = user.to_protobuf()
+        # auth_state = get_state_for_user(user, 'lunohq')
+        # response = self.client.call_action(
+            # 'complete_authorization',
+            # provider=user_containers.IdentityV1.OKTA,
+            # saml_details={
+                # 'auth_state': auth_state,
+            # },
+        # )
+        # self.verify_containers(user, response.result.user)
+
+        # # verify that the auth_state can no longer be used
+        # with self.assertRaisesCallActionError() as e:
+            # self.client.call_action(
+                # 'complete_authorization',
+                # provider=user_containers.IdentityV1.OKTA,
+                # saml_details={
+                    # 'auth_state': auth_state,
+                # },
+            # )
+        # self.assertIn('INVALID_AUTH_STATE', e.exception.response.errors)
