@@ -1,10 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
-from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.actions import authenticate_user_pb2
-import service.control
 
-from . import models
 from .providers import (
     google,
     okta,
