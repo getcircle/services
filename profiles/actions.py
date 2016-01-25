@@ -35,7 +35,6 @@ def get_values_from_date_range(range_key, value_key, start, end):
 class CreateProfile(actions.Action):
 
     type_validators = {
-        'profile.address_id': [validators.is_uuid4],
         'profile.organization_id': [validators.is_uuid4],
         'profile.team_id': [validators.is_uuid4],
         'profile.user_id': [validators.is_uuid4],
@@ -139,7 +138,6 @@ class UpdateProfile(PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
         'profile.id': [validators.is_uuid4],
-        'profile.address_id': [validators.is_uuid4],
         'profile.organization_id': [validators.is_uuid4],
         'profile.team_id': [validators.is_uuid4],
         'profile.user_id': [validators.is_uuid4],
