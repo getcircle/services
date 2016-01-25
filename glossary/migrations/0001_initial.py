@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import protobufs.services.glossary.containers_pb2
 import uuid
 
 
@@ -23,9 +22,6 @@ class Migration(migrations.Migration):
                 ('organization_id', models.UUIDField(db_index=True)),
                 ('created_by_profile_id', models.UUIDField()),
             ],
-            options={
-                'protobuf': protobufs.services.glossary.containers_pb2.TermV1,
-            },
         ),
         migrations.AlterUniqueTogether(
             name='term',
