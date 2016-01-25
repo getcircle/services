@@ -1,3 +1,4 @@
+from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.organization.containers import sso_pb2
 import requests
 from services.management.base import (
@@ -56,4 +57,6 @@ class Command(BaseCommand):
         elif created:
             print 'SAML SSO details loaded for: %s' % (organization_domain,)
         else:
-            print 'SAML SSO details exist, run with `--overwrite` to overwrite.'
+            print 'SSO details exist:\n%s\nrun with `--overwrite` to overwrite.' % (
+                protobuf_to_dict(sso.to_protobuf()),
+            )
