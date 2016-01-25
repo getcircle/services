@@ -1,13 +1,12 @@
 import json
 
 import boto3
-from cacheops import cached
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core import validators as django_validators
 import django.db
 from django.utils import timezone
-import DNS
+from protobufs.services.organization.containers import sso_pb2
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
 from service import (
@@ -56,19 +55,6 @@ def validate_email(value):
     except django_validators.ValidationError:
         pass
     return valid
-
-
-@cached(timeout=settings.CACHEOPS_FUNC_IS_GOOGLE_DOMAIN_TIMEOUT)
-def is_google_domain(domain):
-    try:
-        mail_exchangers = DNS.mxlookup(domain)
-    except:
-        return False
-
-    def is_google_mx(mx):
-        mx = mx.strip().lower()
-        return mx.endswith('google.com') or mx.endswith('googlemail.com')
-    return any([is_google_mx(mx) for _, mx in mail_exchangers])
 
 
 class CreateUser(actions.Action):
@@ -239,7 +225,8 @@ class Logout(actions.Action):
 
 def get_authorization_instructions(
         provider,
-        organization_domain=None,
+        organization=None,
+        sso=None,
         redirect_uri=None,
         login_hint=None,
     ):
@@ -248,9 +235,11 @@ def get_authorization_instructions(
     Args:
         provider (protobufs.services.user.containers_pb2.IdentityV1): identity
             provider we're requesting authorization instructions for.
-        organization_domain (Optional[str]): the organization's domain if
-            applicable. If the identity is being used for authentication, this
-            is required.
+        organization (Optional[organization.containers.OrganizationV1]): the
+            organization container if applicable. If the identity is being used
+            for authentication, this is required.
+        sso (Optional[organization.containers.SSOV1]): the organization's SSO
+            container if applicable.
         redirect_uri (Optional[str]): redirect_uri we want the identity
             provider to redirect to.
         login_hint (Optional[str]): the login_hint we want the identity
@@ -261,22 +250,27 @@ def get_authorization_instructions(
 
     Raises:
         providers.okta.SAMLMetaDataDoesNotExist: If
-            `protobufs.services.user.containers_pb2.IdentityV1.OKTA` is
-            specified but the organization doesn't have Okta configured.
+            `user.containers.IdentityV1.OKTA` is specified but the organization
+            doesn't have Okta configured for SSO.
+        providers.google.GoogleSSONotEnabled: If
+            `user.containers.IdentityV1.GOOGLE` is specified but the
+            organization doesn't have Google configured for SSO.
 
     """
     authorization_url = None
     provider_name = None
     if provider == user_containers.IdentityV1.GOOGLE:
         authorization_url = providers.google.Provider.get_authorization_url(
-            domain=organization_domain,
+            organization=organization,
+            sso=sso,
             login_hint=login_hint,
             redirect_uri=redirect_uri,
         )
         provider_name = 'Google'
     elif provider == user_containers.IdentityV1.OKTA:
         authorization_url = providers.okta.Provider.get_authorization_url(
-            domain=organization_domain,
+            organization=organization,
+            sso=sso,
             redirect_uri=redirect_uri,
         )
         provider_name = 'Okta'
@@ -302,7 +296,7 @@ class GetAuthorizationInstructions(actions.Action):
         try:
             instructions = get_authorization_instructions(
                 provider=self.request.provider,
-                organization_domain=organization.domain,
+                organization=organization,
                 login_hint=self.request.login_hint,
                 redirect_uri=self.request.redirect_uri,
             )
@@ -603,25 +597,26 @@ class GetAuthenticationInstructions(actions.Action):
         'redirect_uri': [valid_redirect_uri],
     }
 
-    def _get_authorization_instructions(self, provider, organization_domain, **kwargs):
+    def _get_authorization_instructions(self, provider, organization, sso, **kwargs):
         return get_authorization_instructions(
             provider=provider,
             login_hint=self.request.email,
-            organization_domain=organization_domain,
+            organization=organization,
             redirect_uri=self.request.redirect_uri,
+            sso=sso,
         )
 
-    def _populate_instructions(self, provider, organization_domain):
-        instructions = self._get_authorization_instructions(provider, organization_domain)
+    def _populate_instructions(self, provider, organization, sso):
+        instructions = self._get_authorization_instructions(provider, organization, sso)
         self.response.authorization_url, self.response.provider_name = instructions
 
-    def _populate_google_instructions(self, organization_domain):
+    def _populate_google_instructions(self, organization, sso):
         self.response.backend = authenticate_user_pb2.RequestV1.GOOGLE
-        self._populate_instructions(user_containers.IdentityV1.GOOGLE, organization_domain)
+        self._populate_instructions(user_containers.IdentityV1.GOOGLE, organization, sso)
 
-    def _populate_okta_instructions(self, organization_domain):
+    def _populate_okta_instructions(self, organization, sso):
         self.response.backend = authenticate_user_pb2.RequestV1.OKTA
-        self._populate_instructions(user_containers.IdentityV1.OKTA, organization_domain)
+        self._populate_instructions(user_containers.IdentityV1.OKTA, organization, sso)
 
     def _get_organization_sso(self, domain):
         try:
@@ -638,11 +633,8 @@ class GetAuthenticationInstructions(actions.Action):
 
         return response.result.sso
 
-    def _should_force_internal_authentication(self):
-        return self.request.email in settings.USER_SERVICE_FORCE_INTERNAL_AUTH
-
-    def _should_force_google_authentication(self):
-        return self.request.email in settings.USER_SERVICE_FORCE_GOOGLE_AUTH
+    def _should_force_internal_authentication(self, email):
+        return email in settings.USER_SERVICE_FORCE_INTERNAL_AUTH
 
     def _should_force_organization_internal_auth(self, domain):
         return domain in settings.USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH
@@ -663,34 +655,21 @@ class GetAuthenticationInstructions(actions.Action):
             raise
         return response.result.organization
 
-    def _user_exists(self, email, organization):
-        return models.User.objects.filter(
-            primary_email=self.request.email,
-            organization_id=organization.id,
-        ).exists()
-
     def run(self, *args, **kwargs):
         organization = self._get_organization(self.request.organization_domain)
-
-        if self.request.email:
-            self.response.user_exists = self._user_exists(self.request.email, organization)
 
         if organization.image_url:
             self.response.organization_image_url = organization.image_url
 
         sso = self._get_organization_sso(organization.domain)
-        if self._should_force_internal_authentication():
+        if self._should_force_internal_authentication(self.request.email):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
-        elif self._should_force_google_authentication() and is_google_domain(organization.domain):
-            self._populate_google_instructions(organization.domain)
         elif self._should_force_organization_internal_auth(organization.domain):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
-        elif sso:
-            # in the future when we support more than Okta, we would want to
-            # check the `sso.provider`
-            self._populate_okta_instructions(organization.domain)
-        elif is_google_domain(organization.domain):
-            self._populate_google_instructions(organization.domain)
+        elif sso and sso.provider == sso_pb2.OKTA:
+            self._populate_okta_instructions(organization, sso)
+        elif sso and sso.provider == sso_pb2.GOOGLE:
+            self._populate_google_instructions(organization, sso)
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
 

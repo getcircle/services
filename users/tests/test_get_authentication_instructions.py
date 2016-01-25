@@ -1,7 +1,7 @@
 import urlparse
 
 import service.control
-from mock import patch
+from protobufs.services.organization.containers import sso_pb2
 from protobufs.services.user.actions import authenticate_user_pb2
 from protobufs.services.user import containers_pb2 as user_containers
 from services.test import (
@@ -20,12 +20,6 @@ class Test(MockedTestCase):
         self.organization = mocks.mock_organization()
         self.client = service.control.Client('user')
         self.mock.instance.dont_mock_service('user')
-
-    def _mock_dns(self, mock_dns, is_google):
-        if is_google:
-            mock_dns.return_value = [(10, 'gmail-smtp.google.com')]
-        else:
-            mock_dns.return_value = [(10, 'yahoo-smtp.yahoo.com')]
 
     def _mock_get_organization(self, organization=None):
         organization = organization or self.organization
@@ -68,9 +62,7 @@ class Test(MockedTestCase):
                 organization_domain='doesnotexist',
             )
 
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_organization_domain_no_sso(self, mocked_dns):
-        self._mock_dns(mocked_dns, is_google=False)
+    def test_get_authentication_instructions_organization_domain_no_sso(self):
         response = self.client.call_action(
             'get_authentication_instructions',
             organization_domain=self.organization.domain,
@@ -78,7 +70,7 @@ class Test(MockedTestCase):
         # should default to internal backend since we don't have any sso setup
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
 
-    def test_get_authentication_instructions_organization_sso_organization_domain(self):
+    def test_get_authentication_instructions_organization_sso_okta(self):
         self.mock.instance.register_mock_object(
             service='organization',
             action='get_sso',
@@ -97,13 +89,6 @@ class Test(MockedTestCase):
         self.assertTrue(response.result.provider_name, 'Okta')
 
     def test_get_authentication_instructions_organization_domain(self):
-        self.mock.instance.register_mock_object(
-            service='organization',
-            action='get_sso',
-            return_object_path='sso',
-            return_object=mocks.mock_sso(),
-            organization_domain=self.organization.domain,
-        )
         self._mock_get_organization()
         response = self.client.call_action(
             'get_authentication_instructions',
@@ -112,9 +97,7 @@ class Test(MockedTestCase):
 
         self.assertEqual(response.result.organization_image_url, self.organization.image_url)
 
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_organization_sso(self, mocked_dns):
-        self._mock_dns(mocked_dns, is_google=True)
+    def test_get_authentication_instructions_organization_sso_force_internal(self):
         email = 'example@example.com'
         self.mock.instance.register_mock_object(
             service='organization',
@@ -124,28 +107,7 @@ class Test(MockedTestCase):
             organization_domain=self.organization.domain,
         )
         self._mock_get_organization()
-        response = self.client.call_action(
-            'get_authentication_instructions',
-            email=email,
-            organization_domain=self.organization.domain,
-        )
-
-        self.assertTrue(response.result.authorization_url)
-        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.OKTA)
-
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_organization_sso_force_internal(self, mocked_dns):
-        self._mock_dns(mocked_dns, is_google=True)
-        email = 'example@example.com'
         with self.settings(USER_SERVICE_FORCE_DOMAIN_INTERNAL_AUTH=(self.organization.domain,)):
-            self.mock.instance.register_mock_object(
-                service='organization',
-                action='get_sso',
-                return_object_path='sso',
-                return_object=mocks.mock_sso(),
-                organization_domain=self.organization.domain,
-            )
-            self._mock_get_organization()
             response = self.client.call_action(
                 'get_authentication_instructions',
                 email=email,
@@ -155,95 +117,89 @@ class Test(MockedTestCase):
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
 
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_new_user_google_domain(self, mocked_dns):
+    def test_get_authentication_instructions_new_user_organization_sso_google(self):
         self._mock_get_organization()
-        self._mock_dns(mocked_dns, is_google=True)
-        email = 'example@example.com'
-        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)):
-            response = self.client.call_action(
-                'get_authentication_instructions',
-                email=email,
-                organization_domain=self.organization.domain,
-            )
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_sso',
+            return_object_path='sso',
+            return_object=mocks.mock_sso(
+                saml=None,
+                google=sso_pb2.GoogleDetailsV1(domains=['example.com']),
+                provider=sso_pb2.GOOGLE,
+            ),
+            organization_domain=self.organization.domain,
+        )
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email='example@example.com',
+            organization_domain=self.organization.domain,
+        )
 
-        self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
 
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_redirect_uri(self, mocked_dns):
+    def test_get_authentication_instructions_redirect_uri_google_sso(self):
         self._mock_get_organization()
-        self._mock_dns(mocked_dns, is_google=True)
-        email = 'example@example.com'
-        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)):
-            response = self.client.call_action(
-                'get_authentication_instructions',
-                email=email,
-                redirect_uri='https://frontend.lunohq.com/auth',
-                organization_domain=self.organization.domain,
-            )
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_sso',
+            return_object_path='sso',
+            return_object=mocks.mock_sso(
+                saml=None,
+                google=sso_pb2.GoogleDetailsV1(domains=['example.com']),
+                provider=sso_pb2.GOOGLE,
+            ),
+            organization_domain=self.organization.domain,
+        )
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email='example@example.com',
+            redirect_uri='https://frontend.lunohq.com/auth',
+            organization_domain=self.organization.domain,
+        )
 
         parsed_url = urlparse.urlparse(response.result.authorization_url)
         query = dict(urlparse.parse_qsl(parsed_url.query))
         parsed_state = parse_state_token(user_containers.IdentityV1.GOOGLE, query['state'])
         self.assertIn('frontend.lunohq', parsed_state['redirect_uri'])
         self.assertEqual(parsed_state['domain'], self.organization.domain)
-        self.assertFalse(response.result.user_exists)
         self.assertTrue(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
 
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_redirect_uri_invalid(self, mocked_dns):
-        self._mock_dns(mocked_dns, is_google=True)
-        email = 'example@example.com'
-        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)), self.assertFieldError(
-            'redirect_uri'
-        ):
+    def test_get_authentication_instructions_redirect_uri_invalid_google_sso(self):
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_sso',
+            return_object_path='sso',
+            return_object=mocks.mock_sso(
+                saml=None,
+                google=sso_pb2.GoogleDetailsV1(domains=['example.com']),
+                provider=sso_pb2.GOOGLE,
+            ),
+            organization_domain=self.organization.domain,
+        )
+        with self.assertFieldError('redirect_uri'):
             self.client.call_action(
                 'get_authentication_instructions',
-                email=email,
+                email='example@example.com',
                 redirect_uri='https://frontendlunohq.com/auth/success/',
                 organization_domain=self.organization.domain,
             )
 
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_existing_user(self, mocked_dns):
-        self._mock_dns(mocked_dns, is_google=True)
+    def test_get_authentication_instructions_existing_user_google_sso(self):
         self._mock_get_organization()
-        user = factories.UserFactory.create(
-            primary_email='example@example.com',
-            organization_id=self.organization.id,
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_sso',
+            return_object_path='sso',
+            return_object=mocks.mock_sso(
+                saml=None,
+                google=sso_pb2.GoogleDetailsV1(domains=['example.com']),
+                provider=sso_pb2.GOOGLE,
+            ),
+            organization_domain=self.organization.domain,
         )
-        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(user.primary_email,)):
-            response = self.client.call_action(
-                'get_authentication_instructions',
-                email=user.primary_email,
-                organization_domain=self.organization.domain,
-            )
-        self.assertTrue(response.result.user_exists)
-        self.assertTrue(response.result.authorization_url)
-        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
-
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_new_user_non_google_domain(self, mocked_dns):
-        self._mock_get_organization()
-        self._mock_dns(mocked_dns, is_google=False)
-        email = 'example@example.com'
-        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)):
-            response = self.client.call_action(
-                'get_authentication_instructions',
-                email=email,
-                organization_domain=self.organization.domain,
-            )
-        self.assertFalse(response.result.user_exists)
-        self.assertFalse(response.result.authorization_url)
-        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
-
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_existing_user_non_google_domain(self, mocked_dns):
-        self._mock_get_organization()
-        self._mock_dns(mocked_dns, is_google=False)
         user = factories.UserFactory.create(
             primary_email='example@example.com',
             organization_id=self.organization.id,
@@ -253,14 +209,37 @@ class Test(MockedTestCase):
             email=user.primary_email,
             organization_domain=self.organization.domain,
         )
-        self.assertTrue(response.result.user_exists)
+        self.assertTrue(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
+
+    def test_get_authentication_instructions_new_user(self):
+        self._mock_get_organization()
+        email = 'example@example.com'
+        with self.settings(USER_SERVICE_FORCE_GOOGLE_AUTH=(email,)):
+            response = self.client.call_action(
+                'get_authentication_instructions',
+                email=email,
+                organization_domain=self.organization.domain,
+            )
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
 
-    @patch('users.actions.DNS.mxlookup')
-    def test_get_authentication_instructions_google_domain_force_to_password(self, mocked_dns):
+    def test_get_authentication_instructions_existing_user(self):
         self._mock_get_organization()
-        self._mock_dns(mocked_dns, is_google=True)
+        user = factories.UserFactory.create(
+            primary_email='example@example.com',
+            organization_id=self.organization.id,
+        )
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email=user.primary_email,
+            organization_domain=self.organization.domain,
+        )
+        self.assertFalse(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
+
+    def test_get_authentication_instructions_organization_sso_google_force_to_password(self):
+        self._mock_get_organization()
         user = factories.UserFactory.create(
             primary_email='demo@circlehq.co',
             organization_id=self.organization.id,
@@ -272,6 +251,5 @@ class Test(MockedTestCase):
                 organization_domain=self.organization.domain,
             )
 
-        self.assertTrue(response.result.user_exists)
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)

@@ -16,6 +16,7 @@ from oauth2client.client import (
 from oauth2client.crypt import AppIdentityError
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
+from protobufs.services.organization.containers import sso_pb2
 import requests
 import service.control
 from service import actions
@@ -24,6 +25,29 @@ from . import base
 from ..authentication import utils
 
 logger = logging.getLogger(__name__)
+
+
+class GoogleSSONotEnabled(Exception):
+    pass
+
+
+class DomainNotVerified(Exception):
+    pass
+
+
+def get_sso(organization):
+    try:
+        sso = service.control.get_object(
+            service='organization',
+            action='get_sso',
+            organization_domain=organization.domain,
+            return_object='sso',
+        )
+        if not sso.provider == sso_pb2.GOOGLE:
+            raise GoogleSSONotEnabled
+    except service.control.CallActionError:
+        raise GoogleSSONotEnabled
+    return sso
 
 
 class Provider(base.BaseProvider):
@@ -215,9 +239,12 @@ class Provider(base.BaseProvider):
         return identity
 
     @classmethod
-    def get_authorization_url(cls, domain, redirect_uri=None, **kwargs):
+    def get_authorization_url(cls, organization, sso=None, redirect_uri=None, **kwargs):
+        if not sso:
+            sso = get_sso(organization)
+
         payload = {
-            'domain': domain,
+            'domain': organization.domain,
         }
         if redirect_uri:
             payload['redirect_uri'] = redirect_uri

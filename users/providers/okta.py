@@ -42,11 +42,14 @@ class ProviderResponseMissingRequiredField(Exception):
         super(ProviderResponseMissingRequiredField, self).__init__(message)
 
 
-def get_sso_for_domain(domain):
-    client = service.control.Client('organization')
+def get_sso(organization):
     try:
-        response = client.call_action('get_sso', organization_domain=domain)
-        sso = response.result.sso
+        sso = service.control.get_object(
+            service='organization',
+            action='get_sso',
+            return_object='sso',
+            organization_domain=organization.domain,
+        )
         if not sso.provider == sso_pb2.OKTA:
             raise SAMLMetaDataDoesNotExist
     except service.control.CallActionError:
@@ -169,12 +172,13 @@ class Provider(base.BaseProvider):
         response.saml_details.auth_state = get_state_for_user(user, request.saml_details.domain)
 
     @classmethod
-    def get_authorization_url(self, domain, redirect_uri=None, **kwargs):
-        sso = get_sso_for_domain(domain)
-        saml_client = utils.get_saml_client(domain, sso.saml.metadata)
+    def get_authorization_url(self, organization, sso=None, redirect_uri=None, **kwargs):
+        if not sso:
+            sso = get_sso(organization)
 
+        saml_client = utils.get_saml_client(organization.domain, sso.saml.metadata)
         if redirect_uri:
-            signer = get_signer(domain)
+            signer = get_signer(organization.domain)
             redirect_uri = signer.sign(redirect_uri)
         else:
             redirect_uri = None
