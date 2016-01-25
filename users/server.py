@@ -19,7 +19,6 @@ class Server(service.control.Server):
         'get_user': actions.GetUser,
         'authenticate_user': actions.AuthenticateUser,
         'logout': actions.Logout,
-        'get_authorization_instructions': actions.GetAuthorizationInstructions,
         'complete_authorization': actions.CompleteAuthorization,
         'get_identities': actions.GetIdentities,
         'record_device': actions.RecordDevice,

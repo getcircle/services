@@ -277,35 +277,6 @@ def get_authorization_instructions(
     return authorization_url, provider_name
 
 
-class GetAuthorizationInstructions(actions.Action):
-
-    required_fields = ('provider',)
-
-    type_validators = {
-        'redirect_uri': [valid_redirect_uri],
-    }
-
-    def run(self, *args, **kwargs):
-        organization = service.control.get_object(
-            service='organization',
-            action='get_organization',
-            return_object='organization',
-            client_kwargs={'token': self.token},
-        )
-
-        try:
-            instructions = get_authorization_instructions(
-                provider=self.request.provider,
-                organization=organization,
-                login_hint=self.request.login_hint,
-                redirect_uri=self.request.redirect_uri,
-            )
-        except providers.okta.SAMLMetaDataDoesNotExist:
-            raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
-
-        self.response.authorization_url, self.response.provider_name = instructions
-
-
 class CompleteAuthorization(actions.Action):
 
     def _get_provider_class(self):
