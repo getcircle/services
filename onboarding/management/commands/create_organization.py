@@ -93,22 +93,9 @@ class Command(BaseCommand):
         if options['setup_dns']:
             print 'setting up DNS records...'
             subdomain = options['organization_domain']
-            create_a_record_for_subdomain(
-                subdomain,
-                settings.AWS_ALIAS_TARGET,
-                settings.AWS_ALIAS_HOSTED_ZONE_ID,
-                settings.AWS_HOSTED_ZONE_ID,
-            )
-            create_mx_record_for_subdomain(
-                subdomain,
-                settings.AWS_SES_INBOUND_ENDPOINT,
-                settings.AWS_HOSTED_ZONE_ID,
-            )
-            create_ses_verification_record_for_subdomain(
-                subdomain,
-                settings.AWS_REGION_NAME,
-                settings.AWS_HOSTED_ZONE_ID,
-            )
+            create_a_record_for_subdomain(subdomain)
+            create_mx_record_for_subdomain(subdomain)
+            create_ses_verification_record_for_subdomain(subdomain)
 
         print 'created organization "%s": %s' % (
             response.result.organization.name,
