@@ -49,7 +49,6 @@ INSTALLED_APPS = (
 
     'feature',
     'file',
-    'glossary',
     'group',
     'history',
     'hooks',
@@ -260,7 +259,6 @@ CACHEOPS_DEFAULTS = {
 }
 
 CACHEOPS = {
-    'glossary.*': {'ops': 'all'},
     'group.*': {'ops': 'all'},
     'notification.*': {'ops': 'all'},
     'organizations.*': {'ops': 'all'},
