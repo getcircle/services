@@ -307,3 +307,7 @@ EMAIL_HOOK_PROCESSED_KEY_PREFIX = 'processed'
 EMAIL_HOOK_S3_BUCKET = 'dev-lunohq-emails'
 EMAIL_SES_REGION = 'us-west-2'
 EMAIL_HOOK_NOTIFICATION_FROM_ADDRESS = 'notifications@lunohq.com'
+
+SILENCED_SYSTEM_CHECKS = [
+    'auth.W004',
+]
