@@ -151,7 +151,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'services.authentication.ServiceTokenAuthentication',
-        'services.authentication.OrganizationTokenAuthentication',
         'services.authentication.ServiceTokenCookieAuthentication',
     ),
 }
