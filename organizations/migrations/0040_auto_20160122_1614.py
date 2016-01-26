@@ -8,7 +8,7 @@ from protobufs.services.organization.containers import sso_pb2
 def migrate_to_details(apps, schema_editor):
     SSO = apps.get_model('organizations', 'SSO')
     for sso in SSO.objects.all():
-        saml = sso_pb2.SAMLDetailsV1(config_url=sso.metadata_url, config=sso.metadata)
+        saml = sso_pb2.SAMLDetailsV1(metadata_url=sso.metadata_url, metadata=sso.metadata)
         sso.details = saml
         sso.save()
 
