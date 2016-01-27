@@ -1,6 +1,7 @@
 import os
 import urlparse
 
+from celery.schedules import crontab
 import raven
 
 # import default settings
@@ -208,3 +209,10 @@ AUTHENTICATION_TOKEN_COOKIE_SECURE = bool(int(os.environ.get(
 )))
 
 METRICS_HANDLER = 'service.metrics.datadog.instance'
+
+CELERYBEAT_SCHEDULE = {
+    'sync-profiles': {
+        'task': 'profiles.tasks.sync_all',
+        'schedule': crontab(minute=0, hour=0)
+    },
+}
