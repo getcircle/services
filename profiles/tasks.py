@@ -10,8 +10,10 @@ from .sync.providers import okta
 
 logger = logging.getLogger(__name__)
 
+TIME_LIMIT = 60 * 5
 
-@app.task
+
+@app.task(time_limit=TIME_LIMIT, soft_time_limit=TIME_LIMIT)
 def sync_all():
     start = time.time()
     logger.info('starting profile sync for registered organizations')
@@ -24,7 +26,7 @@ def sync_all():
     logger.info('completed syncing %d organizations (%d secs)', len(organization_ids), end - start)
 
 
-@app.task
+@app.task(time_limit=TIME_LIMIT, soft_time_limit=TIME_LIMIT, ignore_result=False)
 def sync_organization(organization_id):
     settings = SyncSettings.objects.get(pk=organization_id)
     okta.sync(settings)
