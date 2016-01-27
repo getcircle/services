@@ -4,12 +4,9 @@ import service.control
 from service.transports.mock import get_mockable_response
 
 from services.test import (
-    fuzzy,
     mocks,
     MockedTestCase,
 )
-
-from .. import factories
 
 
 class TestNoSearchResults(MockedTestCase):
@@ -48,6 +45,7 @@ class TestNoSearchResults(MockedTestCase):
             return_object=[self.profile, manager],
             return_object_path='profiles',
             ids=[self.profile.id, manager.id],
+            is_admin=False,
         )
 
     def test_no_search_results_query_required(self):

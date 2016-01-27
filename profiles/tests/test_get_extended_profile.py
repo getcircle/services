@@ -124,7 +124,7 @@ class TestGetExtendedProfile(MockedTestCase):
             return_object_path='locations',
             return_object=locations,
             profile_id=profile.id,
-            inflations={'only': ['profile_count']},
+            inflations={'disabled': False, 'only': ['profile_count']},
         )
         self._mock_get_profile_reporting_structure(
             profile=profile,

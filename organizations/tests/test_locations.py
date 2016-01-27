@@ -85,7 +85,8 @@ class OrganizationLocationTests(MockedTestCase):
                 return_object_path='profiles',
                 return_object=points_of_contact,
                 ids=[profile.id for profile in points_of_contact],
-                inflations={'only': ['contact_methods']},
+                inflations={'disabled': False, 'only': ['contact_methods']},
+                is_admin=False,
             )
         return self.client.call_action('update_location', location=location)
 
@@ -256,7 +257,8 @@ class OrganizationLocationTests(MockedTestCase):
             return_object_path='profiles',
             return_object=points_of_contact,
             ids=[str(uuid.UUID(profile.id, version=4)) for profile in points_of_contact],
-            inflations={'only': ['contact_methods']},
+            inflations={'disabled': False, 'only': ['contact_methods']},
+            is_admin=False,
         )
         response = self.client.call_action('get_locations')
         self.assertEqual(len(locations), len(response.result.locations))
@@ -398,7 +400,8 @@ class OrganizationLocationTests(MockedTestCase):
             return_object_path='profiles',
             return_object=points_of_contact,
             ids=[str(uuid.UUID(profile.id, version=4)) for profile in points_of_contact],
-            inflations={'only': ['contact_methods']},
+            inflations={'disabled': False, 'only': ['contact_methods']},
+            is_admin=False,
         )
         response = self.client.call_action('get_locations')
 

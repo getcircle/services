@@ -64,7 +64,8 @@ class TestUpdateEntities(MockedTestCase):
             return_object=[profile],
             return_object_path='profiles',
             ids=[profile.id],
-            inflations={'only': ['display_title']},
+            inflations={'disabled': False, 'only': ['display_title']},
+            is_admin=False,
         )
         tasks.update_profiles([str(profile.id)], str(profile.organization_id))
         self.assertEqual(patched_bulk.call_count, 1)
@@ -187,7 +188,8 @@ class TestUpdateEntities(MockedTestCase):
             return_object_path='posts',
             ids=[post.id],
             state=post_containers.LISTED,
-            inflations={'only': ['by_profile']},
+            inflations={'disabled': False, 'only': ['by_profile']},
+            all_states=False,
         )
         tasks.update_posts([str(post.id)], str(post.organization_id))
         self.assertEqual(patched_bulk.call_count, 1)
@@ -217,7 +219,8 @@ class TestUpdateEntities(MockedTestCase):
             return_object=[direct_report],
             return_object_path='profiles',
             ids=[direct_report.id],
-            inflations={'only': ['display_title']},
+            inflations={'disabled': False, 'only': ['display_title']},
+            is_admin=False,
         )
 
         tasks.update_direct_reports(str(manager.id), str(manager.organization_id))

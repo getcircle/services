@@ -82,7 +82,7 @@ class Test(MockedTestCase):
             return_object=by_profile,
             return_object_path='profile',
             profile_id=by_profile.id,
-            inflations={'only': ['display_title']},
+            inflations={'disabled': False, 'only': ['display_title']},
         )
         # register mock object for permissions
         self.profile.is_admin = True

@@ -280,6 +280,7 @@ class TestProfiles(MockedTestCase):
             return_object_path='profile_ids',
             return_object=[str(profile.id) for profile in profiles],
             team_id=team_id,
+            direct=False,
         )
 
         response = self.client.call_action(
