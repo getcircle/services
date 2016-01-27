@@ -270,7 +270,7 @@ def _sync_profile(provider_profile, profile, commit=True):
                 )
                 setattr(profile, field, provider_value)
 
-    items_to_sync = ('Department', 'Location')
+    items_to_sync = ['Department', 'Location']
     items = []
     for item in profile.items or []:
         if item[0] in items_to_sync:
