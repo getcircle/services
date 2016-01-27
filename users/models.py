@@ -1,5 +1,7 @@
 import binascii
 import os
+
+from bulk_update.manager import BulkUpdateManager
 from common.db import models
 from common import utils
 
@@ -66,6 +68,7 @@ class User(AbstractBaseUser, models.UUIDModel, models.TimestampableModel):
     protobuf_exclude_fields = ('password',)
 
     objects = UserManager()
+    bulk_manager = BulkUpdateManager()
 
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

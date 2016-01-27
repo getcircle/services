@@ -119,6 +119,27 @@ class BulkCreateUsers(actions.Action):
             user.to_protobuf(container)
 
 
+class BulkUpdateUsers(mixins.PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('users',)
+
+    def run(self, *args, **kwargs):
+        containers_dict = dict((u.id, u) for u in self.request.users)
+        users = models.User.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            id__in=[u.id for u in self.request.users],
+        )
+        for user in users:
+            container = containers_dict.get(str(user.id))
+            if not container:
+                continue
+
+            user.update_from_protobuf(container, organization_id=self.parsed_token.organization_id)
+
+        if users:
+            models.User.bulk_manager.bulk_update(users)
+
+
 class GetUser(mixins.PreRunParseTokenMixin, actions.Action):
 
     def run(self, *args, **kwargs):
