@@ -1,3 +1,5 @@
+import uuid
+
 import arrow
 import mock
 from protobufs.services.profile import containers_pb2 as profile_containers
@@ -328,3 +330,10 @@ class Test(MockedTestCase):
         self.assertEqual(len(active_profiles), 4)
         self.assertEqual(len(inactive_profiles), 1)
         self.assertEqual(mocked_set_manager.call_count, 3)
+        for call in mocked_set_manager.call_args_list:
+            for arg in call[0][:2]:
+                try:
+                    valid = bool(uuid.UUID(arg))
+                except ValueError:
+                    valid = False
+                self.assertTrue(valid, 'first two args should be UUID: %s' % (arg,))

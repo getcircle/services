@@ -361,7 +361,6 @@ def _sync_users(users, rules, organization_id, commit=True):
     profiles = []
     synced_profiles = 0
     new_profiles = 0
-    # XXX need to handle location and department
 
     for provider_profile in provider_profiles:
         luno_profile = identifier_to_profile.get(provider_profile['authentication_identifier'])
@@ -382,7 +381,12 @@ def _sync_users(users, rules, organization_id, commit=True):
         if manager_id:
             manager_profile = identifier_to_profile.get(manager_id)
             if manager_profile:
-                _set_manager(str(provider_profile['_id']), str(manager_id), token, commit=commit)
+                _set_manager(
+                    str(provider_profile['_id']),
+                    str(manager_profile.id),
+                    token,
+                    commit=commit,
+                )
 
     provider_identifiers = [p['authentication_identifier'] for p in provider_profiles]
     deactivated_profiles = 0
