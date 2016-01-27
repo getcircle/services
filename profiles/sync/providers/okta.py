@@ -251,16 +251,17 @@ def _sync_profile(provider_profile, profile, commit=True):
                 provider_value = arrow.get(provider_value).date()
 
             profile_value = getattr(profile, field)
-            logger.info(
-                'updating %s - new value (%s), original value (%s)',
-                field,
-                provider_value,
-                profile_value,
-            )
-            setattr(profile, field, provider_value)
+            if profile_value != provider_value:
+                logger.info(
+                    'updating %s - new value (%s), original value (%s)',
+                    field,
+                    provider_value,
+                    profile_value,
+                )
+                setattr(profile, field, provider_value)
 
-    if profile.status == profile_containers.ProfileV1.ACTIVE:
-        _activate_profile(profile)
+    if profile.status == profile_containers.ProfileV1.INACTIVE:
+        _activate_profile(profile, commit=commit)
 
     profile.sync_source_id = provider_profile['source_id']
     if commit:
