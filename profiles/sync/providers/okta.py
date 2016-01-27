@@ -205,14 +205,17 @@ def _get_profiles(users, rules):
 
 def _create_profile(provider_profile, organization_id, commit=True):
     token = make_admin_token(organization_id=organization_id)
-    user = service.control.get_object(
-        service='user',
-        action='create_user',
-        client_kwargs={'token': token},
-        return_object='user',
-        email=provider_profile['email'],
-        organization_id=organization_id,
-    )
+    user_id = ''
+    if commit:
+        user = service.control.get_object(
+            service='user',
+            action='create_user',
+            client_kwargs={'token': token},
+            return_object='user',
+            email=provider_profile['email'],
+            organization_id=organization_id,
+        )
+        user_id = user.id
 
     protobuf = profile_containers.ProfileV1(
         title=provider_profile.get('title') or '',
@@ -220,8 +223,8 @@ def _create_profile(provider_profile, organization_id, commit=True):
         last_name=provider_profile['last_name'],
         hire_date=provider_profile.get('hire_date') or '',
         authentication_identifier=provider_profile['authentication_identifier'],
-        organization_id=organization_id,
-        user_id=user.id,
+        organization_id=str(organization_id),
+        user_id=user_id,
     )
     profile = Profile.objects.from_protobuf(
         protobuf,
