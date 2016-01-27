@@ -292,6 +292,7 @@ CELERY_ACCEPT_CONTENT = ['msgpack']
 CELERYD_TASK_TIME_LIMIT = 30
 CELERYD_TASK_SOFT_TIME_LIMIT = 15
 CELERY_DISABLE_RATE_LIMITS = True
+CELERYD_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s] %(name)s %(message)s'
 
 SEARCH_SERVICE_ELASTICSEARCH = None
 
