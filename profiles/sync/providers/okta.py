@@ -221,8 +221,10 @@ def _create_profile(provider_profile, organization_id, commit=True):
 
     items = []
     for key in ['Department', 'Location']:
-        item = (key, provider_profile[key.lower()])
-        items.append(item)
+        value = provider_profile.get(key.lower())
+        if value:
+            item = (key, provider_profile[key.lower()])
+            items.append(item)
 
     protobuf = profile_containers.ProfileV1(
         title=provider_profile.get('title') or '',
@@ -268,19 +270,30 @@ def _sync_profile(provider_profile, profile, commit=True):
                 )
                 setattr(profile, field, provider_value)
 
+    items_to_sync = ('Department', 'Location')
     items = []
-    for item in profile.items:
-        if item[0] in ('Department', 'Location'):
-            current = [item[0], provider_profile[item[0].lower()]]
-            if current != item:
-                logger.info(
-                    'updating %s - new value (%s), original value (%s)',
-                    item[0],
-                    current,
-                    item,
-                )
-                item = current
+    for item in profile.items or []:
+        if item[0] in items_to_sync:
+            value = provider_profile.get(item[0].lower())
+            if value:
+                current = [item[0], value]
+                if current != item:
+                    logger.info(
+                        'updating %s - new value (%s), original value (%s)',
+                        item[0],
+                        current,
+                        item,
+                    )
+                    item = current
+            items_to_sync.remove(item[0])
         items.append(item)
+
+    for key in items_to_sync:
+        value = provider_profile.get(key.lower())
+        if value:
+            item = (key, value)
+            logger.info('adding %s item', item)
+            items.append(item)
 
     profile.items = items
     if profile.status == profile_containers.ProfileV1.INACTIVE:
