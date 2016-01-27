@@ -215,7 +215,7 @@ def _create_profile(provider_profile, organization_id, commit=True):
             client_kwargs={'token': token},
             return_object='user',
             email=provider_profile['email'],
-            organization_id=organization_id,
+            organization_id=str(organization_id),
         )
         user_id = user.id
 
