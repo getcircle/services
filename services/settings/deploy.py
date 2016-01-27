@@ -77,6 +77,7 @@ SERVICES_REDIS = {
 }
 
 BROKER_URL = 'redis://%s:%s/3' % (redis_url.hostname, redis_url.port)
+CELERY_RESULT_BACKEND = 'redis://%s:%s/3' % (redis_url.hostname, redis_url.port)
 
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
 
@@ -216,3 +217,5 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute=0, hour=0)
     },
 }
+
+CELERY_IGNORE_RESULT = True
