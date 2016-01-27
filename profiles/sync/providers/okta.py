@@ -26,6 +26,8 @@ class ProviderMappings(object):
         'email',
         'manager_authentication_identifier',
         'source_id',
+        'location',
+        'department',
     )
 
     def __init__(self, **kwargs):
@@ -217,6 +219,11 @@ def _create_profile(provider_profile, organization_id, commit=True):
         )
         user_id = user.id
 
+    items = []
+    for key in ['Department', 'Location']:
+        item = (key, provider_profile[key.lower()])
+        items.append(item)
+
     protobuf = profile_containers.ProfileV1(
         title=provider_profile.get('title') or '',
         first_name=provider_profile['first_name'],
@@ -230,6 +237,7 @@ def _create_profile(provider_profile, organization_id, commit=True):
         protobuf,
         sync_source_id=provider_profile['source_id'],
         commit=commit,
+        items=items,
     )
     return profile
 
@@ -260,6 +268,21 @@ def _sync_profile(provider_profile, profile, commit=True):
                 )
                 setattr(profile, field, provider_value)
 
+    items = []
+    for item in profile.items:
+        if item[0] in ('Department', 'Location'):
+            current = [item[0], provider_profile[item[0].lower()]]
+            if current != item:
+                logger.info(
+                    'updating %s - new value (%s), original value (%s)',
+                    item[0],
+                    current,
+                    item,
+                )
+                item = current
+        items.append(item)
+
+    profile.items = items
     if profile.status == profile_containers.ProfileV1.INACTIVE:
         _activate_profile(profile, commit=commit)
 
@@ -384,6 +407,6 @@ def sync(settings):
     )
     users = _fetch_all_users(settings.endpoint, settings.api_key)
     logger.info('fetched: %d users', len(users))
-    _sync_users(users, rules, settings.organization_id, commit=True)
+    _sync_users(users, rules, settings.organization_id, commit=False)
     end = time.time()
     logger.info('sync complete: %s seconds', (end - start))
