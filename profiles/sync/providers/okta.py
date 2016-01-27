@@ -185,6 +185,7 @@ def _get_profile_from_user(user, rules):
 
 def _get_profiles(users, rules):
     profiles = []
+    invalid_users = 0
     for user in users:
         try:
             profile = _get_profile_from_user(user, rules)
@@ -194,10 +195,11 @@ def _get_profiles(users, rules):
             FieldValueInvalidError,
             FieldValueInvalidTypeError,
         ):
-            logger.error('invalid user: %s', user)
+            invalid_users += 1
             continue
         else:
             profiles.append(profile)
+    logger.info('%d out of %d users invalid', invalid_users, len(users))
     return profiles
 
 
