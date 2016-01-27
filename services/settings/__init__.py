@@ -287,6 +287,7 @@ STRIPE_API_KEY = 'sk_test_egjGFfpd8I06ZN05Xbh4HZQI'
 CORS_ORIGIN_REGEX_WHITELIST = ('^(https?://)?([A-Za-z0-9\-_]+\.)?(\w+\.)?(\w+\.)?lunohq\.com$',)
 
 CELERY_TASK_SERIALIZER = 'msgpack'
+CELERY_RESULT_SERIALIZER = 'msgpack'
 CELERY_ACCEPT_CONTENT = ['msgpack']
 CELERYD_TASK_TIME_LIMIT = 30
 CELERYD_TASK_SOFT_TIME_LIMIT = 15
