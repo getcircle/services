@@ -399,7 +399,7 @@ def _sync_users(users, rules, organization_id, commit=True):
     )
 
 
-def sync(settings):
+def sync(settings, commit=True):
     """Sync details from the Okta API to our system.
 
     Args:
@@ -420,6 +420,6 @@ def sync(settings):
     )
     users = _fetch_all_users(settings.endpoint, settings.api_key)
     logger.info('fetched: %d users', len(users))
-    _sync_users(users, rules, settings.organization_id, commit=False)
+    _sync_users(users, rules, settings.organization_id, commit=commit)
     end = time.time()
     logger.info('sync complete: %s seconds', (end - start))
