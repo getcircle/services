@@ -376,9 +376,14 @@ def sync(settings):
     }
 
     start = time.time()
-    logger.info('starting sync: %s - rules: %s', settings.endpoint, json.dumps(rules))
+    logger.info(
+        'starting sync: %s\nvalidate_fields: %s\nmappings: %s',
+        settings.endpoint,
+        settings.validate_fields,
+        settings.mappings,
+    )
     users = _fetch_all_users(settings.endpoint, settings.api_key)
     logger.info('fetched: %d users', len(users))
-    _sync_users(users, rules, settings.organization_id, commit=False)
+    _sync_users(users, rules, settings.organization_id, commit=True)
     end = time.time()
     logger.info('sync complete: %s seconds', (end - start))
