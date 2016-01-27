@@ -19,9 +19,8 @@ def sync_all():
     start = time.time()
     logger.info('starting profile sync for registered organizations')
     organization_ids = SyncSettings.objects.all().values_list('organization_id', flat=True)
-    chord(sync_organization.s(str(organization_id)) for organization_id in organization_ids)(
-        report_sync_stats.s(start, len(organization_ids)),
-    )
+    subtasks = [sync_organization.s(str(organization_id)) for organization_id in organization_ids]
+    chord(subtasks, report_sync_stats.si(start, len(organization_ids))).delay()
 
 
 @app.task(time_limit=TIME_LIMIT, soft_time_limit=TIME_LIMIT, ignore_result=False)
