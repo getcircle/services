@@ -12,6 +12,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     bulk_manager = BulkUpdateManager()
 
     protobuf_include_fields = ('full_name',)
+    as_dict_value_transforms = {'status': int}
 
     organization_id = models.UUIDField()
     user_id = models.UUIDField()
@@ -31,6 +32,13 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     is_admin = models.BooleanField(default=False)
     small_image_url = models.URLField(max_length=255, null=True)
     authentication_identifier = models.CharField(max_length=255)
+    sync_source_id = models.CharField(max_length=255, null=True)
+    status = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(
+            profile_containers.ProfileV1.StatusV1,
+        ),
+        default=0,
+    )
 
     @property
     def full_name(self):
@@ -172,3 +180,12 @@ class ContactMethod(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         unique_together = ('profile', 'label', 'value', 'type')
+
+
+class SyncSettings(models.TimestampableModel):
+
+    organization_id = models.UUIDField(primary_key=True)
+    mappings = models.TextField()
+    validate_fields = models.TextField(null=True)
+    endpoint = models.CharField(max_length=255)
+    api_key = models.CharField(max_length=255)

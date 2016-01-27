@@ -97,6 +97,17 @@ def mock_team(container=None, **overrides):
     return _mock_container(container, mock_dict, **overrides)
 
 
+def mock_user(container=None, **overrides):
+    if container is None:
+        container = user_containers.UserV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'organization_id'],
+        fuzzy.FuzzyText(suffix='@exmaple.com'): ['primary_email'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
 def mock_organization(container=None, **overrides):
     if container is None:
         container = organization_containers.OrganizationV1()

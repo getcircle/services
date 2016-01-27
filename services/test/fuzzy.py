@@ -20,3 +20,4 @@ class FuzzyTimestamp(BaseFuzzyAttribute):
 
 uuid = FuzzyUUID().fuzz
 text = FuzzyText().fuzz
+email = FuzzyText(suffix='@example.com').fuzz
