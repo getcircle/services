@@ -10,6 +10,8 @@ from .sync.providers import okta
 
 logger = logging.getLogger(__name__)
 
+TIMEOUT = 60 * 5
+
 
 @app.task
 def sync_all():
@@ -17,7 +19,7 @@ def sync_all():
     logger.info('starting profile sync for registered organizations')
     organization_ids = SyncSettings.objects.all().values_list('organization_id', flat=True)
     result = group(sync_organization.s(organization_id) for organization_id in organization_ids)
-    result.get()
+    result.get(timeout=TIMEOUT)
     end = time.time()
     logger.info('completed syncing %d organizations (%d secs)', len(organization_ids), end - start)
 
