@@ -391,7 +391,10 @@ def _sync_users(users, rules, organization_id, commit=True):
     provider_identifiers = [p['authentication_identifier'] for p in provider_profiles]
     deactivated_profiles = 0
     for profile in existing_profiles:
-        if profile.authentication_identifier not in provider_identifiers:
+        if (
+            profile.status == profile_containers.ProfileV1.ACTIVE and
+            profile.authentication_identifier not in provider_identifiers
+        ):
             deactivated_profiles += 1
             _deactivate_profile(profile, commit=commit)
 
