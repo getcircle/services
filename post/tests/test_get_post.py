@@ -154,3 +154,15 @@ class Test(MockedTestCase):
         self.assertTrue(html_document.startswith('<!doctype html>'))
         self.assertIn(post.title, html_document)
         self.assertIn(post.content, html_document)
+
+    def test_get_post_return_requested_fields(self):
+        post = factories.PostFactory.create(profile=self.profile)
+        response = self.client.call_action(
+            'get_post',
+            id=str(post.id),
+            fields={'exclude': ['snippet']},
+            inflations={'disabled': True},
+        )
+        result = response.result.post
+        self.assertIn('snippet', result.fields.exclude)
+        self.assertTrue(result.inflations.disabled)
