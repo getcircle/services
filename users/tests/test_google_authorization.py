@@ -76,6 +76,10 @@ class Test(MockedTestCase):
         defaults = {
             'displayName': 'Michael Hahn',
             'domain': '%s.com' % (self.organization.domain,),
+            'image': {
+                'url': 'https://something.com',
+                'isDefault': False,
+            },
         }
         defaults.update(overrides)
 
@@ -158,6 +162,34 @@ class Test(MockedTestCase):
         self.assertEqual(response.result.google_credentials.id_token, str(self.id_token))
         call_args = mocked_credentials_from_code.call_args[1]
         self.assertEqual(call_args['redirect_uri'], settings.GOOGLE_REDIRECT_URI)
+
+        # verify image_url was passed to the create_profile call
+        mock_create_profile = self.mock.instance.mocked_calls[1]
+        self.assertIn('image_url', mock_create_profile['params']['profile'])
+
+    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.credentials_from_code')
+    def test_complete_authorization_default_image_url(
+            self,
+            mocked_credentials_from_code,
+            mocked_fetch_profile,
+        ):
+        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
+        mocked_fetch_profile.return_value = self._mock_provider_profile(
+            image={'isDefault': True, 'url': 'https://something'},
+        )
+        self.client.call_action(
+            'complete_authorization',
+            provider=user_containers.IdentityV1.GOOGLE,
+            oauth2_details={
+                'code': 'some-code',
+                'state': self._get_state(),
+            },
+            client_type=token_pb2.WEB,
+        )
+        # verify we don't pull in the default image
+        mock_create_profile = self.mock.instance.mocked_calls[1]
+        self.assertNotIn('image_url', mock_create_profile['params']['profile'])
 
     @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
     @patch('users.providers.google._fetch_provider_profile')

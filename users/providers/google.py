@@ -262,20 +262,34 @@ class Provider(base.BaseProvider):
 
         return first_name, last_name
 
+    def _get_image_url_from_provider(self):
+        image_url = None
+        image = self.provider_profile.get('image')
+        if image:
+            if not image.get('isDefault', True) and 'url' in image:
+                # image urls may contain query parameters we don't want to include
+                image_url = image['url'].split('?')[0]
+        return image_url
+
     def finalize_authorization(self, user, identity, request, response):
         token = make_admin_token(organization_id=user.organization_id, user_id=user.id)
         first_name, last_name = self._get_name_from_provider()
+        image_url = self._get_image_url_from_provider()
+        parameters = {
+            'email': user.primary_email,
+            'authentication_identifier': user.primary_email,
+            'first_name': first_name,
+            'last_name': last_name,
+        }
+        if image_url:
+            parameters['image_url'] = image_url
+
         try:
             service.control.call_action(
                 service='profile',
                 action='create_profile',
                 client_kwargs={'token': token},
-                profile={
-                    'email': user.primary_email,
-                    'authentication_identifier': user.primary_email,
-                    'first_name': first_name,
-                    'last_name': last_name,
-                },
+                profile=parameters,
             )
         except service.control.CallActionError as e:
             if 'DUPLICATE' not in e.response.errors:
