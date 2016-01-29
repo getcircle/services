@@ -88,18 +88,13 @@ regex==2015.11.22
 bleach==1.4.2
 html5lib==0.999
 lxml==3.5.0
+django-bitfield==1.8.0
+django-cacheops==2.4.3
 
 # more recent version of datadog
 git+https://git@github.com/DataDog/datadogpy.git#51173b4b702f1b64e921681138020e966785d0de
 
-# more recent version of bitfield for 1.8 compatibility
-git+https://git@github.com/disqus/django-bitfield.git#24126a01
-
-# fork of django-cacheops
-git+https://git@github.com/mhahn/django-cacheops.git
-
 # core requirements
-git+https://github.com/circlehq/django-date-extensions.git@0b65a33
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/django-common.git@1.0.4
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-soa.git@0.5.4
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@1.1.0
