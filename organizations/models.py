@@ -12,6 +12,7 @@ import service.control
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.containers import integration_pb2
 from protobufs.services.organization.containers import sso_pb2
+from protobufs.services.post import containers_pb2 as post_containers
 from timezone_field import TimeZoneField
 
 from services.fields import DescriptionField
@@ -41,6 +42,7 @@ class Organization(models.UUIDModel, models.TimestampableModel):
             from post import models as post_models
             overrides['post_count'] = post_models.Post.objects.filter(
                 organization_id=self.id,
+                state=post_containers.LISTED,
             ).count()
 
         if (
