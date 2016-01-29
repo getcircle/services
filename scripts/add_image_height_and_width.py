@@ -10,6 +10,7 @@ import urlparse
 
 from bleach.encoding import force_unicode
 import boto3
+from botocore.exceptions import ClientError
 from django.conf import settings
 import html5lib
 from html5lib.serializer import serialize
@@ -44,6 +45,9 @@ def translate_post(s3, post):
                 element.attrib.get('data-trix-content-type', '').startswith('image')
             ):
                 data = json.loads(element.attrib['data-trix-attachment'])
+                if 'height' in data and 'width' in data:
+                    continue
+
                 url = data.get('url')
                 if not url:
                     logger.info(
@@ -54,13 +58,19 @@ def translate_post(s3, post):
 
                 bucket, key = get_s3_bucket_and_key(url)
                 obj = s3.Object(bucket, key)
-                response = obj.get()
+                try:
+                    response = obj.get()
+                except ClientError:
+                    logger.info('[post-%s] s3 key not found', post.id)
+                    continue
+
                 image = Image.open(response['Body'])
                 last_image_url = data['url']
                 last_width, last_height = image.size
                 data['height'] = last_height
                 data['width'] = last_width
                 element.attrib['data-trix-attachment'] = json.dumps(data)
+                updated = True
             elif element.attrib.get('src', '') == last_image_url:
                 element.attrib['height'] = str(last_height)
                 element.attrib['width'] = str(last_width)
@@ -68,21 +78,21 @@ def translate_post(s3, post):
                 last_height = None
                 last_width = None
 
-        serialized = serialize(
-            tree,
-            tree='lxml',
-            quote_attr_values=True,
-            strip_whitespace=True,
-        ).strip()
-        logger.info(
-            '[post-%s] updating post:\noriginal content:\n  >> %s\nnew content:\n  >> %s',
-            post.id,
-            post.content,
-            serialized,
-        )
-        post.content = serialized
-        post.save(update_fields=['content'])
-        updated = True
+        if updated:
+            serialized = serialize(
+                tree,
+                tree='lxml',
+                quote_attr_values=True,
+                strip_whitespace=True,
+            ).strip()
+            logger.info(
+                '[post-%s] updating post:\noriginal content:\n  >> %s\nnew content:\n  >> %s',
+                post.id,
+                post.content,
+                serialized,
+            )
+            post.content = serialized
+            post.save(update_fields=['content'])
     return updated
 
 
