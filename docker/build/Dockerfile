@@ -5,4 +5,4 @@ RUN apt-get update -y && apt-get install -y \
 ENV WHEELHOUSE=/wheelhouse PIP_WHEEL_DIR=/wheelhouse PIP_FIND_LINKS=/wheelhouse
 VOLUME /wheelhouse /application
 
-ENTRYPOINT pip wheel --no-deps -r /application/requirements.txt
+ENTRYPOINT pip wheel --no-deps -r /application/build-requirements.txt

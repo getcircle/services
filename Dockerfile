@@ -3,9 +3,9 @@ FROM lunohq/services-base:latest
 RUN apt-get update && apt-get install -y \
     xmlsec1 libevent-2.0 python-dev libncurses5-dev
 
-ADD requirements.txt /app/requirements.txt
+ADD wheel-requirements.txt /app/wheel-requirements.txt
 ADD wheelhouse /app/wheelhouse
-RUN pip install --no-index -f /app/wheelhouse -r /app/requirements.txt
+RUN pip install --no-index --no-deps -f /app/wheelhouse -r /app/wheel-requirements.txt
 
 RUN git clone https://github.com/getcircle/heroku-buildpack-pgbouncer.git
 RUN cd heroku-buildpack-pgbouncer && git checkout v0.4.0
