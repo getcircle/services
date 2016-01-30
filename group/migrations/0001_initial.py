@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 from common.db.migrations.operations import LoadExtension
 from django.db import models, migrations
-import protobufs.services.group.containers_pb2
 import django.contrib.postgres.fields
 import django.contrib.postgres.fields.hstore
 import uuid
@@ -33,9 +32,6 @@ class Migration(migrations.Migration):
                 ('last_sync_id', models.UUIDField(null=True)),
                 ('organization_id', models.UUIDField()),
             ],
-            options={
-                'protobuf': protobufs.services.group.containers_pb2.GroupV1,
-            },
         ),
         migrations.CreateModel(
             name='GoogleGroupMember',

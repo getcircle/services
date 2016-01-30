@@ -1,7 +1,6 @@
 from base64 import b64decode
 
 from django.utils.module_loading import import_string
-from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import search_pb2
@@ -11,7 +10,6 @@ import watson
 
 from services import mixins
 
-from group.models import GoogleGroup
 from organizations.models import (
     Location,
     LocationMember,
@@ -48,20 +46,6 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
         self.organization_id = self.parsed_token.organization_id
         self._container_cache = {}
 
-    def _get_group_category_queryset(self):
-        try:
-            groups = service.control.get_object(
-                service='group',
-                action='get_groups',
-                client_kwargs={'token': self.token},
-                return_object='groups',
-                provider=group_containers.GOOGLE,
-            )
-        except service.control.CallActionError:
-            return GoogleGroup.objects.none()
-
-        return GoogleGroup.objects.filter(pk__in=[group.id for group in groups])
-
     def _get_search_kwargs(self):
         kwargs = {}
         if not self.request.has_category:
@@ -95,8 +79,6 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 category_queryset = Team.objects.filter(**parameters)
             elif category == search_pb2.LOCATIONS:
                 category_queryset = Location.objects.filter(**parameters)
-            elif category == search_pb2.GROUPS:
-                category_queryset = self._get_group_category_queryset()
             else:
                 raise self.ActionFieldError('category')
             kwargs['models'] = (category_queryset,)
@@ -123,7 +105,5 @@ class Search(mixins.PreRunParseTokenMixin, actions.Action):
                 container_key = 'team'
             elif container is organization_containers.LocationV1:
                 container_key = 'location'
-            elif container is group_containers.GroupV1:
-                container_key = 'group'
             result_container = self.response.results.add()
             getattr(result_container, container_key).CopyFrom(value)

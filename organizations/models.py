@@ -279,7 +279,6 @@ class Integration(models.UUIDModel, models.Model):
     )
     details = models.ProtobufField(
         protobuf_classes=[
-            integration_pb2.GoogleGroupDetailsV1,
             integration_pb2.SlackSlashCommandDetailsV1,
             integration_pb2.SlackWebApiDetailsV1,
         ],

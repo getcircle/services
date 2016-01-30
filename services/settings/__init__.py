@@ -103,7 +103,6 @@ STATIC_ROOT = 'static'
 LOCALIZED_SERVICES = [
     'feature.server.Server',
     'file.server.Server',
-    'group.server.Server',
     'history.server.Server',
     'media.server.Server',
     'notification.server.Server',
@@ -259,7 +258,6 @@ CACHEOPS_DEFAULTS = {
 }
 
 CACHEOPS = {
-    'group.*': {'ops': 'all'},
     'notification.*': {'ops': 'all'},
     'organizations.*': {'ops': 'all'},
     'profiles.*': {'ops': 'all'},

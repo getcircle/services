@@ -8,7 +8,6 @@ from .. import token
 
 from protobufs.services.common.containers import description_pb2
 from protobufs.services.file import containers_pb2 as file_containers
-from protobufs.services.group import containers_pb2 as group_containers
 from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.organization.containers import sso_pb2
 from protobufs.services.organization.actions import get_teams_for_profile_ids_pb2
@@ -181,51 +180,12 @@ def mock_contact_method(container=None, **overrides):
     return _mock_container(container, mock_dict, **overrides)
 
 
-def mock_group(container=None, **overrides):
-    if container is None:
-        container = group_containers.GroupV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id'],
-        fuzzy.FuzzyText: ['name', 'display_name', 'group_description'],
-        fuzzy.FuzzyText(suffix='@circlehq.co'): ['email'],
-    }
-    return _mock_container(container, mock_dict, **overrides)
-
-
-def mock_member(container=None, profile_overrides=None, should_mock_profile=True, **overrides):
-    if container is None:
-        container = group_containers.MemberV1()
-
-    if profile_overrides is None:
-        profile_overrides = {}
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id'],
-        fuzzy.FuzzyChoice(group_containers.RoleV1.values()): ['role'],
-    }
-    container = _mock_container(container, mock_dict, **overrides)
-    if should_mock_profile:
-        container.profile.CopyFrom(mock_profile(**profile_overrides))
-    return container
-
-
 def mock_organization_token(container=None, **overrides):
     if container is None:
         container = organization_containers.TokenV1()
 
     mock_dict = {
         fuzzy.FuzzyUUID: ['key', 'requested_by_user_id'],
-    }
-    return _mock_container(container, mock_dict, **overrides)
-
-
-def mock_group_membership_request(container=None, **overrides):
-    if container is None:
-        container = group_containers.MembershipRequestV1()
-
-    mock_dict = {
-        fuzzy.FuzzyUUID: ['id', 'requester_profile_id', 'group_id'],
     }
     return _mock_container(container, mock_dict, **overrides)
 
