@@ -34,17 +34,6 @@ class ProfileFactory(factory.Factory):
         return model.as_dict(fields={'exclude': ('created', 'changed', 'items')})
 
     @factory.post_generation
-    def tags(self, create, extracted, **kwargs):
-        if not create:
-            return
-
-        if extracted:
-            # profiles and tags need to have the same organization_id
-            self.organization_id = extracted[0].organization_id
-            for tag in extracted:
-                self.tags.through.objects.create(tag=tag, profile=self)
-
-    @factory.post_generation
     def contact_methods(self, create, extracted, **kwargs):
         if not create:
             return
