@@ -97,7 +97,7 @@ git+https://git@github.com/DataDog/datadogpy.git#51173b4b702f1b64e921681138020e9
 # core requirements
 # NOTE: Make sure you update the version number in `wheel-requirements.txt` as well
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/django-common.git@1.0.4
-git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-soa.git@0.5.4
+git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-soa.git@0.5.5
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/protobuf-to-dict.git@1.1.0
 
 git+https://c9b60542c1a793a1bcc0b1e95ce3ab3d2da148c4:x-oauth-basic@github.com/getcircle/python-soa.git@1.0.2
