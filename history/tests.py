@@ -5,10 +5,12 @@ import service.control
 
 from services.history import (
     action_container,
+    action_container_for_create,
     action_container_for_delete,
     action_container_for_update,
 )
 from services.test import (
+    fuzzy,
     mocks,
     TestCase,
 )
@@ -40,8 +42,8 @@ class Test(TestCase):
     def test_record_action_required_fields(self):
         required_fields = [
             'table_name',
-            'column_name',
-            'data_type',
+            'primary_key_name',
+            'primary_key_value',
         ]
         payload = {
             'table_name': 'some_table',
@@ -51,6 +53,8 @@ class Test(TestCase):
             'new_value': 'new',
             'action_type': history_containers.UPDATE_DESCRIPTION,
             'method_type': history_containers.UPDATE,
+            'primary_key_name': 'id',
+            'primary_key_value': fuzzy.uuid(),
         }
         for field in required_fields:
             test_payload = copy.deepcopy(payload)
@@ -96,11 +100,11 @@ class Test(TestCase):
     def test_history_utils_action_container(self):
         action = factories.ActionFactory.create()
         container = action_container(
-            action,
-            'data_type',
-            'new',
-            history_containers.UPDATE_DESCRIPTION,
-            history_containers.UPDATE,
+            instance=action,
+            field_name='data_type',
+            new_value='new',
+            action_type=history_containers.UPDATE_DESCRIPTION,
+            method_type=history_containers.UPDATE,
         )
         self.assertEqual(container.column_name, 'data_type')
         self.assertEqual(container.new_value, 'new')
@@ -112,10 +116,10 @@ class Test(TestCase):
     def test_history_utils_action_container_for_update(self):
         action = factories.ActionFactory.create()
         container = action_container_for_update(
-            action,
-            'data_type',
-            'new',
-            history_containers.UPDATE_DESCRIPTION,
+            instance=action,
+            field_name='data_type',
+            new_value='new',
+            action_type=history_containers.UPDATE_DESCRIPTION,
         )
         self.assertEqual(container.column_name, 'data_type')
         self.assertEqual(container.new_value, 'new')
@@ -127,9 +131,9 @@ class Test(TestCase):
     def test_history_utils_action_container_for_delete(self):
         action = factories.ActionFactory.create()
         container = action_container_for_delete(
-            action,
-            'data_type',
-            history_containers.UPDATE_DESCRIPTION,
+            instance=action,
+            field_name='data_type',
+            action_type=history_containers.UPDATE_DESCRIPTION,
         )
         self.assertEqual(container.column_name, 'data_type')
         self.assertFalse(container.new_value)
@@ -141,9 +145,14 @@ class Test(TestCase):
     def test_history_utils_action_container_for_update_no_new_value(self):
         action = factories.ActionFactory.create()
         container = action_container_for_update(
-            action,
-            'data_type',
-            None,
-            history_containers.UPDATE_DESCRIPTION,
+            instance=action,
+            field_name='data_type',
+            new_value=None,
+            action_type=history_containers.UPDATE_DESCRIPTION,
         )
+        self.client.call('record_action', action_kwargs={'action': container})
+
+    def test_history_utis_action_container_for_create(self):
+        action = factories.ActionFactory.create()
+        container = action_container_for_create(action)
         self.client.call('record_action', action_kwargs={'action': container})

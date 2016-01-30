@@ -11,12 +11,13 @@ class Action(models.UUIDModel, models.TimestampableModel):
     }
 
     table_name = models.CharField(max_length=64)
-    column_name = models.CharField(max_length=64)
-    data_type = models.CharField(max_length=32)
+    column_name = models.CharField(max_length=64, null=True)
+    data_type = models.CharField(max_length=32, null=True)
     old_value = models.TextField(null=True)
     new_value = models.TextField(null=True)
     action_type = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(history_containers.ActionTypeV1),
+        null=True,
     )
     method_type = models.SmallIntegerField(
         choices=utils.model_choices_from_protobuf_enum(history_containers.MethodTypeV1),

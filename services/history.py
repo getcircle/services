@@ -5,33 +5,46 @@ from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.history import containers_pb2 as history_containers
 
 
-def action_container(instance, field_name, new_value, action_type, method_type):
+def action_container(instance, method_type, field_name=None, new_value=None, action_type=None):
     primary_key = instance._meta.pk
     primary_key_name = primary_key.db_column or primary_key.column
     primary_key_value = instance.pk
-    field = instance._meta._forward_fields_map[field_name]
     table_name = instance._meta.db_table
-    column_name = field.db_column or field.column
-    data_type = field.db_type(connection)
-    old_value = getattr(instance, field_name)
-    if hasattr(old_value, 'SerializeToString'):
-        old_value = protobuf_to_dict(old_value)
+
+    column_name = None
+    data_type = None
+    old_value = None
+    if field_name:
+        field = instance._meta._forward_fields_map[field_name]
+        column_name = field.db_column or field.column
+        data_type = field.db_type(connection)
+        old_value = getattr(instance, field_name)
+        if hasattr(old_value, 'SerializeToString'):
+            old_value = protobuf_to_dict(old_value)
+
     if hasattr(new_value, 'SerializeToString'):
         new_value = protobuf_to_dict(new_value)
+
     kwargs = {
         'table_name': table_name,
-        'column_name': column_name,
-        'data_type': data_type,
-        'action_type': action_type,
         'method_type': method_type,
         'primary_key_name': primary_key_name,
         'primary_key_value': str(primary_key_value),
     }
 
+    if action_type is not None:
+        kwargs['action_type'] = action_type
+
     if old_value is not None:
         if isinstance(old_value, dict):
             old_value = json.dumps(old_value)
         kwargs['old_value'] = old_value
+
+    if data_type is not None:
+        kwargs['data_type'] = data_type
+
+    if column_name is not None:
+        kwargs['column_name'] = column_name
 
     if new_value is not None:
         if isinstance(new_value, dict):
@@ -57,5 +70,13 @@ def action_container_for_delete(instance, field_name, action_type):
         field_name=field_name,
         action_type=action_type,
         method_type=history_containers.DELETE,
+        new_value=None,
+    )
+
+
+def action_container_for_create(instance):
+    return action_container(
+        instance=instance,
+        method_type=history_containers.CREATE,
         new_value=None,
     )
