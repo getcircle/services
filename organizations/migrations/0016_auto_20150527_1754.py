@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, serialize=False, primary_key=True)),
                 ('type', models.SmallIntegerField(choices=[(0, b'GOOGLE_GROUPS')])),
-                ('details', common.db.models.fields.ProtobufField(null=True, protobuf_classes=[protobufs.services.organization.containers.integration_pb2.GoogleGroupDetailsV1])),
+                ('details', common.db.models.fields.ProtobufField(null=True, protobuf_classes=[])),
                 ('organization', models.ForeignKey(to='organizations.Organization')),
             ],
             options={

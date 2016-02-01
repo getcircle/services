@@ -108,7 +108,7 @@ class IntegrationFactory(factory.Factory):
         protobuf = integration_pb2.IntegrationV1
 
     organization = factory.SubFactory(OrganizationFactory)
-    type = integration_pb2.GOOGLE_GROUPS
+    type = integration_pb2.SLACK_SLASH_COMMAND
     provider_uid = factory.FuzzyText()
 
 

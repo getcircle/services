@@ -25,29 +25,6 @@ class OrganizationIntegrationTests(TestCase):
         )
         self.client = service.control.Client('organization', token=self.token)
 
-    def test_organization_enable_integration_google(self):
-        response = self.client.call_action(
-            'enable_integration',
-            integration={
-                'integration_type': integration_pb2.GOOGLE_GROUPS,
-                'google_groups': {
-                    'admin_email': 'michael@circlehq.co',
-                    'scopes': ['scope1', 'scope2'],
-                }
-            },
-        )
-        self.assertEqual(
-            response.result.integration.integration_type,
-            integration_pb2.GOOGLE_GROUPS,
-        )
-        details = response.result.integration.google_groups
-        self.assertEqual(details.admin_email, 'michael@circlehq.co')
-        self.assertEqual(details.scopes, ['scope1', 'scope2'])
-
-        integration = models.Integration.objects.get(pk=response.result.integration.id)
-        self.assertEqual(integration.details, response.result.integration.google_groups)
-        self.assertEqual(integration.type, integration_pb2.GOOGLE_GROUPS)
-
     def test_organization_enable_integration_slack_slash_command(self):
         slack_token = fuzzy.FuzzyText().fuzz()
         response = self.client.call_action(
@@ -123,15 +100,11 @@ class OrganizationIntegrationTests(TestCase):
         )
         self.verify_containers(integration, response.result.integration)
 
-    def test_organization_enable_integration_default_scopes(self):
-        response = self.client.call_action(
-            'enable_integration',
-            integration={'integration_type': integration_pb2.GOOGLE_GROUPS},
-        )
-        self.assertEqual(len(response.result.integration.google_groups.scopes), 3)
-
     def test_organization_enable_integration_duplicates(self):
-        integration = integration_pb2.IntegrationV1(integration_type=integration_pb2.GOOGLE_GROUPS)
+        integration = integration_pb2.IntegrationV1(
+            integration_type=integration_pb2.SLACK_SLASH_COMMAND,
+            slack_slash_command={'token': fuzzy.text()},
+        )
         response = self.client.call_action('enable_integration', integration=integration)
         self.assertTrue(response.result.integration.id)
 
@@ -142,21 +115,22 @@ class OrganizationIntegrationTests(TestCase):
         with self.assertFieldError('integration_type', 'DOES_NOT_EXIST'):
             self.client.call_action(
                 'disable_integration',
-                integration_type=integration_pb2.GOOGLE_GROUPS,
+                integration_type=integration_pb2.SLACK_SLASH_COMMAND,
             )
 
     def test_organization_disable_integration(self):
         factories.IntegrationFactory.create_protobuf(
             organization=self.organization,
+            type=integration_pb2.SLACK_SLASH_COMMAND,
         )
         queryset = models.Integration.objects.filter(
             organization=self.organization,
-            type=integration_pb2.GOOGLE_GROUPS,
+            type=integration_pb2.SLACK_SLASH_COMMAND,
         )
         self.assertTrue(queryset.exists())
         self.client.call_action(
             'disable_integration',
-            integration_type=integration_pb2.GOOGLE_GROUPS,
+            integration_type=integration_pb2.SLACK_SLASH_COMMAND,
         )
         self.assertFalse(queryset.exists())
 
@@ -164,7 +138,7 @@ class OrganizationIntegrationTests(TestCase):
         expected = factories.IntegrationFactory.create_protobuf(organization=self.organization)
         response = self.client.call_action(
             'get_integration',
-            integration_type=integration_pb2.GOOGLE_GROUPS,
+            integration_type=integration_pb2.SLACK_SLASH_COMMAND,
         )
         self.verify_containers(expected, response.result.integration)
 
@@ -172,5 +146,5 @@ class OrganizationIntegrationTests(TestCase):
         with self.assertFieldError('integration_type', 'DOES_NOT_EXIST'):
             self.client.call_action(
                 'get_integration',
-                integration_type=integration_pb2.GOOGLE_GROUPS,
+                integration_type=integration_pb2.SLACK_SLASH_COMMAND,
             )

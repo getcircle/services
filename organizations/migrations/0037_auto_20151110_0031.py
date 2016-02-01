@@ -21,11 +21,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='integration',
             name='details',
-            field=common.db.models.fields.ProtobufField(null=True, protobuf_classes=[protobufs.services.organization.containers.integration_pb2.GoogleGroupDetailsV1, protobufs.services.organization.containers.integration_pb2.SlackSlashCommandDetailsV1, protobufs.services.organization.containers.integration_pb2.SlackWebApiDetailsV1]),
+            field=common.db.models.fields.ProtobufField(null=True, protobuf_classes=[protobufs.services.organization.containers.integration_pb2.SlackSlashCommandDetailsV1, protobufs.services.organization.containers.integration_pb2.SlackWebApiDetailsV1]),
         ),
         migrations.AlterField(
             model_name='integration',
             name='type',
-            field=models.SmallIntegerField(choices=[(0, b'GOOGLE_GROUPS'), (1, b'SLACK_SLASH_COMMAND'), (2, b'SLACK_WEB_API')]),
+            field=models.SmallIntegerField(choices=[(0, b'SLACK_SLASH_COMMAND'), (1, b'SLACK_WEB_API')]),
         ),
     ]

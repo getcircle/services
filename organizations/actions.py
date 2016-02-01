@@ -437,19 +437,8 @@ class EnableIntegration(PreRunParseTokenMixin, actions.Action):
         )
 
     def _get_details_object(self):
-        integration_type = self.request.integration.integration_type
-        if integration_type == integration_pb2.GOOGLE_GROUPS:
-            details = self.request.integration.google_groups
-            if not len(details.scopes):
-                if details.read_only:
-                    scopes = self._read_only_google_group_scopes()
-                else:
-                    scopes = self._default_google_group_scopes()
-
-                details.scopes.extend(scopes)
-        else:
-            details_path = self.request.integration.WhichOneof('details')
-            details = getattr(self.request.integration, details_path)
+        details_path = self.request.integration.WhichOneof('details')
+        details = getattr(self.request.integration, details_path)
         return details
 
     def run(self, *args, **kwargs):
