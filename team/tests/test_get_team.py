@@ -80,3 +80,68 @@ class Test(MockedTestCase):
         )
         self.verify_containers(expected, response.result.team)
         self.assertEqual(response.result.team.description.by_profile.ByteSize(), 0)
+
+    def test_get_team_permissions_member(self):
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+        )
+        response = self.client.call_action('get_team', team_id=str(team.id))
+        self.assertTrue(response.result.is_member)
+        permissions = response.result.team.permissions
+        self.assertFalse(permissions.can_edit)
+        self.assertFalse(permissions.can_delete)
+        self.assertTrue(permissions.can_add)
+
+    def test_get_team_permissions_coordinator(self):
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+            role=team_containers.TeamMemberV1.COORDINATOR,
+        )
+        response = self.client.call_action('get_team', team_id=str(team.id))
+        self.assertTrue(response.result.is_member)
+        permissions = response.result.team.permissions
+        self.assertTrue(permissions.can_edit)
+        self.assertTrue(permissions.can_delete)
+        self.assertTrue(permissions.can_add)
+
+    def test_get_team_permissions_not_member(self):
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+        )
+        response = self.client.call_action('get_team', team_id=str(team.id))
+        self.assertFalse(response.result.is_member)
+        permissions = response.result.team.permissions
+        self.assertFalse(permissions.can_edit)
+        self.assertFalse(permissions.can_delete)
+        self.assertFalse(permissions.can_add)
+
+    def test_get_team_permissions_admin(self):
+        self.profile.is_admin = True
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+            inflations={'disabled': True},
+            fields={'only': ['is_admin']},
+        )
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+        )
+        response = self.client.call_action('get_team', team_id=str(team.id))
+        self.assertFalse(response.result.is_member)
+        permissions = response.result.team.permissions
+        self.assertTrue(permissions.can_edit)
+        self.assertTrue(permissions.can_delete)
+        self.assertTrue(permissions.can_add)

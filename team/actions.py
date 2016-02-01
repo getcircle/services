@@ -1,8 +1,58 @@
+from protobufs.services.common import containers_pb2 as common_containers
+from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
 from services.history import action_container_for_create
 
 from . import models
+
+
+def get_permissions_for_team(team_id, profile_id, organization_id, token):
+    """Return permissions for the given user for the requested team.
+
+    Args:
+        team_id (uuid): team id
+        profile_id (uuid): profile id of the user we want to return permissions for
+        organization_id (uuid): organization id
+        token (services.token): token to forward along to service calls
+
+    Returns:
+        (bool, protobufs.services.common.containers.PermissionsV1) tuple with a
+        boolean for if the user is a member of the team and the permissions
+        object
+
+    """
+    try:
+        membership = models.TeamMember.objects.get(
+            team_id=team_id,
+            profile_id=profile_id,
+            organization_id=organization_id,
+        )
+    except models.TeamMember.DoesNotExist:
+        membership = None
+
+    permissions = common_containers.PermissionsV1()
+
+    profile = service.control.get_object(
+        service='profile',
+        action='get_profile',
+        client_kwargs={'token': token},
+        return_object='profile',
+        profile_id=profile_id,
+        inflations={'disabled': True},
+        fields={'only': ['is_admin']},
+    )
+
+    if (
+        membership and membership.role == team_containers.TeamMemberV1.COORDINATOR or
+        profile.is_admin
+    ):
+        permissions.can_edit = True
+        permissions.can_add = True
+        permissions.can_delete = True
+    elif membership:
+        permissions.can_add = True
+    return bool(membership), permissions
 
 
 def create_team(container, by_profile_id, token, **overrides):

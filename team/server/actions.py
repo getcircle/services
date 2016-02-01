@@ -8,6 +8,7 @@ from services.mixins import PreRunParseTokenMixin
 from ..actions import (
     add_members,
     create_team,
+    get_permissions_for_team,
     get_team,
 )
 from .. import models
@@ -70,3 +71,11 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
         except models.Team.DoesNotExist:
             raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
         team.to_protobuf(self.response.team, inflations=self.request.inflations, token=self.token)
+        is_member, permissions = get_permissions_for_team(
+            team_id=team.id,
+            profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
+            token=self.token,
+        )
+        self.response.is_member = is_member
+        self.response.team.permissions.CopyFrom(permissions)
