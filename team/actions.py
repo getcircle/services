@@ -159,3 +159,21 @@ def update_members(team_id, organization_id, members, token):
             )
             member.role = new_member.role
             member.save()
+
+
+def remove_members(team_id, organization_id, profile_ids):
+    """Remove the given profile_ids from the team.
+
+    Args:
+        team_id (uuid): id for the team
+        organization_id (uuid): id for the organization
+        profile_ids (repeated uuid): profile ids to remove from the team
+
+    """
+    members = models.TeamMember.objects.filter(
+        team_id=team_id,
+        organization_id=organization_id,
+        profile_id__in=profile_ids,
+    )
+    if members:
+        members.delete()

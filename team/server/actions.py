@@ -12,9 +12,21 @@ from ..actions import (
     create_team,
     get_permissions_for_team,
     get_team,
+    remove_members,
     update_members,
 )
 from .. import models
+
+
+class TeamExistsAction(PreRunParseTokenMixin, actions.Action):
+
+    def run(self, *args, **kwargs):
+        exists = models.Team.objects.filter(
+            pk=self.request.team_id,
+            organization_id=self.parsed_token.organization_id,
+        ).exists()
+        if not exists:
+            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
 
 
 class CreateTeam(PreRunParseTokenMixin, actions.Action):
@@ -36,7 +48,7 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
         add_members([coordinator], team.id, organization_id=self.parsed_token.organization_id)
 
 
-class AddMembers(PreRunParseTokenMixin, actions.Action):
+class AddMembers(TeamExistsAction):
 
     required_fields = ('team_id', 'members',)
     type_validators = {
@@ -44,13 +56,7 @@ class AddMembers(PreRunParseTokenMixin, actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        exists = models.Team.objects.filter(
-            organization_id=self.parsed_token.organization_id,
-            pk=self.request.team_id,
-        )
-        if not exists:
-            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
-
+        super(AddMembers, self).run(*args, **kwargs)
         add_members(
             self.request.members,
             self.request.team_id,
@@ -84,7 +90,7 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
         self.response.team.permissions.CopyFrom(permissions)
 
 
-class GetMembers(PreRunParseTokenMixin, actions.Action):
+class GetMembers(TeamExistsAction):
 
     required_fields = ('team_id',)
     type_validators = {
@@ -92,13 +98,7 @@ class GetMembers(PreRunParseTokenMixin, actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        exists = models.Team.objects.filter(
-            pk=self.request.team_id,
-            organization_id=self.parsed_token.organization_id,
-        ).exists()
-        if not exists:
-            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
-
+        super(GetMembers, self).run(*args, **kwargs)
         members = models.TeamMember.objects.filter(
             organization_id=self.parsed_token.organization_id,
             team_id=self.request.team_id,
@@ -124,7 +124,7 @@ class GetMembers(PreRunParseTokenMixin, actions.Action):
             )
 
 
-class UpdateMembers(PreRunParseTokenMixin, actions.Action):
+class UpdateMembers(TeamExistsAction):
 
     required_fields = ('team_id', 'members')
     type_validators = {
@@ -132,13 +132,7 @@ class UpdateMembers(PreRunParseTokenMixin, actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        exists = models.Team.objects.filter(
-            organization_id=self.parsed_token.organization_id,
-            pk=self.request.team_id,
-        )
-        if not exists:
-            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
-
+        super(UpdateMembers, self).run(*args, **kwargs)
         _, permissions = get_permissions_for_team(
             team_id=self.request.team_id,
             profile_id=self.parsed_token.profile_id,
@@ -153,4 +147,30 @@ class UpdateMembers(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             members=self.request.members,
             token=self.token,
+        )
+
+
+class RemoveMembers(TeamExistsAction):
+
+    required_fields = ('team_id', 'profile_ids')
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+        'profile_ids': [validators.is_uuid4_list],
+    }
+
+    def run(self, *args, **kwargs):
+        super(RemoveMembers, self).run(*args, **kwargs)
+        _, permissions = get_permissions_for_team(
+            team_id=self.request.team_id,
+            profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
+            token=self.token,
+        )
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
+
+        remove_members(
+            team_id=self.request.team_id,
+            organization_id=self.parsed_token.organization_id,
+            profile_ids=self.request.profile_ids,
         )
