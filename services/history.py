@@ -78,5 +78,6 @@ def action_container_for_create(instance):
     return action_container(
         instance=instance,
         method_type=history_containers.CREATE,
+        action_type=history_containers.CREATE_INSTANCE,
         new_value=None,
     )
