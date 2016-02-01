@@ -191,3 +191,35 @@ class JoinTeam(TeamExistsAction):
             self.request.team_id,
             organization_id=self.parsed_token.organization_id,
         )
+
+
+class LeaveTeam(TeamExistsAction):
+
+    required_fields = ('team_id',)
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        super(LeaveTeam, self).run(*args, **kwargs)
+        try:
+            membership = models.TeamMember.objects.get(
+                profile_id=self.parsed_token.profile_id,
+                organization_id=self.parsed_token.organization_id,
+                team_id=self.request.team_id,
+            )
+        except models.TeamMember.DoesNotExist:
+            return
+
+        if membership.role == team_containers.TeamMemberV1.COORDINATOR:
+            if not models.TeamMember.objects.filter(
+                organization_id=self.parsed_token.organization_id,
+                team_id=self.request.team_id,
+                role=team_containers.TeamMemberV1.COORDINATOR,
+            ).count() > 1:
+                raise self.ActionError(
+                    'ONE_COORDINATOR_REQUIRED',
+                    ('ONE_COORDINATOR_REQUIRED', 'at least one coordinator is required in a team'),
+                )
+
+        membership.delete()
