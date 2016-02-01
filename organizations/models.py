@@ -287,9 +287,7 @@ class Integration(models.UUIDModel, models.Model):
     provider_uid = models.CharField(max_length=255, unique=True, null=True)
 
     def to_protobuf(self, *args, **kwargs):
-        if self.details and self.type == integration_pb2.GOOGLE_GROUPS:
-            kwargs.update({'google_groups': protobuf_to_dict(self.details)})
-        elif self.details and self.type == integration_pb2.SLACK_SLASH_COMMAND:
+        if self.details and self.type == integration_pb2.SLACK_SLASH_COMMAND:
             kwargs.update({'slack_slash_command': protobuf_to_dict(self.details)})
         elif self.details and self.type == integration_pb2.SLACK_WEB_API:
             kwargs.update({'slack_web_api': protobuf_to_dict(self.details)})
