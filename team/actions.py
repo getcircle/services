@@ -59,7 +59,7 @@ def get_permissions_for_team(team_id, profile_id, organization_id, token):
     return bool(membership), permissions
 
 
-def create_team(container, by_profile_id, token, **overrides):
+def create_team(container, by_profile_id, token, organization_id, **overrides):
     """Create a team.
 
     Create a team and record who created the team within the history service.
@@ -76,7 +76,11 @@ def create_team(container, by_profile_id, token, **overrides):
     if container.description.value:
         container.description.by_profile_id = by_profile_id
 
-    team = models.Team.objects.from_protobuf(container, **overrides)
+    team = models.Team.objects.from_protobuf(
+        container,
+        organization_id=organization_id,
+        **overrides
+    )
     service.control.call(
         service='history',
         action='record_action',
@@ -86,7 +90,7 @@ def create_team(container, by_profile_id, token, **overrides):
     return team
 
 
-def add_members(containers, team_id, **overrides):
+def add_members(containers, team_id, organization_id, **overrides):
     """Add members to a team.
 
     Args:
@@ -99,6 +103,7 @@ def add_members(containers, team_id, **overrides):
         container,
         commit=False,
         team_id=team_id,
+        organization_id=organization_id,
         **overrides
     ) for container in containers]
     models.TeamMember.objects.bulk_create(objects)

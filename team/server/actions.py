@@ -174,3 +174,20 @@ class RemoveMembers(TeamExistsAction):
             organization_id=self.parsed_token.organization_id,
             profile_ids=self.request.profile_ids,
         )
+
+
+class JoinTeam(TeamExistsAction):
+
+    required_fields = ('team_id',)
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        super(JoinTeam, self).run(*args, **kwargs)
+        member = team_containers.TeamMemberV1(profile_id=self.parsed_token.profile_id)
+        add_members(
+            [member],
+            self.request.team_id,
+            organization_id=self.parsed_token.organization_id,
+        )

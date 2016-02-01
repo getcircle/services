@@ -13,4 +13,5 @@ class Server(service.control.Server):
         'get_members': actions.GetMembers,
         'update_members': actions.UpdateMembers,
         'remove_members': actions.RemoveMembers,
+        'join_team': actions.JoinTeam,
     }
