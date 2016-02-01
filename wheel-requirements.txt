@@ -102,4 +102,4 @@ django-common==1.0.4
 protobuf-soa==0.5.5
 protobuf-to-dict==1.1.0
 python-soa==1.0.2
-protobufs==3.2.0
+protobufs==4.0.0
