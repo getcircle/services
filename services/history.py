@@ -38,6 +38,8 @@ def action_container(instance, method_type, field_name=None, new_value=None, act
     if old_value is not None:
         if isinstance(old_value, dict):
             old_value = json.dumps(old_value)
+        else:
+            old_value = str(old_value)
         kwargs['old_value'] = old_value
 
     if data_type is not None:
@@ -49,6 +51,8 @@ def action_container(instance, method_type, field_name=None, new_value=None, act
     if new_value is not None:
         if isinstance(new_value, dict):
             new_value = json.dumps(new_value)
+        else:
+            new_value = str(new_value)
         kwargs['new_value'] = new_value
 
     return history_containers.ActionV1(**kwargs)

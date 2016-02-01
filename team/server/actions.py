@@ -12,6 +12,7 @@ from ..actions import (
     create_team,
     get_permissions_for_team,
     get_team,
+    update_members,
 )
 from .. import models
 
@@ -121,3 +122,35 @@ class GetMembers(PreRunParseTokenMixin, actions.Action):
                 container,
                 profile=protobuf_to_dict(profile),
             )
+
+
+class UpdateMembers(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('team_id', 'members')
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        exists = models.Team.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            pk=self.request.team_id,
+        )
+        if not exists:
+            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
+
+        _, permissions = get_permissions_for_team(
+            team_id=self.request.team_id,
+            profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
+            token=self.token,
+        )
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
+
+        update_members(
+            team_id=self.request.team_id,
+            organization_id=self.parsed_token.organization_id,
+            members=self.request.members,
+            token=self.token,
+        )

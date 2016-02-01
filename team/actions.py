@@ -1,8 +1,12 @@
 from protobufs.services.common import containers_pb2 as common_containers
+from protobufs.services.history import containers_pb2 as history_containers
 from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
-from services.history import action_container_for_create
+from services.history import (
+    action_container_for_create,
+    action_container_for_update,
+)
 
 from . import models
 
@@ -115,3 +119,43 @@ def get_team(team_id, organization_id):
 
     """
     return models.Team.objects.get(pk=team_id, organization_id=organization_id)
+
+
+def update_members(team_id, organization_id, members, token):
+    """Update members to their new roles.
+
+    This method updates members to the role provided, tracking who made the
+    change as well. If the member role did not change or the member does not
+    exist, we do nothing.
+
+    Args:
+        team_id (uuid4): team id
+        organization_id (uuid4): organization id
+        members (repeated protobufs.services.team.containers.TeamMemberV1):
+            members with new roles
+        token (services.token): token
+
+    """
+    profile_id_to_new_member = dict((m.profile_id, m) for m in members)
+    existing_members = models.TeamMember.objects.filter(
+        team_id=team_id,
+        organization_id=organization_id,
+        profile_id__in=profile_id_to_new_member.keys(),
+    )
+    for member in existing_members:
+        new_member = profile_id_to_new_member[str(member.profile_id)]
+        if new_member.role != member.role:
+            action = action_container_for_update(
+                instance=member,
+                field_name='role',
+                new_value=new_member.role,
+                action_type=history_containers.UPDATE_TEAM_MEMBER_ROLE,
+            )
+            service.control.call(
+                service='history',
+                action='record_action',
+                client_kwargs={'token': token},
+                action_kwargs={'action': action},
+            )
+            member.role = new_member.role
+            member.save()
