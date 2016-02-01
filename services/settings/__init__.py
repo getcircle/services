@@ -59,6 +59,7 @@ INSTALLED_APPS = (
     'post',
     'profiles',
     'search',
+    'team',
     'users',
 )
 
@@ -111,6 +112,7 @@ LOCALIZED_SERVICES = [
     'post.server.Server',
     'profiles.server.Server',
     'search.server.Server',
+    'team.server.Server',
     'users.server.Server',
 ]
 
