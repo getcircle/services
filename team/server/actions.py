@@ -1,8 +1,10 @@
+from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.team import containers_pb2 as team_containers
 from service import (
     actions,
     validators,
 )
+import service.control
 from services.mixins import PreRunParseTokenMixin
 
 from ..actions import (
@@ -79,3 +81,43 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
         )
         self.response.is_member = is_member
         self.response.team.permissions.CopyFrom(permissions)
+
+
+class GetMembers(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('team_id',)
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        exists = models.Team.objects.filter(
+            pk=self.request.team_id,
+            organization_id=self.parsed_token.organization_id,
+        ).exists()
+        if not exists:
+            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
+
+        members = models.TeamMember.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            team_id=self.request.team_id,
+            role=self.request.role,
+        )
+        profile_ids = [str(member.profile_id) for member in self.get_paginated_objects(members)]
+        profiles = service.control.get_object(
+            service='profile',
+            action='get_profiles',
+            client_kwargs={'token': self.token},
+            control={'paginator': {'page_size': len(profile_ids)}},
+            return_object='profiles',
+            ids=profile_ids,
+            inflations={'disabled': True},
+        )
+        profile_id_to_profile = dict((p.id, p) for p in profiles)
+        for member in members:
+            container = self.response.members.add()
+            profile = profile_id_to_profile[str(member.profile_id)]
+            member.to_protobuf(
+                container,
+                profile=protobuf_to_dict(profile),
+            )

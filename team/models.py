@@ -36,6 +36,10 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
 class TeamMember(models.UUIDModel, models.TimestampableModel):
 
+    as_dict_value_transforms = {
+        'role': int,
+    }
+
     team = models.ForeignKey(Team, related_name='members')
     profile_id = models.UUIDField()
     organization_id = models.UUIDField()
