@@ -45,6 +45,12 @@ class Test(MockedTestCase):
         with self.assertFieldError('team_id', 'DOES_NOT_EXIST'):
             self.client.call_action('get_members', team_id=str(team.id))
 
+    def test_get_members_no_members_no_get_profiles_call(self):
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        response = self.client.call_action('get_members', team_id=str(team.id))
+        self.assertFalse(response.result.members)
+        self.assertFalse(self.mock.instance.mocked_calls)
+
     def test_get_members(self):
         team = factories.TeamFactory.create(organization_id=self.organization.id)
         members = factories.TeamMemberFactory.create_batch(

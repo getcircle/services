@@ -104,6 +104,9 @@ class GetMembers(TeamExistsAction):
             team_id=self.request.team_id,
             role=self.request.role,
         )
+        if not members:
+            return
+
         profile_ids = [str(member.profile_id) for member in self.get_paginated_objects(members)]
         profiles = service.control.get_object(
             service='profile',
