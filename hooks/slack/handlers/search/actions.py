@@ -29,7 +29,7 @@ def post_to_slack_attachment(domain, post, highlight):
     )
     text = '%s%s' % (
         highlight_using_slack_formatting(highlight['content']) if highlight['content'] else post.snippet,
-        '...' if len(post.snippet) == 80 else '',
+        '...' if len(post.snippet) >= 80 else '',
     )
     return {
         'fallback': header,
