@@ -98,3 +98,25 @@ class Test(MockedTestCase):
             actions.profile_to_slack_attachment(self.organization.domain, profile),
             attachment,
         )
+
+    @patch('hooks.slack.handlers.search.requests')
+    @patch('hooks.slack.actions.Slacker')
+    def test_handle_search_posts(self, patched, patched_requests):
+        setup_mock_slack_test(self.mock, patched, self.organization)
+        post = mocks.mock_post()
+        self.mock.instance.register_mock_object(
+            service='search',
+            action='search_v2',
+            return_object_path='results',
+            return_object=[mocks.mock_search_result(post=post)],
+            query='onboarding',
+            mock_regex_lookup='search:search_v2.*',
+        )
+        response = self.api.post('/hooks/slack/', self._request_payload(text='search onboarding'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        payload = json.loads(patched_requests.post.call_args[1]['data'])
+        attachment = payload['attachments'][0]
+        self.assertEqual(
+            actions.post_to_slack_attachment(self.organization.domain, post, dict()),
+            attachment,
+        )
