@@ -22,13 +22,13 @@ def profile_to_slack_attachment(domain, profile):
 def post_to_slack_attachment(domain, post, highlight):
     header = '<%s|%s> by <%s|%s>  |  %s' % (
         get_post_resource_url(domain, post),
-        highlight_using_slack_formatting(highlight['title']) if highlight['title'] else post.title,
+        highlight_using_slack_formatting(highlight['title']) if 'title' in highlight else post.title,
         get_profile_resource_url(domain, post.by_profile),
         post.by_profile.full_name,
         arrow.get(post.created).format('MMMM D, YYYY')
     )
     text = '%s%s' % (
-        highlight_using_slack_formatting(highlight['content']) if highlight['content'] else post.snippet,
+        highlight_using_slack_formatting(highlight['content']) if 'content' in highlight else post.snippet,
         '...' if len(post.snippet) >= 80 else '',
     )
     return {
