@@ -8,11 +8,11 @@ from hooks.helpers import (
 
 
 def profile_to_slack_attachment(domain, profile):
-    header = '%s (%s): %s' % (
-        profile.full_name,
-        profile.display_title,
-        get_profile_resource_url(domain, profile),
-    )
+    header = '<%(link)s|%(full_name)s (%(title)s)>' % {
+        'link': get_profile_resource_url(domain, profile),
+        'full_name': profile.full_name,
+        'title': profile.display_title,
+    }
     return {
         'fallback': header,
         'pretext': header,

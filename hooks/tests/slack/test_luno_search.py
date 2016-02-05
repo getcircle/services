@@ -62,11 +62,11 @@ class Test(MockedTestCase):
         profile = mocks.mock_profile(display_title=fuzzy.FuzzyText().fuzz())
         result = mocks.mock_search_result(profile=profile)
         attachment = actions.result_to_slack_attachment(self.organization.domain, result)
-        pretext = '%s (%s): %s' % (
-            profile.full_name,
-            profile.display_title,
-            actions.get_profile_resource_url(self.organization.domain, profile),
-        )
+        pretext = '<%(link)s|%(full_name)s (%(title)s)>' % {
+            'link': actions.get_profile_resource_url(self.organization.domain, profile),
+            'full_name': profile.full_name,
+            'title': profile.display_title,
+        }
         self.assertEqual(attachment['fallback'], pretext)
         self.assertEqual(attachment['pretext'], pretext)
 
