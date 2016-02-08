@@ -110,6 +110,7 @@ def update_team(container, model, by_profile_id, token, organization_id):
         container.description.by_profile_id = by_profile_id
 
     model.update_from_protobuf(container)
+    model.save()
     return model
 
 
