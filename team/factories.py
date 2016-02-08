@@ -13,6 +13,19 @@ class TeamFactory(factory.Factory):
     organization_id = factory.FuzzyUUID()
     name = factory.FuzzyText()
 
+    @factory.post_generation
+    def contact_methods(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            for method in extracted:
+                models.ContactMethod.objects.from_protobuf(
+                    method,
+                    organization_id=self.organization_id,
+                    team_id=self.id,
+                )
+
 
 class TeamMemberFactory(factory.Factory):
     class Meta:
@@ -22,3 +35,14 @@ class TeamMemberFactory(factory.Factory):
     organization_id = factory.FuzzyUUID()
     profile_id = factory.FuzzyUUID()
     team = factory.SubFactory(TeamFactory)
+
+
+class ContactMethodFactory(factory.Factory):
+    class Meta:
+        model = models.ContactMethod
+        protobuf = team_containers.ContactMethodV1
+
+    organization_id = factory.FuzzyUUID()
+    team = factory.SubFactory(TeamFactory)
+    label = factory.FuzzyText()
+    value = factory.FuzzyText()

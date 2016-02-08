@@ -12,6 +12,7 @@ class Server(service.control.Server):
         'get_team': actions.GetTeam,
         'get_members': actions.GetMembers,
         'update_members': actions.UpdateMembers,
+        'update_team': actions.UpdateTeam,
         'remove_members': actions.RemoveMembers,
         'join_team': actions.JoinTeam,
         'leave_team': actions.LeaveTeam,

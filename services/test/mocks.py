@@ -14,6 +14,7 @@ from protobufs.services.organization.actions import get_teams_for_profile_ids_pb
 from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search import containers_pb2 as search_containers
+from protobufs.services.team import containers_pb2 as team_containers
 from protobufs.services.user import containers_pb2 as user_containers
 from protobufs.services.user.containers import token_pb2
 
@@ -175,6 +176,18 @@ def mock_contact_method(container=None, **overrides):
         fuzzy.FuzzyChoice(profile_containers.ContactMethodV1.ContactMethodTypeV1.values()): [
             'contact_method_type'
         ],
+        fuzzy.FuzzyText: ['label', 'value'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_team_contact_method(container=None, **overrides):
+    if container is None:
+        container = team_containers.ContactMethodV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id'],
+        fuzzy.FuzzyChoice(team_containers.ContactMethodV1.TypeV1.values()): ['type'],
         fuzzy.FuzzyText: ['label', 'value'],
     }
     return _mock_container(container, mock_dict, **overrides)

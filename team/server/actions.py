@@ -14,6 +14,7 @@ from ..actions import (
     get_team,
     remove_members,
     update_members,
+    update_team,
 )
 from .. import models
 
@@ -227,3 +228,35 @@ class LeaveTeam(TeamExistsAction):
                 )
 
         membership.delete()
+
+
+class UpdateTeam(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('team',)
+
+    def run(self, *args, **kwargs):
+        try:
+            team = models.Team.objects.get(
+                id=self.request.team.id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except models.Team.DoesNotExist:
+            raise self.ActionFieldError('team.id', 'DOES_NOT_EXIST')
+
+        _, permissions = get_permissions_for_team(
+            team_id=self.request.team.id,
+            profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
+            token=self.token,
+        )
+        if not permissions.can_edit:
+            raise self.PermissionDenied()
+
+        team = update_team(
+            container=self.request.team,
+            model=team,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
+            organization_id=self.parsed_token.organization_id,
+        )
+        team.to_protobuf(self.response.team)

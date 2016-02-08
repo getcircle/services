@@ -67,7 +67,9 @@ def create_team(container, by_profile_id, token, organization_id, **overrides):
     Args:
         container (protobufs.services.team.containers.TeamV1): protobuf container to
             convert into a model
+        by_profile_id (uuid): profile id of user creating the team
         token (str): service token
+        organization_id (uuid): organization id
 
     Returns:
         team.models.Team model
@@ -88,6 +90,27 @@ def create_team(container, by_profile_id, token, organization_id, **overrides):
         action_kwargs={'action': action_container_for_create(team)},
     )
     return team
+
+
+def update_team(container, model, by_profile_id, token, organization_id):
+    """Update a team.
+
+    Args:
+        container (protobufs.services.team.containers.TeamV1): protobuf container
+        model (team.models.Team): the team model we're updating
+        by_profile_id (uuid): profile id of the user updating the team
+        token: (str): service token
+        organization_id (uuid): organization id
+
+    Returns:
+        team.models.Team model updated from the protobuf
+
+    """
+    if container.description.value != (model.description and model.description.value or ''):
+        container.description.by_profile_id = by_profile_id
+
+    model.update_from_protobuf(container)
+    return model
 
 
 def add_members(containers, team_id, organization_id, **overrides):
