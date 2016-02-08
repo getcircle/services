@@ -273,6 +273,7 @@ def mock_post(container=None, **overrides):
     mock_dict = {
         fuzzy.FuzzyText: ['title', 'content'],
         fuzzy.FuzzyUUID: ['organization_id', 'by_profile_id'],
+        fuzzy.FuzzyDate(arrow.Arrow(1980, 1, 1)): ['created', 'changed'],
     }
     return _mock_container(container, mock_dict, **overrides)
 

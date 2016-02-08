@@ -180,7 +180,7 @@ class TestUpdateEntities(MockedTestCase):
 
     @patch('search.tasks.bulk')
     def test_tasks_update_posts(self, patched_bulk):
-        post = mocks.mock_post()
+        post = mocks.mock_post(created=None, changed=None)
         self.mock.instance.register_mock_object(
             service='post',
             action='get_posts',
