@@ -92,7 +92,7 @@ class TestUpdateEntities(MockedTestCase):
 
     @patch('search.actions.update_entities.tasks.update_teams')
     def test_update_entities_teams(self, patched):
-        teams = [mocks.mock_team(organization_id=self.organization.id) for _ in range(2)]
+        teams = [mocks.mock_team_deprecated(organization_id=self.organization.id) for _ in range(2)]
         self.client.call_action(
             'update_entities',
             type=entity_pb2.TEAM,
@@ -107,7 +107,7 @@ class TestUpdateEntities(MockedTestCase):
 
     @patch('search.tasks.bulk')
     def test_tasks_update_teams(self, patched_bulk):
-        team = mocks.mock_team()
+        team = mocks.mock_team_deprecated()
         self.mock.instance.register_mock_object(
             service='organization',
             action='get_teams',

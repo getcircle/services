@@ -86,7 +86,7 @@ def mock_token(**values):
     return token.make_token(**token_data)
 
 
-def mock_team(container=None, **overrides):
+def mock_team_deprecated(container=None, **overrides):
     if container is None:
         container = organization_containers.TeamV1()
 
@@ -177,6 +177,17 @@ def mock_contact_method(container=None, **overrides):
             'contact_method_type'
         ],
         fuzzy.FuzzyText: ['label', 'value'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_team(container=None, **overrides):
+    if container is None:
+        container = team_containers.TeamV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'organization_id'],
+        fuzzy.FuzzyText: ['name'],
     }
     return _mock_container(container, mock_dict, **overrides)
 
@@ -273,7 +284,7 @@ def mock_profile_team(container=None, team_kwargs=None, **overrides):
         fuzzy.FuzzyUUID: ['profile_id'],
     }
     defaults = {
-        'team': mock_team(**team_kwargs),
+        'team': mock_team_deprecated(**team_kwargs),
     }
     defaults.update(overrides)
     return _mock_container(container, mock_dict, **defaults)

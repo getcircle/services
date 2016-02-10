@@ -108,11 +108,11 @@ class TestGetExtendedProfile(MockedTestCase):
             mocks.mock_location(organization_id=self.organization.id),
             mocks.mock_location(organization_id=self.organization.id),
         ]
-        team = mocks.mock_team(
+        team = mocks.mock_team_deprecated(
             organization_id=self.organization.id,
             manager_profile_id=manager.id,
         )
-        manages_team = mocks.mock_team(
+        manages_team = mocks.mock_team_deprecated(
             organization_id=self.organization.id,
             manager_profile_id=profile.id,
         )
