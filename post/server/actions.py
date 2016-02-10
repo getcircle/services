@@ -240,6 +240,7 @@ class CreateCollection(PreRunParseTokenMixin, actions.Action):
             container=self.request.collection,
             organization_id=self.parsed_token.organization_id,
             by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
         )
         collection.to_protobuf(self.response.collection)
 

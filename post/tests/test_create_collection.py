@@ -1,3 +1,4 @@
+from protobufs.services.team import containers_pb2 as team_containers
 from protobufs.services.post import containers_pb2 as post_containers
 import service.control
 
@@ -6,6 +7,8 @@ from services.test import (
     mocks,
     MockedTestCase,
 )
+
+from .helpers import mock_get_team
 
 
 class Test(MockedTestCase):
@@ -38,11 +41,13 @@ class Test(MockedTestCase):
         self.assertNotEqual(collection.changed, new_collection.changed)
         self.assertNotEqual(collection.created, new_collection.created)
 
-    def test_create_collection_for_team(self):
+    def test_create_collection_for_team_coordinator(self):
+        team = mocks.mock_team(organization_id=self.organization.id)
+        mock_get_team(self.mock.instance, team, role=team_containers.TeamMemberV1.COORDINATOR)
         collection = mocks.mock_collection(
             id=None,
             owner_type=post_containers.CollectionV1.TEAM,
-            owner_id=fuzzy.uuid(),
+            owner_id=team.id,
         )
         response = self.client.call_action('create_collection', collection=collection)
         new_collection = response.result.collection
@@ -76,3 +81,29 @@ class Test(MockedTestCase):
         response = self.client.call_action('create_collection', collection=collection)
         new_collection = response.result.collection
         self.assertFalse(new_collection.is_default)
+
+    def test_create_collection_for_team_not_member(self):
+        team = mocks.mock_team(organization_id=self.organization.id)
+        mock_get_team(self.mock.instance, team)
+        collection = mocks.mock_collection(
+            id=None,
+            owner_type=post_containers.CollectionV1.TEAM,
+            owner_id=team.id,
+        )
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action('create_collection', collection=collection)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
+    def test_create_collection_for_team_member(self):
+        team = mocks.mock_team(organization_id=self.organization.id)
+        mock_get_team(self.mock.instance, team, role=team_containers.TeamMemberV1.MEMBER)
+        collection = mocks.mock_collection(
+            id=None,
+            owner_type=post_containers.CollectionV1.TEAM,
+            owner_id=team.id,
+        )
+        with self.assertRaisesCallActionError() as expected:
+            self.client.call_action('create_collection', collection=collection)
+
+        self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
