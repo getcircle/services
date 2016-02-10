@@ -323,3 +323,14 @@ def mock_search_result(container=None, **overrides):
     if container is None:
         container = search_containers.SearchResultV1()
     return _mock_container(container, {}, **overrides)
+
+
+def mock_collection(container=None, **overrides):
+    if container is None:
+        container = post_containers.CollectionV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'organization_id', 'by_profile_id', 'owner_id'],
+        fuzzy.FuzzyText: ['name'],
+    }
+    return _mock_container(container, mock_dict, **overrides)

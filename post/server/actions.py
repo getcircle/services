@@ -11,6 +11,9 @@ from services.mixins import PreRunParseTokenMixin
 from services import utils
 
 from .. import models
+from ..actions import (
+    create_collection,
+)
 from ..mixins import PostPermissionsMixin
 from ..editors import trix
 
@@ -225,3 +228,16 @@ class DeletePost(PostPermissionsMixin, actions.Action):
 
         trix.delete_post(post.content, self.token)
         post.delete()
+
+
+class CreateCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection', 'collection.name')
+
+    def run(self, *args, **kwargs):
+        collection = create_collection(
+            container=self.request.collection,
+            organization_id=self.parsed_token.organization_id,
+            by_profile_id=self.parsed_token.profile_id,
+        )
+        collection.to_protobuf(self.response.collection)

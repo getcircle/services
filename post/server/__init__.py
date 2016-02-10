@@ -12,4 +12,5 @@ class Server(service.control.Server):
         'get_post': actions.GetPost,
         'get_posts': actions.GetPosts,
         'delete_post': actions.DeletePost,
+        'create_collection': actions.CreateCollection,
     }
