@@ -13,6 +13,7 @@ from services import utils
 from .. import models
 from ..actions import (
     create_collection,
+    delete_collection,
 )
 from ..mixins import PostPermissionsMixin
 from ..editors import trix
@@ -241,3 +242,19 @@ class CreateCollection(PreRunParseTokenMixin, actions.Action):
             by_profile_id=self.parsed_token.profile_id,
         )
         collection.to_protobuf(self.response.collection)
+
+
+class DeleteCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection_id',)
+
+    def run(self, *args, **kwargs):
+        try:
+            delete_collection(
+                collection_id=self.request.collection_id,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+                token=self.token,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
