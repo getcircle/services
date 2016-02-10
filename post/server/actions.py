@@ -10,9 +10,9 @@ import service.control
 from services.mixins import PreRunParseTokenMixin
 from services import utils
 
-from . import models
-from .mixins import PostPermissionsMixin
-from .editors import trix
+from .. import models
+from ..mixins import PostPermissionsMixin
+from ..editors import trix
 
 
 class CreatePost(PreRunParseTokenMixin, actions.Action):
