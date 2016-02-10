@@ -140,3 +140,43 @@ class Attachment(models.UUIDModel, models.TimestampableModel):
     post = models.ForeignKey(Post, related_name='attachments')
     organization_id = models.UUIDField()
     file_id = models.UUIDField()
+
+
+class Collection(models.UUIDModel, models.TimestampableModel):
+
+    as_dict_value_transforms = {
+        'owner_type': int,
+    }
+
+    organization_id = models.UUIDField(editable=False)
+    owner_id = models.UUIDField()
+    owner_type = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(post_containers.CollectionV1.OwnerTypeV1),
+        default=post_containers.CollectionV1.PROFILE,
+    )
+    name = models.CharField(max_length=64)
+    is_default = models.BooleanField(default=False, editable=False)
+    by_profile_id = models.UUIDField(null=True, editable=False)
+
+    class Meta:
+        # XXX ensure this index is correct
+        index_together = ('organization_id', 'owner_id', 'owner_type', 'is_default')
+        protobuf = post_containers.CollectionV1
+
+
+class CollectionItem(models.UUIDModel, models.TimestampableModel):
+
+    collection = models.ForeignKey(Collection)
+    position = models.PositiveSmallIntegerField()
+    by_profile_id = models.UUIDField(null=True)
+    organization_id = models.UUIDField()
+    source = models.SmallIntegerField(
+        choices=utils.model_choices_from_protobuf_enum(post_containers.CollectionItemV1.SourceV1),
+        default=post_containers.CollectionItemV1.LUNO,
+    )
+    source_id = models.CharField(max_length=128)
+
+    class Meta:
+        # XXX ensure indexes are correct
+        unique_together = ('collection', 'position')
+        protobuf = post_containers.CollectionItemV1
