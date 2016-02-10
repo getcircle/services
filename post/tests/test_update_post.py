@@ -157,7 +157,7 @@ class TestPosts(MockedTestCase):
         attachments = models.Attachment.objects.filter(post_id=post.id)
         self.assertEqual(len(attachments), 2)
 
-    @patch('post.actions.service.control.call_action')
+    @patch('post.server.actions.service.control.call_action')
     def test_update_post_remove_file_ids(self, patched):
         post = factories.PostFactory.create(profile=self.profile)
         factories.AttachmentFactory.create_batch(size=2, post=post)
