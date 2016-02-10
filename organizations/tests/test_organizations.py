@@ -16,7 +16,7 @@ class OrganizationTests(MockedTestCase):
     def test_create_organization(self):
         organization = factories.OrganizationFactory.build_protobuf()
         response = self.client.call_action('create_organization', organization=organization)
-        self.verify_containers(organization, response.result.organization)
+        self.verify_containers(organization, response.result.organization, ignore_fields=['id'])
 
     def test_create_organization_duplicate_domain(self):
         organization = factories.OrganizationFactory.create_protobuf()

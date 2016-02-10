@@ -45,7 +45,7 @@ class OrganizationLocationTests(MockedTestCase):
         location = self._build_location_protobuf(established_date=arrow.utcnow().date())
         response = self.client.call_action('create_location', location=location)
         self.assertEqual(response.result.location.organization_id, str(self.organization.id))
-        self.verify_containers(location, response.result.location)
+        self.verify_containers(location, response.result.location, ignore_fields=('id',))
 
     def test_create_location_duplicate(self):
         location = factories.LocationFactory.create_protobuf(organization=self.organization)
