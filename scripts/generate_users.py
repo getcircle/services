@@ -24,7 +24,7 @@ def generate_fake_user(organization_id, fake_data):
         primary_email=fake_data['email'],
         organization_id=organization_id,
     )
-    Profile.objects.create(
+    profile = Profile.objects.create(
         user_id=user.id,
         organization_id=organization_id,
         email=fake_data['email'],
@@ -33,6 +33,22 @@ def generate_fake_user(organization_id, fake_data):
         image_url=fake_data['picture']['medium'],
         authentication_identifier=fake_data['email'],
     )
+    return (user, profile)
+
+
+def generate_fake_users(domain, number_of_users):
+    endpoint = 'https://randomuser.me/api/?results=%s&nat=us' % (number_of_users,)
+    response = requests.get(endpoint)
+    if not response.ok:
+        logger.error('invalid response: %s - %s', response.status_code, response.reason)
+        return
+
+    users = []
+    organization = Organization.objects.get(domain=domain)
+    for fake_data in response.json()['results']:
+        user = generate_fake_user(organization.id, fake_data['user'])
+        users.append(user)
+    return users
 
 
 def run(domain, number_of_users):
@@ -41,14 +57,6 @@ def run(domain, number_of_users):
         return
 
     Bootstrap.bootstrap()
-    endpoint = 'https://randomuser.me/api/?results=%s&nat=us' % (number_of_users,)
-    response = requests.get(endpoint)
-    if not response.ok:
-        logger.error('invalid response: %s - %s', response.status_code, response.reason)
-        return
-
-    organization = Organization.objects.get(domain=domain)
-    for fake_data in response.json()['results']:
-        generate_fake_user(organization.id, fake_data['user'])
+    generate_fake_users(domain, number_of_users)
 
     logger.info('generated %s users in %s', number_of_users, domain)
