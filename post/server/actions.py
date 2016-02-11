@@ -17,6 +17,7 @@ from ..actions import (
     delete_collection,
     remove_from_collection,
     reorder_collection,
+    update_collection,
 )
 from ..mixins import PostPermissionsMixin
 from ..editors import trix
@@ -323,3 +324,23 @@ class RemoveFromCollection(PreRunParseTokenMixin, actions.Action):
             )
         except models.Collection.DoesNotExist:
             raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+
+class UpdateCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection', 'collection.name')
+    type_validators = {
+        'collection.id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            collection = update_collection(
+                container=self.request.collection,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+                token=self.token,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection.id', 'DOES_NOT_EXIST')
+        collection.to_protobuf(self.response.collection)

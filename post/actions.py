@@ -277,6 +277,11 @@ def remove_from_collection(
         by_profile_id (str): id of the profile requesting the change
         token (str): service token
 
+    Raises:
+        post.models.Collection.DoesNotExist if the collection does not exist
+        Action.PermissionDenied if the user doesn't have permission to edit
+            the collection
+
     """
     check_collection_permission(
         permission='can_edit',
@@ -296,3 +301,36 @@ def remove_from_collection(
         return
     else:
         item.delete()
+
+
+def update_collection(container, organization_id, by_profile_id, token):
+    """Update a collection.
+
+    Args:
+        container (services.post.containers.CollectionV1): container we're updating off of
+        organization_id (str): id of the organization
+        by_profile_id (str): id of the profile requesting the change
+        token (str): service token
+
+    Returns:
+        post.models.Collection
+
+    Raises:
+        post.models.Collection.DoesNotExist if the collection does not exist
+        Action.PermissionDenied if the user doesn't have permission to edit
+            the collection
+
+    """
+    collection = check_collection_permission(
+        permission='can_edit',
+        collection_id=container.id,
+        organization_id=organization_id,
+        by_profile_id=by_profile_id,
+        token=token,
+    )
+    collection.update_from_protobuf(
+        container,
+        commit=True,
+        ignore_fields=['owner_type', 'owner_id'],
+    )
+    return collection
