@@ -12,6 +12,7 @@ from services import utils
 
 from .. import models
 from ..actions import (
+    add_to_collection,
     create_collection,
     delete_collection,
     reorder_collection,
@@ -277,3 +278,26 @@ class ReorderCollection(PreRunParseTokenMixin, actions.Action):
             )
         except models.Collection.DoesNotExist:
             raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+
+class AddToCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection_id', 'source_id')
+    type_validators = {
+        'collection_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            item = add_to_collection(
+                collection_id=self.request.collection_id,
+                source=self.request.source,
+                source_id=self.request.source_id,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+                token=self.token,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+        item.to_protobuf(self.response.item)

@@ -17,3 +17,14 @@ def mock_get_team(mock_instance, team, role=None, admin=False):
         team_id=team.id,
         fields={'only': ['permissions']},
     )
+
+
+def mock_get_profile(mock_instance, profile):
+    mock_instance.register_mock_object(
+        service='profile',
+        action='get_profile',
+        return_object=profile,
+        return_object_path='profile',
+        fields={'only': ['is_admin']},
+        profile_id=profile.id,
+    )

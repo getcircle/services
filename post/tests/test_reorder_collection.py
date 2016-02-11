@@ -1,5 +1,4 @@
 from protobufs.services.post.actions.reorder_collection_pb2 import PositionDiffV1
-from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
@@ -13,7 +12,10 @@ from .. import (
     factories,
     models,
 )
-from .helpers import mock_get_team
+from .helpers import (
+    mock_get_team,
+    mock_get_profile,
+)
 
 
 def mock_position_diff(item_id=None, current_position=0, new_position=1):
@@ -24,17 +26,6 @@ def mock_position_diff(item_id=None, current_position=0, new_position=1):
         item_id=item_id,
         current_position=current_position,
         new_position=new_position,
-    )
-
-
-def mock_get_profile(mock_instance, profile):
-    mock_instance.register_mock_object(
-        service='profile',
-        action='get_profile',
-        return_object=profile,
-        return_object_path='profile',
-        fields={'only': ['is_admin']},
-        profile_id=profile.id,
     )
 
 

@@ -1,4 +1,5 @@
 from bulk_update.helper import bulk_update
+from django.db.models import Max
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.post import containers_pb2 as post_containers
 import service.control
@@ -184,3 +185,54 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
         item.position = index + min_position
 
     bulk_update(items, update_fields=['position', 'changed'])
+
+
+def add_to_collection(collection_id, source, source_id, organization_id, by_profile_id, token):
+    """Add an item to a collection.
+
+    Args:
+        collection_id (str): id of the collection
+        source (services.post.containers.CollectionItemV1.SourceV1): source of
+            the item being added
+        source_id (str): id of the item within the source
+        organization_id (str): id of the organization
+        by_profile_id (str): id of the profile requesting the change
+        token (str): service token
+
+    Returns:
+        post.models.CollectionItem
+
+    Raises:
+        post.models.Collection.DoesNotExist if the collection does not exist
+        Action.PermissionDenied if the user doesn't have permission to edit
+            the collection
+
+    """
+    collection = models.Collection.objects.get(
+        pk=collection_id,
+        organization_id=organization_id,
+    )
+    permissions = get_collection_permissions(
+        collection=collection,
+        by_profile_id=by_profile_id,
+        token=token,
+    )
+    if not permissions.can_add:
+        raise Action.PermissionDenied()
+
+    position = 0
+    max_position = models.CollectionItem.objects.filter(
+        organization_id=organization_id,
+        collection_id=collection_id,
+    ).aggregate(Max('position'))['position__max']
+    if max_position is not None:
+        position = max_position
+
+    return models.CollectionItem.objects.create(
+        organization_id=organization_id,
+        collection_id=collection_id,
+        source=source,
+        source_id=source_id,
+        by_profile_id=by_profile_id,
+        position=position,
+    )
