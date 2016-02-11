@@ -252,6 +252,9 @@ class CreateCollection(PreRunParseTokenMixin, actions.Action):
 class DeleteCollection(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('collection_id',)
+    type_validators = {
+        'collection_id': [validators.is_uuid4],
+    }
 
     def run(self, *args, **kwargs):
         try:
@@ -268,6 +271,9 @@ class DeleteCollection(PreRunParseTokenMixin, actions.Action):
 class ReorderCollection(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('collection_id', 'diffs')
+    type_validators = {
+        'collection_id': [validators.is_uuid4],
+    }
 
     def run(self, *args, **kwargs):
         try:

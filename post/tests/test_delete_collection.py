@@ -34,6 +34,10 @@ class Test(MockedTestCase):
         with self.assertFieldError('collection_id', 'DOES_NOT_EXIST'):
             self.client.call_action('delete_collection', collection_id=fuzzy.uuid())
 
+    def test_delete_collection_collection_id_invalid(self):
+        with self.assertFieldError('collection_id'):
+            self.client.call_action('delete_collection', collection_id=fuzzy.text())
+
     def test_delete_collection_wrong_organization(self):
         collection = factories.CollectionFactory.create_protobuf()
         with self.assertFieldError('collection_id', 'DOES_NOT_EXIST'):

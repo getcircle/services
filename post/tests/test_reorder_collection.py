@@ -80,6 +80,14 @@ class Test(MockedTestCase):
         with self.assertFieldError('diffs', 'MISSING'):
             self.client.call_action('reorder_collection', collection_id=fuzzy.uuid())
 
+    def test_reorder_collection_collection_id_invalid(self):
+        with self.assertFieldError('collection_id'):
+            self.client.call_action(
+                'reorder_collection',
+                collection_id=fuzzy.text(),
+                diffs=[mock_position_diff()],
+            )
+
     def test_reorder_collection_collection_id_does_not_exist(self):
         with self.assertFieldError('collection_id', 'DOES_NOT_EXIST'):
             self.client.call_action(
