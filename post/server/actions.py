@@ -14,6 +14,7 @@ from .. import models
 from ..actions import (
     create_collection,
     delete_collection,
+    reorder_collection,
 )
 from ..mixins import PostPermissionsMixin
 from ..editors import trix
@@ -255,6 +256,23 @@ class DeleteCollection(PreRunParseTokenMixin, actions.Action):
                 collection_id=self.request.collection_id,
                 organization_id=self.parsed_token.organization_id,
                 by_profile_id=self.parsed_token.profile_id,
+                token=self.token,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+
+class ReorderCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection_id', 'diffs')
+
+    def run(self, *args, **kwargs):
+        try:
+            reorder_collection(
+                collection_id=self.request.collection_id,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+                position_diffs=self.request.diffs,
                 token=self.token,
             )
         except models.Collection.DoesNotExist:

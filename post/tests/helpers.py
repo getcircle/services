@@ -1,8 +1,8 @@
 from protobufs.services.team import containers_pb2 as team_containers
 
 
-def mock_get_team(mock_instance, team, role=None):
-    if role == team_containers.TeamMemberV1.COORDINATOR:
+def mock_get_team(mock_instance, team, role=None, admin=False):
+    if role == team_containers.TeamMemberV1.COORDINATOR or admin:
         team.permissions.can_edit = True
         team.permissions.can_add = True
         team.permissions.can_delete = True

@@ -65,3 +65,22 @@ class CollectionFactory(factory.Factory):
             kwargs['owner_id'] = team.id
             kwargs['owner_type'] = post_containers.CollectionV1.TEAM
         return kwargs
+
+
+class CollectionItemFactory(factory.Factory):
+    class Meta:
+        model = models.CollectionItem
+        protobuf = post_containers.CollectionItemV1
+
+    collection = factory.SubFactory(CollectionFactory)
+    position = factory.Sequence(lambda n: n)
+    by_profile_id = factory.FuzzyUUID()
+    organization_id = factory.FuzzyUUID()
+    source = factory.FuzzyChoice(post_containers.CollectionItemV1.SourceV1.values())
+    source_id = factory.FuzzyUUID()
+
+    @classmethod
+    def _adjust_kwargs(cls, **kwargs):
+        if 'collection' in kwargs:
+            kwargs['organization_id'] = kwargs['collection'].organization_id
+        return kwargs

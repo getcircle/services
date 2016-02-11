@@ -334,3 +334,13 @@ def mock_collection(container=None, **overrides):
         fuzzy.FuzzyText: ['name'],
     }
     return _mock_container(container, mock_dict, **overrides)
+
+
+def mock_collection_item(container=None, **overrides):
+    if container is None:
+        container = post_containers.CollectionItemV1()
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'by_profile_id', 'source_id']
+    }
+    return _mock_container(container, mock_dict, **overrides)

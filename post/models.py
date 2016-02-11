@@ -166,6 +166,11 @@ class Collection(models.UUIDModel, models.TimestampableModel):
 
 class CollectionItem(models.UUIDModel, models.TimestampableModel):
 
+    as_dict_value_transforms = {
+        'source': int,
+        'position': int,
+    }
+
     collection = models.ForeignKey(Collection)
     position = models.PositiveSmallIntegerField()
     by_profile_id = models.UUIDField(null=True)
@@ -178,5 +183,4 @@ class CollectionItem(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         # XXX ensure indexes are correct
-        unique_together = ('collection', 'position')
         protobuf = post_containers.CollectionItemV1
