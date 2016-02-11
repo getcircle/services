@@ -73,6 +73,41 @@ def get_team_permissions(team_id, token):
     return team.permissions
 
 
+def check_collection_permission(permission, collection_id, organization_id, by_profile_id, token):
+    """Raise Action.PermissionDenied if the profile doesn't have the specified permission.
+
+    Args:
+        permission (str): one of ('can_add', 'can_delete', 'can_edit') the user
+            must have
+        collection_id (str): id of the collection
+        organization_id (str): id of the organization
+        by_profile_id (str): id of the proilfe
+        token (str): service token
+
+    Raises:
+        post.models.Collection.DoesNotExist if the collection does not exist
+        Action.PermissionDenied if the user doesn't have permission to delete
+            the collection
+
+    Returns:
+        post.models.Collection if the user has the correct permission
+
+    """
+    collection = models.Collection.objects.get(
+        pk=collection_id,
+        organization_id=organization_id,
+    )
+    permissions = get_collection_permissions(
+        collection=collection,
+        by_profile_id=by_profile_id,
+        token=token,
+    )
+    if not permissions.can_delete:
+        raise Action.PermissionDenied()
+
+    return collection
+
+
 def create_collection(container, organization_id, by_profile_id, token):
     """Create a collection.
 
@@ -121,17 +156,13 @@ def delete_collection(collection_id, organization_id, by_profile_id, token):
             the collection
 
     """
-    collection = models.Collection.objects.get(
-        pk=collection_id,
+    collection = check_collection_permission(
+        permission='can_delete',
+        collection_id=collection_id,
         organization_id=organization_id,
-    )
-    permissions = get_collection_permissions(
-        collection=collection,
         by_profile_id=by_profile_id,
         token=token,
     )
-    if not permissions.can_delete:
-        raise Action.PermissionDenied()
 
     collection.delete()
 
@@ -153,23 +184,19 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
             the collection
 
     """
-    collection = models.Collection.objects.get(
-        pk=collection_id,
+    check_collection_permission(
+        permission='can_edit',
+        collection_id=collection_id,
         organization_id=organization_id,
-    )
-    permissions = get_collection_permissions(
-        collection=collection,
         by_profile_id=by_profile_id,
         token=token,
     )
-    if not permissions.can_edit:
-        raise Action.PermissionDenied()
 
     min_position = min([position for diff in position_diffs
                         for position in (diff.current_position, diff.new_position)])
 
     items = list(models.CollectionItem.objects.filter(
-        collection_id=collection.id,
+        collection_id=collection_id,
         organization_id=organization_id,
         position__gte=min_position,
     ).order_by('position'))
@@ -208,17 +235,13 @@ def add_to_collection(collection_id, source, source_id, organization_id, by_prof
             the collection
 
     """
-    collection = models.Collection.objects.get(
-        pk=collection_id,
+    check_collection_permission(
+        permission='can_edit',
+        collection_id=collection_id,
         organization_id=organization_id,
-    )
-    permissions = get_collection_permissions(
-        collection=collection,
         by_profile_id=by_profile_id,
         token=token,
     )
-    if not permissions.can_add:
-        raise Action.PermissionDenied()
 
     position = 0
     max_position = models.CollectionItem.objects.filter(
@@ -236,3 +259,40 @@ def add_to_collection(collection_id, source, source_id, organization_id, by_prof
         by_profile_id=by_profile_id,
         position=position,
     )
+
+
+def remove_from_collection(
+        collection_id,
+        collection_item_id,
+        organization_id,
+        by_profile_id,
+        token,
+    ):
+    """Remove an item from a collection.
+
+    Args:
+        collection_id (str): id of the collection
+        collection_item_id (str): id of the item in the collection
+        organization_id (str): id of the organization
+        by_profile_id (str): id of the profile requesting the change
+        token (str): service token
+
+    """
+    check_collection_permission(
+        permission='can_edit',
+        collection_id=collection_id,
+        organization_id=organization_id,
+        by_profile_id=by_profile_id,
+        token=token,
+    )
+
+    try:
+        item = models.CollectionItem.objects.get(
+            organization_id=organization_id,
+            id=collection_item_id,
+            collection_id=collection_id,
+        )
+    except models.CollectionItem.DoesNotExist:
+        return
+    else:
+        item.delete()

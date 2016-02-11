@@ -15,6 +15,7 @@ from ..actions import (
     add_to_collection,
     create_collection,
     delete_collection,
+    remove_from_collection,
     reorder_collection,
 )
 from ..mixins import PostPermissionsMixin
@@ -301,3 +302,24 @@ class AddToCollection(PreRunParseTokenMixin, actions.Action):
             raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
 
         item.to_protobuf(self.response.item)
+
+
+class RemoveFromCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection_id', 'collection_item_id')
+    type_validators = {
+        'collection_id': [validators.is_uuid4],
+        'collection_item_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            remove_from_collection(
+                collection_id=self.request.collection_id,
+                collection_item_id=self.request.collection_item_id,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+                token=self.token,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
