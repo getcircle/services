@@ -6,28 +6,17 @@ import protobufs.services.post.containers_pb2
 import uuid
 
 
-def collection_item_unique_together_forwards(apps, schema_editor):
-    CollectionItem = apps.get_model('post.CollectionItem')
-    statement = schema_editor._create_unique_sql(
-        CollectionItem,
-        ('organization_id', 'collection_id', 'position'),
-    )
-    statement += ' INITIALLY DEFERRED'
-    schema_editor.execute(statement)
+class CollectionItemDeferredUniqueTogether(migrations.AlterUniqueTogether):
 
-
-def collection_item_unique_together_backwards(apps, schema_editor):
-    CollectionItem = apps.get_model('post.CollectionItem')
-    index_name = schema_editor._create_index_name(
-        CollectionItem,
-        ('organization_id', 'collection_id', 'position'),
-        suffix='_uniq',
-    )
-    statement = schema_editor.sql_delete_unique % {
-        'table': CollectionItem._meta.db_table,
-        'name': index_name,
-    }
-    schema_editor.execute(statement)
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+        new_model = to_state.apps.get_model(app_label, self.name)
+        if self.allow_migrate_model(schema_editor.connection.alias, new_model):
+            statement = schema_editor._create_unique_sql(
+                new_model,
+                ('organization_id', 'collection_id', 'position'),
+            )
+            statement += ' INITIALLY DEFERRED'
+            schema_editor.execute(statement)
 
 
 class Migration(migrations.Migration):
@@ -79,9 +68,9 @@ class Migration(migrations.Migration):
             name='collection',
             index_together=set([('id', 'organization_id')]),
         ),
-        migrations.RunPython(
-            collection_item_unique_together_forwards,
-            reverse_code=collection_item_unique_together_backwards,
+        CollectionItemDeferredUniqueTogether(
+            name='collectionitem',
+            unique_together=set([('organization_id', 'collection', 'position')]),
         ),
         migrations.AlterIndexTogether(
             name='collectionitem',
