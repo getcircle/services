@@ -185,7 +185,11 @@ class CollectionItem(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         index_together = (
-            ('organization_id', 'collection', 'position'),
             ('organization_id', 'source', 'source_id'),
         )
+        # This index is created with custom sql:
+        # post/migrations/0009_auto_20160212_1940.py to support initially
+        # deferring the constraint check. this allows us to reorder the
+        # collection in a single transaction.
+        unique_together = ('organization_id', 'collection', 'position')
         protobuf = post_containers.CollectionItemV1
