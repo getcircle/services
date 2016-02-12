@@ -1,3 +1,6 @@
+from bulk_update.helper import bulk_update
+import django.db
+
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.history import containers_pb2 as history_containers
 from protobufs.services.team import containers_pb2 as team_containers
@@ -206,3 +209,54 @@ def remove_members(team_id, organization_id, profile_ids):
     )
     if members:
         members.delete()
+
+
+def update_contact_methods(contact_methods, team):
+    """Update the contact methods for a team.
+
+    Args:
+        contact_methods (repeated
+            protobufs.services.team.containers.ContactMethodV1): contact methods
+        team (team.models.Team): team model we're updating
+
+    Returns:
+        repeated protobufs.services.team.containers.ContactMethodV1
+
+    """
+    with django.db.transaction.atomic():
+        existing_methods = team.contact_methods.filter(organization_id=team.organization_id)
+        existing_methods_dict = dict((str(method.id), method) for method in existing_methods)
+        existing_ids = set(existing_methods_dict.keys())
+        new_ids = set(method.id for method in contact_methods if method.id)
+        to_delete = existing_ids - new_ids
+
+        to_create = []
+        to_update = []
+        for container in contact_methods:
+            if not container.value:
+                continue
+
+            if container.id:
+                contact_method = existing_methods_dict[container.id]
+                contact_method.update_from_protobuf(container)
+                to_update.append(contact_method)
+            else:
+                contact_method = models.ContactMethod.objects.from_protobuf(
+                    container,
+                    team_id=team.id,
+                    organization_id=team.organization_id,
+                    commit=False,
+                )
+                to_create.append(contact_method)
+
+        if to_create:
+            models.ContactMethod.objects.bulk_create(to_create)
+
+        if to_update:
+            bulk_update(to_update)
+
+        if to_delete:
+            team.contact_methods.filter(
+                id__in=to_delete,
+                organization_id=team.organization_id,
+            ).delete()

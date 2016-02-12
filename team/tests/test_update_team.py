@@ -1,4 +1,3 @@
-from protobufs.services.history import containers_pb2 as history_containers
 from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
@@ -115,6 +114,17 @@ class Test(MockedTestCase):
         )
         for contact_method in updated_team.contact_methods:
             self.assertTrue(contact_method.id)
+
+    def test_update_team_new_contact_methods_invalid_values(self):
+        contact_methods = [
+            mocks.mock_team_contact_method(id=None),
+            mocks.mock_team_contact_method(id=None, value=''),
+        ]
+        team = self._setup_coordinator()
+        team.contact_methods.extend(contact_methods)
+
+        with self.assertFieldError('contact_methods[1].value', 'MISSING'):
+            self.client.call_action('update_team', team=team)
 
     def test_update_team_update_contact_methods(self):
         contact_method = mocks.mock_team_contact_method()

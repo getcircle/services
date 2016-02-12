@@ -234,6 +234,13 @@ class UpdateTeam(PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('team',)
 
+    def validate(self, *args, **kwargs):
+        super(UpdateTeam, self).validate(*args, **kwargs)
+        if not self.is_error():
+            for index, method in enumerate(self.request.team.contact_methods):
+                if not method.value:
+                    raise self.ActionFieldError('contact_methods[%d].value' % (index,), 'MISSING')
+
     def run(self, *args, **kwargs):
         try:
             team = models.Team.objects.get(

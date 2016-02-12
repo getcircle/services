@@ -1,4 +1,4 @@
-import datetime
+import arrow
 
 from protobufs.services.team import containers_pb2 as team_containers
 import service.control
@@ -147,11 +147,11 @@ class Test(MockedTestCase):
         team = factories.TeamFactory.create(organization_id=self.organization.id)
         first_contact_method = factories.ContactMethodFactory.create(
             team=team,
-            created=datetime.datetime(2016, 2, 1),
+            created=arrow.Arrow(2016, 2, 1).datetime,
         )
         last_contact_method = factories.ContactMethodFactory.create(
             team=team,
-            created=datetime.datetime(2016, 2, 2),
+            created=arrow.Arrow(2016, 2, 2).datetime,
         )
         response = self.client.call_action('get_team', team_id=str(team.id))
         contact_methods = response.result.team.contact_methods
