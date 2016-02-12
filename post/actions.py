@@ -144,6 +144,23 @@ def create_collection(container, organization_id, by_profile_id, token):
     )
 
 
+def get_collection(collection_id, organization_id):
+    """Get a specific collection.
+
+    Args:
+        collection_id (str): id of the collection
+        organization_id (str): id of the organization
+
+    Returns:
+        post.models.Collection
+
+    Raises:
+        post.models.Collection.DoesNotExist if the collection does not exist
+
+    """
+    return models.Collection.objects.get(id=collection_id, organization_id=organization_id)
+
+
 def delete_collection(collection_id, organization_id, by_profile_id, token):
     """Delete a collection
 

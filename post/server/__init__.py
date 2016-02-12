@@ -19,4 +19,5 @@ class Server(service.control.Server):
         'remove_from_collection': actions.RemoveFromCollection,
         'update_collection': actions.UpdateCollection,
         'get_collections': actions.GetCollections,
+        'get_collection': actions.GetCollection,
     }

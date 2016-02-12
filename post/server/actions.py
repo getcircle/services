@@ -15,6 +15,8 @@ from ..actions import (
     add_to_collection,
     create_collection,
     delete_collection,
+    get_collection,
+    get_collection_permissions,
     get_collections,
     get_collection_id_to_items_dict,
     get_total_items_for_collections,
@@ -407,3 +409,41 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
                 total_items=item_counts.get(str(collection.id), 0),
             )
             container.items.extend(collection_to_items.get(str(collection.id), []))
+
+
+class GetCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection_id',)
+    type_validators = {
+        'collection_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            collection = get_collection(
+                collection_id=self.request.collection_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+        item_counts = {}
+        if common_utils.should_inflate_field('total_items', self.request.inflations):
+            item_counts = get_total_items_for_collections(
+                collection_ids=[str(collection.id)],
+                organization_id=self.parsed_token.organization_id,
+            )
+
+        collection.to_protobuf(
+            self.response.collection,
+            fields=self.request.fields,
+            inflations=self.request.inflations,
+            total_items=item_counts.get(str(collection.id), 0),
+        )
+
+        permissions = get_collection_permissions(
+            collection=collection,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
+        )
+        self.response.collection.permissions.CopyFrom(permissions)
