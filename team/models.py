@@ -42,9 +42,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
         return super(Team, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
     def update_from_protobuf(self, protobuf, **kwargs):
-        contact_methods = None
-        if protobuf.contact_methods:
-            contact_methods = update_contact_methods(protobuf.contact_methods, self)
+        contact_methods = update_contact_methods(protobuf.contact_methods, self)
         return super(Team, self).update_from_protobuf(
             protobuf,
             contact_methods=contact_methods,

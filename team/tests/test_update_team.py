@@ -143,3 +143,16 @@ class Test(MockedTestCase):
             self.assertNotEqual(removed_method.id, contact_method.id)
 
         self.assertEqual(models.ContactMethod.objects.filter(team_id=team.id).count(), 2)
+
+    def test_update_team_delete_all_contact_methods(self):
+        contact_methods = [
+            mocks.mock_team_contact_method(),
+            mocks.mock_team_contact_method(),
+        ]
+        team = self._setup_coordinator(contact_methods=contact_methods)
+        team.ClearField('contact_methods')
+
+        response = self.client.call_action('update_team', team=team)
+        updated_team = response.result.team
+        self.assertEqual(len(updated_team.contact_methods), 0)
+        self.assertEqual(models.ContactMethod.objects.filter(team_id=team.id).count(), 0)
