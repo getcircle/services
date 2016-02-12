@@ -88,7 +88,12 @@ class Test(MockedTestCase):
         self.assertEqual(updated_team.description.by_profile_id, self.profile.id)
 
         team = models.Team.objects.get(id=updated_team.id)
-        self.verify_containers(updated_team, team.to_protobuf())
+        self.verify_containers(updated_team, team.to_protobuf(), ignore_fields=['permissions'])
+
+        permissions = updated_team.permissions
+        self.assertTrue(permissions.can_edit)
+        self.assertTrue(permissions.can_add)
+        self.assertTrue(permissions.can_delete)
 
     def test_update_team_empty_description_doesnt_set_by_profile_id(self):
         team = self._setup_coordinator(description=None)

@@ -267,3 +267,4 @@ class UpdateTeam(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
         )
         team.to_protobuf(self.response.team)
+        self.response.team.permissions.CopyFrom(permissions)
