@@ -46,3 +46,18 @@ class ContactMethodFactory(factory.Factory):
     team = factory.SubFactory(TeamFactory)
     label = factory.FuzzyText()
     value = factory.FuzzyText()
+
+    @classmethod
+    def _adjust_kwargs(cls, **kwargs):
+        if 'team' in kwargs:
+            kwargs['organization_id'] = kwargs['team'].organization_id
+        return kwargs
+
+    @factory.post_generation
+    def created(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            self.created = extracted
+            self.save()

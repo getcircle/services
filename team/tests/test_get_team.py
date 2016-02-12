@@ -1,17 +1,14 @@
-from protobufs.services.common.containers import description_pb2
+import datetime
+
 from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
 from services.test import (
-    fuzzy,
     mocks,
     MockedTestCase,
 )
 
-from .. import (
-    factories,
-    models,
-)
+from .. import factories
 
 
 class Test(MockedTestCase):
@@ -145,3 +142,18 @@ class Test(MockedTestCase):
         self.assertTrue(permissions.can_edit)
         self.assertTrue(permissions.can_delete)
         self.assertTrue(permissions.can_add)
+
+    def test_get_team_contact_methods(self):
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        first_contact_method = factories.ContactMethodFactory.create(
+            team=team,
+            created=datetime.datetime(2016, 2, 1),
+        )
+        last_contact_method = factories.ContactMethodFactory.create(
+            team=team,
+            created=datetime.datetime(2016, 2, 2),
+        )
+        response = self.client.call_action('get_team', team_id=str(team.id))
+        contact_methods = response.result.team.contact_methods
+        self.verify_containers(contact_methods[0], first_contact_method)
+        self.verify_containers(contact_methods[1], last_contact_method)

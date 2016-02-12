@@ -26,11 +26,12 @@ class Team(models.UUIDModel, models.TimestampableModel):
                     inflations={'disabled': True},
                 )
                 self.description.by_profile.CopyFrom(by_profile)
+
         if 'contact_methods' not in overrides:
             if utils.should_inflate_field('contact_methods', inflations):
                 overrides['contact_methods'] = self.contact_methods.filter(
                     organization_id=self.organization_id,
-                )
+                ).order_by('created')
 
         for method in overrides.pop('contact_methods', []):
             container = protobuf.contact_methods.add()
