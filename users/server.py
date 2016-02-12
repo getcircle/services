@@ -25,6 +25,7 @@ class Server(service.control.Server):
         'request_access': actions.RequestAccess,
         'delete_identity': actions.DeleteIdentity,
         'get_authentication_instructions': actions.GetAuthenticationInstructions,
+        'get_slack_authentication_instructions': actions.GetSlackAuthenticationInstructions,
         'get_active_devices': actions.GetActiveDevices,
         'bulk_update_users': actions.BulkUpdateUsers,
     }
