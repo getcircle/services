@@ -1,5 +1,9 @@
 from bulk_update.helper import bulk_update
-from django.db.models import Max
+from common import utils
+from django.db.models import (
+    Count,
+    Max,
+)
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.post import containers_pb2 as post_containers
 import service.control
@@ -334,3 +338,166 @@ def update_collection(container, organization_id, by_profile_id, token):
         ignore_fields=['owner_type', 'owner_id'],
     )
     return collection
+
+
+def get_collections(
+        organization_id,
+        owner_type=None,
+        owner_id=None,
+        source=None,
+        source_id=None,
+        is_default=False,
+    ):
+    """Return collections for the owner or source item.
+
+    Args:
+        organization_id (str): organization id
+        owner_type (Optional[services.post.containers.CollectionV1.OwnerTypeV1]): type of
+            owner (relevant when owner_id is specified)
+        owner_id (Optional[str]): id of the owner, used with owner_type to lookup Team or
+            Profile collections
+        source (Optional[services.post.containers.CollectionItemV1.SourceV1]):
+            source of the item (relevant when source_id is specified)
+        source_id (Optional[str]): id of the item we want to return the
+            collections it belongs to, used with `source`
+        is_default (Optional[bool]): whether or not we want to return just the
+            default collection
+
+    Returns:
+        post.models.Collection queryset
+
+    """
+    if not ((owner_id and owner_type is not None) or (source is not None and source_id)):
+        raise TypeError(
+            'Must provide either `owner_id` and `owner_type` or `source` and `source_id`'
+        )
+
+    if owner_id:
+        collections = models.Collection.objects.filter(
+            organization_id=organization_id,
+            owner_id=owner_id,
+            owner_type=owner_type,
+            is_default=is_default,
+        )
+    elif source_id:
+        items = models.CollectionItem.objects.filter(
+            organization_id=organization_id,
+            source=source,
+            source_id=source_id,
+        ).select_related('collection')
+        collections = [i.collection for i in items]
+    return collections
+
+
+def get_total_items_for_collections(collection_ids, organization_id):
+    """Get the total items for the collections.
+
+    Args:
+        collections (List[str]): list of collection ids
+        organization_id (str): id of the organization
+
+    Returns:
+        dictionary with <str(collection.id)>: <total items>
+
+    """
+    item_counts = models.CollectionItem.objects.filter(
+        organization_id=organization_id,
+        collection_id__in=collection_ids,
+    ).values('collection').annotate(total_items=Count('id'))
+    return dict((str(d['collection']), d['total_items']) for d in item_counts)
+
+
+def get_posts_with_fields(ids, organization_id, fields):
+    """Get posts but only include or defer fields based on specified fields object.
+
+    Args:
+        ids (List[str]): list of post ids
+        organization_id (str): id of the organization
+        fields (services.common.containers.FieldsV1): fields being requested
+
+    Returns:
+        post.models.Post queryset
+
+    """
+    posts = models.Post.objects.filter(
+        organization_id=organization_id,
+        id__in=ids,
+    )
+    if fields.only:
+        posts = posts.only(*fields.only)
+
+    if fields.exclude:
+        posts = posts.defer(*fields.exclude)
+    return posts
+
+
+def get_collection_id_to_items_dict(
+        collection_ids,
+        number_of_items,
+        organization_id,
+        inflations,
+        fields,
+    ):
+    """Get up to `number_of_items` items for the collections.
+
+    When listing collections we can display a "preview" of whats in the
+    collection, which means partially inflating the items within the
+    collection.
+
+    This will select up to `number_of_items` for the collection in the most
+    optimal way possible based on fields and inflations.
+
+    Args:
+        collection_ids (List[str]): list of collection ids
+        number_of_items (int): top number of items to return for each
+            collection (based on position)
+        organization_id (str): id of the organization
+        inflations (services.common.containers.InflationsV1): inflations for the items
+        fields (services.common.containers.FieldsV1): fields for the items
+
+    Returns:
+        dictionary of <collection_id>: <services.post.containers.CollectionItemV1>
+
+    """
+    queries = []
+    parameters = {'organization_id': organization_id}
+    # XXX come up with a way to cache this
+    for index, collection_id in enumerate(collection_ids):
+        collection_key = 'collection_id_%s' % (index,)
+        parameters[collection_key] = collection_id
+        query = (
+            '(SELECT * FROM %s '
+            'WHERE organization_id = %%(organization_id)s '
+            'AND collection_id = %%(%s)s '
+            'ORDER BY position LIMIT %d)'
+        ) % (models.CollectionItem._meta.db_table, collection_key, int(number_of_items))
+        queries.append(query)
+
+    query = ' union all '.join(queries)
+    items = list(models.CollectionItem.objects.raw(query, parameters))
+
+    post_fields = utils.fields_for_item('post', fields)
+    post_inflations = utils.inflations_for_item('post', inflations)
+
+    source_dict = {}
+    for item in items:
+        source_dict.setdefault(item.source, {}).setdefault('ids', []).append(item.source_id)
+
+    for source, data in source_dict.iteritems():
+        if source == post_containers.CollectionItemV1.LUNO:
+            posts = get_posts_with_fields(
+                ids=data['ids'],
+                organization_id=organization_id,
+                fields=post_fields,
+            )
+            for post in posts:
+                source_dict[source].setdefault('objects', {})[str(post.id)] = post
+
+    collections_dict = {}
+    for item in items:
+        container = item.to_protobuf(inflations=inflations, fields=fields)
+        if item.source == post_containers.CollectionItemV1.LUNO:
+            post = source_dict.get(item.source).get('objects', {}).get(item.source_id)
+            post.to_protobuf(container.post, inflations=post_inflations, fields=post_fields)
+        collections_dict.setdefault(str(item.collection_id), []).append(container)
+    return collections_dict

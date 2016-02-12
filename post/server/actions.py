@@ -15,6 +15,9 @@ from ..actions import (
     add_to_collection,
     create_collection,
     delete_collection,
+    get_collections,
+    get_collection_id_to_items_dict,
+    get_total_items_for_collections,
     remove_from_collection,
     reorder_collection,
     update_collection,
@@ -350,3 +353,57 @@ class UpdateCollection(PreRunParseTokenMixin, actions.Action):
         except models.Collection.DoesNotExist:
             raise self.ActionFieldError('collection.id', 'DOES_NOT_EXIST')
         collection.to_protobuf(self.response.collection)
+
+
+class GetCollections(PreRunParseTokenMixin, actions.Action):
+
+    type_validators = {
+        'owner_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        collections = get_collections(
+            organization_id=self.parsed_token.organization_id,
+            owner_type=self.request.owner_type,
+            owner_id=self.request.owner_id,
+            source=self.request.source,
+            source_id=self.request.source_id,
+            is_default=self.request.is_default,
+        )
+        collections = self.get_paginated_objects(collections)
+        collection_ids = [str(c.id) for c in collections]
+        item_counts = {}
+        if common_utils.should_inflate_field('total_items', self.request.inflations):
+            item_counts = get_total_items_for_collections(
+                collection_ids=collection_ids,
+                organization_id=self.parsed_token.organization_id,
+            )
+
+        item_fields = common_utils.fields_for_repeated_items(
+            'collections.items',
+            self.request.fields,
+        )
+        item_inflations = common_utils.inflations_for_repeated_items(
+            'collections.items',
+            self.request.inflations,
+        )
+
+        collection_to_items = {}
+        if self.request.items_per_collection:
+            collection_to_items = get_collection_id_to_items_dict(
+                collection_ids=collection_ids,
+                number_of_items=self.request.items_per_collection,
+                organization_id=self.parsed_token.organization_id,
+                fields=item_fields,
+                inflations=item_inflations,
+            )
+
+        for collection in collections:
+            container = self.response.collections.add()
+            collection.to_protobuf(
+                container,
+                inflations=self.request.inflations,
+                fields=self.request.fields,
+                total_items=item_counts.get(str(collection.id), 0),
+            )
+            container.items.extend(collection_to_items.get(str(collection.id), []))
