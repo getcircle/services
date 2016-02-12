@@ -20,4 +20,5 @@ class Server(service.control.Server):
         'update_collection': actions.UpdateCollection,
         'get_collections': actions.GetCollections,
         'get_collection': actions.GetCollection,
+        'get_collection_items': actions.GetCollectionItems,
     }

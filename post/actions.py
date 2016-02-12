@@ -12,6 +12,23 @@ from service.actions import Action
 from . import models
 
 
+def collection_exists(collection_id, organization_id):
+    """Determine whether or not the collection exists.
+
+    Args:
+        collection_id (str): id of the collection
+        organization_id (str): id of the organization
+
+    Returns:
+        Boolean for whether or not the collection exists
+
+    """
+    return models.Collection.objects.filter(
+        pk=collection_id,
+        organization_id=organization_id,
+    ).exists()
+
+
 def get_collection_permissions(collection, by_profile_id, token):
     """Return the requesting users permissions for the collection.
 
@@ -452,6 +469,67 @@ def get_posts_with_fields(ids, organization_id, fields):
     return posts
 
 
+def get_collection_items(collection_id, organization_id):
+    """Return the items for the given collection.
+
+    Args:
+        collection_id (str): id of the collection
+        organization_id (str): id of the organization
+
+    Returns;
+        post.models.CollectionItem queryset
+
+    """
+    return models.CollectionItem.objects.filter(
+        collection_id=collection_id,
+        organization_id=organization_id,
+    ).order_by('position')
+
+
+def inflate_items_source(items, organization_id, inflations, fields):
+    """Given a list of items, inflate the source objects.
+
+    Args:
+        items (List[post.models.CollectionItem]): list of items to inflate
+        organization_id (str): id of organization
+        inflations (services.common.containers.InflationsV1): inflations for the items
+        fields (services.common.containers.FieldsV1): fields for the items
+
+    Returns:
+        List[services.post.containers.CollectionItemV1]
+
+    """
+    post_fields = utils.fields_for_item('post', fields)
+    post_inflations = utils.inflations_for_item('post', inflations)
+
+    source_dict = {}
+    for item in items:
+        source_dict.setdefault(item.source, {}).setdefault('ids', []).append(item.source_id)
+
+    for source, data in source_dict.iteritems():
+        if source == post_containers.CollectionItemV1.LUNO:
+            posts = get_posts_with_fields(
+                ids=data['ids'],
+                organization_id=organization_id,
+                fields=post_fields,
+            )
+            for post in posts:
+                source_dict[source].setdefault('objects', {})[str(post.id)] = post
+
+    containers = []
+    for item in items:
+        container = item.to_protobuf(
+            inflations=inflations,
+            fields=fields,
+            collection_id=str(item.collection_id),
+        )
+        if item.source == post_containers.CollectionItemV1.LUNO:
+            post = source_dict.get(item.source).get('objects', {}).get(item.source_id)
+            post.to_protobuf(container.post, inflations=post_inflations, fields=post_fields)
+        containers.append(container)
+    return containers
+
+
 def get_collection_id_to_items_dict(
         collection_ids,
         number_of_items,
@@ -496,29 +574,13 @@ def get_collection_id_to_items_dict(
 
     query = ' union all '.join(queries)
     items = list(models.CollectionItem.objects.raw(query, parameters))
-
-    post_fields = utils.fields_for_item('post', fields)
-    post_inflations = utils.inflations_for_item('post', inflations)
-
-    source_dict = {}
-    for item in items:
-        source_dict.setdefault(item.source, {}).setdefault('ids', []).append(item.source_id)
-
-    for source, data in source_dict.iteritems():
-        if source == post_containers.CollectionItemV1.LUNO:
-            posts = get_posts_with_fields(
-                ids=data['ids'],
-                organization_id=organization_id,
-                fields=post_fields,
-            )
-            for post in posts:
-                source_dict[source].setdefault('objects', {})[str(post.id)] = post
-
+    containers = inflate_items_source(
+        items=items,
+        organization_id=organization_id,
+        inflations=inflations,
+        fields=fields,
+    )
     collections_dict = {}
-    for item in items:
-        container = item.to_protobuf(inflations=inflations, fields=fields)
-        if item.source == post_containers.CollectionItemV1.LUNO:
-            post = source_dict.get(item.source).get('objects', {}).get(item.source_id)
-            post.to_protobuf(container.post, inflations=post_inflations, fields=post_fields)
-        collections_dict.setdefault(str(item.collection_id), []).append(container)
+    for container in containers:
+        collections_dict.setdefault(container.collection_id, []).append(container)
     return collections_dict

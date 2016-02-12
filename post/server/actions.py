@@ -13,13 +13,16 @@ from services import utils
 from .. import models
 from ..actions import (
     add_to_collection,
+    collection_exists,
     create_collection,
     delete_collection,
     get_collection,
     get_collection_permissions,
+    get_collection_items,
     get_collections,
     get_collection_id_to_items_dict,
     get_total_items_for_collections,
+    inflate_items_source,
     remove_from_collection,
     reorder_collection,
     update_collection,
@@ -447,3 +450,31 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
             token=self.token,
         )
         self.response.collection.permissions.CopyFrom(permissions)
+
+
+class GetCollectionItems(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('collection_id',)
+    type_validators = {
+        'collection_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        if not collection_exists(
+            collection_id=self.request.collection_id,
+            organization_id=self.parsed_token.organization_id,
+        ):
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+        items = get_collection_items(
+            collection_id=self.request.collection_id,
+            organization_id=self.parsed_token.organization_id,
+        )
+        items = self.get_paginated_objects(items)
+        containers = inflate_items_source(
+            items=items,
+            organization_id=self.parsed_token.organization_id,
+            inflations=self.request.inflations,
+            fields=self.request.fields,
+        )
+        self.response.items.extend(containers)
