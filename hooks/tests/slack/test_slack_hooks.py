@@ -3,6 +3,7 @@ from protobufs.services.organization.containers import integration_pb2
 from rest_framework import status
 from rest_framework.test import APIClient
 from slacker import Response
+from django.conf import settings
 
 from services.test import (
     fuzzy,
@@ -23,7 +24,7 @@ class Test(MockedTestCase):
             organization_id=self.organization.id,
             profile_id=self.profile.id,
         )
-        self.slack_token = fuzzy.FuzzyText().fuzz()
+        self.slack_token = settings.SLACK_SLASH_COMMANDS_TOKEN
         self.api = APIClient()
 
     def _setup_test(self, patched):
@@ -91,7 +92,7 @@ class Test(MockedTestCase):
     def test_slack_hooks_luno_help(self, patched):
         self._setup_test(patched)
         response = self.api.post('/hooks/slack/', {
-            'token': fuzzy.FuzzyText().fuzz(),
+            'token': self.slack_token,
             'user_id': fuzzy.FuzzyText().fuzz(),
             'team_id': fuzzy.FuzzyText().fuzz(),
             'command': '/luno',

@@ -2,6 +2,7 @@ import json
 from mock import patch
 from rest_framework import status
 from rest_framework.test import APIClient
+from django.conf import settings
 
 from services.test import (
     fuzzy,
@@ -35,7 +36,7 @@ class Test(MockedTestCase):
 
     def _request_payload(self, **overrides):
         payload = {
-            'token': fuzzy.FuzzyText().fuzz(),
+            'token': settings.SLACK_SLASH_COMMANDS_TOKEN,
             'user_id': fuzzy.FuzzyText().fuzz(),
             'team_id': fuzzy.FuzzyText().fuzz(),
             'command': '/luno',

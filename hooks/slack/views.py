@@ -7,6 +7,7 @@ from rest_framework import (
 )
 from rest_framework.renderers import JSONRenderer
 import service.control
+from django.conf import settings
 
 from services.token import make_admin_token
 
@@ -28,6 +29,8 @@ class SlackViewSet(viewsets.ViewSet):
 
     def perform_authentication(self, request, *args, **kwargs):
         logger.info('received slash command: %s', self.request.data)
+        if self.request.data['token'] != settings.SLACK_SLASH_COMMANDS_TOKEN:
+            raise exceptions.NotAuthenticated()
         team_id = self.request.data['team_id']
         try:
             request.slash_integration = service.control.get_object(
