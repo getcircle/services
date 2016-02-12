@@ -155,12 +155,14 @@ class Collection(models.UUIDModel, models.TimestampableModel):
         default=post_containers.CollectionV1.PROFILE,
     )
     name = models.CharField(max_length=64)
-    is_default = models.BooleanField(default=False, editable=False)
+    # is_default is a NullBooleanField to enforce only 1 default collection per
+    # owner_type and owner_id
+    is_default = models.NullBooleanField(editable=False, null=True)
     by_profile_id = models.UUIDField(null=True, editable=False)
 
     class Meta:
-        # XXX ensure this index is correct
-        index_together = ('organization_id', 'owner_id', 'owner_type', 'is_default')
+        index_together = ('id', 'organization_id')
+        unique_together = ('organization_id', 'owner_id', 'owner_type', 'is_default')
         protobuf = post_containers.CollectionV1
 
 
@@ -182,5 +184,8 @@ class CollectionItem(models.UUIDModel, models.TimestampableModel):
     source_id = models.CharField(max_length=128)
 
     class Meta:
-        # XXX ensure indexes are correct
+        index_together = (
+            ('organization_id', 'collection', 'position'),
+            ('organization_id', 'source', 'source_id'),
+        )
         protobuf = post_containers.CollectionItemV1

@@ -49,7 +49,6 @@ class CollectionFactory(factory.Factory):
     owner_id = factory.FuzzyUUID()
     owner_type = factory.FuzzyChoice(post_containers.CollectionV1.OwnerTypeV1.values())
     name = factory.FuzzyText()
-    is_default = False
     by_profile_id = factory.FuzzyUUID()
 
     @classmethod

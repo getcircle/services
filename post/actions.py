@@ -377,8 +377,12 @@ def get_collections(
             organization_id=organization_id,
             owner_id=owner_id,
             owner_type=owner_type,
-            is_default=is_default,
         )
+        # is_default is a NullBooleanField, we only store a value if
+        # `is_default` is True
+        if is_default:
+            collections = collections.filter(is_default=is_default)
+
     elif source_id:
         items = models.CollectionItem.objects.filter(
             organization_id=organization_id,
