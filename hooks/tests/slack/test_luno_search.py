@@ -37,6 +37,7 @@ class Test(MockedTestCase):
         payload = {
             'token': fuzzy.FuzzyText().fuzz(),
             'user_id': fuzzy.FuzzyText().fuzz(),
+            'team_id': fuzzy.FuzzyText().fuzz(),
             'command': '/luno',
             'response_url': fuzzy.FuzzyText(prefix='https://').fuzz(),
             'text': '',

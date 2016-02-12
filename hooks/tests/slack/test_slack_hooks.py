@@ -40,18 +40,22 @@ class Test(MockedTestCase):
 
     def test_slack_hooks_slash_integration_doesnt_exist(self):
         slack_token = fuzzy.FuzzyText().fuzz()
+        team_id = fuzzy.FuzzyText().fuzz()
+        user_id = fuzzy.FuzzyText().fuzz()
         error = self.mock.get_mockable_call_action_error('organization', 'get_integration')
         self.mock.instance.register_mock_error(
             service='organization',
             action='get_integration',
             error=error,
-            provider_uid=slack_token,
+            provider_uid=team_id,
             integration_type=integration_pb2.SLACK_SLASH_COMMAND,
         )
-        response = self.api.post('/hooks/slack/', {'token': slack_token})
+        response = self.api.post('/hooks/slack/', {'token': slack_token, 'team_id': team_id, 'user_id': user_id})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_slack_hooks_slack_api_integration_doesnt_exist(self):
+        slack_token = fuzzy.FuzzyText().fuzz()
+        team_id = fuzzy.FuzzyText().fuzz()
         error = self.mock.get_mockable_call_action_error('organization', 'get_integration')
         self.mock.instance.register_mock_error(
             service='organization',
@@ -59,7 +63,7 @@ class Test(MockedTestCase):
             error=error,
             integration_type=integration_pb2.SLACK_WEB_API,
         )
-        response = self.api.post('/hooks/slack/', {'token': fuzzy.FuzzyText().fuzz()})
+        response = self.api.post('/hooks/slack/', {'token': slack_token, 'team_id': team_id})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     @patch('hooks.slack.actions.Slacker')
@@ -79,6 +83,7 @@ class Test(MockedTestCase):
         response = self.api.post('/hooks/slack/', {
             'token': fuzzy.FuzzyText().fuzz(),
             'user_id': fuzzy.FuzzyText().fuzz(),
+            'team_id': fuzzy.FuzzyText().fuzz(),
         })
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -88,6 +93,7 @@ class Test(MockedTestCase):
         response = self.api.post('/hooks/slack/', {
             'token': fuzzy.FuzzyText().fuzz(),
             'user_id': fuzzy.FuzzyText().fuzz(),
+            'team_id': fuzzy.FuzzyText().fuzz(),
             'command': '/luno',
             'text': '',
         })
