@@ -447,7 +447,7 @@ class EnableIntegration(PreRunParseTokenMixin, actions.Action):
             'details': self._get_details_object(),
         }
         if self.request.integration.slack_slash_command:
-            parameters['provider_uid'] = self.request.integration.slack_slash_command.token
+            parameters['provider_uid'] = self.request.integration.provider_uid
 
         try:
             integration = models.Integration.objects.from_protobuf(

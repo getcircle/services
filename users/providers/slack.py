@@ -91,6 +91,7 @@ class Provider(base.BaseProvider):
             'slack_slash_command': {
                 'token': settings.SLACK_SLASH_COMMANDS_TOKEN,
             },
+            'provider_uid': identity.provider_uid,
         })
         response = client.call_action('enable_integration', integration={
             'integration_type': integration_pb2.SLACK_WEB_API,
