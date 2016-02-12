@@ -29,9 +29,10 @@ class SlackViewSet(viewsets.ViewSet):
 
     def perform_authentication(self, request, *args, **kwargs):
         logger.info('received slash command: %s', self.request.data)
-        if self.request.data['token'] != settings.SLACK_SLASH_COMMANDS_TOKEN:
-            raise exceptions.NotAuthenticated()
+        token = self.request.data['token']
         team_id = self.request.data['team_id']
+        if token != settings.SLACK_SLASH_COMMANDS_TOKEN:
+            raise exceptions.NotAuthenticated()
         try:
             request.slash_integration = service.control.get_object(
                 service='organization',
