@@ -126,13 +126,19 @@ def add_members(containers, team_id, organization_id, **overrides):
         team_id (str): id of the team to add the members to
 
     """
-    objects = [models.TeamMember.objects.from_protobuf(
-        container,
-        commit=False,
-        team_id=team_id,
-        organization_id=organization_id,
-        **overrides
-    ) for container in containers]
+    ids = set()
+    objects = []
+    for container in containers:
+        if container.profile_id not in ids:
+            obj = models.TeamMember.objects.from_protobuf(
+                container,
+                commit=False,
+                team_id=team_id,
+                organization_id=organization_id,
+                **overrides
+            )
+            objects.append(obj)
+            ids.add(container.profile_id)
     models.TeamMember.objects.bulk_create(objects)
 
 

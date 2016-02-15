@@ -83,3 +83,13 @@ class Test(MockedTestCase):
         members = models.TeamMember.objects.filter(team_id=team.id)
         self.assertEqual(len(members), 1)
         self.assertEqual(members[0].role, team_containers.TeamMemberV1.MEMBER)
+
+    def test_add_members_dedupe_duplicate_members(self):
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        profile_id = fuzzy.uuid()
+        members = [{'profile_id': profile_id}, {'profile_id': profile_id}]
+        self.client.call_action('add_members', team_id=str(team.id), members=members)
+
+        members = models.TeamMember.objects.filter(team_id=team.id)
+        self.assertEqual(len(members), 1)
+        self.assertEqual(members[0].role, team_containers.TeamMemberV1.MEMBER)
