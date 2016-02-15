@@ -46,7 +46,10 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
             role=team_containers.TeamMemberV1.COORDINATOR,
             profile_id=self.parsed_token.profile_id,
         )
-        add_members([coordinator], team.id, organization_id=self.parsed_token.organization_id)
+
+        members = list(self.request.members)
+        members.append(coordinator)
+        add_members(members, team.id, organization_id=self.parsed_token.organization_id)
 
 
 class AddMembers(TeamExistsAction):

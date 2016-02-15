@@ -56,3 +56,23 @@ class Test(MockedTestCase):
         # verify the user who created the team was added as a coordinator
         coordinator = models.TeamMember.objects.get(team_id=team.id, profile_id=self.profile.id)
         self.assertEqual(coordinator.role, team_containers.TeamMemberV1.COORDINATOR)
+
+    def test_create_team_add_members(self):
+        container = team_containers.TeamV1(
+            name=fuzzy.text(),
+            description=mocks.mock_description(),
+        )
+        members = [team_containers.TeamMemberV1(profile_id=fuzzy.uuid()) for _ in range(3)]
+        response = self.client.call_action('create_team', team=container, members=members)
+        team = response.result.team
+        self.verify_containers(container, team, ignore_fields=('description'))
+
+        # verify the user who created the team was added as a coordinator
+        coordinator = models.TeamMember.objects.get(team_id=team.id, profile_id=self.profile.id)
+        self.assertEqual(coordinator.role, team_containers.TeamMemberV1.COORDINATOR)
+
+        # verify we added other users as members
+        members = models.TeamMember.objects.filter(team_id=team.id).exclude(
+            profile_id=self.profile.id,
+        )
+        self.assertEqual(len(members), 3)
