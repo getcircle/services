@@ -51,6 +51,14 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
         members.append(coordinator)
         add_members(members, team.id, organization_id=self.parsed_token.organization_id)
 
+        _, permissions = get_permissions_for_team(
+            team_id=team.id,
+            profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
+            token=self.token,
+        )
+        self.response.team.permissions.CopyFrom(permissions)
+
 
 class AddMembers(TeamExistsAction):
 

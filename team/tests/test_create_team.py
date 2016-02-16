@@ -41,6 +41,11 @@ class Test(MockedTestCase):
         response = self.client.call_action('create_team', team=container)
         team = response.result.team
         self.verify_containers(container, team, ignore_fields=('description',))
+        # verify the permissions are returned
+        self.assertTrue(team.permissions.can_edit)
+        self.assertTrue(team.permissions.can_add)
+        self.assertTrue(team.permissions.can_delete)
+
         # verify the description by_profile_id is equal to the current users token
         self.assertEqual(team.description.by_profile_id, self.profile.id)
         self.assertEqual(team.organization_id, self.organization.id)
