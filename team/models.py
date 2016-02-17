@@ -25,11 +25,19 @@ class Team(models.UUIDModel, models.TimestampableModel):
                 )
                 self.description.by_profile.CopyFrom(by_profile)
 
-        if 'contact_methods' not in overrides:
-            if utils.should_inflate_field('contact_methods', inflations):
-                overrides['contact_methods'] = self.contact_methods.filter(
-                    organization_id=self.organization_id,
-                ).order_by('created')
+        if (
+            'contact_methods' not in overrides and
+            utils.should_inflate_field('contact_methods', inflations)
+        ):
+            overrides['contact_methods'] = self.contact_methods.filter(
+                organization_id=self.organization_id,
+            ).order_by('created')
+
+        if (
+            'total_members' not in overrides and
+            utils.should_inflate_field('total_members', inflations)
+        ):
+            overrides['total_members'] = self.members.count()
 
         for method in overrides.pop('contact_methods', []):
             container = protobuf.contact_methods.add()
@@ -68,6 +76,17 @@ class TeamMember(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(team_containers.TeamMemberV1.RoleV1),
         default=team_containers.TeamMemberV1.MEMBER,
     )
+
+    def _inflate(self, protobuf, inflations, fields, overrides):
+        team_inflations = inflations and utils.inflations_for_item('team', inflations)
+        team_fields = fields and utils.fields_for_item('team', fields)
+        if 'team' not in overrides and utils.should_inflate_field('team', inflations):
+            self.team.to_protobuf(protobuf.team, inflations=team_inflations, fields=team_fields)
+
+    def to_protobuf(self, protobuf=None, inflations=None, fields=None, **overrides):
+        protobuf = self.new_protobuf_container(protobuf)
+        self._inflate(protobuf, inflations, fields, overrides)
+        return super(TeamMember, self).to_protobuf(protobuf, inflations=inflations, **overrides)
 
     class Meta:
         index_together = (('team', 'organization_id', 'role'), ('profile_id', 'organization_id'))

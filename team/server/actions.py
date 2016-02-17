@@ -1,3 +1,5 @@
+from common import utils
+from django.db.models import Count
 from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.team import containers_pb2 as team_containers
 from service import (
@@ -104,39 +106,110 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
 
 class GetMembers(TeamExistsAction):
 
-    required_fields = ('team_id',)
     type_validators = {
+        'profile_id': [validators.is_uuid4],
         'team_id': [validators.is_uuid4],
     }
 
-    def run(self, *args, **kwargs):
-        super(GetMembers, self).run(*args, **kwargs)
-        members = models.TeamMember.objects.filter(
+    def validate(self, *args, **kwargs):
+        super(GetMembers, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if not self.request.team_id and not self.request.profile_id:
+                raise self.ActionFieldError('team_id', 'MISSING')
+
+    def _get_members_with_team_id(self):
+        exists = models.Team.objects.filter(
+            pk=self.request.team_id,
+            organization_id=self.parsed_token.organization_id,
+        ).exists()
+        if not exists:
+            raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
+
+        return models.TeamMember.objects.filter(
             organization_id=self.parsed_token.organization_id,
             team_id=self.request.team_id,
             role=self.request.role,
         )
+
+    def _get_members_with_profile_id(self):
+        return models.TeamMember.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            profile_id=self.request.profile_id,
+        ).order_by('-role')
+
+    def run(self, *args, **kwargs):
+        if self.request.team_id:
+            members = self._get_members_with_team_id()
+        else:
+            members = self._get_members_with_profile_id()
+
+        # XXX protect against inflating all teams improperly
+        member_fields = utils.fields_for_repeated_items('members', self.request.fields)
+        member_inflations = utils.inflations_for_repeated_items('members', self.request.inflations)
+
+        if self.request.profile_id and utils.should_inflate_field('team', member_inflations):
+            members = members.select_related('team')
+
+        members = self.get_paginated_objects(members)
         if not members:
             return
 
-        members = self.get_paginated_objects(members)
-        profile_ids = [str(member.profile_id) for member in members]
-        profiles = service.control.get_object(
-            service='profile',
-            action='get_profiles',
-            client_kwargs={'token': self.token},
-            control={'paginator': {'page_size': len(profile_ids)}},
-            return_object='profiles',
-            ids=profile_ids,
-            inflations={'disabled': True},
-        )
-        profile_id_to_profile = dict((p.id, p) for p in profiles)
+        profile_id_to_profile = {}
+        if utils.should_inflate_field('profile', member_inflations):
+            profile_ids = [str(member.profile_id) for member in members]
+            profiles = service.control.get_object(
+                service='profile',
+                action='get_profiles',
+                client_kwargs={'token': self.token},
+                control={'paginator': {'page_size': len(profile_ids)}},
+                return_object='profiles',
+                ids=profile_ids,
+                inflations={'disabled': True},
+            )
+            profile_id_to_profile = dict((p.id, p) for p in profiles)
+
+        team_id_to_team_dict = {}
+        if self.request.profile_id and utils.should_inflate_field('team', member_inflations):
+            team_inflations = utils.inflations_for_item('team', member_inflations)
+            team_fields = utils.fields_for_item('team', member_fields)
+
+            team_id_to_count_dict = {}
+            if utils.should_inflate_field('total_members', team_inflations):
+                counts = models.TeamMember.objects.filter(
+                    team_id__in=[m.team_id for m in members],
+                    organization_id=self.parsed_token.organization_id,
+                ).values('team_id').annotate(total_members=Count('id'))
+                team_id_to_count_dict = dict(
+                    (str(v['team_id']), v['total_members']) for v in counts
+                )
+
+            # TODO reorder these members based on member count
+            for member in members:
+                # XXX protect against querying for contact methods for each team
+                container = member.team.to_protobuf(
+                    inflations=team_inflations,
+                    fields=team_fields,
+                    total_members=team_id_to_count_dict.get(str(member.team.id), 0),
+                )
+                team_id_to_team_dict[container.id] = container
+
         for member in members:
             container = self.response.members.add()
-            profile = profile_id_to_profile[str(member.profile_id)]
+            # XXX remove these redundant protobuf_to_dict calls
+            profile = profile_id_to_profile.get(str(member.profile_id))
+            if profile:
+                profile = protobuf_to_dict(profile)
+
+            team = team_id_to_team_dict.get(str(member.team_id))
+            if team:
+                team = protobuf_to_dict(team)
+
             member.to_protobuf(
                 container,
-                profile=protobuf_to_dict(profile),
+                profile=profile,
+                fields=member_fields,
+                inflations=member_inflations,
+                team=team,
             )
 
 

@@ -36,6 +36,17 @@ class TeamMemberFactory(factory.Factory):
     profile_id = factory.FuzzyUUID()
     team = factory.SubFactory(TeamFactory)
 
+    @classmethod
+    def _adjust_kwargs(cls, **kwargs):
+        if 'profile' in kwargs:
+            profile = kwargs.pop('profile')
+            kwargs['profile_id'] = profile.id
+            kwargs['organization_id'] = profile.organization_id
+        elif 'team' in kwargs:
+            team = kwargs['team']
+            kwargs['organization_id'] = team.organization_id
+        return kwargs
+
 
 class ContactMethodFactory(factory.Factory):
     class Meta:
