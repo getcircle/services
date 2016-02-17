@@ -22,11 +22,7 @@ logger = logging.getLogger(__name__)
 class Provider(base.BaseProvider):
 
     type = user_containers.IdentityV1.SLACK
-    provider_profile = None
-
-    exception_to_error_map = {
-        base.MissingRequiredProfileFieldError: 'PROVIDER_PROFILE_FIELD_MISSING',
-    }
+    exception_to_error_map = {}
 
     @classmethod
     def get_authorization_url(cls, organization, redirect_uri, **kwargs):
