@@ -651,23 +651,23 @@ class GetAuthenticationInstructions(actions.Action):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
 
 
-class GetSlackAuthenticationInstructions(actions.Action):
+class GetIntegrationAuthenticationInstructions(actions.Action):
 
-    required_fields = ('organization_domain', 'redirect_uri',)
+    required_fields = ('organization_domain', 'redirect_uri', 'provider',)
 
     type_validators = {
         'redirect_uri': [valid_redirect_uri],
     }
 
-    def _get_authorization_instructions(self, organization):
+    def _get_authorization_instructions(self, organization, provider):
         return get_authorization_instructions(
-            provider=user_containers.IdentityV1.SLACK,
+            provider=provider,
             organization=organization,
             redirect_uri=self.request.redirect_uri,
         )
 
-    def _populate_slack_instructions(self, organization):
-        self.response.authorization_url, _ = self._get_authorization_instructions(organization)
+    def _populate_instructions(self, organization, provider):
+        self.response.authorization_url, _ = self._get_authorization_instructions(organization, provider)
 
     def _get_organization(self, domain):
         try:
@@ -687,7 +687,7 @@ class GetSlackAuthenticationInstructions(actions.Action):
 
     def run(self, *args, **kwargs):
         organization = self._get_organization(self.request.organization_domain)
-        self._populate_slack_instructions(organization)
+        self._populate_instructions(organization, self.request.provider)
 
 
 class GetActiveDevices(actions.Action):
