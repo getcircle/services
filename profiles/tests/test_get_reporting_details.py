@@ -41,9 +41,10 @@ class Test(MockedTestCase):
             manager=manager_node,
         )
         response = self.client.call_action('get_reporting_details', profile_id=str(profile.id))
-        self.assertFalse(response.result.manager.ByteSize())
-        self.assertFalse(response.result.peers)
-        self.assertFalse(response.result.direct_reports)
+        details = response.result.details
+        self.assertFalse(details.manager.ByteSize())
+        self.assertFalse(details.peers)
+        self.assertFalse(details.direct_reports)
 
     def test_get_reporting_details(self):
         manager = factories.ReportingStructureFactory.create(
@@ -72,9 +73,10 @@ class Test(MockedTestCase):
             'get_reporting_details',
             profile_id=str(self.profile.id),
         )
-        self.assertTrue(response.result.manager.ByteSize())
-        self.assertEqual(len(response.result.peers), 3)
-        self.assertEqual(len(response.result.direct_reports), 4)
+        details = response.result.details
+        self.assertTrue(details.manager.ByteSize())
+        self.assertEqual(len(details.peers), 3)
+        self.assertEqual(len(details.direct_reports), 4)
 
     def test_get_reporting_details_inflations(self):
         manager = factories.ReportingStructureFactory.create(
@@ -103,17 +105,18 @@ class Test(MockedTestCase):
             'get_reporting_details',
             profile_id=str(self.profile.id),
             fields={'only': [
-                'manager.id',
-                '[]peers.id',
-                '[]direct_reports.id',
+                'details.manager.id',
+                'details.[]peers.id',
+                'details.[]direct_reports.id',
             ]},
         )
-        self.assertTrue(response.result.manager.id)
-        self.assertFalse(response.result.manager.full_name)
-        for peer in response.result.peers:
+        details = response.result.details
+        self.assertTrue(details.manager.id)
+        self.assertFalse(details.manager.full_name)
+        for peer in details.peers:
             self.assertTrue(peer.id)
             self.assertFalse(peer.full_name)
 
-        for direct_report in response.result.direct_reports:
+        for direct_report in details.direct_reports:
             self.assertTrue(direct_report.id)
             self.assertFalse(direct_report.full_name)

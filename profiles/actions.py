@@ -487,34 +487,38 @@ class GetReportingDetails(PreRunParseTokenMixin, actions.Action):
     }
 
     def run(self, *args, **kwargs):
+        details_fields = utils.fields_for_item('details', self.request.fields)
+        details_inflations = utils.inflations_for_item('details', self.request.inflations)
+
         details = get_reporting_details(self.request.profile_id, self.parsed_token.organization_id)
+
         if details['manager']:
             details['manager'].to_protobuf(
-                self.response.manager,
-                fields=utils.fields_for_item('manager', self.request.fields),
-                inflations=utils.inflations_for_item('manager', self.request.inflations),
+                self.response.details.manager,
+                fields=utils.fields_for_item('manager', details_fields),
+                inflations=utils.inflations_for_item('manager', details_inflations),
             )
 
         if details['peers']:
             for peer in details['peers']:
-                container = self.response.peers.add()
+                container = self.response.details.peers.add()
                 peer.to_protobuf(
                     container,
-                    fields=utils.fields_for_repeated_items('peers', self.request.fields),
+                    fields=utils.fields_for_repeated_items('peers', details_fields),
                     inflations=utils.inflations_for_repeated_items(
                         'peers',
-                        self.request.inflations,
+                        details_inflations,
                     ),
                 )
 
         if details['direct_reports']:
             for direct_report in details['direct_reports']:
-                container = self.response.direct_reports.add()
+                container = self.response.details.direct_reports.add()
                 direct_report.to_protobuf(
                     container,
-                    fields=utils.fields_for_repeated_items('direct_reports', self.request.fields),
+                    fields=utils.fields_for_repeated_items('direct_reports', details_fields),
                     inflations=utils.inflations_for_repeated_items(
                         'direct_reports',
-                        self.request.inflations,
+                        details_inflations,
                     ),
                 )
