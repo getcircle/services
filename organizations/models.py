@@ -72,7 +72,7 @@ class ReportingStructure(MPTTModel, models.TimestampableModel):
 
     profile_id = models.UUIDField(primary_key=True)
     manager = TreeForeignKey('self', null=True, related_name='reports', db_index=True)
-    organization = models.ForeignKey(Organization, db_index=True, editable=False)
+    organization_id = models.UUIDField(db_index=True, editable=False)
     added_by_profile_id = models.UUIDField(null=True, editable=False)
 
     class MPTTMeta:

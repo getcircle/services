@@ -442,3 +442,79 @@ class ProfileExists(actions.Action):
             self.response.exists = True
             self.response.user_id = str(profile.user_id)
             self.response.profile_id = str(profile.id)
+
+
+def get_reporting_details(profile_id, organization_id):
+    # XXX ReportingStructure should be moved within the profile service
+    from organizations.models import ReportingStructure
+
+    details = {'manager': None, 'peers': [], 'direct_reports': []}
+    try:
+        node = ReportingStructure.objects.get(
+            pk=profile_id,
+            organization_id=organization_id,
+        )
+    except ReportingStructure.DoesNotExist:
+        return details
+
+    peers = list(node.get_siblings().values_list('profile_id', flat=True))
+    direct_reports = list(node.get_children().values_list('profile_id', flat=True))
+    profiles = models.Profile.objects.filter(
+        organization_id=organization_id,
+        id__in=[node.manager_id] + peers + direct_reports,
+    )
+    profile_id_to_profile_dict = dict((p.id, p) for p in profiles)
+
+    for profile_id in peers:
+        profile = profile_id_to_profile_dict.get(profile_id)
+        if profile:
+            details['peers'].append(profile)
+
+    for profile_id in direct_reports:
+        profile = profile_id_to_profile_dict.get(profile_id)
+        if profile:
+            details['direct_reports'].append(profile)
+
+    details['manager'] = profile_id_to_profile_dict.get(node.manager_id)
+    return details
+
+
+class GetReportingDetails(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('profile_id',)
+    type_validators = {
+        'profile_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        details = get_reporting_details(self.request.profile_id, self.parsed_token.organization_id)
+        if details['manager']:
+            details['manager'].to_protobuf(
+                self.response.manager,
+                fields=utils.fields_for_item('manager', self.request.fields),
+                inflations=utils.inflations_for_item('manager', self.request.inflations),
+            )
+
+        if details['peers']:
+            for peer in details['peers']:
+                container = self.response.peers.add()
+                peer.to_protobuf(
+                    container,
+                    fields=utils.fields_for_repeated_items('peers', self.request.fields),
+                    inflations=utils.inflations_for_repeated_items(
+                        'peers',
+                        self.request.inflations,
+                    ),
+                )
+
+        if details['direct_reports']:
+            for direct_report in details['direct_reports']:
+                container = self.response.direct_reports.add()
+                direct_report.to_protobuf(
+                    container,
+                    fields=utils.fields_for_repeated_items('direct_reports', self.request.fields),
+                    inflations=utils.inflations_for_repeated_items(
+                        'direct_reports',
+                        self.request.inflations,
+                    ),
+                )

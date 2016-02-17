@@ -18,4 +18,5 @@ class Server(service.control.Server):
         'get_profiles': actions.GetProfiles,
         'get_extended_profile': actions.GetExtendedProfile,
         'profile_exists': actions.ProfileExists,
+        'get_reporting_details': actions.GetReportingDetails,
     }

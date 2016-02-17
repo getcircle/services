@@ -7,6 +7,7 @@ from protobufs.services.profile import containers_pb2 as profile_containers
 from services.test import factory
 
 from . import models
+from organizations import models as organization_models
 
 
 @factory.django.mute_signals(post_save)
@@ -62,3 +63,21 @@ class ProfileFactory(factory.Factory):
                 value=value,
                 organization_id=self.organization_id,
             )
+
+
+class ReportingStructureFactory(factory.Factory):
+    class Meta:
+        model = organization_models.ReportingStructure
+
+    profile = factory.SubFactory(ProfileFactory)
+    manager = factory.SubFactory('profiles.factories.ReportingStructureFactory', manager=None)
+    added_by_profile_id = factory.FuzzyUUID()
+    organization_id = factory.FuzzyUUID()
+
+    @classmethod
+    def _adjust_kwargs(cls, **kwargs):
+        if 'profile' in kwargs:
+            profile = kwargs.pop('profile')
+            kwargs['profile_id'] = profile.id
+            kwargs['organization_id'] = profile.organization_id
+        return kwargs
