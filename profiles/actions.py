@@ -492,6 +492,8 @@ class GetReportingDetails(PreRunParseTokenMixin, actions.Action):
 
         details = get_reporting_details(self.request.profile_id, self.parsed_token.organization_id)
 
+        self.response.details.id = self.request.profile_id
+
         if details['manager']:
             details['manager'].to_protobuf(
                 self.response.details.manager,

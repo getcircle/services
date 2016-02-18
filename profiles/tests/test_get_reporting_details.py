@@ -111,6 +111,7 @@ class Test(MockedTestCase):
             ]},
         )
         details = response.result.details
+        self.assertEqual(details.id, str(self.profile.id))
         self.assertTrue(details.manager.id)
         self.assertFalse(details.manager.full_name)
         for peer in details.peers:
