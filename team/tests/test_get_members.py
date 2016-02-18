@@ -158,6 +158,9 @@ class Test(MockedTestCase):
         )
 
         for member in response.result.members:
+            self.assertIn('team.description', member.fields.exclude)
+            self.assertIn('team', member.inflations.only)
+            self.assertIn('team.total_members', member.inflations.only)
             self.assertTrue(member.team.id)
             self.assertTrue(member.team.name)
             self.assertEqual(member.team.total_members, 5)

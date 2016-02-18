@@ -86,7 +86,12 @@ class TeamMember(models.UUIDModel, models.TimestampableModel):
     def to_protobuf(self, protobuf=None, inflations=None, fields=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
         self._inflate(protobuf, inflations, fields, overrides)
-        return super(TeamMember, self).to_protobuf(protobuf, inflations=inflations, **overrides)
+        return super(TeamMember, self).to_protobuf(
+            protobuf,
+            inflations=inflations,
+            fields=fields,
+            **overrides
+        )
 
     class Meta:
         index_together = (('team', 'organization_id', 'role'), ('profile_id', 'organization_id'))
