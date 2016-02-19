@@ -254,6 +254,7 @@ class Logout(actions.Action):
 def get_authorization_instructions(
         provider,
         organization=None,
+        user_id=None,
         sso=None,
         redirect_uri=None,
         login_hint=None,
@@ -305,6 +306,7 @@ def get_authorization_instructions(
     elif provider == user_containers.IdentityV1.SLACK:
         authorization_url = providers.slack.Provider.get_authorization_url(
             organization=organization,
+            user_id=user_id,
             redirect_uri=redirect_uri,
         )
         provider_name = 'Slack'
@@ -368,12 +370,10 @@ class CompleteAuthorization(actions.Action):
             self.response,
             state=state,
         )
-        user = None
-        if not isinstance(provider, providers.Slack):
-            user = self._get_or_create_user(identity)
-            identity.user_id = user.id
-            identity.organization_id = user.organization_id
-            identity.save()
+        user = self._get_or_create_user(identity)
+        identity.user_id = user.id
+        identity.organization_id = user.organization_id
+        identity.save()
         identity.to_protobuf(self.response.identity)
         provider.finalize_authorization(
             identity=identity,
@@ -651,7 +651,7 @@ class GetAuthenticationInstructions(actions.Action):
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
 
 
-class GetIntegrationAuthenticationInstructions(actions.Action):
+class GetIntegrationAuthenticationInstructions(mixins.PreRunParseTokenMixin, actions.Action):
 
     required_fields = ('organization_domain', 'redirect_uri', 'provider',)
 
@@ -663,6 +663,7 @@ class GetIntegrationAuthenticationInstructions(actions.Action):
         return get_authorization_instructions(
             provider=provider,
             organization=organization,
+            user_id=self.parsed_token.user_id,
             redirect_uri=self.request.redirect_uri,
         )
 

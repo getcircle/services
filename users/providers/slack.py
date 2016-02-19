@@ -25,10 +25,11 @@ class Provider(base.BaseProvider):
     exception_to_error_map = {}
 
     @classmethod
-    def get_authorization_url(cls, organization, redirect_uri, **kwargs):
+    def get_authorization_url(cls, organization, user_id, redirect_uri, **kwargs):
         payload = {
             'domain': organization.domain,
             'redirect_uri': redirect_uri,
+            'user_id': user_id,
         }
         parameters = {
             'client_id': settings.SLACK_CLIENT_ID,
@@ -61,6 +62,7 @@ class Provider(base.BaseProvider):
 
     def complete_authorization(self, request, response, state):
         redirect_uri = state.get('redirect_uri')
+        user_id = state.get('user_id')
         domain = state['domain']
         organization = organization_models.Organization.objects.get(
             domain=domain
@@ -74,6 +76,7 @@ class Provider(base.BaseProvider):
 
         identity, _ = self.get_identity(credentials['team_id'], organization.id)
         identity.access_token = credentials['access_token']
+        identity.user_id = user_id
         return identity
 
     def finalize_authorization(self, user, identity, request, response):
