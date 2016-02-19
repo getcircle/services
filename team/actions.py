@@ -197,6 +197,7 @@ def update_members(team_id, organization_id, members, token):
             )
             member.role = new_member.role
             member.save()
+    return existing_members
 
 
 def remove_members(team_id, organization_id, profile_ids):

@@ -93,7 +93,15 @@ class Test(MockedTestCase):
         for member in members:
             member.role = team_containers.TeamMemberV1.COORDINATOR
 
-        self.client.call_action('update_members', team_id=str(team.id), members=members)
+        member_id_to_member = dict((str(m.id), m) for m in members)
+
+        response = self.client.call_action('update_members', team_id=str(team.id), members=members)
+        self.assertEqual(len(response.result.members), len(members))
+        for member in response.result.members:
+            expected_member = member_id_to_member[member.id]
+            self.assertEqual(member.role, expected_member.role)
+            self.assertEqual(member.inflations.only, ['profile'])
+
         coordinators = models.TeamMember.objects.filter(
             team_id=team.id,
             role=team_containers.TeamMemberV1.COORDINATOR,
