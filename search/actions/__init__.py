@@ -5,7 +5,6 @@ from protobufs.services.organization import containers_pb2 as organization_conta
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import search_pb2
 from service import actions
-import service.control
 import watson
 
 from services import mixins
