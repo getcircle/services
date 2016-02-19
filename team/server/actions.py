@@ -71,11 +71,14 @@ class AddMembers(TeamExistsAction):
 
     def run(self, *args, **kwargs):
         super(AddMembers, self).run(*args, **kwargs)
-        add_members(
+        members = add_members(
             self.request.members,
             self.request.team_id,
             organization_id=self.parsed_token.organization_id,
         )
+        for member in members:
+            container = self.response.members.add()
+            member.to_protobuf(container, inflations={'disabled': True})
 
 
 class GetTeam(PreRunParseTokenMixin, actions.Action):

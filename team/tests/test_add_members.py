@@ -55,9 +55,19 @@ class Test(MockedTestCase):
         members = [{'profile_id': fuzzy.uuid(), 'role': team_containers.TeamMemberV1.COORDINATOR}
                    for _ in range(3)]
         for _ in range(3):
-            members.append({'profile_id': fuzzy.uuid()})
+            members.append({
+                'profile_id': fuzzy.uuid(),
+                'role': team_containers.TeamMemberV1.MEMBER,
+            })
 
-        self.client.call_action('add_members', team_id=str(team.id), members=members)
+        profile_id_to_member = dict((m['profile_id'], m) for m in members)
+
+        response = self.client.call_action('add_members', team_id=str(team.id), members=members)
+        self.assertEqual(len(response.result.members), len(members))
+        for member in response.result.members:
+            self.assertTrue(member.inflations.disabled)
+            expected_member = profile_id_to_member[member.profile_id]
+            self.assertEqual(expected_member['role'], member.role)
 
         coordinators = models.TeamMember.objects.filter(
             team_id=team.id,
@@ -78,7 +88,8 @@ class Test(MockedTestCase):
 
         # changing the role should still do nothing
         members[0]['role'] = team_containers.TeamMemberV1.COORDINATOR
-        self.client.call_action('add_members', team_id=str(team.id), members=members)
+        response = self.client.call_action('add_members', team_id=str(team.id), members=members)
+        self.assertEqual(len(response.result.members), len(members))
 
         members = models.TeamMember.objects.filter(team_id=team.id)
         self.assertEqual(len(members), 1)
@@ -88,7 +99,8 @@ class Test(MockedTestCase):
         team = factories.TeamFactory.create(organization_id=self.organization.id)
         profile_id = fuzzy.uuid()
         members = [{'profile_id': profile_id}, {'profile_id': profile_id}]
-        self.client.call_action('add_members', team_id=str(team.id), members=members)
+        response = self.client.call_action('add_members', team_id=str(team.id), members=members)
+        self.assertEqual(len(response.result.members), 1)
 
         members = models.TeamMember.objects.filter(team_id=team.id)
         self.assertEqual(len(members), 1)

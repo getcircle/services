@@ -139,7 +139,7 @@ def add_members(containers, team_id, organization_id, **overrides):
             )
             objects.append(obj)
             ids.add(container.profile_id)
-    models.TeamMember.objects.bulk_create(objects)
+    return models.TeamMember.objects.bulk_create(objects)
 
 
 def get_team(team_id, organization_id):
