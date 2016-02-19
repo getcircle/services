@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 CATEGORY_TO_ACTIONS = {
     search_pb2.POSTS: [post_actions],
     search_pb2.PROFILES: [profile_actions],
-    search_pb2.LOCATIONS: [location_actions],
     search_pb2.TEAMS: [team_actions],
 }
 
@@ -41,7 +40,7 @@ class Action(PreRunParseTokenMixin, actions.Action):
     required_fields = ('query',)
 
     def _get_doc_type(self):
-        if not self.request.has_category:
+        if self.request.category == search_pb2.ALL:
             return None
 
         doc_types = []
@@ -49,15 +48,13 @@ class Action(PreRunParseTokenMixin, actions.Action):
             doc_types.append(types.ProfileV1._doc_type.name)
         elif self.request.category == search_pb2.TEAMS:
             doc_types.append(types.TeamV1._doc_type.name)
-        elif self.request.category == search_pb2.LOCATIONS:
-            doc_types.append(types.LocationV1._doc_type.name)
         elif self.request.category == search_pb2.POSTS:
             doc_types.append(types.PostV1._doc_type.name)
         return ','.join(doc_types) or None
 
     def _get_statements(self, statement_type):
         actions = []
-        if not self.request.has_category:
+        if self.request.category == search_pb2.ALL:
             actions = sum(CATEGORY_TO_ACTIONS.values(), [])
         else:
             actions = CATEGORY_TO_ACTIONS[self.request.category]
