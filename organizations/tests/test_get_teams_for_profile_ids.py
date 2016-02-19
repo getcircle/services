@@ -33,25 +33,25 @@ class TestGetTeamsForProfileIds(MockedTestCase):
     def test_get_teams_for_profile_ids(self):
         manager = factories.ReportingStructureFactory.create(
             manager=None,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         # create a few reports to this manager
         report_1 = factories.ReportingStructureFactory.create(
             manager=manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         report_2 = factories.ReportingStructureFactory.create(
             manager=manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
 
         # create another manager with 1 report
         report_3 = factories.ReportingStructureFactory.create(
             manager=factories.ReportingStructureFactory.create(
                 manager=None,
-                organization=self.organization,
+                organization_id=self.organization.id,
             ),
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
 
         # create teams for the two managers

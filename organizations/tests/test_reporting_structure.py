@@ -142,7 +142,7 @@ class OrganizationTeamTests(MockedTestCase):
         models.ReportingStructure.objects.create(
             profile_id=self.profile.id,
             manager=manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         response = self.client.call_action('get_profile_reporting_details')
         self.assertEqual(response.result.manager_profile_id, str(manager.profile_id))
@@ -159,7 +159,7 @@ class OrganizationTeamTests(MockedTestCase):
         sub_manager = models.ReportingStructure.objects.get(profile_id=sub_team.manager_profile_id)
         # add a peer to the sub team's manager
         peer = factories.ReportingStructureFactory.create(
-            organization=self.organization,
+            organization_id=self.organization.id,
             manager=manager,
         )
         response = self.client.call_action(
@@ -214,7 +214,7 @@ class OrganizationTeamTests(MockedTestCase):
         )
         # add a peer to the sub team's manager
         factories.ReportingStructureFactory.create(
-            organization=self.organization,
+            organization_id=self.organization.id,
             manager=manager,
         )
 
@@ -253,30 +253,30 @@ class OrganizationTeamTests(MockedTestCase):
     def test_get_descendants(self):
         manager = factories.ReportingStructureFactory.create(
             manager=None,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         # create some middle managers
         factories.ReportingStructureFactory.create_batch(
             size=3,
             manager=manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         # create the middle manager who will query about
         middle_manager = factories.ReportingStructureFactory.create(
             manager=manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         # create children
         child = factories.ReportingStructureFactory.create_batch(
             size=3,
             manager=middle_manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )[0]
         # create grandchildren
         factories.ReportingStructureFactory.create_batch(
             size=3,
             manager=child,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
 
         response = self.client.call_action('get_descendants', profile_id=middle_manager.profile_id)
@@ -293,18 +293,18 @@ class OrganizationTeamTests(MockedTestCase):
     def test_get_descendants_team_id(self):
         manager = factories.ReportingStructureFactory.create(
             manager=None,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         # create some middle managers
         factories.ReportingStructureFactory.create_batch(
             size=3,
             manager=manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         # create the middle manager who will query about
         middle_manager = factories.ReportingStructureFactory.create(
             manager=manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         # create the team we'll query for (implicitly creates 1 direct report)
         team = factories.TeamFactory.create(
@@ -315,13 +315,13 @@ class OrganizationTeamTests(MockedTestCase):
         child = factories.ReportingStructureFactory.create_batch(
             size=3,
             manager=middle_manager,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )[0]
         # create grandchildren
         factories.ReportingStructureFactory.create_batch(
             size=3,
             manager=child,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
 
         response = self.client.call_action('get_descendants', team_id=str(team.id))

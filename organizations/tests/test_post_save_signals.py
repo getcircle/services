@@ -13,7 +13,7 @@ class TestPostSaveSignals(TestCase):
     @patch('organizations.receivers._update_entity')
     def test_post_save_signal_team(self, patched):
         organization = factories.OrganizationFactory.create()
-        node = factories.ReportingStructureFactory.create(organization=organization)
+        node = factories.ReportingStructureFactory.create(organization_id=organization.id)
         instance = factories.TeamFactory.build(
             organization=organization,
             manager_profile_id=node.profile_id,

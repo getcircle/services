@@ -75,15 +75,15 @@ class OrganizationTeamTests(MockedTestCase):
     def test_get_team_with_child_teams(self):
         root = factories.ReportingStructureFactory.create(
             manager_id=None,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         middle_manager = factories.ReportingStructureFactory.create(
             manager_id=root.profile_id,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         factories.ReportingStructureFactory.create(
             manager_id=middle_manager.profile_id,
-            organization=self.organization,
+            organization_id=self.organization.id,
         )
         team = factories.TeamFactory.create_protobuf(
             organization=self.organization,
@@ -158,7 +158,7 @@ class OrganizationTeamTests(MockedTestCase):
         manager = mocks.mock_profile(id=str(team.manager_profile_id))
         factories.ReportingStructureFactory.create(
             manager_id=manager.id,
-            organization=self.organization,
+            organization_id=self.organization.id,
             profile_id=self.profile.id,
         )
         self._mock_requester_profile()
@@ -182,7 +182,7 @@ class OrganizationTeamTests(MockedTestCase):
         )
         manager = mocks.mock_profile(id=str(self.profile.id))
         factories.ReportingStructureFactory.create(
-            organization=self.organization,
+            organization_id=self.organization.id,
             profile_id=self.profile.id,
         )
         self._mock_requester_profile()
@@ -240,7 +240,7 @@ class OrganizationTeamTests(MockedTestCase):
         manager = mocks.mock_profile(id=str(team.manager_profile_id))
         factories.ReportingStructureFactory.create(
             manager_id=manager.id,
-            organization=self.organization,
+            organization_id=self.organization.id,
             profile_id=self.profile.id,
         )
         team.name = 'new name'
