@@ -65,7 +65,7 @@ class Test(MockedTestCase):
         response = self.client.call_action('add_members', team_id=str(team.id), members=members)
         self.assertEqual(len(response.result.members), len(members))
         for member in response.result.members:
-            self.assertTrue(member.inflations.disabled)
+            self.assertEqual(member.inflations.only, ['profile'])
             expected_member = profile_id_to_member[member.profile_id]
             self.assertEqual(expected_member['role'], member.role)
 

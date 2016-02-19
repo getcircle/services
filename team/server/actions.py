@@ -76,9 +76,29 @@ class AddMembers(TeamExistsAction):
             self.request.team_id,
             organization_id=self.parsed_token.organization_id,
         )
+        profile_ids = [str(member.profile_id) for member in members]
+        profiles = service.control.get_object(
+            service='profile',
+            action='get_profiles',
+            client_kwargs={'token': self.token},
+            control={'paginator': {'page_size': len(profile_ids)}},
+            return_object='profiles',
+            ids=profile_ids,
+            inflations={'disabled': True},
+        )
+        profile_id_to_profile = dict((p.id, p) for p in profiles)
         for member in members:
             container = self.response.members.add()
-            member.to_protobuf(container, inflations={'disabled': True})
+            profile = profile_id_to_profile.get(str(member.profile_id))
+            # TODO remove redundant protobuf_to_dict
+            if profile:
+                profile = protobuf_to_dict(profile)
+
+            member.to_protobuf(
+                container,
+                inflations={'only': ['profile']},
+                profile=profile,
+            )
 
 
 class GetTeam(PreRunParseTokenMixin, actions.Action):
