@@ -233,77 +233,6 @@ class Test(ESTestCase):
             response.result.results,
         )
 
-    def test_search_team_with_location(self):
-        response = self.client.call_action('search_v2', query='Customer Support San Francisco')
-        # TODO this should be the top result, "San" matches profile "Sandra"
-        # because of "email", "full_name" matching "san"
-        self.verify_top_results(
-            'team',
-            {'name': 'Customer Support'},
-            response.result.results,
-        )
-
-    def test_search_location_with_name(self):
-        response = self.client.call_action('search_v2', query='Headquarters')
-        self.verify_top_results(
-            'location',
-            {'name': 'Headquarters'},
-            response.result.results,
-            top_results=1,
-        )
-
-    def test_search_location_address_1(self):
-        response = self.client.call_action('search_v2', query='1 Front Street, Suite 2700')
-        self.verify_top_results(
-            'location',
-            {'name': 'Headquarters'},
-            response.result.results,
-            top_results=1,
-        )
-
-    def test_search_location_city(self):
-        response = self.client.call_action('search_v2', query='San Francisco')
-        self.verify_top_results(
-            'location',
-            {'name': 'Headquarters'},
-            response.result.results,
-            top_results=1,
-        )
-
-    def test_search_location_zip_code(self):
-        response = self.client.call_action('search_v2', query='94111')
-        self.verify_top_results(
-            'location',
-            {'name': 'Headquarters'},
-            response.result.results,
-            top_results=1,
-        )
-
-    def test_search_location_partial_name(self):
-        response = self.client.call_action('search_v2', query='Head')
-        self.verify_top_results(
-            'location',
-            {'name': 'Headquarters'},
-            response.result.results,
-            top_results=1,
-        )
-
-    def test_search_location_partial_address(self):
-        response = self.client.call_action('search_v2', query='1 Front')
-        self.verify_top_results(
-            'location',
-            {'name': 'Headquarters'},
-            response.result.results,
-            top_results=1,
-        )
-        response = self.client.call_action('search_v2', query='Suite 2700')
-        self.verify_top_results(
-            'location',
-            {'name': 'Headquarters'},
-            response.result.results,
-            top_results=1,
-        )
-
     def test_search_post_phising_email(self):
         _verify = lambda response, query: self.verify_top_results(
             'post',
@@ -433,22 +362,6 @@ class Test(ESTestCase):
             'post',
             {'title': 'Hashtag'},
             response.result.results,
-        )
-
-    def test_search_location_address_higher_than_content(self):
-        """Verify that a raw match in the location address is ranked higher than in a post.
-
-        This assumes we have a location with an address in San Francisco and a
-        post with "San Francisco" in the content. We should always rank the raw
-        match in the address higher than the post content.
-
-        """
-        response = self.client.call_action('search_v2', query='San Francisco')
-        self.verify_top_results(
-            'location',
-            {'city': 'San Francisco'},
-            response.result.results,
-            top_results=1,
         )
 
     def test_search_partial_email_shouldnt_rank_higher_than_partial_name(self):
