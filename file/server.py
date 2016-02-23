@@ -12,4 +12,5 @@ class Server(service.control.Server):
         'get_files': actions.GetFiles,
         'start_upload': actions.StartUpload,
         'upload': actions.Upload,
+        'get_file': actions.GetFile,
     }
