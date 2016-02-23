@@ -1,4 +1,5 @@
 from collections import namedtuple
+import re
 
 import arrow
 from slacker import Slacker
@@ -101,7 +102,8 @@ def post_content_from_messages(messages):
     prev_author = None
     for message in messages:
         if 'text' in message:
-            content.append(message['text'])
+            text = replace_slack_links_with_post_links(message['text'])
+            content.append(text)
             author = message['user']
             if prev_author != None and author != prev_author:
                 content.append('<br><br>')
@@ -109,3 +111,7 @@ def post_content_from_messages(messages):
                 content.append('<br>')
             prev_author = author
     return ''.join(content)
+
+
+def replace_slack_links_with_post_links(text):
+    return re.sub(r'<(\S*)\|(\S*)>', '<a href=\g<1>>\g<2></a>', text)
