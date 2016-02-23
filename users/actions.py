@@ -254,6 +254,7 @@ class Logout(actions.Action):
 def get_authorization_instructions(
         provider,
         organization=None,
+        user_id=None,
         sso=None,
         redirect_uri=None,
         login_hint=None,
@@ -302,6 +303,13 @@ def get_authorization_instructions(
             redirect_uri=redirect_uri,
         )
         provider_name = 'Okta'
+    elif provider == user_containers.IdentityV1.SLACK:
+        authorization_url = providers.slack.Provider.get_authorization_url(
+            organization=organization,
+            user_id=user_id,
+            redirect_uri=redirect_uri,
+        )
+        provider_name = 'Slack'
     return authorization_url, provider_name
 
 
@@ -313,6 +321,8 @@ class CompleteAuthorization(actions.Action):
             provider_class = providers.Google
         elif self.request.provider == user_containers.IdentityV1.OKTA:
             provider_class = providers.Okta
+        elif self.request.provider == user_containers.IdentityV1.SLACK:
+            provider_class = providers.Slack
 
         if provider_class is None:
             raise self.ActionFieldError('provider', 'UNSUPPORTED')
@@ -639,6 +649,46 @@ class GetAuthenticationInstructions(actions.Action):
             self._populate_google_instructions(organization, sso)
         else:
             self.response.backend = authenticate_user_pb2.RequestV1.INTERNAL
+
+
+class GetIntegrationAuthenticationInstructions(mixins.PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('organization_domain', 'redirect_uri', 'provider',)
+
+    type_validators = {
+        'redirect_uri': [valid_redirect_uri],
+    }
+
+    def _get_authorization_instructions(self, organization, provider):
+        return get_authorization_instructions(
+            provider=provider,
+            organization=organization,
+            user_id=self.parsed_token.user_id,
+            redirect_uri=self.request.redirect_uri,
+        )
+
+    def _populate_instructions(self, organization, provider):
+        self.response.authorization_url, _ = self._get_authorization_instructions(organization, provider)
+
+    def _get_organization(self, domain):
+        try:
+            response = service.control.call_action(
+                'organization',
+                'get_organization',
+                domain=domain,
+            )
+        except service.control.CallActionError as e:
+            error_details = e.response.error_details
+            if error_details:
+                details = error_details[0]
+                if details.key == 'domain' and details.detail == 'DOES_NOT_EXIST':
+                    raise self.ActionFieldError('organization_domain', 'DOES_NOT_EXIST')
+            raise
+        return response.result.organization
+
+    def run(self, *args, **kwargs):
+        organization = self._get_organization(self.request.organization_domain)
+        self._populate_instructions(organization, self.request.provider)
 
 
 class GetActiveDevices(actions.Action):

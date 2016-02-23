@@ -3,6 +3,7 @@ from protobufs.services.organization.containers import integration_pb2
 from rest_framework import status
 from rest_framework.test import APIClient
 from slacker import Response
+from django.conf import settings
 
 from services.test import (
     fuzzy,
@@ -23,7 +24,7 @@ class Test(MockedTestCase):
             organization_id=self.organization.id,
             profile_id=self.profile.id,
         )
-        self.slack_token = fuzzy.FuzzyText().fuzz()
+        self.slack_token = settings.SLACK_SLASH_COMMANDS_TOKEN
         self.api = APIClient()
 
     def _setup_test(self, patched):
@@ -40,18 +41,22 @@ class Test(MockedTestCase):
 
     def test_slack_hooks_slash_integration_doesnt_exist(self):
         slack_token = fuzzy.FuzzyText().fuzz()
+        team_id = fuzzy.FuzzyText().fuzz()
+        user_id = fuzzy.FuzzyText().fuzz()
         error = self.mock.get_mockable_call_action_error('organization', 'get_integration')
         self.mock.instance.register_mock_error(
             service='organization',
             action='get_integration',
             error=error,
-            provider_uid=slack_token,
+            provider_uid=team_id,
             integration_type=integration_pb2.SLACK_SLASH_COMMAND,
         )
-        response = self.api.post('/hooks/slack/', {'token': slack_token})
+        response = self.api.post('/hooks/slack/', {'token': slack_token, 'team_id': team_id, 'user_id': user_id})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_slack_hooks_slack_api_integration_doesnt_exist(self):
+        slack_token = fuzzy.FuzzyText().fuzz()
+        team_id = fuzzy.FuzzyText().fuzz()
         error = self.mock.get_mockable_call_action_error('organization', 'get_integration')
         self.mock.instance.register_mock_error(
             service='organization',
@@ -59,7 +64,7 @@ class Test(MockedTestCase):
             error=error,
             integration_type=integration_pb2.SLACK_WEB_API,
         )
-        response = self.api.post('/hooks/slack/', {'token': fuzzy.FuzzyText().fuzz()})
+        response = self.api.post('/hooks/slack/', {'token': slack_token, 'team_id': team_id})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     @patch('hooks.slack.actions.Slacker')
@@ -79,6 +84,7 @@ class Test(MockedTestCase):
         response = self.api.post('/hooks/slack/', {
             'token': fuzzy.FuzzyText().fuzz(),
             'user_id': fuzzy.FuzzyText().fuzz(),
+            'team_id': fuzzy.FuzzyText().fuzz(),
         })
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -86,8 +92,9 @@ class Test(MockedTestCase):
     def test_slack_hooks_luno_help(self, patched):
         self._setup_test(patched)
         response = self.api.post('/hooks/slack/', {
-            'token': fuzzy.FuzzyText().fuzz(),
+            'token': self.slack_token,
             'user_id': fuzzy.FuzzyText().fuzz(),
+            'team_id': fuzzy.FuzzyText().fuzz(),
             'command': '/luno',
             'text': '',
         })

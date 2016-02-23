@@ -27,6 +27,7 @@ class OrganizationIntegrationTests(TestCase):
 
     def test_organization_enable_integration_slack_slash_command(self):
         slack_token = fuzzy.FuzzyText().fuzz()
+        team_id = fuzzy.FuzzyText().fuzz()
         response = self.client.call_action(
             'enable_integration',
             integration={
@@ -34,6 +35,7 @@ class OrganizationIntegrationTests(TestCase):
                 'slack_slash_command': {
                     'token': slack_token,
                 },
+                'provider_uid': team_id,
             },
         )
         self.assertEqual(
@@ -44,7 +46,7 @@ class OrganizationIntegrationTests(TestCase):
         self.assertEqual(details.token, slack_token)
 
         integration = models.Integration.objects.get(pk=response.result.integration.id)
-        self.assertEqual(integration.provider_uid, slack_token)
+        self.assertEqual(integration.provider_uid, team_id)
         self.assertEqual(integration.type, integration_pb2.SLACK_SLASH_COMMAND)
         self.assertEqual(integration.details, response.result.integration.slack_slash_command)
 

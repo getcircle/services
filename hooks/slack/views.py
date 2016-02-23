@@ -7,6 +7,7 @@ from rest_framework import (
 )
 from rest_framework.renderers import JSONRenderer
 import service.control
+from django.conf import settings
 
 from services.token import make_admin_token
 
@@ -29,6 +30,9 @@ class SlackViewSet(viewsets.ViewSet):
     def perform_authentication(self, request, *args, **kwargs):
         logger.info('received slash command: %s', self.request.data)
         token = self.request.data['token']
+        team_id = self.request.data['team_id']
+        if token != settings.SLACK_SLASH_COMMANDS_TOKEN:
+            raise exceptions.NotAuthenticated()
         try:
             request.slash_integration = service.control.get_object(
                 service='organization',
@@ -36,7 +40,7 @@ class SlackViewSet(viewsets.ViewSet):
                 client_kwargs={'token': make_admin_token()},
                 return_object='integration',
                 integration_type=integration_pb2.SLACK_SLASH_COMMAND,
-                provider_uid=token,
+                provider_uid=team_id,
             )
         except service.control.CallActionError:
             # TODO if we want to get fancy we should emit a message back that

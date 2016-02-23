@@ -311,3 +311,10 @@ EMAIL_HOOK_NOTIFICATION_FROM_ADDRESS = 'notifications@lunohq.com'
 SILENCED_SYSTEM_CHECKS = [
     'auth.W004',
 ]
+
+SLACK_AUTHORIZATION_URL = 'https://slack.com/oauth/authorize'
+SLACK_TOKEN_URL = 'https://slack.com/api/oauth.access'
+SLACK_CLIENT_ID = '22618016311.22622327954'
+SLACK_CLIENT_SECRET = '261102011defd0347802cb4d6cc5c592'
+SLACK_SLASH_COMMANDS_TOKEN = 'BpiiPNwSC0EnisQT6PUSF1oe'
+SLACK_SCOPE = 'commands channels:history users:read'

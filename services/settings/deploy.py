@@ -139,7 +139,7 @@ AWS_SNS_TOPIC_NO_SEARCH_RESULTS = os.environ.get(
 
 RAVEN_CONFIG = {
     'dsn': os.environ.get('SENTRY_DSN'),
-    'release': '%s - %s' % (os.environ.get('EMPIRE_RELEASE'), raven.fetch_git_sha('/app')),
+    'release': os.environ.get('EMPIRE_RELEASE'),
 }
 
 # XXX default to api.lunohq.com in the future
@@ -219,3 +219,11 @@ CELERYBEAT_SCHEDULE = {
 }
 
 CELERY_IGNORE_RESULT = True
+
+SLACK_TOKEN_URL = os.environ.get('SLACK_TOKEN_URL', SLACK_TOKEN_URL)
+SLACK_CLIENT_ID = os.environ.get('SLACK_CLIENT_ID', SLACK_CLIENT_ID)
+SLACK_CLIENT_SECRET = os.environ.get('SLACK_CLIENT_SECRET', SLACK_CLIENT_SECRET)
+SLACK_SLASH_COMMANDS_TOKEN = os.environ.get(
+    'SLACK_SLASH_COMMANDS_TOKEN',
+    SLACK_SLASH_COMMANDS_TOKEN,
+)

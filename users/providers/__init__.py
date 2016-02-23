@@ -8,3 +8,4 @@ from .base import (  # NOQA
 
 from .google import Provider as Google  # NOQA
 from .okta import Provider as Okta  # NOQA
+from .slack import Provider as Slack  # NOQA
