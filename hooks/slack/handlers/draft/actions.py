@@ -114,4 +114,4 @@ def post_content_from_messages(messages):
 
 
 def replace_slack_links_with_post_links(text):
-    return re.sub(r'<(\S*)\|(\S*)>', '<a href=\g<1>>\g<2></a>', text)
+    return re.sub(r'<(\S*)\|(\S*)>', r'<a href=\g<1>>\g<2></a>', text)
