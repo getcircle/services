@@ -37,6 +37,22 @@ class Test(MockedTestCase):
         self.assertEqual(self.profile.id, post.by_profile_id)
         self.assertEqual(self.organization.id, post.organization_id)
 
+    def test_create_post_return_by_profile(self):
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+            inflations={'disabled': False, 'only': ['display_title']},
+        )
+        response = self.client.call_action(
+            'create_post',
+            post={'title': fuzzy.text(), 'content': fuzzy.text()},
+        )
+        post = response.result.post
+        self.verify_containers(self.profile, post.by_profile)
+
     def test_create_post_specified_by_profile_id_rejected(self):
         post = {'title': 'title', 'content': 'content', 'by_profile_id': fuzzy.FuzzyUUID().fuzz()}
         response = self.client.call_action('create_post', post=post)

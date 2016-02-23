@@ -55,6 +55,7 @@ class CreatePost(PreRunParseTokenMixin, actions.Action):
             self.response.post,
             file_ids=self.request.post.file_ids,
             inflations={'exclude': ['html_document']},
+            token=self.token,
         )
 
 
