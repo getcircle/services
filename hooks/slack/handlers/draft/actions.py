@@ -97,5 +97,15 @@ def parse_draft_interval(request_time, text):
 
 
 def post_content_from_messages(messages):
-    text_values = [m['text'] for m in messages if 'text' in m]
-    return '\n'.join(text_values)
+    content = []
+    prev_author = None
+    for message in messages:
+        if 'text' in message:
+            content.append(message['text'])
+            author = message['user']
+            if prev_author != None and author != prev_author:
+                content.append('<br><br>')
+            else:
+                content.append('<br>')
+            prev_author = author
+    return ''.join(content)
