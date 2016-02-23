@@ -94,3 +94,8 @@ def parse_draft_interval(request_time, text):
     else:
         draft_interval = _parse_interval(request_time, parts)
     return draft_interval
+
+
+def post_content_from_messages(messages):
+    text_values = [m['text'] for m in messages if 'text' in m]
+    return '\n'.join(text_values)
