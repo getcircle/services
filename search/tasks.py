@@ -59,7 +59,7 @@ def update_profiles(ids, organization_id):
 @app.task
 def update_teams(ids, organization_id):
     teams = service.control.get_object(
-        service='organization',
+        service='team',
         action='get_teams',
         return_object='teams',
         client_kwargs={'token': make_admin_token(organization_id=organization_id)},
@@ -67,21 +67,6 @@ def update_teams(ids, organization_id):
         ids=ids,
     )
     _update_documents(TeamV1, teams, organization_id)
-    [update_direct_reports.delay(team.manager_profile_id, organization_id) for team in teams]
-
-
-@app.task
-def update_direct_reports(manager_profile_id, organization_id):
-    direct_reports_profile_ids = service.control.get_object(
-        service='organization',
-        action='get_profile_reporting_details',
-        return_object='direct_reports_profile_ids',
-        client_kwargs={'token': make_admin_token(organization_id=organization_id)},
-        profile_id=manager_profile_id,
-    )
-    # NB: We need to cast to a list since celery can't serialize the Protobuf
-    # list type
-    update_profiles.delay(list(direct_reports_profile_ids), organization_id)
 
 
 @app.task
