@@ -154,7 +154,7 @@ class Collection(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(post_containers.CollectionV1.OwnerTypeV1),
         default=post_containers.CollectionV1.PROFILE,
     )
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, null=True)
     # is_default is a NullBooleanField to enforce only 1 default collection per
     # owner_type and owner_id
     is_default = models.NullBooleanField(editable=False, null=True)
