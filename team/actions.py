@@ -160,7 +160,7 @@ def get_team(team_id, organization_id):
     return models.Team.objects.get(pk=team_id, organization_id=organization_id)
 
 
-def get_teams(organization_id, inflations):
+def get_teams(organization_id, ids=None):
     """Return the teams for the organization.
 
     Args:
@@ -170,7 +170,10 @@ def get_teams(organization_id, inflations):
         models.Team queryset
 
     """
-    return models.Team.objects.filter(organization_id=organization_id)
+    parameters = {'organization_id': organization_id}
+    if ids:
+        parameters['id__in'] = ids
+    return models.Team.objects.filter(**parameters)
 
 
 def update_members(team_id, organization_id, members, token):

@@ -31,3 +31,17 @@ class Test(MockedTestCase):
         expected = factories.TeamFactory.create_batch(size=5, organization_id=self.organization.id)
         response = self.client.call_action('get_teams')
         self.assertEqual(len(response.result.teams), len(expected))
+
+    def test_get_teams_by_ids(self):
+        fetched = factories.TeamFactory.create_batch(size=2, organization_id=self.organization.id)
+        factories.TeamFactory.create_batch(size=3, organization_id=self.organization.id)
+        response = self.client.call_action('get_teams', ids=[str(t.id) for t in fetched])
+        self.assertEqual(len(response.result.teams), len(fetched))
+
+        fetched_ids = [t.id for t in response.result.teams]
+        for team in fetched:
+            self.assertIn(str(team.id), fetched_ids)
+
+    def test_get_teams_by_ids_invalid_values(self):
+        with self.assertFieldError('ids'):
+            self.client.call_action('get_teams', ids=['invalid', 'invalid'])

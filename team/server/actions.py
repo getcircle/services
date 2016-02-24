@@ -139,13 +139,20 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
 
 class GetTeams(PreRunParseTokenMixin, actions.Action):
 
+    type_validators = {
+        'ids': [validators.is_uuid4_list],
+    }
+
     def run(self, *args, **kwargs):
         # we don't support get_teams permissions yet
         self.request.inflations.exclude.append('permissions')
         # we don't support get_teams contact_methods yet
         self.request.inflations.exclude.append('contact_methods')
 
-        teams = get_teams(self.parsed_token.organization_id, inflations=self.request.inflations)
+        teams = get_teams(
+            self.parsed_token.organization_id,
+            ids=self.request.ids,
+        )
         teams = self.get_paginated_objects(teams)
         if not teams:
             return
