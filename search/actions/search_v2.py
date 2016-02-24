@@ -12,7 +12,7 @@ from service import actions
 from services.mixins import PreRunParseTokenMixin
 from ..stores.es import types
 from ..stores.es.indices.organization.actions import get_read_alias
-from ..stores.es.types.location import actions as location_actions
+from ..stores.es.types.collection import actions as collection_actions
 from ..stores.es.types.post import actions as post_actions
 from ..stores.es.types.profile import actions as profile_actions
 from ..stores.es.types.team import actions as team_actions
@@ -23,6 +23,7 @@ CATEGORY_TO_ACTIONS = {
     search_pb2.POSTS: [post_actions],
     search_pb2.PROFILES: [profile_actions],
     search_pb2.TEAMS: [team_actions],
+    search_pb2.COLLECTIONS: [collection_actions],
 }
 
 
@@ -50,6 +51,8 @@ class Action(PreRunParseTokenMixin, actions.Action):
             doc_types.append(types.TeamV1._doc_type.name)
         elif self.request.category == search_pb2.POSTS:
             doc_types.append(types.PostV1._doc_type.name)
+        elif self.request.category == search_pb2.COLLECTIONS:
+            doc_types.append(types.CollectionV1._doc_type.name)
         return ','.join(doc_types) or None
 
     def _get_statements(self, statement_type):

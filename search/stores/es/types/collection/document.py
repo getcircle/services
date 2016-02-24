@@ -22,7 +22,11 @@ name_analyzer_v1 = analyzer(
 
 class CollectionV1(BaseDocType):
 
-    name = String(
+    document_to_protobuf_mapping = {
+        'collection_name': 'name',
+    }
+
+    collection_name = String(
         analyzer=name_analyzer_v1,
         search_analyzer='default_search',
         term_vector='with_positions_offsets',
@@ -37,6 +41,6 @@ class CollectionV1(BaseDocType):
 
     class Meta:
         doc_type = 'collection'
-        all = MetaField(enabld=False)
+        all = MetaField(enabled=False)
         dynamic = MetaField('false')
         protobuf = post_containers.CollectionV1

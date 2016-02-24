@@ -76,6 +76,13 @@ class Command(BaseCommand):
             const=entity_pb2.POST,
             help='Index the posts for the organization',
         )
+        parser.add_argument(
+            '--collections',
+            dest='entity_types',
+            action='append_const',
+            const=entity_pb2.COLLECTION,
+            help='Index the collections for the organization',
+        )
 
     def handle(self, *args, **options):
         entity_types = options.get('entity_types') or []
@@ -101,7 +108,7 @@ class Command(BaseCommand):
             if entity_pb2.TEAM in entity_types or index_all:
                 _update_paginated_entities(
                     token,
-                    'organization',
+                    'team',
                     'get_teams',
                     'teams',
                     entity_pb2.TEAM,
@@ -122,4 +129,12 @@ class Command(BaseCommand):
                     'posts',
                     entity_pb2.POST,
                     state=post_containers.LISTED,
+                )
+            if entity_pb2.COLLECTION in entity_types or index_all:
+                _update_paginated_entities(
+                    token,
+                    'post',
+                    'get_collections',
+                    'collections',
+                    entity_pb2.COLLECTION,
                 )
