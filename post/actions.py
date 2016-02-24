@@ -381,6 +381,7 @@ def get_collections(
         source=None,
         source_id=None,
         is_default=False,
+        ids=None,
     ):
     """Return collections for the owner or source item.
 
@@ -396,34 +397,35 @@ def get_collections(
             collections it belongs to, used with `source`
         is_default (Optional[bool]): whether or not we want to return just the
             default collection
+        ids (Optional[List[str]]): specific collection ids to retrieve
 
     Returns:
         post.models.Collection queryset
 
     """
-    if not ((owner_id and owner_type is not None) or (source is not None and source_id)):
-        raise TypeError(
-            'Must provide either `owner_id` and `owner_type` or `source` and `source_id`'
-        )
+    parameters = {'organization_id': organization_id}
+    if ids:
+        parameters['id__in'] = ids
 
     if owner_id:
         collections = models.Collection.objects.filter(
-            organization_id=organization_id,
             owner_id=owner_id,
             owner_type=owner_type,
+            **parameters
         )
         # is_default is a NullBooleanField, we only store a value if
         # `is_default` is True
         if is_default:
             collections = collections.filter(is_default=is_default)
-
     elif source_id:
         items = models.CollectionItem.objects.filter(
-            organization_id=organization_id,
             source=source,
             source_id=source_id,
+            **parameters
         ).select_related('collection')
         collections = [i.collection for i in items]
+    else:
+        collections = models.Collection.objects.filter(**parameters)
     return collections
 
 

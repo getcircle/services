@@ -221,3 +221,32 @@ class Test(MockedTestCase):
             owner_type=post_containers.CollectionV1.PROFILE,
         )
         self.assertEqual(len(response.result.collections), 15)
+
+    def test_get_collections_for_organization(self):
+        expected = factories.CollectionFactory.create_batch(
+            size=2,
+            organization_id=self.organization.id,
+        )
+        factories.CollectionFactory.create_batch(size=5)
+        response = self.client.call_action('get_collections')
+        self.assertEqual(len(response.result.collections), len(expected))
+        for collection in response.result.collections:
+            self.assertEqual(collection.organization_id, self.organization.id)
+
+    def test_get_collections_by_ids_wrong_organization(self):
+        collections = factories.CollectionFactory.create_batch(size=2)
+        response = self.client.call_action('get_collections', ids=[str(c.id) for c in collections])
+        self.assertEqual(len(response.result.collections), 0)
+
+    def test_get_collections_by_ids(self):
+        expected = factories.CollectionFactory.create_batch(
+            size=2,
+            organization_id=self.organization.id,
+        )
+        factories.CollectionFactory.create_batch(size=2, organization_id=self.organization.id)
+        response = self.client.call_action('get_collections', ids=[str(c.id) for c in expected])
+        self.assertEqual(len(response.result.collections), len(expected))
+
+    def test_get_collections_by_ids_invalid_ids(self):
+        with self.assertFieldError('ids'):
+            self.client.call_action('get_collections', ids=['invalid', 'invalid'])
