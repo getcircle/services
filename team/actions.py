@@ -1,5 +1,6 @@
 from bulk_update.helper import bulk_update
 import django.db
+from django.db.models import Count
 
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.history import containers_pb2 as history_containers
@@ -159,6 +160,19 @@ def get_team(team_id, organization_id):
     return models.Team.objects.get(pk=team_id, organization_id=organization_id)
 
 
+def get_teams(organization_id, inflations):
+    """Return the teams for the organization.
+
+    Args:
+        organization_id (str): organization id
+
+    Returns:
+        models.Team queryset
+
+    """
+    return models.Team.objects.filter(organization_id=organization_id)
+
+
 def update_members(team_id, organization_id, members, token):
     """Update members to their new roles.
 
@@ -267,3 +281,11 @@ def update_contact_methods(contact_methods, team):
                 id__in=to_delete,
                 organization_id=team.organization_id,
             ).delete()
+
+
+def get_team_id_to_member_count(teams):
+    counts = models.TeamMember.objects.filter(
+        organization_id=teams[0].organization_id,
+        id__in=[t.id for t in teams],
+    ).values('team_id').annotate(Count('id'))
+    return dict((str(count['team_id']), count['id__count']) for count in counts)

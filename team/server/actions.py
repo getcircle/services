@@ -14,6 +14,8 @@ from ..actions import (
     create_team,
     get_permissions_for_team,
     get_team,
+    get_team_id_to_member_count,
+    get_teams,
     remove_members,
     update_members,
     update_team,
@@ -133,6 +135,36 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
         )
         self.response.is_member = is_member
         self.response.team.permissions.CopyFrom(permissions)
+
+
+class GetTeams(PreRunParseTokenMixin, actions.Action):
+
+    def run(self, *args, **kwargs):
+        # we don't support get_teams permissions yet
+        self.request.inflations.exclude.append('permissions')
+        # we don't support get_teams contact_methods yet
+        self.request.inflations.exclude.append('contact_methods')
+
+        teams = get_teams(self.parsed_token.organization_id, inflations=self.request.inflations)
+        teams = self.get_paginated_objects(teams)
+        if not teams:
+            return
+
+        team_id_to_member_count_dict = {}
+        if utils.should_inflate_field('total_members', self.request.inflations):
+            team_id_to_member_count_dict = get_team_id_to_member_count(teams)
+
+        self.paginated_response(
+            self.response.teams,
+            teams,
+            lambda item, container: item.to_protobuf(
+                container.add(),
+                inflations=self.request.inflations,
+                fields=self.request.fields,
+                token=self.token,
+                total_members=team_id_to_member_count_dict.get(str(item.id)),
+            ),
+        )
 
 
 class GetMembers(TeamExistsAction):
