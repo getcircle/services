@@ -161,12 +161,24 @@ def create_collection(container, organization_id, by_profile_id, token):
     )
 
 
-def get_collection(collection_id, organization_id):
+def get_collection(
+        organization_id,
+        collection_id=None,
+        is_default=False,
+        owner_type=None,
+        owner_id=None,
+    ):
     """Get a specific collection.
 
     Args:
-        collection_id (str): id of the collection
         organization_id (str): id of the organization
+        collection_id (Optional[str]): id of the collection
+        is_default (Optional[bool]): whether or not we're fetching the default collection
+        owner_type (Optional[services.post.containers.CollectionV1.OwnerTypeV1]): owner type
+            of the default collection, required when fetching the default
+            collection
+        owner_id (Optional[str]): owner id of the default collection, required
+            when fetching the default collection
 
     Returns:
         post.models.Collection
@@ -175,7 +187,24 @@ def get_collection(collection_id, organization_id):
         post.models.Collection.DoesNotExist if the collection does not exist
 
     """
-    return models.Collection.objects.get(id=collection_id, organization_id=organization_id)
+
+    if is_default and not all([owner_type and owner_id]):
+        raise TypeError('Must provide `owner_type` and `owner_id` with `is_default`')
+
+    lookups = ['collection_id', 'is_default']
+    if not any([lookups]):
+        raise TypeError('Must provide one of %s' % (lookups,))
+
+    parameters = {'organization_id': organization_id}
+    if collection_id:
+        parameters['pk'] = collection_id
+    else:
+        # XXX test owner_type and owner_id being None
+        parameters['is_default'] = True
+        parameters['owner_type'] = owner_type
+        parameters['owner_id'] = owner_id
+
+    return models.Collection.objects.get(**parameters)
 
 
 def delete_collection(collection_id, organization_id, by_profile_id, token):

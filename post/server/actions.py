@@ -424,6 +424,21 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
         'collection_id': [validators.is_uuid4],
     }
 
+    def _handle_does_not_exist(self):
+        if (
+            self.request.is_default and
+            self.request.owner_id and
+            self.request.owner_type
+        ):
+            # XXX i think this is fine? would there be a case where it mattered
+            # that we returned an owner_id etc if you didn't have access to
+            # that?
+            self.response.collection.is_default = True
+            self.response.collection.owner_id = self.request.owner_id
+            self.response.collection.owner_type = self.request.owner_type
+        else:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
     def run(self, *args, **kwargs):
         try:
             collection = get_collection(
@@ -431,7 +446,7 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
                 organization_id=self.parsed_token.organization_id,
             )
         except models.Collection.DoesNotExist:
-            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+            return self._handle_does_not_exist()
 
         item_counts = {}
         if common_utils.should_inflate_field('total_items', self.request.inflations):
