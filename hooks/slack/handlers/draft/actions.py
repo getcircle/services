@@ -114,4 +114,9 @@ def post_content_from_messages(messages):
 
 
 def replace_slack_links_with_post_links(text):
-    return re.sub(r'<(\S*)\|(\S*)>', r'<a href=\g<1>>\g<2></a>', text)
+    # Catch both kinds of Slack links
+    # with link text: <http://lunohq.com|Luno>
+    # without link text: <http://lunohq.com>
+    new_text = re.sub(r'<([^@\s]+\://\S+)\|(\S+)>', r'<a href=\1>\2</a>', text)
+    new_text = re.sub(r'<([^@\s]+\://\S+)>', r'<a href=\1>\1</a>', new_text)
+    return new_text
