@@ -74,6 +74,7 @@ class OrganizationIntegrationTests(TestCase):
         integration = models.Integration.objects.get(pk=integration.id)
         self.assertEqual(integration.type, integration_pb2.SLACK_WEB_API)
         self.assertEqual(response.result.integration.slack_web_api, integration.details)
+        self.assertTrue(models.Integration.objects.filter(provider_uid=None).exists())
 
     def test_organization_get_integration_provider_uid(self):
         integration = factories.IntegrationFactory.create_protobuf(

@@ -479,12 +479,6 @@ class DisableIntegration(PreRunParseTokenMixin, actions.Action):
 
 class GetIntegration(DisableIntegration):
 
-    def _get_lookup_parameters(self):
-        parameters = {}
-        if self.request.provider_uid:
-            parameters['provider_uid'] = self.request.provider_uid
-        return parameters
-
     def _get_integration(self):
         parameters = {}
         if self.request.provider_uid:
