@@ -27,7 +27,7 @@ class Test(MockedTestCase):
 
     @patch('search.tasks.connections')
     @patch('search.tasks.bulk')
-    def test_delete_entities_profiles(self, patched, patched_connections):
+    def test_delete_entities(self, patched, patched_connections):
         write_alias = get_write_alias(self.organization.id)
         patched_es = patched_connections.connections.get_connection()
         patched_es.indices.get_alias.return_value = {write_alias: {}}

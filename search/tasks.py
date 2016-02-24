@@ -8,6 +8,7 @@ from services.celery import app
 from services.token import make_admin_token
 
 from .stores.es.indices.organization.actions import get_write_alias
+from .stores.es.types.collection.document import CollectionV1
 from .stores.es.types.location.document import LocationV1
 from .stores.es.types.post.document import PostV1
 from .stores.es.types.profile.document import ProfileV1
@@ -98,6 +99,19 @@ def update_posts(ids, organization_id):
 
 
 @app.task
+def update_collections(ids, organization_id):
+    collections = service.control.get_object(
+        service='post',
+        action='get_collections',
+        return_object='collections',
+        client_kwargs={'token': make_admin_token(organization_id=organization_id)},
+        control={'paginator': {'page_size': len(ids)}},
+        ids=ids,
+    )
+    _update_documents(CollectionV1, collections, organization_id)
+
+
+@app.task
 def delete_entities(ids, entity_type, organization_id):
 
     _build_action = lambda document_id, document_type: {
@@ -115,6 +129,8 @@ def delete_entities(ids, entity_type, organization_id):
         document_type = LocationV1
     elif entity_type == entity_pb2.POST:
         document_type = PostV1
+    elif entity_type == entity_pb2.COLLECTION:
+        document_type = CollectionV1
 
     actions = [_build_action(_id, document_type) for _id in ids]
     return _bulk_actions(actions, organization_id)

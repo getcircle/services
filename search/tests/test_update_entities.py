@@ -201,3 +201,44 @@ class TestUpdateEntities(MockedTestCase):
             strict=False,
         )
         self.verify_containers(post, called_post)
+
+    @patch('search.actions.update_entities.tasks.update_collections')
+    def test_update_entities_collections(self, patched):
+        collections = [
+            mocks.mock_collection(organization_id=self.organization.id) for _ in range(2)
+        ]
+        self.client.call_action(
+            'update_entities',
+            type=entity_pb2.COLLECTION,
+            ids=[c.id for c in collections],
+        )
+        self.assertEqual(patched.delay.call_count, 1)
+        call_args = patched.delay.call_args_list[0][0]
+        self.assertEqual(
+            call_args,
+            ([str(c.id) for c in collections], str(collections[0].organization_id))
+        )
+
+    @patch('search.tasks.bulk')
+    def test_tasks_update_collections(self, patched_bulk):
+        collection = mocks.mock_collection(created=None, changed=None)
+        self.mock.instance.register_mock_object(
+            service='post',
+            action='get_collections',
+            return_object=[collection],
+            return_object_path='collections',
+            ids=[collection.id],
+            # TODO we need to make it easer to match up mock parameters with
+            # request parameters, taking into account default enum values etc.
+            mock_regex_lookup='post.get_collections:.*',
+        )
+        tasks.update_collections([str(collection.id)], str(collection.organization_id))
+        self.assertEqual(patched_bulk.call_count, 1)
+
+        documents = patched_bulk.call_args_list[0][0][1]
+        called_collection = dict_to_protobuf(
+            documents[0]['_source'],
+            post_containers.CollectionV1,
+            strict=False,
+        )
+        self.verify_containers(collection, called_collection)
