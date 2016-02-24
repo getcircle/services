@@ -38,8 +38,6 @@ class AppConfig(DjangoAppConfig):
     name = 'organizations'
 
     def ready(self):
-        from . import receivers  # NOQA (must be done when the app is ready)
-
         Team = self.get_model('Team')
         watson.register(Team, TeamSearchAdapter, fields=('name',))
 

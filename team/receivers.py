@@ -7,7 +7,7 @@ from services.search import update_entity
 from . import models
 
 
-@receiver(post_save, sender=models.Profile)
-def update_search_index_on_profile_update(sender, **kwargs):
+@receiver(post_save, sender=models.Team)
+def update_search_index_on_team_update(sender, **kwargs):
     instance = kwargs['instance']
-    update_entity(instance.pk, instance.organization_id, entity_pb2.PROFILE)
+    update_entity(instance.pk, instance.organization_id, entity_pb2.TEAM)
