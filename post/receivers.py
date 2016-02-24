@@ -8,6 +8,7 @@ from django.dispatch import receiver
 from protobufs.services.search.containers import entity_pb2
 import service.control
 
+from services.search import update_entity
 from services.token import make_admin_token
 
 from . import models
@@ -45,3 +46,9 @@ def delete_entity_on_post_delete(sender, **kwargs):
         )
     except service.control.CallActionError as e:
         logger.error(e.summary)
+
+
+@receiver(post_save, sender=models.Collection)
+def update_search_index_on_collection_update(sender, **kwargs):
+    instance = kwargs['instance']
+    update_entity(instance.pk, instance.organization_id, entity_pb2.COLLECTION)
