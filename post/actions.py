@@ -281,17 +281,31 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
     bulk_update(items, update_fields=['position', 'changed'])
 
 
-def add_to_collection(collection_id, source, source_id, organization_id, by_profile_id, token):
+def add_to_collection(
+        source,
+        source_id,
+        organization_id,
+        by_profile_id,
+        token,
+        collection_id=None,
+        is_default=False,
+        owner_type=None,
+        owner_id=None,
+    ):
     """Add an item to a collection.
 
     Args:
-        collection_id (str): id of the collection
         source (services.post.containers.CollectionItemV1.SourceV1): source of
             the item being added
         source_id (str): id of the item within the source
         organization_id (str): id of the organization
         by_profile_id (str): id of the profile requesting the change
         token (str): service token
+        collection_id (Optional[str]): id of the collection to add to
+        is_default (Optional[bool]): add to the owner's default collection
+        owner_type (Optional[services.post.containers.CollectionV1.OwnerTypeV1): owner type,
+            required if `is_default` is True
+        owner_id (Optional[str]): owner id, required if `is_default` is True
 
     Returns:
         post.models.CollectionItem
@@ -302,13 +316,29 @@ def add_to_collection(collection_id, source, source_id, organization_id, by_prof
             the collection
 
     """
-    check_collection_permission(
-        permission='can_edit',
-        collection_id=collection_id,
-        organization_id=organization_id,
-        by_profile_id=by_profile_id,
-        token=token,
-    )
+
+    lookups = ['collection_id', 'is_default']
+    if not any(lookups):
+        raise TypeError('Must provide one of %s' % (lookups,))
+
+    # XXX run this on is_default
+    if collection_id:
+        check_collection_permission(
+            permission='can_edit',
+            collection_id=collection_id,
+            organization_id=organization_id,
+            by_profile_id=by_profile_id,
+            token=token,
+        )
+    else:
+        # XXX add tests for this
+        # XXX add permission checks for this
+        collection = get_or_create_default_collection(
+            owner_type=owner_type,
+            owner_id=owner_id,
+            organization_id=organization_id,
+        )
+        collection_id = str(collection.id)
 
     position = 0
     max_position = models.CollectionItem.objects.filter(
@@ -615,3 +645,23 @@ def get_collection_id_to_items_dict(
     for container in containers:
         collections_dict.setdefault(container.collection_id, []).append(container)
     return collections_dict
+
+
+def get_or_create_default_collection(owner_type, owner_id, organization_id):
+    """Get or create the default collection.
+
+    Args:
+        owner_type (services.post.containers.PostV1.OwnerTypeV1): owner type
+        owner_id (str): id of the owner
+        organization_id (str): id of the organization
+
+    Returns:
+        models.Collection object
+
+    """
+    return models.Collection.objects.get_or_create(
+        owner_type=owner_type,
+        owner_id=owner_id,
+        organization_id=organization_id,
+        is_default=True,
+    )

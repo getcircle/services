@@ -51,10 +51,6 @@ class Test(MockedTestCase):
             source=post_containers.CollectionItemV1.LUNO,
         ).exists())
 
-    def test_add_to_collection_collection_id_required(self):
-        with self.assertFieldError('collection_id', 'MISSING'):
-            self.client.call_action('add_to_collection')
-
     def test_add_to_collection_source_id_required(self):
         with self.assertFieldError('source_id', 'MISSING'):
             self.client.call_action('add_to_collection', collection_id=fuzzy.uuid())

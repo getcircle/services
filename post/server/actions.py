@@ -299,9 +299,10 @@ class ReorderCollection(PreRunParseTokenMixin, actions.Action):
 
 class AddToCollection(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('collection_id', 'source_id')
+    required_fields = ('source_id',)
     type_validators = {
         'collection_id': [validators.is_uuid4],
+        'owner_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
@@ -313,6 +314,9 @@ class AddToCollection(PreRunParseTokenMixin, actions.Action):
                 organization_id=self.parsed_token.organization_id,
                 by_profile_id=self.parsed_token.profile_id,
                 token=self.token,
+                is_default=self.request.is_default,
+                owner_type=self.request.owner_type,
+                owner_id=self.request.owner_id,
             )
         except models.Collection.DoesNotExist:
             raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
@@ -419,9 +423,9 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
 
 class GetCollection(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('collection_id',)
     type_validators = {
         'collection_id': [validators.is_uuid4],
+        'owner_id': [validators.is_uuid4],
     }
 
     def _handle_does_not_exist(self):
@@ -444,6 +448,9 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
             collection = get_collection(
                 collection_id=self.request.collection_id,
                 organization_id=self.parsed_token.organization_id,
+                is_default=self.request.is_default,
+                owner_type=self.request.owner_type,
+                owner_id=self.request.owner_id,
             )
         except models.Collection.DoesNotExist:
             return self._handle_does_not_exist()

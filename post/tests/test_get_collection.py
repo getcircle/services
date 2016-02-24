@@ -31,10 +31,6 @@ class Test(MockedTestCase):
         self.assertEqual(permissions.can_delete, full_access)
         self.assertEqual(permissions.can_add, full_access)
 
-    def test_get_collection_collection_id_required(self):
-        with self.assertFieldError('collection_id', 'MISSING'):
-            self.client.call_action('get_collection')
-
     def test_get_collection_collection_id_invalid(self):
         with self.assertFieldError('collection_id'):
             self.client.call_action('get_collection', collection_id=fuzzy.text())
