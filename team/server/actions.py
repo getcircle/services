@@ -12,7 +12,7 @@ from services.mixins import PreRunParseTokenMixin
 from ..actions import (
     add_members,
     create_team,
-    get_permissions_for_team,
+    get_permissions_for_teams,
     get_team,
     get_team_id_to_member_count,
     get_teams,
@@ -81,12 +81,13 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
         members.append(coordinator)
         add_members(members, team.id, organization_id=self.parsed_token.organization_id)
 
-        _, permissions = get_permissions_for_team(
-            team_id=team.id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[team.id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[str(team.id)]
         self.response.team.permissions.CopyFrom(permissions)
 
 
@@ -127,12 +128,13 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
         except models.Team.DoesNotExist:
             raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
         team.to_protobuf(self.response.team, inflations=self.request.inflations, token=self.token)
-        is_member, permissions = get_permissions_for_team(
-            team_id=team.id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[team.id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        is_member, permissions = permissions_dict[str(team.id)]
         self.response.is_member = is_member
         self.response.team.permissions.CopyFrom(permissions)
 
@@ -144,8 +146,6 @@ class GetTeams(PreRunParseTokenMixin, actions.Action):
     }
 
     def run(self, *args, **kwargs):
-        # we don't support get_teams permissions yet
-        self.request.inflations.exclude.append('permissions')
         # we don't support get_teams contact_methods yet
         self.request.inflations.exclude.append('contact_methods')
 
@@ -161,17 +161,30 @@ class GetTeams(PreRunParseTokenMixin, actions.Action):
         if utils.should_inflate_field('total_members', self.request.inflations):
             team_id_to_member_count_dict = get_team_id_to_member_count(teams)
 
-        self.paginated_response(
-            self.response.teams,
-            teams,
-            lambda item, container: item.to_protobuf(
-                container.add(),
+        team_id_to_permissions_dict = {}
+        if utils.should_inflate_field('permissions', self.request.inflations):
+            team_id_to_permissions_dict = get_permissions_for_teams(
+                team_ids=[str(t.id) for t in teams],
+                profile_id=self.parsed_token.profile_id,
+                organization_id=self.parsed_token.organization_id,
+                token=self.token,
+            )
+
+        for team in teams:
+            container = self.response.teams.add()
+            permissions = team_id_to_permissions_dict.get(str(team.id), (None, None))[1]
+            if permissions:
+                # XXX redundant protobuf_to_dict
+                permissions = protobuf_to_dict(permissions)
+
+            team.to_protobuf(
+                container,
                 inflations=self.request.inflations,
                 fields=self.request.fields,
                 token=self.token,
-                total_members=team_id_to_member_count_dict.get(str(item.id)),
-            ),
-        )
+                total_members=team_id_to_member_count_dict.get(str(team.id)),
+                permissions=permissions,
+            )
 
 
 class GetMembers(TeamExistsAction):
@@ -292,12 +305,13 @@ class UpdateMembers(TeamExistsAction):
 
     def run(self, *args, **kwargs):
         super(UpdateMembers, self).run(*args, **kwargs)
-        _, permissions = get_permissions_for_team(
-            team_id=self.request.team_id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[self.request.team_id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[self.request.team_id]
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
@@ -324,12 +338,13 @@ class RemoveMembers(TeamExistsAction):
 
     def run(self, *args, **kwargs):
         super(RemoveMembers, self).run(*args, **kwargs)
-        _, permissions = get_permissions_for_team(
-            team_id=self.request.team_id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[self.request.team_id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[self.request.team_id]
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
@@ -409,12 +424,13 @@ class UpdateTeam(PreRunParseTokenMixin, actions.Action):
         except models.Team.DoesNotExist:
             raise self.ActionFieldError('team.id', 'DOES_NOT_EXIST')
 
-        _, permissions = get_permissions_for_team(
-            team_id=self.request.team.id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[self.request.team.id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[self.request.team.id]
         if not permissions.can_edit:
             raise self.PermissionDenied()
 

@@ -15,32 +15,27 @@ from services.history import (
 from . import models
 
 
-def get_permissions_for_team(team_id, profile_id, organization_id, token):
-    """Return permissions for the given user for the requested team.
+def get_permissions_for_teams(team_ids, profile_id, organization_id, token):
+    """Return permissions for the given user for the requested teams.
 
     Args:
-        team_id (uuid): team id
-        profile_id (uuid): profile id of the user we want to return permissions for
-        organization_id (uuid): organization id
-        token (services.token): token to forward along to service calls
+        team_ids (List[str]): list of team ids
+        profile_id (str): id of the profile we're checking permissions against
+        organization_id (str): id of the organization
+        token (str): service token
 
     Returns:
-        (bool, protobufs.services.common.containers.PermissionsV1) tuple with a
-        boolean for if the user is a member of the team and the permissions
-        object
+        dictionary with <team_id>: (bool,
+        services.common.containers.PermissionsV1) tuple with a boolean for if
+        the user is a member of the team and the permissions object
 
     """
-    try:
-        membership = models.TeamMember.objects.get(
-            team_id=team_id,
-            profile_id=profile_id,
-            organization_id=organization_id,
-        )
-    except models.TeamMember.DoesNotExist:
-        membership = None
-
-    permissions = common_containers.PermissionsV1()
-
+    memberships = models.TeamMember.objects.filter(
+        team_id__in=team_ids,
+        profile_id=profile_id,
+        organization_id=organization_id,
+    )
+    team_id_to_membership = dict((str(m.team_id), m) for m in memberships)
     profile = service.control.get_object(
         service='profile',
         action='get_profile',
@@ -51,16 +46,21 @@ def get_permissions_for_team(team_id, profile_id, organization_id, token):
         fields={'only': ['is_admin']},
     )
 
-    if (
-        membership and membership.role == team_containers.TeamMemberV1.COORDINATOR or
-        profile.is_admin
-    ):
-        permissions.can_edit = True
-        permissions.can_add = True
-        permissions.can_delete = True
-    elif membership:
-        permissions.can_add = True
-    return bool(membership), permissions
+    team_id_to_permissions = {}
+    for team_id in team_ids:
+        permissions = common_containers.PermissionsV1()
+        membership = team_id_to_membership.get(team_id)
+        if (
+            membership and membership.role == team_containers.TeamMemberV1.COORDINATOR or
+            profile.is_admin
+        ):
+            permissions.can_edit = True
+            permissions.can_add = True
+            permissions.can_delete = True
+        else:
+            permissions.can_add = True
+        team_id_to_permissions[team_id] = (bool(membership), permissions)
+    return team_id_to_permissions
 
 
 def create_team(container, by_profile_id, token, organization_id, **overrides):

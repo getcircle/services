@@ -1,3 +1,5 @@
+from protobufs.services.common import containers_pb2 as common_containers
+from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
 from services.test import (
@@ -45,3 +47,99 @@ class Test(MockedTestCase):
     def test_get_teams_by_ids_invalid_values(self):
         with self.assertFieldError('ids'):
             self.client.call_action('get_teams', ids=['invalid', 'invalid'])
+
+    def test_get_teams_permissions(self):
+        tests = {}
+
+        # user is a member of one team
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+        )
+        tests[str(team.id)] = common_containers.PermissionsV1(can_add=True)
+
+        # user is a coordinator of a team
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+            role=team_containers.TeamMemberV1.COORDINATOR,
+        )
+        tests[str(team.id)] = common_containers.PermissionsV1(
+            can_add=True,
+            can_edit=True,
+            can_delete=True,
+        )
+
+        # user is not a member
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+        )
+        tests[str(team.id)] = common_containers.PermissionsV1()
+
+        response = self.client.call_action(
+            'get_teams',
+            ids=tests.keys(),
+            inflations={'only': ['permissions']},
+        )
+        for team in response.result.teams:
+            expected_permissions = tests[team.id]
+            self.verify_containers(expected_permissions, team.permissions)
+
+    def test_get_teams_permissions_admin(self):
+        self.profile.is_admin = True
+        self.mock.instance.register_mock_object(
+            service='profile',
+            action='get_profile',
+            return_object_path='profile',
+            return_object=self.profile,
+            profile_id=self.profile.id,
+            inflations={'disabled': True},
+            fields={'only': ['is_admin']},
+        )
+
+        team_ids = []
+        # user is a member of one team
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+        )
+        team_ids.append(str(team.id))
+
+        # user is a coordinator of a team
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+            role=team_containers.TeamMemberV1.COORDINATOR,
+        )
+        team_ids.append(str(team.id))
+
+        # user is not a member
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+        )
+        team_ids.append(str(team.id))
+
+        response = self.client.call_action(
+            'get_teams',
+            ids=team_ids,
+            inflations={'only': ['permissions']},
+        )
+        for team in response.result.teams:
+            expected_permissions = common_containers.PermissionsV1(
+                can_add=True,
+                can_edit=True,
+                can_delete=True,
+            )
+            self.verify_containers(expected_permissions, team.permissions)
