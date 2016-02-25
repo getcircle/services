@@ -365,11 +365,12 @@ class JoinTeam(TeamExistsAction):
     def run(self, *args, **kwargs):
         super(JoinTeam, self).run(*args, **kwargs)
         member = team_containers.TeamMemberV1(profile_id=self.parsed_token.profile_id)
-        add_members(
+        member = add_members(
             [member],
             self.request.team_id,
             organization_id=self.parsed_token.organization_id,
-        )
+        )[0]
+        member.to_protobuf(self.response.member)
 
 
 class LeaveTeam(TeamExistsAction):
