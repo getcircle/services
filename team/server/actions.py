@@ -134,8 +134,9 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
-        is_member, permissions = permissions_dict[str(team.id)]
-        self.response.is_member = is_member
+        member, permissions = permissions_dict[str(team.id)]
+        if member:
+            member.to_protobuf(self.response.member)
         self.response.team.permissions.CopyFrom(permissions)
 
 

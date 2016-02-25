@@ -25,9 +25,9 @@ def get_permissions_for_teams(team_ids, profile_id, organization_id, token):
         token (str): service token
 
     Returns:
-        dictionary with <team_id>: (bool,
-        services.common.containers.PermissionsV1) tuple with a boolean for if
-        the user is a member of the team and the permissions object
+        dictionary with <team_id>: (models.TeamMember,
+        services.common.containers.PermissionsV1) tuple with team member object
+        if the user is a member of the team and the permissions object.
 
     """
     memberships = models.TeamMember.objects.filter(
@@ -49,7 +49,7 @@ def get_permissions_for_teams(team_ids, profile_id, organization_id, token):
     team_id_to_permissions = {}
     for team_id in team_ids:
         permissions = common_containers.PermissionsV1()
-        membership = team_id_to_membership.get(team_id)
+        membership = team_id_to_membership.get(str(team_id))
         if (
             membership and membership.role == team_containers.TeamMemberV1.COORDINATOR or
             profile.is_admin
@@ -57,9 +57,9 @@ def get_permissions_for_teams(team_ids, profile_id, organization_id, token):
             permissions.can_edit = True
             permissions.can_add = True
             permissions.can_delete = True
-        else:
+        elif membership:
             permissions.can_add = True
-        team_id_to_permissions[team_id] = (bool(membership), permissions)
+        team_id_to_permissions[str(team_id)] = (membership, permissions)
     return team_id_to_permissions
 
 
