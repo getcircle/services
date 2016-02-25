@@ -12,15 +12,15 @@ from services import utils
 
 from .. import models
 from ..actions import (
-    add_to_collection,
+    add_to_collections,
     collection_exists,
     create_collection,
     delete_collection,
     get_collection,
-    get_collection_permissions,
     get_collection_items,
     get_collections,
     get_collection_id_to_items_dict,
+    get_permissions_for_collections,
     get_total_items_for_collections,
     inflate_items_source,
     remove_from_collection,
@@ -297,31 +297,26 @@ class ReorderCollection(PreRunParseTokenMixin, actions.Action):
             raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
 
 
-class AddToCollection(PreRunParseTokenMixin, actions.Action):
+class AddToCollections(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('source_id',)
-    type_validators = {
-        'collection_id': [validators.is_uuid4],
-        'owner_id': [validators.is_uuid4],
-    }
+    required_fields = ('item', 'collections')
 
     def run(self, *args, **kwargs):
         try:
-            item = add_to_collection(
-                collection_id=self.request.collection_id,
-                source=self.request.source,
-                source_id=self.request.source_id,
+            items = add_to_collections(
+                item=self.request.item,
+                collections=self.request.collections,
                 organization_id=self.parsed_token.organization_id,
                 by_profile_id=self.parsed_token.profile_id,
                 token=self.token,
-                is_default=self.request.is_default,
-                owner_type=self.request.owner_type,
-                owner_id=self.request.owner_id,
             )
         except models.Collection.DoesNotExist:
+            # TODO make this error message handle multiple collections
             raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
 
-        item.to_protobuf(self.response.item)
+        for item in items:
+            container = self.response.items.add()
+            item.to_protobuf(container)
 
 
 class RemoveFromCollection(PreRunParseTokenMixin, actions.Action):
@@ -469,11 +464,12 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
             total_items=item_counts.get(str(collection.id), 0),
         )
 
-        permissions = get_collection_permissions(
-            collection=collection,
+        collection_to_permissions = get_permissions_for_collections(
+            collections=[collection],
             by_profile_id=self.parsed_token.profile_id,
             token=self.token,
         )
+        permissions = collection_to_permissions[str(collection.id)]
         self.response.collection.permissions.CopyFrom(permissions)
 
 

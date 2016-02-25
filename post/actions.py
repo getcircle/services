@@ -29,45 +29,65 @@ def collection_exists(collection_id, organization_id):
     ).exists()
 
 
-def get_collection_permissions(collection, by_profile_id, token):
-    """Return the requesting users permissions for the collection.
+def get_permissions_for_collections(collections, by_profile_id, token):
 
-    Args:
-        collection (post.models.Collection): collection we're checking against
-        by_profile_id (str): profile id making the request
-        token (str): service token
+    def get_permissions(full=False):
+        return common_containers.PermissionsV1(
+            can_edit=full,
+            can_add=full,
+            can_delete=full,
+        )
 
-    Returns:
-        servicse.common.containers.PermissionsV1
+    def get_profile():
+        return service.control.get_object(
+            service='profile',
+            action='get_profile',
+            return_object='profile',
+            client_kwargs={'token': token},
+            fields={'only': ['is_admin']},
+            profile_id=by_profile_id,
+        )
 
-    """
-    permissions = common_containers.PermissionsV1()
-    full_permissions = False
+    team_ids = set([
+        str(collection.owner_id) for collection in collections
+        if collection.owner_type == post_containers.CollectionV1.TEAM
+    ])
 
-    if collection.owner_type == post_containers.CollectionV1.TEAM:
-        team_permissions = get_team_permissions(str(collection.owner_id), token)
-        if team_permissions.can_edit:
+    team_id_to_team_dict = {}
+    if team_ids:
+        teams = service.control.get_object(
+            service='team',
+            action='get_teams',
+            return_object='teams',
+            client_kwargs={'token': token},
+            control={'paginator': {'page_size': len(team_ids)}},
+            fields={'only': ['permissions']},
+            ids=list(team_ids),
+        )
+        team_id_to_team_dict = dict((team.id, team) for team in teams)
+
+    profile = None
+
+    collection_id_to_permissions = {}
+    for collection in collections:
+        full_permissions = False
+        if collection.owner_type == post_containers.CollectionV1.TEAM:
+            team = team_id_to_team_dict.get(str(collection.owner_id))
+            if team and team.permissions.can_edit:
+                full_permissions = True
+        elif (
+            collection.owner_type == post_containers.CollectionV1.PROFILE and
+            str(collection.owner_id) == by_profile_id
+        ):
             full_permissions = True
-    elif collection.owner_type == post_containers.CollectionV1.PROFILE:
-        if by_profile_id == str(collection.owner_id):
-            full_permissions = True
-        else:
-            profile = service.control.get_object(
-                service='profile',
-                action='get_profile',
-                return_object='profile',
-                client_kwargs={'token': token},
-                fields={'only': ['is_admin']},
-                profile_id=by_profile_id,
-            )
+
+        if not full_permissions:
+            if not profile:
+                profile = get_profile()
             if profile.is_admin:
                 full_permissions = True
-
-    if full_permissions:
-        permissions.can_edit = True
-        permissions.can_add = True
-        permissions.can_delete = True
-    return permissions
+        collection_id_to_permissions[str(collection.id)] = get_permissions(full_permissions)
+    return collection_id_to_permissions
 
 
 def get_team_permissions(team_id, token):
@@ -94,6 +114,33 @@ def get_team_permissions(team_id, token):
     return team.permissions
 
 
+def get_collections_with_permissions(
+        permission,
+        collection_ids,
+        organization_id,
+        by_profile_id,
+        token,
+    ):
+    collections = models.Collection.objects.filter(
+        pk__in=collection_ids,
+        organization_id=organization_id,
+    )
+    collection_to_permissions = {}
+    if collections:
+        collection_to_permissions = get_permissions_for_collections(
+            collections=collections,
+            by_profile_id=by_profile_id,
+            token=token,
+        )
+
+    collections_with_permissions = []
+    for collection in collections:
+        permissions = collection_to_permissions[str(collection.id)]
+        if getattr(permissions, permission):
+            collections_with_permissions.append(collection)
+    return collections_with_permissions
+
+
 def check_collection_permission(permission, collection_id, organization_id, by_profile_id, token):
     """Raise Action.PermissionDenied if the profile doesn't have the specified permission.
 
@@ -118,12 +165,13 @@ def check_collection_permission(permission, collection_id, organization_id, by_p
         pk=collection_id,
         organization_id=organization_id,
     )
-    permissions = get_collection_permissions(
-        collection=collection,
+    collection_to_permissions = get_permissions_for_collections(
+        collections=[collection],
         by_profile_id=by_profile_id,
         token=token,
     )
-    if not permissions.can_delete:
+    permissions = collection_to_permissions[str(collection.id)]
+    if not getattr(permissions, permission):
         raise Action.PermissionDenied()
 
     return collection
@@ -281,81 +329,67 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
     bulk_update(items, update_fields=['position', 'changed'])
 
 
-def add_to_collection(
-        source,
-        source_id,
-        organization_id,
-        by_profile_id,
-        token,
-        collection_id=None,
-        is_default=False,
-        owner_type=None,
-        owner_id=None,
-    ):
+def add_to_collections(item, collections, organization_id, by_profile_id, token):
     """Add an item to a collection.
 
     Args:
-        source (services.post.containers.CollectionItemV1.SourceV1): source of
-            the item being added
-        source_id (str): id of the item within the source
+        item (services.post.containers.CollectionItemV1): item to add to collections
+        collections (List[services.post.containers.CollectionV1]): list of
+            collections to add the item to
         organization_id (str): id of the organization
         by_profile_id (str): id of the profile requesting the change
         token (str): service token
-        collection_id (Optional[str]): id of the collection to add to
-        is_default (Optional[bool]): add to the owner's default collection
-        owner_type (Optional[services.post.containers.CollectionV1.OwnerTypeV1): owner type,
-            required if `is_default` is True
-        owner_id (Optional[str]): owner id, required if `is_default` is True
 
     Returns:
-        post.models.CollectionItem
-
-    Raises:
-        post.models.Collection.DoesNotExist if the collection does not exist
-        Action.PermissionDenied if the user doesn't have permission to edit
-            the collection
+        List[post.models.CollectionItem]
 
     """
 
-    lookups = ['collection_id', 'is_default']
-    if not any(lookups):
-        raise TypeError('Must provide one of %s' % (lookups,))
+    # populate the id for the default collection if necessary
+    for collection in collections:
+        if not collection.id and collection.is_default:
+            # XXX only supports adding collections to profile for now, need a
+            # permission check for team
+            default_collection = get_or_create_default_collection(
+                owner_type=post_containers.CollectionV1.PROFILE,
+                owner_id=by_profile_id,
+                organization_id=organization_id,
+            )
+            collection.id = default_collection.id
+            collection.is_default = default_collection.is_default
+            break
 
-    # XXX run this on is_default
-    if collection_id:
-        check_collection_permission(
-            permission='can_edit',
-            collection_id=collection_id,
-            organization_id=organization_id,
-            by_profile_id=by_profile_id,
-            token=token,
-        )
-    else:
-        # XXX add tests for this
-        # XXX add permission checks for this
-        collection = get_or_create_default_collection(
-            owner_type=owner_type,
-            owner_id=owner_id,
-            organization_id=organization_id,
-        )
-        collection_id = str(collection.id)
-
-    position = 0
-    max_position = models.CollectionItem.objects.filter(
+    collections = get_collections_with_permissions(
+        permission='can_add',
+        collection_ids=[c.id for c in collections],
         organization_id=organization_id,
-        collection_id=collection_id,
-    ).aggregate(Max('position'))['position__max']
-    if max_position is not None:
-        position = max_position
-
-    return models.CollectionItem.objects.create(
-        organization_id=organization_id,
-        collection_id=collection_id,
-        source=source,
-        source_id=source_id,
         by_profile_id=by_profile_id,
-        position=position,
+        token=token,
     )
+
+    positions = models.CollectionItem.objects.filter(
+        organization_id=organization_id,
+        collection_id__in=[c.id for c in collections],
+    ).values('collection_id').annotate(position=Max('position'))
+    collection_to_position = dict((str(p['collection_id']), p['position']) for p in positions)
+
+    items = []
+    for collection in collections:
+        position = collection_to_position.get(str(collection.id), 0)
+        item = models.CollectionItem(
+            organization_id=organization_id,
+            collection_id=collection.id,
+            source=item.source,
+            source_id=item.source_id,
+            by_profile_id=by_profile_id,
+            position=position,
+        )
+        items.append(item)
+        position += 1
+
+    if items:
+        items = models.CollectionItem.objects.bulk_create(items)
+    return items
 
 
 def remove_from_collection(

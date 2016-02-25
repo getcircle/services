@@ -9,7 +9,7 @@ from services.test import (
 
 from .. import factories
 
-from .helpers import mock_get_team
+from .helpers import mock_get_teams
 
 
 class Test(MockedTestCase):
@@ -94,21 +94,25 @@ class Test(MockedTestCase):
         self.assertTrue(response.result.collection.is_default)
 
     def test_get_collection_owned_by_team_not_member(self):
-        mock_get_team(self.mock.instance, self.team)
+        mock_get_teams(self.mock.instance, [self.team])
         collection = factories.CollectionFactory.create_protobuf(team=self.team)
         response = self.client.call_action('get_collection', collection_id=collection.id)
         self.verify_containers(collection, response.result.collection)
         self._verify_permissions(response, False)
 
     def test_get_collection_owned_by_team_member(self):
-        mock_get_team(self.mock.instance, self.team, role=team_containers.TeamMemberV1.MEMBER)
+        mock_get_teams(self.mock.instance, [self.team], role=team_containers.TeamMemberV1.MEMBER)
         collection = factories.CollectionFactory.create_protobuf(team=self.team)
         response = self.client.call_action('get_collection', collection_id=collection.id)
         self.verify_containers(collection, response.result.collection)
         self._verify_permissions(response, False)
 
     def test_get_collection_owned_by_team_coordinator(self):
-        mock_get_team(self.mock.instance, self.team, role=team_containers.TeamMemberV1.COORDINATOR)
+        mock_get_teams(
+            self.mock.instance,
+            [self.team],
+            role=team_containers.TeamMemberV1.COORDINATOR,
+        )
         collection = factories.CollectionFactory.create_protobuf(team=self.team)
         response = self.client.call_action('get_collection', collection_id=collection.id)
         self.verify_containers(collection, response.result.collection)
