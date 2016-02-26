@@ -49,7 +49,7 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
         @cached_as(self)
         def _get_snippet():
-            return transform_html(self.content)[:80]
+            return transform_html(self.content)[:160]
 
         return _get_snippet()
 

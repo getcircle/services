@@ -21,7 +21,7 @@ def get_rescore_statements_v1(query):
 
 
 def get_highlight_fields_v1(query):
-    fragment_size = 70
+    fragment_size = 160
     return [
         HighlightField(
             'title',
