@@ -412,7 +412,11 @@ def add_to_collections(item, collections, organization_id, by_profile_id, token)
 
     items = []
     for collection in collections:
-        position = collection_to_position.get(str(collection.id), 0)
+        position = collection_to_position.get(str(collection.id), None)
+        if position is None:
+            position = 0
+        else:
+            position += 1
         item = models.CollectionItem(
             organization_id=organization_id,
             collection_id=collection.id,
@@ -422,7 +426,6 @@ def add_to_collections(item, collections, organization_id, by_profile_id, token)
             position=position,
         )
         items.append(item)
-        position += 1
 
     if items:
         items = models.CollectionItem.objects.bulk_create(items)
