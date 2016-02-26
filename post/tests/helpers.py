@@ -34,6 +34,7 @@ def mock_get_team(mock_instance, team, role=None, admin=False):
         return_object=team,
         return_object_path='team',
         team_id=team.id,
+        inflations={'disabled': True},
         fields={'only': ['permissions']},
     )
 

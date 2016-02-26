@@ -138,4 +138,4 @@ class Test(MockedTestCase):
             item={'source_id': fuzzy.uuid()},
         )
         item = response.result.items[0]
-        self.assertEqual(item.position, 9)
+        self.assertEqual(item.position, 10)
