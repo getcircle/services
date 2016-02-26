@@ -289,6 +289,6 @@ def update_contact_methods(contact_methods, team):
 def get_team_id_to_member_count(teams):
     counts = models.TeamMember.objects.filter(
         organization_id=teams[0].organization_id,
-        id__in=[t.id for t in teams],
-    ).values('team_id').annotate(Count('id'))
-    return dict((str(count['team_id']), count['id__count']) for count in counts)
+        team_id__in=[t.id for t in teams],
+    ).values('team_id').annotate(total_members=Count('id'))
+    return dict((str(count['team_id']), count['total_members']) for count in counts)
