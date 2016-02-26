@@ -403,23 +403,23 @@ class Test(ESTestCase):
         hit = response.result.results[0]
         self.assertIn('<mark>video</mark> <mark>conferencing</mark>', hit.highlight['content'])
 
-    def test_search_team_display_name_highlighting_partial(self):
+    def test_search_team_name_highlighting_partial(self):
         response = self.client.call_action(
             'search_v2',
             query='Dev',
             category=search_pb2.TEAMS,
         )
         hit = response.result.results[0]
-        self.assertTrue(hit.highlight['display_name'].startswith('<mark>Dev</mark>Ops'))
+        self.assertTrue(hit.highlight['name'].startswith('<mark>Dev</mark>Ops'))
 
-    def test_search_team_display_name_highlighting(self):
+    def test_search_team_name_highlighting(self):
         response = self.client.call_action(
             'search_v2',
             query='Customer Support',
             category=search_pb2.TEAMS,
         )
         hit = response.result.results[0]
-        self.assertEqual(hit.highlight['display_name'], '<mark>Customer Support</mark>')
+        self.assertEqual(hit.highlight['name'], '<mark>Customer Support</mark>')
 
     def test_search_team_description_highlighting(self):
         response = self.client.call_action(
@@ -497,8 +497,7 @@ class Test(ESTestCase):
         )
         hit = response.result.results[0]
         self.assertIn('<mark>Marco</mark> <mark>Zappacosta</mark>', hit.highlight['content'])
-        # len is 89 because fragment_size is 70 + tags
-        self.assertEqual(len(hit.highlight['content']), 89)
+        self.assertEqual(len(hit.highlight['content']), 174)
 
     def test_search_result_has_tracking_details(self):
         response = self.client.call_action('search_v2', query='Meghan Ward')
