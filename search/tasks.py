@@ -65,6 +65,7 @@ def update_teams(ids, organization_id):
         return_object='teams',
         client_kwargs={'token': make_admin_token(organization_id=organization_id)},
         control={'paginator': {'page_size': len(ids)}},
+        inflations={'exclude': ['permissions']},
         ids=ids,
     )
     _update_documents(TeamV1, teams, organization_id)

@@ -112,6 +112,7 @@ class Command(BaseCommand):
                     'get_teams',
                     'teams',
                     entity_pb2.TEAM,
+                    inflations={'exclude': ['permissions']},
                 )
             if entity_pb2.LOCATION in entity_types or index_all:
                 _update_paginated_entities(
