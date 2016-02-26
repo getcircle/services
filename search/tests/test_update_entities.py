@@ -114,6 +114,7 @@ class TestUpdateEntities(MockedTestCase):
             return_object=[team],
             return_object_path='teams',
             ids=[team.id],
+            inflations={'disabled': False, 'exclude': ['permissions']},
         )
         tasks.update_teams([str(team.id)], str(team.organization_id))
         self.assertEqual(patched_bulk.call_count, 1)
@@ -241,4 +242,4 @@ class TestUpdateEntities(MockedTestCase):
             post_containers.CollectionV1,
             strict=False,
         )
-        self.verify_containers(collection, called_collection)
+        self.assertEqual(collection.id, called_collection.id)
