@@ -216,10 +216,13 @@ class GetMembers(TeamExistsAction):
         )
 
     def _get_members_with_profile_id(self):
-        return models.TeamMember.objects.filter(
+        queryset = models.TeamMember.objects.filter(
             organization_id=self.parsed_token.organization_id,
             profile_id=self.request.profile_id,
         ).order_by('-role')
+        if self.request.has_role:
+            queryset = queryset.filter(role=self.request.role)
+        return queryset
 
     def run(self, *args, **kwargs):
         if self.request.team_id:
