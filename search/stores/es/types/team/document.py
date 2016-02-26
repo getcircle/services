@@ -30,11 +30,6 @@ class TeamV1(BaseDocType):
             field_name='description.value',
             on_prepare_highlight_dict=False,
         ),
-        'name': DocumentToProtobufOptions(
-            field_name='display_name',
-            on_from_protobuf=False,
-            replace=False,
-        ),
     }
 
     name = String(
