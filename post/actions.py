@@ -392,46 +392,40 @@ def add_to_collections(item, collections, organization_id, by_profile_id, token)
     return items
 
 
-def remove_from_collection(
-        collection_id,
-        collection_item_id,
+def remove_from_collections(
+        item,
+        collections,
         organization_id,
         by_profile_id,
         token,
     ):
-    """Remove an item from a collection.
+    """Remove an item from collections.
 
     Args:
-        collection_id (str): id of the collection
-        collection_item_id (str): id of the item in the collection
+        item (services.post.containers.CollectionItemV1): collection item to remove
+        collections (List[services.post.containers.CollectionV1]): list of
+            collections to remove the item from
         organization_id (str): id of the organization
         by_profile_id (str): id of the profile requesting the change
         token (str): service token
 
-    Raises:
-        post.models.Collection.DoesNotExist if the collection does not exist
-        Action.PermissionDenied if the user doesn't have permission to edit
-            the collection
-
     """
-    check_collection_permission(
-        permission='can_edit',
-        collection_id=collection_id,
+    collections = get_collections_with_permissions(
+        permission='can_add',
+        collection_ids=[c.id for c in collections],
         organization_id=organization_id,
         by_profile_id=by_profile_id,
         token=token,
     )
-
-    try:
-        item = models.CollectionItem.objects.get(
+    if collections:
+        items = models.CollectionItem.objects.filter(
             organization_id=organization_id,
-            id=collection_item_id,
-            collection_id=collection_id,
+            source_id=item.source_id,
+            source=item.source,
+            collection_id__in=[c.id for c in collections],
         )
-    except models.CollectionItem.DoesNotExist:
-        return
-    else:
-        item.delete()
+        assert len(items) <= len(collections)
+        items.delete()
 
 
 def update_collection(container, organization_id, by_profile_id, token):

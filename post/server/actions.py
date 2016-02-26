@@ -23,7 +23,7 @@ from ..actions import (
     get_permissions_for_collections,
     get_total_items_for_collections,
     inflate_items_source,
-    remove_from_collection,
+    remove_from_collections,
     reorder_collection,
     update_collection,
 )
@@ -302,42 +302,33 @@ class AddToCollections(PreRunParseTokenMixin, actions.Action):
     required_fields = ('item', 'collections')
 
     def run(self, *args, **kwargs):
-        try:
-            items = add_to_collections(
-                item=self.request.item,
-                collections=self.request.collections,
-                organization_id=self.parsed_token.organization_id,
-                by_profile_id=self.parsed_token.profile_id,
-                token=self.token,
-            )
-        except models.Collection.DoesNotExist:
-            # TODO make this error message handle multiple collections
-            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+        # TODO return some error if you didn't have permission instead of silently failing
+        items = add_to_collections(
+            item=self.request.item,
+            collections=self.request.collections,
+            organization_id=self.parsed_token.organization_id,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
+        )
 
         for item in items:
             container = self.response.items.add()
             item.to_protobuf(container)
 
 
-class RemoveFromCollection(PreRunParseTokenMixin, actions.Action):
+class RemoveFromCollections(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('collection_id', 'collection_item_id')
-    type_validators = {
-        'collection_id': [validators.is_uuid4],
-        'collection_item_id': [validators.is_uuid4],
-    }
+    required_fields = ('item', 'collections')
 
     def run(self, *args, **kwargs):
-        try:
-            remove_from_collection(
-                collection_id=self.request.collection_id,
-                collection_item_id=self.request.collection_item_id,
-                organization_id=self.parsed_token.organization_id,
-                by_profile_id=self.parsed_token.profile_id,
-                token=self.token,
-            )
-        except models.Collection.DoesNotExist:
-            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+        # TODO return some error if you didn't have permission instead of silently failing
+        remove_from_collections(
+            item=self.request.item,
+            collections=self.request.collections,
+            organization_id=self.parsed_token.organization_id,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
+        )
 
 
 class UpdateCollection(PreRunParseTokenMixin, actions.Action):
