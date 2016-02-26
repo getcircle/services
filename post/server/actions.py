@@ -356,6 +356,7 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
     type_validators = {
         'owner_id': [validators.is_uuid4],
         'ids': [validators.is_uuid4_list],
+        'profile_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
@@ -367,6 +368,10 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
             source_id=self.request.source_id,
             is_default=self.request.is_default,
             ids=self.request.ids,
+            profile_id=self.request.profile_id,
+            permissions=self.request.permissions,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
         )
         collections = self.get_paginated_objects(collections)
         collection_ids = [str(c.id) for c in collections]

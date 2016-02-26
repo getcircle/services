@@ -3,9 +3,11 @@ from common import utils
 from django.db.models import (
     Count,
     Max,
+    Q,
 )
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.post import containers_pb2 as post_containers
+from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 from service.actions import Action
 
@@ -108,10 +110,45 @@ def get_team_permissions(team_id, token):
         action='get_team',
         return_object='team',
         client_kwargs={'token': token},
+        inflations={'disabled': True},
         fields={'only': ['permissions']},
         team_id=team_id,
     )
     return team.permissions
+
+
+def get_editable_collections(by_profile_id, organization_id, token):
+    profile = service.control.get_object(
+        service='profile',
+        action='get_profile',
+        return_object='profile',
+        client_kwargs={'token': token},
+        fields={'only': ['is_admin']},
+        profile_id=by_profile_id,
+    )
+
+    queryset = models.Collection.objects.filter(organization_id=organization_id)
+    if profile.is_admin:
+        return queryset
+    else:
+        # get the teams they're a coordinator of
+        members = service.control.get_object(
+            service='team',
+            action='get_members',
+            return_object='members',
+            client_kwargs={'token': token},
+            inflations={'disabled': True},
+            fields={'only': ['[]members.team.id']},
+            profile_id=by_profile_id,
+            role=team_containers.TeamMemberV1.COORDINATOR,
+            has_role=True,
+        )
+        team_ids = [m.team.id for m in members]
+        queryset = queryset.filter(
+            (Q(owner_type=post_containers.CollectionV1.TEAM) & Q(owner_id__in=team_ids)) |
+            (Q(owner_type=post_containers.CollectionV1.PROFILE) & Q(owner_id=by_profile_id))
+        )
+    return queryset
 
 
 def get_collections_with_permissions(
@@ -463,17 +500,23 @@ def update_collection(container, organization_id, by_profile_id, token):
 
 def get_collections(
         organization_id,
+        by_profile_id,
+        token,
         owner_type=None,
         owner_id=None,
         source=None,
         source_id=None,
         is_default=False,
         ids=None,
+        profile_id=None,
+        permissions=None,
     ):
     """Return collections for the owner or source item.
 
     Args:
         organization_id (str): organization id
+        by_profile_id (str): profile id fetching the collections
+        token (str): token of the user fetching collections
         owner_type (Optional[services.post.containers.CollectionV1.OwnerTypeV1]): type of
             owner (relevant when owner_id is specified)
         owner_id (Optional[str]): id of the owner, used with owner_type to lookup Team or
@@ -485,6 +528,12 @@ def get_collections(
         is_default (Optional[bool]): whether or not we want to return just the
             default collection
         ids (Optional[List[str]]): specific collection ids to retrieve
+        profile_id (Optional[str]): id of the profile we want to return
+            collections for. This is used when we want to return collections a
+            profile has access to edit
+        permissions (Optional[services.common.containers.PermissionsV1]):
+            permissions object. this is used if we want to return all
+            collections for an item that the user has access to
 
     Returns:
         post.models.Collection queryset
@@ -509,8 +558,22 @@ def get_collections(
             source=source,
             source_id=source_id,
             **parameters
-        ).select_related('collection')
+        )
         collections = [i.collection for i in items]
+        if permissions.can_add:
+            collections = get_collections_with_permissions(
+                collection_ids=[i.collection_id for i in items],
+                permission='can_add',
+                organization_id=organization_id,
+                by_profile_id=by_profile_id,
+                token=token,
+            )
+    elif profile_id:
+        collections = get_editable_collections(
+            organization_id=organization_id,
+            by_profile_id=by_profile_id,
+            token=token,
+        )
     else:
         collections = models.Collection.objects.filter(**parameters)
     return collections
