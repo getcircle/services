@@ -787,3 +787,47 @@ def get_or_create_default_collection(owner_type, owner_id, organization_id):
         organization_id=organization_id,
         is_default=True,
     )
+
+
+def get_display_names_for_collections(collections, token):
+    """Get display names for the collections.
+
+    Collections that are owned by teams are displayed as "[<Team Name>] <Collection Name>".
+
+    Args:
+        collections (List[services.post.containers.CollectionV1]): list of collections
+        token (str): service token
+
+    Returns:
+        dict of <collection_id>: <display name>
+
+    """
+    team_ids = set([str(c.owner_id) for c in collections
+                    if c.owner_type == post_containers.CollectionV1.TEAM])
+
+    team_id_to_name = {}
+    if team_ids:
+        teams = service.control.get_object(
+            service='team',
+            action='get_teams',
+            client_kwargs={'token': token},
+            return_object='teams',
+            inflations={'disabled': True},
+            fields={'only': ['id', 'name']},
+            ids=list(team_ids),
+        )
+        team_id_to_name = dict((t.id, t.name) for t in teams)
+
+    collection_id_to_name = {}
+    for collection in collections:
+        name = None
+        if collection.owner_type == post_containers.CollectionV1.TEAM:
+            team_name = team_id_to_name.get(str(collection.owner_id))
+            if team_name:
+                name = '[%s] %s' % (team_name, collection.name)
+
+        if name is None:
+            name = collection.name
+
+        collection_id_to_name[str(collection.id)] = name
+    return collection_id_to_name

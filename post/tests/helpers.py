@@ -1,7 +1,7 @@
 from protobufs.services.team import containers_pb2 as team_containers
 
 
-def mock_get_teams(mock_instance, teams, role=None, admin=False):
+def mock_get_teams(mock_instance, teams, role=None, admin=False, **overrides):
     for team in teams:
         if role == team_containers.TeamMemberV1.COORDINATOR or admin:
             team.permissions.can_edit = True
@@ -10,13 +10,16 @@ def mock_get_teams(mock_instance, teams, role=None, admin=False):
         elif role is not None:
             team.permissions.can_add = True
 
+    if 'fields' not in overrides:
+        overrides['fields'] = {'only': ['permissions']}
+
     mock_instance.register_mock_object(
         service='team',
         action='get_teams',
         return_object=teams,
         return_object_path='teams',
         ids=[team.id for team in teams],
-        fields={'only': ['permissions']},
+        **overrides
     )
 
 

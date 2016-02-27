@@ -20,6 +20,7 @@ from ..actions import (
     get_collection_items,
     get_collections,
     get_collection_id_to_items_dict,
+    get_display_names_for_collections,
     get_permissions_for_collections,
     get_total_items_for_collections,
     inflate_items_source,
@@ -382,6 +383,13 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
                 organization_id=self.parsed_token.organization_id,
             )
 
+        collection_id_to_display_name = {}
+        if common_utils.should_inflate_field('display_name', self.request.inflations):
+            collection_id_to_display_name = get_display_names_for_collections(
+                collections=collections,
+                token=self.token,
+            )
+
         item_fields = common_utils.fields_for_repeated_items(
             'collections.items',
             self.request.fields,
@@ -408,6 +416,7 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
                 inflations=self.request.inflations,
                 fields=self.request.fields,
                 total_items=item_counts.get(str(collection.id), 0),
+                display_name=collection_id_to_display_name.get(str(collection.id)),
             )
             container.items.extend(collection_to_items.get(str(collection.id), []))
 

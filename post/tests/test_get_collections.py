@@ -58,6 +58,12 @@ class Test(MockedTestCase):
             # Add 10 items per collection
             factories.CollectionItemFactory.create_batch(size=10, collection=collection)
 
+        mock_get_teams(
+            self.mock.instance,
+            [team],
+            fields={'only': ['id', 'name']},
+            inflations={'disabled': True},
+        )
         response = self.client.call_action(
             'get_collections',
             owner_id=team.id,
@@ -66,6 +72,7 @@ class Test(MockedTestCase):
         response_collections = response.result.collections
         self.assertEqual(len(response_collections), len(collections))
         for collection in response_collections:
+            self.assertTrue(collection.display_name.startswith('[%s]' % (team.name,)))
             self.assertEqual(len(collection.items), 0)
             self.assertEqual(collection.total_items, 10)
 
