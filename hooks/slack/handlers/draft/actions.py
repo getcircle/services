@@ -105,7 +105,9 @@ def post_content_from_messages(slack_api_token, messages):
             text = replace_slack_links_with_post_links(message['text'])
             text = replace_slack_uids_with_user_names(slack_api_token, text)
             content.append(text)
-            author = message['user']
+            author = None
+            if 'user' in message:
+                author = message['user']
             if prev_author != None and author != prev_author:
                 content.append('<br><br>')
             else:
