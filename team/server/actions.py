@@ -136,7 +136,7 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
         )
         member, permissions = permissions_dict[str(team.id)]
         if member:
-            member.to_protobuf(self.response.member)
+            member.to_protobuf(self.response.member, inflations={'disabled': True})
         self.response.team.permissions.CopyFrom(permissions)
 
 
