@@ -27,7 +27,7 @@ def handle_draft(request, text):
     )
     messages.reverse()
     title = 'Slack Draft - %s' % (text,)
-    content = actions.post_content_from_messages(messages)
+    content = actions.post_content_from_messages(request.slack_api_token, messages)
     post = service.control.get_object(
         service='post',
         action='create_post',

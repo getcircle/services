@@ -97,12 +97,13 @@ def parse_draft_interval(request_time, text):
     return draft_interval
 
 
-def post_content_from_messages(messages):
+def post_content_from_messages(slack_api_token, messages):
     content = []
     prev_author = None
     for message in messages:
         if 'text' in message:
             text = replace_slack_links_with_post_links(message['text'])
+            text = replace_slack_uids_with_user_names(slack_api_token, text)
             content.append(text)
             author = message['user']
             if prev_author != None and author != prev_author:
@@ -119,4 +120,22 @@ def replace_slack_links_with_post_links(text):
     # without link text: <http://lunohq.com>
     new_text = re.sub(r'<([^@\s]+\://\S+)\|(\S+)>', r'<a href=\1>\2</a>', text)
     new_text = re.sub(r'<([^@\s]+\://\S+)>', r'<a href=\1>\1</a>', new_text)
+    return new_text
+
+
+def replace_slack_uids_with_user_names(slack_api_token, text):
+    user_names = {}
+    slack = Slacker(slack_api_token)
+    def user_name_for_slack_uid_match(match):
+        uid = match.group(1)
+        if uid in user_names:
+            return user_names[uid]
+        else:
+            response = slack.users.info(uid)
+            if response.successful:
+                name = '@' + response.body['user']['name']
+                user_names[uid] = name
+                return name
+
+    new_text = re.sub(r'<@(\w+)>', user_name_for_slack_uid_match, text)
     return new_text
