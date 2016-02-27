@@ -493,5 +493,6 @@ class GetCollectionItems(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             inflations=self.request.inflations,
             fields=self.request.fields,
+            token=self.token,
         )
         self.response.items.extend(containers)

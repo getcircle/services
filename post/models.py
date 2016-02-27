@@ -93,9 +93,12 @@ class Post(models.UUIDModel, models.TimestampableModel):
         return [protobuf_to_dict(f) for f in files]
 
     def _inflate(self, protobuf, inflations, overrides, token):
-        if 'by_profile' not in overrides:
-            if utils.should_inflate_field('by_profile', inflations) and token:
-                overrides['by_profile'] = protobuf_to_dict(self._get_by_profile(token))
+        if (
+            'by_profile' not in overrides and
+            utils.should_inflate_field('by_profile', inflations) and
+            token
+        ):
+            overrides['by_profile'] = protobuf_to_dict(self._get_by_profile(token))
 
         should_fetch_attachments = self._should_fetch_attachments(overrides, inflations)
         if should_fetch_attachments:

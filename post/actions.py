@@ -641,7 +641,7 @@ def get_collection_items(collection_id, organization_id):
     ).order_by('position')
 
 
-def inflate_items_source(items, organization_id, inflations, fields):
+def inflate_items_source(items, organization_id, inflations, fields, token=None):
     """Given a list of items, inflate the source objects.
 
     Args:
@@ -649,6 +649,7 @@ def inflate_items_source(items, organization_id, inflations, fields):
         organization_id (str): id of organization
         inflations (services.common.containers.InflationsV1): inflations for the items
         fields (services.common.containers.FieldsV1): fields for the items
+        token (Optional[str]): service token
 
     Returns:
         List[services.post.containers.CollectionItemV1]
@@ -668,8 +669,26 @@ def inflate_items_source(items, organization_id, inflations, fields):
                 organization_id=organization_id,
                 fields=post_fields,
             )
+            profile_id_to_profile = {}
+            if utils.should_inflate_field('by_profile', post_inflations) and token:
+                profile_ids = list(set([str(p.by_profile_id) for p in posts]))
+                profiles = service.control.get_object(
+                    service='profile',
+                    action='get_profiles',
+                    client_kwargs={'token': token},
+                    return_object='profiles',
+                    ids=profile_ids,
+                    inflations={'disabled': True},
+                )
+                profile_id_to_profile = dict((p.id, p) for p in profiles)
+
             for post in posts:
-                source_dict[source].setdefault('objects', {})[str(post.id)] = post
+                source_dict[source].setdefault('objects', {})[str(post.id)] = {
+                    'item': post,
+                    'overrides': {
+                        'by_profile': profile_id_to_profile.get(str(post.by_profile_id)),
+                    },
+                }
 
     containers = []
     for item in items:
@@ -679,8 +698,15 @@ def inflate_items_source(items, organization_id, inflations, fields):
             collection_id=str(item.collection_id),
         )
         if item.source == post_containers.CollectionItemV1.LUNO:
-            post = source_dict.get(item.source).get('objects', {}).get(item.source_id)
-            post.to_protobuf(container.post, inflations=post_inflations, fields=post_fields)
+            data = source_dict.get(item.source).get('objects', {}).get(item.source_id)
+            post = data['item']
+            overrides = data.get('overrides', {})
+            post.to_protobuf(
+                container.post,
+                inflations=post_inflations,
+                fields=post_fields,
+                **overrides
+            )
         containers.append(container)
     return containers
 
