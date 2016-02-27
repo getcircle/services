@@ -756,6 +756,9 @@ def get_collection_id_to_items_dict(
         ) % (models.CollectionItem._meta.db_table, collection_key, int(number_of_items))
         queries.append(query)
 
+    if not queries:
+        return {}
+
     query = ' union all '.join(queries)
     items = list(models.CollectionItem.objects.raw(query, parameters))
     containers = inflate_items_source(
