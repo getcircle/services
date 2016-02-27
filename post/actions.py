@@ -144,11 +144,12 @@ def get_editable_collections(by_profile_id, organization_id, token):
             role=team_containers.TeamMemberV1.COORDINATOR,
             has_role=True,
         )
-        team_ids = [m.team.id for m in members]
-        queryset = queryset.filter(
-            (Q(owner_type=post_containers.CollectionV1.TEAM) & Q(owner_id__in=team_ids)) |
-            (Q(owner_type=post_containers.CollectionV1.PROFILE) & Q(owner_id=by_profile_id))
-        )
+        if (members):
+            team_ids = [m.team.id for m in members]
+            queryset = queryset.filter(
+                (Q(owner_type=post_containers.CollectionV1.TEAM) & Q(owner_id__in=team_ids)) |
+                (Q(owner_type=post_containers.CollectionV1.PROFILE) & Q(owner_id=by_profile_id))
+            )
     return queryset
 
 
