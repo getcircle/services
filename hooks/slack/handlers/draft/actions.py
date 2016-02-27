@@ -133,11 +133,16 @@ def replace_slack_uids_with_user_names(slack_api_token, text):
         if uid in user_names:
             return user_names[uid]
         else:
-            response = slack.users.info(uid)
-            if response.successful:
-                name = '@' + response.body['user']['name']
-                user_names[uid] = name
-                return name
+            try:
+                response = slack.users.info(uid)
+                if response.successful:
+                    name = '@' + response.body['user']['name']
+                    user_names[uid] = name
+                    return name
+            except:
+                # Probably couldn't find user because match turned out not to be an ID
+                # Just return match with '@' prefixed because it was outside the capture group
+                return '@' + uid
 
     new_text = re.sub(r'<@(\w+)>', user_name_for_slack_uid_match, text)
     return new_text
