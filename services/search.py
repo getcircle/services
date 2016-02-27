@@ -34,3 +34,17 @@ def update_entity(primary_key, organization_id, entity_type):
         )
     except service.control.CallActionError as e:
         logger.error(e.summary)
+
+
+def delete_entity(primary_key, organization_id, entity_type):
+    token = make_admin_token(organization_id=organization_id)
+    try:
+        service.control.call_action(
+            service='search',
+            action='delete_entities',
+            client_kwargs={'token': token},
+            ids=[str(primary_key)],
+            type=entity_type,
+        )
+    except service.control.CallActionError as e:
+        logger.error(e.summary)
