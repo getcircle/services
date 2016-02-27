@@ -5,6 +5,7 @@ from django.db.models import (
     Max,
     Q,
 )
+from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.team import containers_pb2 as team_containers
@@ -680,7 +681,8 @@ def inflate_items_source(items, organization_id, inflations, fields, token=None)
                     ids=profile_ids,
                     inflations={'disabled': True},
                 )
-                profile_id_to_profile = dict((p.id, p) for p in profiles)
+                # XXX redundant use of protobuf_to_dict
+                profile_id_to_profile = dict((p.id, protobuf_to_dict(p)) for p in profiles)
 
             for post in posts:
                 source_dict[source].setdefault('objects', {})[str(post.id)] = {
