@@ -133,8 +133,7 @@ def get_editable_collections(by_profile_id, organization_id, token):
         return queryset.filter(
             (
                 Q(owner_type=post_containers.CollectionV1.PROFILE) &
-                Q(owner_id=by_profile_id) &
-                Q(is_default=True)
+                Q(owner_id=by_profile_id)
             ) |
             Q(owner_type=post_containers.CollectionV1.TEAM)
         )
