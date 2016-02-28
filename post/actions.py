@@ -139,17 +139,22 @@ def get_editable_collections(by_profile_id, organization_id, token):
             return_object='members',
             client_kwargs={'token': token},
             inflations={'disabled': True},
-            fields={'only': ['[]members.team.id']},
+            fields={'only': ['[]members.team_id']},
             profile_id=by_profile_id,
             role=team_containers.TeamMemberV1.COORDINATOR,
             has_role=True,
         )
-        if (members):
-            team_ids = [m.team.id for m in members]
-            queryset = queryset.filter(
-                (Q(owner_type=post_containers.CollectionV1.TEAM) & Q(owner_id__in=team_ids)) |
-                (Q(owner_type=post_containers.CollectionV1.PROFILE) & Q(owner_id=by_profile_id))
+        team_ids = [m.team_id for m in members]
+        profile_collections = queryset.filter(
+            Q(owner_type=post_containers.CollectionV1.PROFILE) & Q(owner_id=by_profile_id)
+        )
+        if team_ids:
+            team_collections = queryset.filter(
+                Q(owner_type=post_containers.CollectionV1.TEAM) & Q(owner_id__in=team_ids)
             )
+            queryset = profile_collections | team_collections
+        else:
+            queryset = profile_collections
     return queryset
 
 

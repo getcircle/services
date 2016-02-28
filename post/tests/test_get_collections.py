@@ -288,7 +288,7 @@ class Test(MockedTestCase):
             return_object_path='members',
             profile_id=self.profile.id,
             role=team_containers.TeamMemberV1.COORDINATOR,
-            fields={'only': ['[]members.team.id']},
+            fields={'only': ['[]members.team_id']},
             inflations={'disabled': True},
             has_role=True,
         )
