@@ -1,3 +1,5 @@
+import logging
+
 from bulk_update.helper import bulk_update
 from common import utils
 from django.db.models import (
@@ -13,6 +15,8 @@ import service.control
 from service.actions import Action
 
 from . import models
+
+logger = logging.getLogger(__name__)
 
 
 def collection_exists(collection_id, organization_id):
@@ -477,8 +481,17 @@ def remove_from_collections(
             source=item.source,
             collection_id__in=[c.id for c in collections],
         )
-        assert len(items) <= len(collections)
-        items.delete()
+        try:
+            assert len(items) <= len(collections)
+        except AssertionError:
+            logger.error(
+                'Attempting to remove more items than originally specified: %d vs. %d',
+                len(items),
+                len(collections),
+            )
+            raise
+        else:
+            items.delete()
 
 
 def update_collection(container, organization_id, by_profile_id, token):
