@@ -569,6 +569,8 @@ def get_collections(
         # `is_default` is True
         if is_default:
             collections = collections.filter(is_default=is_default)
+        else:
+            collections = collections.filter(is_default=None)
     elif source_id:
         items = models.CollectionItem.objects.filter(
             source=source,
