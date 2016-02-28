@@ -3,13 +3,46 @@ from common.db import models
 from common import utils
 from django.contrib.postgres.fields import ArrayField
 import django.db
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
+
+
+class ProfileManager(models.Manager):
+
+    def create(self, *args, **kwargs):
+        profile = super(ProfileManager, self).create(*args, **kwargs)
+        # XXX fix this later
+        from post import models as post_models
+        post_models.Collection.objects.create(
+            owner_type=post_containers.CollectionV1.PROFILE,
+            owner_id=profile.id,
+            organization_id=profile.organization_id,
+            is_default=True,
+        )
+        return profile
+
+    def bulk_create(self, *args, **kwargs):
+        profiles = super(ProfileManager, self).bulk_create(*args, **kwargs)
+        # XXX fix this later
+        from post import models as post_models
+        collections = []
+        for profile in profiles:
+            collection = post_models.Collection(
+                owner_type=post_containers.CollectionV1.PROFILE,
+                owner_id=profile.id,
+                organization_id=profile.organization_id,
+                is_default=True
+            )
+            collections.append(collection)
+        post_models.Collection.objects.bulk_create(collections)
+        return profiles
 
 
 class Profile(models.UUIDModel, models.TimestampableModel):
 
     bulk_manager = BulkUpdateManager()
+    objects = ProfileManager()
 
     protobuf_include_fields = ('full_name',)
     as_dict_value_transforms = {'status': int}
