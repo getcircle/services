@@ -111,15 +111,30 @@ class TeamMember(models.UUIDModel, models.TimestampableModel):
         default=team_containers.TeamMemberV1.MEMBER,
     )
 
-    def _inflate(self, protobuf, inflations, fields, overrides):
+    def _inflate(self, protobuf, inflations, fields, overrides, token=None):
         team_inflations = inflations and utils.inflations_for_item('team', inflations)
         team_fields = fields and utils.fields_for_item('team', fields)
         if 'team' not in overrides and utils.should_inflate_field('team', inflations):
             self.team.to_protobuf(protobuf.team, inflations=team_inflations, fields=team_fields)
 
-    def to_protobuf(self, protobuf=None, inflations=None, fields=None, **overrides):
+        if (
+            token and
+            'profile' not in overrides and
+            utils.should_inflate_field('profile', inflations)
+        ):
+            profile = service.control.get_object(
+                service='profile',
+                action='get_profile',
+                client_kwargs={'token': token},
+                return_object='profile',
+                profile_id=str(self.profile_id),
+                inflations={'disabled': True},
+            )
+            protobuf.profile.CopyFrom(profile)
+
+    def to_protobuf(self, protobuf=None, inflations=None, fields=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-        self._inflate(protobuf, inflations, fields, overrides)
+        self._inflate(protobuf, inflations, fields, overrides, token=token)
         return super(TeamMember, self).to_protobuf(
             protobuf,
             inflations=inflations,

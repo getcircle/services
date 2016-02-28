@@ -374,7 +374,7 @@ class JoinTeam(TeamExistsAction):
             self.request.team_id,
             organization_id=self.parsed_token.organization_id,
         )[0]
-        member.to_protobuf(self.response.member)
+        member.to_protobuf(self.response.member, token=self.token)
 
 
 class LeaveTeam(TeamExistsAction):
