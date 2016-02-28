@@ -51,6 +51,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     user_id = models.UUIDField()
     title = models.CharField(max_length=255, null=True)
     email = models.EmailField()
+    bio = models.TextField(null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     nickname = models.CharField(max_length=64, null=True)
