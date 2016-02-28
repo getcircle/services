@@ -130,7 +130,14 @@ def get_editable_collections(by_profile_id, organization_id, token):
 
     queryset = models.Collection.objects.filter(organization_id=organization_id)
     if profile.is_admin:
-        return queryset
+        return queryset.filter(
+            (
+                Q(owner_type=post_containers.CollectionV1.PROFILE) &
+                Q(owner_id=by_profile_id) &
+                Q(is_default=True)
+            ) |
+            Q(owner_type=post_containers.CollectionV1.TEAM)
+        )
     else:
         # get the teams they're a coordinator of
         members = service.control.get_object(
