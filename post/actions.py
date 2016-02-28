@@ -826,6 +826,7 @@ def get_display_names_for_collections(collections, token):
         teams = service.control.get_object(
             service='team',
             action='get_teams',
+            control={'paginator': {'page_size': len(team_ids)}},
             client_kwargs={'token': token},
             return_object='teams',
             inflations={'disabled': True},
