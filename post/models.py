@@ -194,5 +194,8 @@ class CollectionItem(models.UUIDModel, models.TimestampableModel):
         # post/migrations/0009_auto_20160212_2047.py to support initially
         # deferring the constraint check. this allows us to reorder the
         # collection in a single transaction.
-        unique_together = ('organization_id', 'collection', 'position')
+        unique_together = (
+            ('organization_id', 'collection', 'position'),
+            ('organization_id', 'collection', 'source', 'source_id'),
+        )
         protobuf = post_containers.CollectionItemV1
