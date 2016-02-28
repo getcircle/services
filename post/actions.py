@@ -837,14 +837,14 @@ def get_display_names_for_collections(collections, token):
 
     collection_id_to_name = {}
     for collection in collections:
-        name = None
+        name = collection.name
+        if collection.is_default:
+            name = 'Pinned Knowledge'
+
         if collection.owner_type == post_containers.CollectionV1.TEAM:
             team_name = team_id_to_name.get(str(collection.owner_id))
             if team_name:
-                name = '[%s] %s' % (team_name, collection.name)
-
-        if name is None:
-            name = collection.name
+                name = '[%s] %s' % (team_name, name)
 
         collection_id_to_name[str(collection.id)] = name
     return collection_id_to_name
