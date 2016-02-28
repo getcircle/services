@@ -50,7 +50,7 @@ class Test(MockedTestCase):
         self.assertEqual(team.description.by_profile_id, self.profile.id)
         self.assertEqual(team.organization_id, self.organization.id)
         # verify history action was called
-        call = self.mock.instance.mocked_calls[0]
+        call = self.mock.instance.mocked_calls[1]
         self.assertEqual(call['action'], 'record_action')
         self.assertEqual(call['service'], 'history')
         params = call['params']
