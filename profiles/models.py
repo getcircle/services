@@ -132,10 +132,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         if protobuf.items:
             items = [(item.key, item.value) for item in protobuf.items if item.key and item.value]
 
-        contact_methods = None
-        if protobuf.contact_methods:
-            contact_methods = self._update_contact_methods(protobuf.contact_methods)
-
+        contact_methods = self._update_contact_methods(protobuf.contact_methods)
         return super(Profile, self).update_from_protobuf(
             protobuf,
             items=items,
@@ -152,8 +149,12 @@ class Profile(models.UUIDModel, models.TimestampableModel):
                     to_delete.append(method_id)
 
             if to_delete:
-                self.contact_methods.filter(id__in=to_delete).delete()
+                self.contact_methods.filter(
+                    id__in=to_delete,
+                    organization_id=self.organization_id,
+                ).delete()
 
+            # TODO should be bulk creating and updating these
             for container in methods:
                 if container.id:
                     contact_method = ContactMethod.objects.get(
