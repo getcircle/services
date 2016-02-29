@@ -256,7 +256,14 @@ class CreateCollection(PreRunParseTokenMixin, actions.Action):
             by_profile_id=self.parsed_token.profile_id,
             token=self.token,
         )
-        collection.to_protobuf(self.response.collection)
+        collection_id_to_display_name = get_display_names_for_collections(
+            [collection],
+            token=self.token,
+        )
+        collection.to_protobuf(
+            self.response.collection,
+            display_name=collection_id_to_display_name.get(str(collection.id)),
+        )
 
 
 class DeleteCollection(PreRunParseTokenMixin, actions.Action):
