@@ -159,12 +159,15 @@ def post_attachments_from_attachments(attachments):
     for attachment in attachments:
         if 'image_url' in attachment:
             url = attachment['image_url']
-            name = url.rsplit('/', 1)[-1]
-            width = attachment.get('image_width', 0)
-            height = attachment.get('image_height', 0)
-            caption = attachment.get('fallback', '')
-            mime_type = 'image/jpeg'
-            html = trix_image_attachment(url, name, caption, width, height, mime_type)
+            details = {
+                'url': url,
+                'name': url.rsplit('/', 1)[-1],
+                'caption': attachment.get('fallback', ''),
+                'width': attachment.get('image_width', 0),
+                'height': attachment.get('image_height', 0),
+                'mime_type': 'image/jpeg',
+            }
+            html = trix_image_attachment(**details)
             post_attachments.append(html)
     return post_attachments
 
@@ -172,20 +175,29 @@ def post_attachments_from_attachments(attachments):
 def post_attachment_from_file(file):
     html = ''
     if 'thumb_360' in file:
-        thumbnail_url = file['thumb_360']
-        url = file['permalink']
-        name = file.get('name', '')
-        width = file.get('thumb_360_w', 0)
-        height = file.get('thumb_360_h', 0)
-        caption = file.get('title', '')
-        mime_type = file.get('mimetype', '')
-        html = trix_image_attachment(url, name, caption, width, height, mime_type, thumbnail_url)
+        details = {
+            'thumbnail_url': file['thumb_360'],
+            'url': file['permalink'],
+            'name': file.get('name', ''),
+            'width': file.get('thumb_360_w', 0),
+            'height': file.get('thumb_360_h', 0),
+            'caption': file.get('title', ''),
+            'mime_type': file.get('mimetype', ''),
+        }
+        html = trix_image_attachment(**details)
     return html
 
 
 def trix_image_attachment(url, name, caption, width, height, mime_type, thumbnail_url=None):
-    if thumbnail_url == None:
-        thumbnail_url = url
+    details = {
+        'thumbnail_url': thumbnail_url if thumbnail_url != None else url,
+        'url': url,
+        'name': name,
+        'width': width,
+        'height': height,
+        'caption': caption,
+        'mime_type': mime_type,
+    }
     return """
         <div>
             <a
@@ -215,4 +227,4 @@ def trix_image_attachment(url, name, caption, width, height, mime_type, thumbnai
                     </figcaption>
                 </figure>
             </a>
-        </div>""".format(thumbnail_url=thumbnail_url, url=url, name=name, width=width, height=height, caption=caption, mime_type=mime_type)
+        </div>""".format(**details)
