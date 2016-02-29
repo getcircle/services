@@ -62,6 +62,16 @@ class Test(MockedTestCase):
         coordinator = models.TeamMember.objects.get(team_id=team.id, profile_id=self.profile.id)
         self.assertEqual(coordinator.role, team_containers.TeamMemberV1.COORDINATOR)
 
+    def test_create_team_no_duplicate_name(self):
+        container = team_containers.TeamV1(
+            name=fuzzy.text(),
+        )
+        response = self.client.call_action('create_team', team=container)
+        self.verify_containers(container, response.result.team)
+
+        with self.assertFieldError('team.name', 'DUPLICATE'):
+            self.client.call_action('create_team', team=container)
+
     def test_create_team_add_members(self):
         container = team_containers.TeamV1(
             name=fuzzy.text(),

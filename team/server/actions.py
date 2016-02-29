@@ -1,4 +1,5 @@
 from common import utils
+import django.db
 from django.db.models import Count
 from protobuf_to_dict import protobuf_to_dict
 from protobufs.services.team import containers_pb2 as team_containers
@@ -65,12 +66,16 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
     required_fields = ('team', 'team.name',)
 
     def run(self, *args, **kwargs):
-        team = create_team(
-            container=self.request.team,
-            token=self.token,
-            by_profile_id=self.parsed_token.profile_id,
-            organization_id=self.parsed_token.organization_id,
-        )
+        try:
+            team = create_team(
+                container=self.request.team,
+                token=self.token,
+                by_profile_id=self.parsed_token.profile_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except django.db.IntegrityError:
+            raise self.ActionFieldError('team.name', 'DUPLICATE')
+
         team.to_protobuf(self.response.team)
         coordinator = team_containers.TeamMemberV1(
             role=team_containers.TeamMemberV1.COORDINATOR,
