@@ -105,6 +105,8 @@ def post_content_from_messages(slack_api_token, messages):
             text = replace_slack_links_with_post_links(message['text'])
             text = replace_slack_uids_with_user_names(slack_api_token, text)
             content.append(text)
+            if 'attachments' in message:
+                content.extend(post_attachments_from_attachments(message['attachments']))
             author = None
             if 'user' in message:
                 author = message['user']
@@ -146,3 +148,46 @@ def replace_slack_uids_with_user_names(slack_api_token, text):
 
     new_text = re.sub(r'<@(\w+)>', user_name_for_slack_uid_match, text)
     return new_text
+
+
+def post_attachments_from_attachments(attachments):
+    post_attachments = []
+    for attachment in attachments:
+        if 'image_url' in attachment:
+            url = attachment['image_url']
+            name = url.rsplit('/', 1)[-1]
+            width = attachment.get('image_width', 0)
+            height = attachment.get('image_height', 0)
+            caption = attachment.get('fallback', '')
+            html = """
+                <div>
+                    <a
+                	data-trix-attachment='{{
+                        "contentType":"image/jpeg",
+                		"filename":"{name}",
+                		"height":{height},
+                		"href":"{url}",
+                		"url":"{url}",
+                		"width":{width}
+                	}}'
+                    data-trix-attributes='{{
+                		"caption":"{caption}"
+                	}}'
+                	href="{url}"
+                	>
+                	    <figure
+                		class="attachment attachment-preview"
+                		>
+                	        <img
+                			height="{height}"
+                			src="{url}"
+                	        width="{width}"
+                			>
+                	        <figcaption class="caption">
+                	            {caption}
+                	        </figcaption>
+                	    </figure>
+                	</a>
+                </div>""".format(url=url, name=name, width=width, height=height, caption=caption)
+            post_attachments.append(html)
+    return post_attachments
