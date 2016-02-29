@@ -162,32 +162,32 @@ def post_attachments_from_attachments(attachments):
             html = """
                 <div>
                     <a
-                	data-trix-attachment='{{
+                    data-trix-attachment='{{
                         "contentType":"image/jpeg",
-                		"filename":"{name}",
-                		"height":{height},
-                		"href":"{url}",
-                		"url":"{url}",
-                		"width":{width}
-                	}}'
+                        "filename":"{name}",
+                        "height":{height},
+                        "href":"{url}",
+                        "url":"{url}",
+                        "width":{width}
+                    }}'
                     data-trix-attributes='{{
-                		"caption":"{caption}"
-                	}}'
-                	href="{url}"
-                	>
-                	    <figure
-                		class="attachment attachment-preview"
-                		>
-                	        <img
-                			height="{height}"
-                			src="{url}"
-                	        width="{width}"
-                			>
-                	        <figcaption class="caption">
-                	            {caption}
-                	        </figcaption>
-                	    </figure>
-                	</a>
+                        "caption":"{caption}"
+                    }}'
+                    href="{url}"
+                    >
+                        <figure
+                        class="attachment attachment-preview"
+                        >
+                            <img
+                            height="{height}"
+                            src="{url}"
+                            width="{width}"
+                            >
+                            <figcaption class="caption">
+                                {caption}
+                            </figcaption>
+                        </figure>
+                    </a>
                 </div>""".format(url=url, name=name, width=width, height=height, caption=caption)
             post_attachments.append(html)
     return post_attachments
