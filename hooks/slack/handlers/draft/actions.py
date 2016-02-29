@@ -148,7 +148,9 @@ def replace_slack_uids_with_user_names(slack_api_token, text):
                 # Just return match with '@' prefixed because it was outside the capture group
                 return '@' + uid
 
-    new_text = re.sub(r'<@(\w+)>', user_name_for_slack_uid_match, text)
+    # Some user references (such as those in messages which contain a file) have the name embedded.
+    new_text = re.sub(r'<@\w+\|(\w+)>', r'@\1', text)
+    new_text = re.sub(r'<@(\w+)>', user_name_for_slack_uid_match, new_text)
     return new_text
 
 
