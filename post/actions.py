@@ -721,7 +721,10 @@ def inflate_items_source(items, organization_id, inflations, fields, token=None)
         )
         if item.source == post_containers.CollectionItemV1.LUNO:
             data = source_dict.get(item.source).get('objects', {}).get(item.source_id)
-            post = data['item']
+            post = data.get('item')
+            if not post:
+                continue
+
             overrides = data.get('overrides', {})
             post.to_protobuf(
                 container.post,
