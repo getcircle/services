@@ -401,20 +401,6 @@ def add_to_collections(item, collections, organization_id, by_profile_id, token)
 
     """
 
-    # populate the id for the default collection if necessary
-    for collection in collections:
-        if not collection.id and collection.is_default:
-            # XXX only supports adding collections to profile for now, need a
-            # permission check for team
-            default_collection = get_or_create_default_collection(
-                owner_type=post_containers.CollectionV1.PROFILE,
-                owner_id=by_profile_id,
-                organization_id=organization_id,
-            )
-            collection.id = default_collection.id
-            collection.is_default = default_collection.is_default
-            break
-
     collections = get_collections_with_permissions(
         permission='can_add',
         collection_ids=[c.id for c in collections],
