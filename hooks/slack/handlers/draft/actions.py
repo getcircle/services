@@ -107,6 +107,8 @@ def post_content_from_messages(slack_api_token, messages):
             content.append(text)
             if 'attachments' in message:
                 content.extend(post_attachments_from_attachments(message['attachments']))
+            if 'file' in message:
+                content.append(post_attachment_from_file(message['file']))
             author = None
             if 'user' in message:
                 author = message['user']
@@ -191,3 +193,46 @@ def post_attachments_from_attachments(attachments):
                 </div>""".format(url=url, name=name, width=width, height=height, caption=caption)
             post_attachments.append(html)
     return post_attachments
+
+
+def post_attachment_from_file(file):
+    html = ''
+    if 'thumb_360' in file:
+        thumb_url = file['thumb_360']
+        url = file['permalink']
+        name = file.get('name', '')
+        width = file.get('thumb_360_w', 0)
+        height = file.get('thumb_360_h', 0)
+        caption = file.get('title', '')
+        mime_type = file.get('mimetype', '')
+        html = """
+            <div>
+                <a
+                data-trix-attachment='{{
+                    "contentType":"{mime_type}",
+                    "filename":"{name}",
+                    "height":{height},
+                    "href":"{url}",
+                    "url":"{thumb_url}",
+                    "width":{width}
+                }}'
+                data-trix-attributes='{{
+                    "caption":"{caption}"
+                }}'
+                href="{url}"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="{height}"
+                        src="{thumb_url}"
+                        width="{width}"
+                        >
+                        <figcaption class="caption">
+                            {caption}
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>""".format(thumb_url=thumb_url, url=url, name=name, width=width, height=height, caption=caption, mime_type=mime_type)
+    return html
