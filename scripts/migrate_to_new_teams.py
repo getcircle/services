@@ -25,10 +25,15 @@ def run():
     members_to_create = []
     logger.info('migrating %s old teams', len(old_teams))
     for old_team in old_teams:
-        manager = organization_models.ReportingStructure.objects.get(
-            organization_id=old_team.organization_id,
-            profile_id=old_team.manager_profile_id,
-        )
+        try:
+            manager = organization_models.ReportingStructure.objects.get(
+                organization_id=old_team.organization_id,
+                profile_id=old_team.manager_profile_id,
+            )
+        except organization_models.ReportingStructure.DoesNotExist:
+            logger.info('no manager node found for: %s', old_team.manager_profile_id)
+            continue
+
         reports = manager.get_children()
 
         team = team_models.Team.objects.create(
