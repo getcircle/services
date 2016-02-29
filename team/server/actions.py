@@ -213,7 +213,7 @@ class GetMembers(TeamExistsAction):
             organization_id=self.parsed_token.organization_id,
             team_id=self.request.team_id,
             role=self.request.role,
-        )
+        ).order_by('-created')
 
     def _get_members_with_profile_id(self):
         queryset = models.TeamMember.objects.filter(
