@@ -11,7 +11,7 @@ def mock_get_teams(mock_instance, teams, role=None, admin=False, **overrides):
             team.permissions.can_add = True
 
     if 'fields' not in overrides:
-        overrides['fields'] = {'only': ['permissions']}
+        overrides['fields'] = {'only': ['id', 'permissions']}
 
     mock_instance.register_mock_object(
         service='team',
