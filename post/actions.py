@@ -148,6 +148,8 @@ def get_editable_collections(by_profile_id, organization_id, token):
             action='get_members',
             return_object='members',
             client_kwargs={'token': token},
+            # TODO come up with a better way to specify all results
+            control={'paginator': {'page_size': 1000}},
             inflations={'disabled': True},
             fields={'only': ['[]members.team_id']},
             profile_id=by_profile_id,
