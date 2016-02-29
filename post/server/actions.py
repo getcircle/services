@@ -476,12 +476,40 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
                 token=self.token,
             )
 
+        profile = None
+        team = None
+        if common_utils.should_inflate_field('owner', self.request.inflations):
+            if collection.owner_type == post_containers.CollectionV1.PROFILE:
+                profile = service.control.get_object(
+                    service='profile',
+                    action='get_profile',
+                    client_kwargs={'token': self.token},
+                    return_object='profile',
+                    inflations={'disabled': True},
+                    profile_id=str(collection.owner_id),
+                )
+                # XXX redundant protobuf-to-dict
+                profile = protobuf_to_dict(profile)
+            elif collection.owner_type == post_containers.CollectionV1.TEAM:
+                team = service.control.get_object(
+                    service='team',
+                    action='get_team',
+                    client_kwargs={'token': self.token},
+                    return_object='team',
+                    inflations={'disabled': True},
+                    team_id=str(collection.owner_id),
+                )
+                # XXX redundant protobuf-to-dict
+                team = protobuf_to_dict(team)
+
         collection.to_protobuf(
             self.response.collection,
             fields=self.request.fields,
             inflations=self.request.inflations,
             total_items=item_counts.get(str(collection.id), 0),
             display_name=collection_id_to_display_name.get(str(collection.id)),
+            team=team,
+            profile=profile,
         )
 
         collection_to_permissions = get_permissions_for_collections(
