@@ -68,7 +68,7 @@ def get_permissions_for_collections(collections, by_profile_id, token):
             return_object='teams',
             client_kwargs={'token': token},
             control={'paginator': {'page_size': len(team_ids)}},
-            fields={'only': ['permissions']},
+            fields={'only': ['id', 'permissions']},
             ids=list(team_ids),
         )
         team_id_to_team_dict = dict((team.id, team) for team in teams)
