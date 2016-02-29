@@ -469,11 +469,19 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
                 organization_id=self.parsed_token.organization_id,
             )
 
+        collection_id_to_display_name = {}
+        if common_utils.should_inflate_field('display_name', self.request.inflations):
+            collection_id_to_display_name = get_display_names_for_collections(
+                collections=[collection],
+                token=self.token,
+            )
+
         collection.to_protobuf(
             self.response.collection,
             fields=self.request.fields,
             inflations=self.request.inflations,
             total_items=item_counts.get(str(collection.id), 0),
+            display_name=collection_id_to_display_name.get(str(collection.id)),
         )
 
         collection_to_permissions = get_permissions_for_collections(

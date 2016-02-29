@@ -97,6 +97,7 @@ class Test(MockedTestCase):
         mock_get_teams(self.mock.instance, [self.team])
         collection = factories.CollectionFactory.create_protobuf(team=self.team)
         response = self.client.call_action('get_collection', collection_id=collection.id)
+        self.assertTrue(response.result.collection.display_name)
         self.verify_containers(collection, response.result.collection)
         self._verify_permissions(response, False)
 
