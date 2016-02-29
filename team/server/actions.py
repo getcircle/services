@@ -2,6 +2,7 @@ from common import utils
 import django.db
 from django.db.models import Count
 from protobuf_to_dict import protobuf_to_dict
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.team import containers_pb2 as team_containers
 from service import (
     actions,
@@ -94,6 +95,17 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
         )
         _, permissions = permissions_dict[str(team.id)]
         self.response.team.permissions.CopyFrom(permissions)
+
+        collection = service.control.get_object(
+            service='post',
+            action='get_collection',
+            client_kwargs={'token': self.token},
+            return_object='collection',
+            owner_id=str(team.id),
+            owner_type=post_containers.CollectionV1.TEAM,
+            inflations={'exclude': ['total_items']},
+        )
+        self.response.collection.CopyFrom(collection)
 
 
 class AddMembers(TeamExistsAction):
