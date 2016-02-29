@@ -163,36 +163,8 @@ def post_attachments_from_attachments(attachments):
             width = attachment.get('image_width', 0)
             height = attachment.get('image_height', 0)
             caption = attachment.get('fallback', '')
-            html = """
-                <div>
-                    <a
-                    data-trix-attachment='{{
-                        "contentType":"image/jpeg",
-                        "filename":"{name}",
-                        "height":{height},
-                        "href":"{url}",
-                        "url":"{url}",
-                        "width":{width}
-                    }}'
-                    data-trix-attributes='{{
-                        "caption":"{caption}"
-                    }}'
-                    href="{url}"
-                    >
-                        <figure
-                        class="attachment attachment-preview"
-                        >
-                            <img
-                            height="{height}"
-                            src="{url}"
-                            width="{width}"
-                            >
-                            <figcaption class="caption">
-                                {caption}
-                            </figcaption>
-                        </figure>
-                    </a>
-                </div>""".format(url=url, name=name, width=width, height=height, caption=caption)
+            mime_type = 'image/jpeg'
+            html = trix_image_attachment(url, name, caption, width, height, mime_type)
             post_attachments.append(html)
     return post_attachments
 
@@ -200,41 +172,47 @@ def post_attachments_from_attachments(attachments):
 def post_attachment_from_file(file):
     html = ''
     if 'thumb_360' in file:
-        thumb_url = file['thumb_360']
+        thumbnail_url = file['thumb_360']
         url = file['permalink']
         name = file.get('name', '')
         width = file.get('thumb_360_w', 0)
         height = file.get('thumb_360_h', 0)
         caption = file.get('title', '')
         mime_type = file.get('mimetype', '')
-        html = """
-            <div>
-                <a
-                data-trix-attachment='{{
-                    "contentType":"{mime_type}",
-                    "filename":"{name}",
-                    "height":{height},
-                    "href":"{url}",
-                    "url":"{thumb_url}",
-                    "width":{width}
-                }}'
-                data-trix-attributes='{{
-                    "caption":"{caption}"
-                }}'
-                href="{url}"
-                >
-                    <figure
-                    class="attachment attachment-preview"
-                    >
-                        <img
-                        height="{height}"
-                        src="{thumb_url}"
-                        width="{width}"
-                        >
-                        <figcaption class="caption">
-                            {caption}
-                        </figcaption>
-                    </figure>
-                </a>
-            </div>""".format(thumb_url=thumb_url, url=url, name=name, width=width, height=height, caption=caption, mime_type=mime_type)
+        html = trix_image_attachment(url, name, caption, width, height, mime_type, thumbnail_url)
     return html
+
+
+def trix_image_attachment(url, name, caption, width, height, mime_type, thumbnail_url=None):
+    if thumbnail_url == None:
+        thumbnail_url = url
+    return """
+        <div>
+            <a
+            data-trix-attachment='{{
+                "contentType":"{mime_type}",
+                "filename":"{name}",
+                "height":{height},
+                "href":"{thumbnail_url}",
+                "url":"{thumbnail_url}",
+                "width":{width}
+            }}'
+            data-trix-attributes='{{
+                "caption":"{caption}"
+            }}'
+            href="{url}"
+            >
+                <figure
+                class="attachment attachment-preview"
+                >
+                    <img
+                    height="{height}"
+                    src="{thumbnail_url}"
+                    width="{width}"
+                    >
+                    <figcaption class="caption">
+                        {caption}
+                    </figcaption>
+                </figure>
+            </a>
+        </div>""".format(thumbnail_url=thumbnail_url, url=url, name=name, width=width, height=height, caption=caption, mime_type=mime_type)
