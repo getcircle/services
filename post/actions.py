@@ -651,10 +651,15 @@ def get_collection_items(collection_id, organization_id):
         post.models.CollectionItem queryset
 
     """
+    # XXX come back to this query
     return models.CollectionItem.objects.filter(
         collection_id=collection_id,
         organization_id=organization_id,
-    ).order_by('position')
+    ).order_by('position').exclude(
+        source_id__in=models.Post.objects.exclude(
+            state=post_containers.LISTED,
+        ).extra(select={'source_id': 'id::varchar'}).values_list('source_id', flat=True),
+    )
 
 
 def inflate_items_source(items, organization_id, inflations, fields, token=None):
