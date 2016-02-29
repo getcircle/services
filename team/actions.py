@@ -232,7 +232,14 @@ def remove_members(team_id, organization_id, profile_ids):
         profile_id__in=profile_ids,
     )
     if members:
-        members.delete()
+        with django.db.transaction.atomic():
+            members.delete()
+            coordinators = models.TeamMember.objects.filter(
+                team_id=team_id,
+                organization_id=organization_id,
+                role=team_containers.TeamMemberV1.COORDINATOR,
+            )
+            assert len(coordinators) > 0
 
 
 def update_contact_methods(contact_methods, team):

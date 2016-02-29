@@ -121,3 +121,18 @@ class Test(MockedTestCase):
             team_id=team.id,
             profile_id__in=[m.profile_id for m in members],
         ).exists())
+
+    def test_remove_members_coordinator_cant_remove_last_coordinator(self):
+        team = factories.TeamFactory.create(organization_id=self.organization.id)
+        member = factories.TeamMemberFactory.create(
+            team=team,
+            organization_id=self.organization.id,
+            profile_id=self.profile.id,
+            role=team_containers.TeamMemberV1.COORDINATOR,
+        )
+        with self.assertFieldError('profile_ids', 'CANT_REMOVE_LAST_COORDINATOR'):
+            self.client.call_action(
+                'remove_members',
+                team_id=str(team.id),
+                profile_ids=[member.profile_id],
+            )

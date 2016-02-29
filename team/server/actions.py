@@ -352,11 +352,14 @@ class RemoveMembers(TeamExistsAction):
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
-        remove_members(
-            team_id=self.request.team_id,
-            organization_id=self.parsed_token.organization_id,
-            profile_ids=self.request.profile_ids,
-        )
+        try:
+            remove_members(
+                team_id=self.request.team_id,
+                organization_id=self.parsed_token.organization_id,
+                profile_ids=self.request.profile_ids,
+            )
+        except AssertionError:
+            raise self.ActionFieldError('profile_ids', 'CANT_REMOVE_LAST_COORDINATOR')
 
 
 class JoinTeam(TeamExistsAction):
