@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from slacker import Response
 from django.conf import settings
+import textwrap
 
 from services.test import (
     fuzzy,
@@ -183,3 +184,47 @@ class Test(MockedTestCase):
         self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_uid), txt_with_name)
         self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_uid_name), txt_with_name)
         self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_link), txt_with_link)
+
+    def test_post_attachments_from_attachments(self):
+        attachment = {
+            'image_url': 'http://web.site/image.jpg',
+            'url': 'http://web.site/image.jpg',
+            'fallback': 'An image.',
+            'image_width': 800,
+            'image_height': 600,
+        }
+        expected_html = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/jpeg",
+                    "filename":"image.jpg",
+                    "height":600,
+                    "href":"http://web.site/image.jpg",
+                    "url":"http://web.site/image.jpg",
+                    "width":800
+                }'
+                data-trix-attributes='{
+                    "caption":"An image."
+                }'
+                href="http://web.site/image.jpg"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="600"
+                        src="http://web.site/image.jpg"
+                        width="800"
+                        >
+                        <figcaption class="caption">
+                            An image.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = textwrap.dedent(expected_html).strip()
+
+        post_attachments = actions.post_attachments_from_attachments([attachment])
+        self.assertEqual(len(post_attachments), 1)
+        self.assertEqual(post_attachments[0], expected_html)
