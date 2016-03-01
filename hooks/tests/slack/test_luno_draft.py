@@ -168,3 +168,18 @@ class Test(MockedTestCase):
         self.assertEqual(actions.replace_slack_links_with_post_links(txt + slack_link), txt + post_link)
         self.assertEqual(actions.replace_slack_links_with_post_links(txt + slack_link_with_link_text), txt + post_link_with_link_text)
         self.assertEqual(actions.replace_slack_links_with_post_links(txt_with_uid), txt_with_uid)
+
+    @patch('hooks.slack.handlers.draft.actions.Slacker')
+    def test_replace_slack_uids_with_user_names(self, patched):
+        token = 'a_token'
+        name = 'john'
+        uid = 'UA1B2C3'
+        mock_slack_user_info(patched, name=name)
+        txt_with_uid = 'hi <@{uid}>'.format(uid=uid)
+        txt_with_uid_name = 'hi <@{uid}|{name}>'.format(uid=uid, name=name)
+        txt_with_name = 'hi @' + name
+        txt_with_link = 'check this out <ftp://site.web/file.txt>'
+
+        self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_uid), txt_with_name)
+        self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_uid_name), txt_with_name)
+        self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_link), txt_with_link)
