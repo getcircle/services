@@ -356,7 +356,8 @@ class UpdateCollection(PreRunParseTokenMixin, actions.Action):
             )
         except models.Collection.DoesNotExist:
             raise self.ActionFieldError('collection.id', 'DOES_NOT_EXIST')
-        collection.to_protobuf(self.response.collection)
+
+        collection.to_protobuf(self.response.collection, inflations={'disabled': True})
 
 
 class GetCollections(PreRunParseTokenMixin, actions.Action):
