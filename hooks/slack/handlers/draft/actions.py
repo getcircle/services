@@ -1,5 +1,6 @@
 from collections import namedtuple
 import re
+import textwrap
 
 import arrow
 from slacker import Slacker
@@ -198,7 +199,7 @@ def trix_image_attachment(url, name, caption, width, height, mime_type, thumbnai
         'caption': caption,
         'mime_type': mime_type,
     }
-    return """
+    html = """
         <div>
             <a
             data-trix-attachment='{{
@@ -228,3 +229,5 @@ def trix_image_attachment(url, name, caption, width, height, mime_type, thumbnai
                 </figure>
             </a>
         </div>""".format(**details)
+    html = textwrap.dedent(html).strip()
+    return html
