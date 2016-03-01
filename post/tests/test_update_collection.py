@@ -39,9 +39,17 @@ class Test(MockedTestCase):
             collection=collection,
         )
         updated_collection = response.result.collection
-        self.verify_containers(collection, response.result.collection, ignore_fields=['changed'])
+        self.verify_containers(
+            collection,
+            response.result.collection,
+            ignore_fields=['inflations', 'changed'],
+        )
         instance = models.Collection.objects.get(id=updated_collection.id)
-        self.verify_containers(updated_collection, instance.to_protobuf())
+        self.verify_containers(
+            updated_collection,
+            instance.to_protobuf(),
+            ignore_fields=['inflations'],
+        )
 
     def test_update_collection_collection_required(self):
         with self.assertFieldError('collection', 'MISSING'):
