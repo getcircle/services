@@ -228,3 +228,47 @@ class Test(MockedTestCase):
         post_attachments = actions.post_attachments_from_attachments([attachment])
         self.assertEqual(len(post_attachments), 1)
         self.assertEqual(post_attachments[0], expected_html)
+
+    def test_post_attachment_from_file(self):
+        file = {
+            'permalink': 'http://web.site/page',
+            'name': 'The name',
+            'title': 'Some title.',
+            'thumb_360': 'http://web.site/image.png',
+            'thumb_360_w': 800,
+            'thumb_360_h': 600,
+            'mimetype': 'image/png',
+        }
+        expected_html = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/png",
+                    "filename":"The name",
+                    "height":600,
+                    "href":"http://web.site/image.png",
+                    "url":"http://web.site/image.png",
+                    "width":800
+                }'
+                data-trix-attributes='{
+                    "caption":"Some title."
+                }'
+                href="http://web.site/page"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="600"
+                        src="http://web.site/image.png"
+                        width="800"
+                        >
+                        <figcaption class="caption">
+                            Some title.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = textwrap.dedent(expected_html).strip()
+
+        self.assertEqual(actions.post_attachment_from_file(file), expected_html)
