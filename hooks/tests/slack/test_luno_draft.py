@@ -154,3 +154,17 @@ class Test(MockedTestCase):
         self.assertEqual(args[0], channel_id)
         self.assertEqual(kwargs['oldest'], 1447147500)
         self.assertEqual(kwargs['latest'], 1447147800)
+
+    def test_replace_slack_links_with_post_links(self):
+        txt = 'check this out '
+        link = 'ftp://site.web/file.txt'
+        link_text = 'File'
+        slack_link = '<{link}>'.format(link=link)
+        slack_link_with_link_text = '<{link}|{link_text}>'.format(link=link, link_text=link_text)
+        post_link = '<a href={link}>{link}</a>'.format(link=link)
+        post_link_with_link_text = '<a href={link}>{link_text}</a>'.format(link=link, link_text=link_text)
+        txt_with_uid = '<@UA1B2C3> is here'
+
+        self.assertEqual(actions.replace_slack_links_with_post_links(txt + slack_link), txt + post_link)
+        self.assertEqual(actions.replace_slack_links_with_post_links(txt + slack_link_with_link_text), txt + post_link_with_link_text)
+        self.assertEqual(actions.replace_slack_links_with_post_links(txt_with_uid), txt_with_uid)
