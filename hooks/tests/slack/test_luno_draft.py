@@ -272,3 +272,46 @@ class Test(MockedTestCase):
         expected_html = textwrap.dedent(expected_html).strip()
 
         self.assertEqual(actions.post_attachment_from_file(file), expected_html)
+
+    def test_trix_image_attachment(self):
+        details = {
+            'url': 'http://some.url/image.png',
+            'name': 'A name.',
+            'width': 128,
+            'height': 64,
+            'caption': 'A caption.',
+            'mime_type': 'image/png',
+        }
+        expected_html = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/png",
+                    "filename":"A name.",
+                    "height":64,
+                    "href":"http://some.url/image.png",
+                    "url":"http://some.url/image.png",
+                    "width":128
+                }'
+                data-trix-attributes='{
+                    "caption":"A caption."
+                }'
+                href="http://some.url/image.png"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="64"
+                        src="http://some.url/image.png"
+                        width="128"
+                        >
+                        <figcaption class="caption">
+                            A caption.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = textwrap.dedent(expected_html).strip()
+
+        self.assertEqual(actions.trix_image_attachment(**details), expected_html)
