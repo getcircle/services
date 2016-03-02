@@ -48,7 +48,8 @@ def create_index(organization_id, version=None, check_duplicate=True):
 
     index.aliases(**aliases)
     index.settings(index={'analysis': default_search.get_analysis_definition()})
-    doc_types = ['LocationV1', 'PostV1', 'ProfileV1', 'TeamV1']
+    # XXX make it easier/document how to add a document type
+    doc_types = ['LocationV1', 'PostV1', 'ProfileV1', 'TeamV1', 'CollectionV1']
     for doc_type in doc_types:
         index.doc_type(getattr(types, doc_type))
 

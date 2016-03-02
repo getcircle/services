@@ -167,7 +167,7 @@ class TestPosts(MockedTestCase):
             content=content
         )
         response = self.client.call_action('get_posts', all_states=True)
-        self.assertEqual(response.result.posts[0].snippet, content[:80])
+        self.assertEqual(response.result.posts[0].snippet, content[:160])
 
     def test_get_posts_exclude_snippet(self):
         profile = mocks.mock_profile(organization_id=self.organization.id)

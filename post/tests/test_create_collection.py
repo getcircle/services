@@ -8,7 +8,10 @@ from services.test import (
     MockedTestCase,
 )
 
-from .helpers import mock_get_team
+from .helpers import (
+    mock_get_team,
+    mock_get_teams,
+)
 
 
 class Test(MockedTestCase):
@@ -44,6 +47,12 @@ class Test(MockedTestCase):
     def test_create_collection_for_team_coordinator(self):
         team = mocks.mock_team(organization_id=self.organization.id)
         mock_get_team(self.mock.instance, team, role=team_containers.TeamMemberV1.COORDINATOR)
+        mock_get_teams(
+            self.mock.instance,
+            [team],
+            inflations={'disabled': True},
+            fields={'only': ['id', 'name']},
+        )
         collection = mocks.mock_collection(
             id=None,
             owner_type=post_containers.CollectionV1.TEAM,
@@ -59,6 +68,7 @@ class Test(MockedTestCase):
         self.assertEqual(new_collection.organization_id, self.organization.id)
         self.assertEqual(new_collection.owner_type, post_containers.CollectionV1.TEAM)
         self.assertEqual(new_collection.owner_id, collection.owner_id)
+        self.assertEqual(new_collection.display_name, '[%s] %s' % (team.name, new_collection.name))
 
     def test_create_collection_for_profile(self):
         collection = mocks.mock_collection(

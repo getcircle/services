@@ -2,11 +2,11 @@ import time
 
 from elasticsearch_dsl import connections
 from protobuf_to_dict import dict_to_protobuf
-from protobufs.services.organization import containers_pb2 as organization_containers
 from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 from protobufs.services.search.containers import entity_pb2
 from protobufs.services.search.containers import search_pb2
+from protobufs.services.team import containers_pb2 as team_containers
 from ..stores.es import types
 import service.control
 import yaml
@@ -68,13 +68,13 @@ class Test(ESTestCase):
         if not team_fixtures:
             return
 
-        containers = [dict_to_protobuf(f, organization_containers.TeamV1) for f in team_fixtures]
+        containers = [dict_to_protobuf(f, team_containers.TeamV1) for f in team_fixtures]
         self.mock.instance.register_mock_object(
-            service='organization',
+            service='team',
             action='get_teams',
             return_object=containers,
             return_object_path='teams',
-            mock_regex_lookup='organization:get_teams:.*',
+            mock_regex_lookup='team:get_teams:.*',
         )
         self._update_entities(entity_pb2.TEAM, containers)
 
@@ -403,23 +403,23 @@ class Test(ESTestCase):
         hit = response.result.results[0]
         self.assertIn('<mark>video</mark> <mark>conferencing</mark>', hit.highlight['content'])
 
-    def test_search_team_display_name_highlighting_partial(self):
+    def test_search_team_name_highlighting_partial(self):
         response = self.client.call_action(
             'search_v2',
             query='Dev',
             category=search_pb2.TEAMS,
         )
         hit = response.result.results[0]
-        self.assertTrue(hit.highlight['display_name'].startswith('<mark>Dev</mark>Ops'))
+        self.assertTrue(hit.highlight['name'].startswith('<mark>Dev</mark>Ops'))
 
-    def test_search_team_display_name_highlighting(self):
+    def test_search_team_name_highlighting(self):
         response = self.client.call_action(
             'search_v2',
             query='Customer Support',
             category=search_pb2.TEAMS,
         )
         hit = response.result.results[0]
-        self.assertEqual(hit.highlight['display_name'], '<mark>Customer Support</mark>')
+        self.assertEqual(hit.highlight['name'], '<mark>Customer Support</mark>')
 
     def test_search_team_description_highlighting(self):
         response = self.client.call_action(
@@ -497,8 +497,7 @@ class Test(ESTestCase):
         )
         hit = response.result.results[0]
         self.assertIn('<mark>Marco</mark> <mark>Zappacosta</mark>', hit.highlight['content'])
-        # len is 89 because fragment_size is 70 + tags
-        self.assertEqual(len(hit.highlight['content']), 89)
+        self.assertEqual(len(hit.highlight['content']), 174)
 
     def test_search_result_has_tracking_details(self):
         response = self.client.call_action('search_v2', query='Meghan Ward')

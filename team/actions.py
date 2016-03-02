@@ -1,5 +1,6 @@
 from bulk_update.helper import bulk_update
 import django.db
+from django.db.models import Count
 
 from protobufs.services.common import containers_pb2 as common_containers
 from protobufs.services.history import containers_pb2 as history_containers
@@ -14,32 +15,27 @@ from services.history import (
 from . import models
 
 
-def get_permissions_for_team(team_id, profile_id, organization_id, token):
-    """Return permissions for the given user for the requested team.
+def get_permissions_for_teams(team_ids, profile_id, organization_id, token):
+    """Return permissions for the given user for the requested teams.
 
     Args:
-        team_id (uuid): team id
-        profile_id (uuid): profile id of the user we want to return permissions for
-        organization_id (uuid): organization id
-        token (services.token): token to forward along to service calls
+        team_ids (List[str]): list of team ids
+        profile_id (str): id of the profile we're checking permissions against
+        organization_id (str): id of the organization
+        token (str): service token
 
     Returns:
-        (bool, protobufs.services.common.containers.PermissionsV1) tuple with a
-        boolean for if the user is a member of the team and the permissions
-        object
+        dictionary with <team_id>: (models.TeamMember,
+        services.common.containers.PermissionsV1) tuple with team member object
+        if the user is a member of the team and the permissions object.
 
     """
-    try:
-        membership = models.TeamMember.objects.get(
-            team_id=team_id,
-            profile_id=profile_id,
-            organization_id=organization_id,
-        )
-    except models.TeamMember.DoesNotExist:
-        membership = None
-
-    permissions = common_containers.PermissionsV1()
-
+    memberships = models.TeamMember.objects.filter(
+        team_id__in=team_ids,
+        profile_id=profile_id,
+        organization_id=organization_id,
+    )
+    team_id_to_membership = dict((str(m.team_id), m) for m in memberships)
     profile = service.control.get_object(
         service='profile',
         action='get_profile',
@@ -50,16 +46,21 @@ def get_permissions_for_team(team_id, profile_id, organization_id, token):
         fields={'only': ['is_admin']},
     )
 
-    if (
-        membership and membership.role == team_containers.TeamMemberV1.COORDINATOR or
-        profile.is_admin
-    ):
-        permissions.can_edit = True
-        permissions.can_add = True
-        permissions.can_delete = True
-    elif membership:
-        permissions.can_add = True
-    return bool(membership), permissions
+    team_id_to_permissions = {}
+    for team_id in team_ids:
+        permissions = common_containers.PermissionsV1()
+        membership = team_id_to_membership.get(str(team_id))
+        if (
+            membership and membership.role == team_containers.TeamMemberV1.COORDINATOR or
+            profile.is_admin
+        ):
+            permissions.can_edit = True
+            permissions.can_add = True
+            permissions.can_delete = True
+        elif membership:
+            permissions.can_add = True
+        team_id_to_permissions[str(team_id)] = (membership, permissions)
+    return team_id_to_permissions
 
 
 def create_team(container, by_profile_id, token, organization_id, **overrides):
@@ -159,6 +160,22 @@ def get_team(team_id, organization_id):
     return models.Team.objects.get(pk=team_id, organization_id=organization_id)
 
 
+def get_teams(organization_id, ids=None):
+    """Return the teams for the organization.
+
+    Args:
+        organization_id (str): organization id
+
+    Returns:
+        models.Team queryset
+
+    """
+    parameters = {'organization_id': organization_id}
+    if ids:
+        parameters['id__in'] = ids
+    return models.Team.objects.filter(**parameters)
+
+
 def update_members(team_id, organization_id, members, token):
     """Update members to their new roles.
 
@@ -215,7 +232,14 @@ def remove_members(team_id, organization_id, profile_ids):
         profile_id__in=profile_ids,
     )
     if members:
-        members.delete()
+        with django.db.transaction.atomic():
+            members.delete()
+            coordinators = models.TeamMember.objects.filter(
+                team_id=team_id,
+                organization_id=organization_id,
+                role=team_containers.TeamMemberV1.COORDINATOR,
+            )
+            assert len(coordinators) > 0
 
 
 def update_contact_methods(contact_methods, team):
@@ -267,3 +291,11 @@ def update_contact_methods(contact_methods, team):
                 id__in=to_delete,
                 organization_id=team.organization_id,
             ).delete()
+
+
+def get_team_id_to_member_count(teams):
+    counts = models.TeamMember.objects.filter(
+        organization_id=teams[0].organization_id,
+        team_id__in=[t.id for t in teams],
+    ).values('team_id').annotate(total_members=Count('id'))
+    return dict((str(count['team_id']), count['total_members']) for count in counts)

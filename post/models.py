@@ -49,7 +49,7 @@ class Post(models.UUIDModel, models.TimestampableModel):
 
         @cached_as(self)
         def _get_snippet():
-            return transform_html(self.content)[:80]
+            return transform_html(self.content)[:160]
 
         return _get_snippet()
 
@@ -93,9 +93,12 @@ class Post(models.UUIDModel, models.TimestampableModel):
         return [protobuf_to_dict(f) for f in files]
 
     def _inflate(self, protobuf, inflations, overrides, token):
-        if 'by_profile' not in overrides:
-            if utils.should_inflate_field('by_profile', inflations) and token:
-                overrides['by_profile'] = protobuf_to_dict(self._get_by_profile(token))
+        if (
+            'by_profile' not in overrides and
+            utils.should_inflate_field('by_profile', inflations) and
+            token
+        ):
+            overrides['by_profile'] = protobuf_to_dict(self._get_by_profile(token))
 
         should_fetch_attachments = self._should_fetch_attachments(overrides, inflations)
         if should_fetch_attachments:
@@ -154,7 +157,7 @@ class Collection(models.UUIDModel, models.TimestampableModel):
         choices=utils.model_choices_from_protobuf_enum(post_containers.CollectionV1.OwnerTypeV1),
         default=post_containers.CollectionV1.PROFILE,
     )
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, null=True)
     # is_default is a NullBooleanField to enforce only 1 default collection per
     # owner_type and owner_id
     is_default = models.NullBooleanField(editable=False, null=True)
@@ -191,5 +194,8 @@ class CollectionItem(models.UUIDModel, models.TimestampableModel):
         # post/migrations/0009_auto_20160212_2047.py to support initially
         # deferring the constraint check. this allows us to reorder the
         # collection in a single transaction.
-        unique_together = ('organization_id', 'collection', 'position')
+        unique_together = (
+            ('organization_id', 'collection', 'position'),
+            ('organization_id', 'collection', 'source', 'source_id'),
+        )
         protobuf = post_containers.CollectionItemV1

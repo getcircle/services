@@ -15,7 +15,7 @@ from .. import (
 
 from .helpers import (
     mock_get_profile,
-    mock_get_team,
+    mock_get_teams,
 )
 
 
@@ -39,9 +39,17 @@ class Test(MockedTestCase):
             collection=collection,
         )
         updated_collection = response.result.collection
-        self.verify_containers(collection, response.result.collection, ignore_fields=['changed'])
+        self.verify_containers(
+            collection,
+            response.result.collection,
+            ignore_fields=['inflations', 'changed'],
+        )
         instance = models.Collection.objects.get(id=updated_collection.id)
-        self.verify_containers(updated_collection, instance.to_protobuf())
+        self.verify_containers(
+            updated_collection,
+            instance.to_protobuf(),
+            ignore_fields=['inflations'],
+        )
 
     def test_update_collection_collection_required(self):
         with self.assertFieldError('collection', 'MISSING'):
@@ -120,7 +128,7 @@ class Test(MockedTestCase):
     def test_update_collection_owned_by_team_not_member(self):
         mock_get_profile(self.mock.instance, self.profile)
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team)
+        mock_get_teams(self.mock.instance, [team])
         collection = factories.CollectionFactory.create_protobuf(team=team)
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action('update_collection', collection=collection)
@@ -130,7 +138,7 @@ class Test(MockedTestCase):
     def test_update_collection_owned_by_team_member(self):
         mock_get_profile(self.mock.instance, self.profile)
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team, role=team_containers.TeamMemberV1.MEMBER)
+        mock_get_teams(self.mock.instance, [team], role=team_containers.TeamMemberV1.MEMBER)
         collection = factories.CollectionFactory.create_protobuf(team=team)
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action('update_collection', collection=collection)
@@ -140,7 +148,7 @@ class Test(MockedTestCase):
     def test_update_collection_owned_by_team_coordinator(self):
         mock_get_profile(self.mock.instance, self.profile)
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team, role=team_containers.TeamMemberV1.COORDINATOR)
+        mock_get_teams(self.mock.instance, [team], role=team_containers.TeamMemberV1.COORDINATOR)
         collection = factories.CollectionFactory.create_protobuf(team=team)
         self._verify_can_update_collection(collection)
 
@@ -148,6 +156,6 @@ class Test(MockedTestCase):
         self.profile.is_admin = True
         mock_get_profile(self.mock.instance, self.profile)
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team, admin=True)
+        mock_get_teams(self.mock.instance, [team], admin=True)
         collection = factories.CollectionFactory.create_protobuf(team=team)
         self._verify_can_update_collection(collection)

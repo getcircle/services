@@ -45,7 +45,16 @@ class Test(MockedTestCase):
         posts = factories.PostFactory.create_batch(
             size=10,
             organization_id=self.organization.id,
+            state=post_containers.LISTED,
         )
+
+        # create unlisted posts that shouldn't be returned
+        posts.extend(factories.PostFactory.create_batch(
+            size=5,
+            organization_id=self.organization.id,
+            state=post_containers.DRAFT,
+        ))
+
         items_dict = {}
         for post in posts:
             item = factories.CollectionItemFactory.create(
@@ -76,6 +85,7 @@ class Test(MockedTestCase):
         posts = factories.PostFactory.create_batch(
             size=10,
             organization_id=self.organization.id,
+            state=post_containers.LISTED,
         )
         items_dict = {}
         for post in posts:

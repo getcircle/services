@@ -47,7 +47,7 @@ class Test(MockedTestCase):
     def test_create_index_contains_new_mappings(self):
         index = create_index(fuzzy.FuzzyUUID().fuzz())
         mappings = index._get_mappings()[0]
-        self.assertEqual(len(mappings.keys()), 4)
+        self.assertEqual(len(mappings.keys()), 5)
 
     def test_migrate_new_index_write_to_both_while_migrating(self):
         organization_id = fuzzy.FuzzyUUID().fuzz()

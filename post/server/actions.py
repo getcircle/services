@@ -12,18 +12,19 @@ from services import utils
 
 from .. import models
 from ..actions import (
-    add_to_collection,
+    add_to_collections,
     collection_exists,
     create_collection,
     delete_collection,
     get_collection,
-    get_collection_permissions,
     get_collection_items,
     get_collections,
     get_collection_id_to_items_dict,
+    get_display_names_for_collections,
+    get_permissions_for_collections,
     get_total_items_for_collections,
     inflate_items_source,
-    remove_from_collection,
+    remove_from_collections,
     reorder_collection,
     update_collection,
 )
@@ -255,7 +256,14 @@ class CreateCollection(PreRunParseTokenMixin, actions.Action):
             by_profile_id=self.parsed_token.profile_id,
             token=self.token,
         )
-        collection.to_protobuf(self.response.collection)
+        collection_id_to_display_name = get_display_names_for_collections(
+            [collection],
+            token=self.token,
+        )
+        collection.to_protobuf(
+            self.response.collection,
+            display_name=collection_id_to_display_name.get(str(collection.id)),
+        )
 
 
 class DeleteCollection(PreRunParseTokenMixin, actions.Action):
@@ -297,48 +305,38 @@ class ReorderCollection(PreRunParseTokenMixin, actions.Action):
             raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
 
 
-class AddToCollection(PreRunParseTokenMixin, actions.Action):
+class AddToCollections(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('collection_id', 'source_id')
-    type_validators = {
-        'collection_id': [validators.is_uuid4],
-    }
+    required_fields = ('item', 'collections')
 
     def run(self, *args, **kwargs):
-        try:
-            item = add_to_collection(
-                collection_id=self.request.collection_id,
-                source=self.request.source,
-                source_id=self.request.source_id,
-                organization_id=self.parsed_token.organization_id,
-                by_profile_id=self.parsed_token.profile_id,
-                token=self.token,
-            )
-        except models.Collection.DoesNotExist:
-            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+        # TODO return some error if you didn't have permission instead of silently failing
+        items = add_to_collections(
+            item=self.request.item,
+            collections=self.request.collections,
+            organization_id=self.parsed_token.organization_id,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
+        )
 
-        item.to_protobuf(self.response.item)
+        for item in items:
+            container = self.response.items.add()
+            item.to_protobuf(container)
 
 
-class RemoveFromCollection(PreRunParseTokenMixin, actions.Action):
+class RemoveFromCollections(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('collection_id', 'collection_item_id')
-    type_validators = {
-        'collection_id': [validators.is_uuid4],
-        'collection_item_id': [validators.is_uuid4],
-    }
+    required_fields = ('item', 'collections')
 
     def run(self, *args, **kwargs):
-        try:
-            remove_from_collection(
-                collection_id=self.request.collection_id,
-                collection_item_id=self.request.collection_item_id,
-                organization_id=self.parsed_token.organization_id,
-                by_profile_id=self.parsed_token.profile_id,
-                token=self.token,
-            )
-        except models.Collection.DoesNotExist:
-            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+        # TODO return some error if you didn't have permission instead of silently failing
+        remove_from_collections(
+            item=self.request.item,
+            collections=self.request.collections,
+            organization_id=self.parsed_token.organization_id,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
+        )
 
 
 class UpdateCollection(PreRunParseTokenMixin, actions.Action):
@@ -358,13 +356,16 @@ class UpdateCollection(PreRunParseTokenMixin, actions.Action):
             )
         except models.Collection.DoesNotExist:
             raise self.ActionFieldError('collection.id', 'DOES_NOT_EXIST')
-        collection.to_protobuf(self.response.collection)
+
+        collection.to_protobuf(self.response.collection, inflations={'disabled': True})
 
 
 class GetCollections(PreRunParseTokenMixin, actions.Action):
 
     type_validators = {
         'owner_id': [validators.is_uuid4],
+        'ids': [validators.is_uuid4_list],
+        'profile_id': [validators.is_uuid4],
     }
 
     def run(self, *args, **kwargs):
@@ -375,6 +376,11 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
             source=self.request.source,
             source_id=self.request.source_id,
             is_default=self.request.is_default,
+            ids=self.request.ids,
+            profile_id=self.request.profile_id,
+            permissions=self.request.permissions,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
         )
         collections = self.get_paginated_objects(collections)
         collection_ids = [str(c.id) for c in collections]
@@ -383,6 +389,13 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
             item_counts = get_total_items_for_collections(
                 collection_ids=collection_ids,
                 organization_id=self.parsed_token.organization_id,
+            )
+
+        collection_id_to_display_name = {}
+        if common_utils.should_inflate_field('display_name', self.request.inflations):
+            collection_id_to_display_name = get_display_names_for_collections(
+                collections=collections,
+                token=self.token,
             )
 
         item_fields = common_utils.fields_for_repeated_items(
@@ -411,25 +424,44 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
                 inflations=self.request.inflations,
                 fields=self.request.fields,
                 total_items=item_counts.get(str(collection.id), 0),
+                display_name=collection_id_to_display_name.get(str(collection.id)),
             )
             container.items.extend(collection_to_items.get(str(collection.id), []))
 
 
 class GetCollection(PreRunParseTokenMixin, actions.Action):
 
-    required_fields = ('collection_id',)
     type_validators = {
         'collection_id': [validators.is_uuid4],
+        'owner_id': [validators.is_uuid4],
     }
+
+    def _handle_does_not_exist(self):
+        if (
+            self.request.is_default and
+            self.request.owner_id and
+            self.request.owner_type
+        ):
+            # XXX i think this is fine? would there be a case where it mattered
+            # that we returned an owner_id etc if you didn't have access to
+            # that?
+            self.response.collection.is_default = True
+            self.response.collection.owner_id = self.request.owner_id
+            self.response.collection.owner_type = self.request.owner_type
+        else:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
 
     def run(self, *args, **kwargs):
         try:
             collection = get_collection(
                 collection_id=self.request.collection_id,
                 organization_id=self.parsed_token.organization_id,
+                is_default=self.request.is_default,
+                owner_type=self.request.owner_type,
+                owner_id=self.request.owner_id,
             )
         except models.Collection.DoesNotExist:
-            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+            return self._handle_does_not_exist()
 
         item_counts = {}
         if common_utils.should_inflate_field('total_items', self.request.inflations):
@@ -438,18 +470,55 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
                 organization_id=self.parsed_token.organization_id,
             )
 
+        collection_id_to_display_name = {}
+        if common_utils.should_inflate_field('display_name', self.request.inflations):
+            collection_id_to_display_name = get_display_names_for_collections(
+                collections=[collection],
+                token=self.token,
+            )
+
+        profile = None
+        team = None
+        if common_utils.should_inflate_field('owner', self.request.inflations):
+            if collection.owner_type == post_containers.CollectionV1.PROFILE:
+                profile = service.control.get_object(
+                    service='profile',
+                    action='get_profile',
+                    client_kwargs={'token': self.token},
+                    return_object='profile',
+                    inflations={'disabled': True},
+                    profile_id=str(collection.owner_id),
+                )
+                # XXX redundant protobuf-to-dict
+                profile = protobuf_to_dict(profile)
+            elif collection.owner_type == post_containers.CollectionV1.TEAM:
+                team = service.control.get_object(
+                    service='team',
+                    action='get_team',
+                    client_kwargs={'token': self.token},
+                    return_object='team',
+                    inflations={'disabled': True},
+                    team_id=str(collection.owner_id),
+                )
+                # XXX redundant protobuf-to-dict
+                team = protobuf_to_dict(team)
+
         collection.to_protobuf(
             self.response.collection,
             fields=self.request.fields,
             inflations=self.request.inflations,
             total_items=item_counts.get(str(collection.id), 0),
+            display_name=collection_id_to_display_name.get(str(collection.id)),
+            team=team,
+            profile=profile,
         )
 
-        permissions = get_collection_permissions(
-            collection=collection,
+        collection_to_permissions = get_permissions_for_collections(
+            collections=[collection],
             by_profile_id=self.parsed_token.profile_id,
             token=self.token,
         )
+        permissions = collection_to_permissions[str(collection.id)]
         self.response.collection.permissions.CopyFrom(permissions)
 
 
@@ -477,5 +546,6 @@ class GetCollectionItems(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             inflations=self.request.inflations,
             fields=self.request.fields,
+            token=self.token,
         )
         self.response.items.extend(containers)

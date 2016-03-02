@@ -49,7 +49,8 @@ class Test(MockedTestCase):
         team = factories.TeamFactory.create(organization_id=self.organization.id)
         response = self.client.call_action('get_members', team_id=str(team.id))
         self.assertFalse(response.result.members)
-        self.assertFalse(self.mock.instance.mocked_calls)
+        for call in self.mock.instance.mocked_calls:
+            self.assertNotEqual(call['action'], 'get_profiles')
 
     def test_get_members(self):
         team = factories.TeamFactory.create(organization_id=self.organization.id)

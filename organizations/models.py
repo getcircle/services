@@ -266,6 +266,9 @@ class Integration(models.UUIDModel, models.Model):
 
     model_to_protobuf_mapping = {'type': 'integration_type'}
     as_dict_value_transforms = {'type': int}
+    from_protobuf_transforms = {
+        'provider_uid': lambda x: x if x else None,
+    }
 
     class Meta:
         protobuf = integration_pb2.IntegrationV1

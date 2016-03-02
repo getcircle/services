@@ -50,7 +50,7 @@ class Test(MockedTestCase):
         self.assertEqual(team.description.by_profile_id, self.profile.id)
         self.assertEqual(team.organization_id, self.organization.id)
         # verify history action was called
-        call = self.mock.instance.mocked_calls[0]
+        call = self.mock.instance.mocked_calls[2]
         self.assertEqual(call['action'], 'record_action')
         self.assertEqual(call['service'], 'history')
         params = call['params']
@@ -61,6 +61,16 @@ class Test(MockedTestCase):
         # verify the user who created the team was added as a coordinator
         coordinator = models.TeamMember.objects.get(team_id=team.id, profile_id=self.profile.id)
         self.assertEqual(coordinator.role, team_containers.TeamMemberV1.COORDINATOR)
+
+    def test_create_team_no_duplicate_name(self):
+        container = team_containers.TeamV1(
+            name=fuzzy.text(),
+        )
+        response = self.client.call_action('create_team', team=container)
+        self.verify_containers(container, response.result.team)
+
+        with self.assertFieldError('team.name', 'DUPLICATE'):
+            self.client.call_action('create_team', team=container)
 
     def test_create_team_add_members(self):
         container = team_containers.TeamV1(

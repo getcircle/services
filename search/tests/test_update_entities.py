@@ -92,7 +92,7 @@ class TestUpdateEntities(MockedTestCase):
 
     @patch('search.actions.update_entities.tasks.update_teams')
     def test_update_entities_teams(self, patched):
-        teams = [mocks.mock_team_deprecated(organization_id=self.organization.id) for _ in range(2)]
+        teams = [mocks.mock_team(organization_id=self.organization.id) for _ in range(2)]
         self.client.call_action(
             'update_entities',
             type=entity_pb2.TEAM,
@@ -107,16 +107,17 @@ class TestUpdateEntities(MockedTestCase):
 
     @patch('search.tasks.bulk')
     def test_tasks_update_teams(self, patched_bulk):
-        team = mocks.mock_team_deprecated()
+        team = mocks.mock_team()
         self.mock.instance.register_mock_object(
-            service='organization',
+            service='team',
             action='get_teams',
             return_object=[team],
             return_object_path='teams',
             ids=[team.id],
+            inflations={'disabled': False, 'exclude': ['permissions']},
         )
         tasks.update_teams([str(team.id)], str(team.organization_id))
-        self.assertEqual(patched_bulk.call_count, 2)
+        self.assertEqual(patched_bulk.call_count, 1)
 
         documents = patched_bulk.call_args_list[0][0][1]
         called_team = dict_to_protobuf(
@@ -202,34 +203,43 @@ class TestUpdateEntities(MockedTestCase):
         )
         self.verify_containers(post, called_post)
 
-    @patch('search.tasks.bulk')
-    def test_tasks_update_direct_reports(self, patched_bulk):
-        manager = mocks.mock_profile()
-        direct_report = mocks.mock_profile(organization_id=manager.organization_id)
-        self.mock.instance.register_mock_object(
-            service='organization',
-            action='get_profile_reporting_details',
-            return_object=[direct_report.id],
-            return_object_path='direct_reports_profile_ids',
-            profile_id=manager.id,
+    @patch('search.actions.update_entities.tasks.update_collections')
+    def test_update_entities_collections(self, patched):
+        collections = [
+            mocks.mock_collection(organization_id=self.organization.id) for _ in range(2)
+        ]
+        self.client.call_action(
+            'update_entities',
+            type=entity_pb2.COLLECTION,
+            ids=[c.id for c in collections],
         )
-        self.mock.instance.register_mock_object(
-            service='profile',
-            action='get_profiles',
-            return_object=[direct_report],
-            return_object_path='profiles',
-            ids=[direct_report.id],
-            inflations={'disabled': False, 'only': ['display_title']},
-            is_admin=False,
+        self.assertEqual(patched.delay.call_count, 1)
+        call_args = patched.delay.call_args_list[0][0]
+        self.assertEqual(
+            call_args,
+            ([str(c.id) for c in collections], str(collections[0].organization_id))
         )
 
-        tasks.update_direct_reports(str(manager.id), str(manager.organization_id))
+    @patch('search.tasks.bulk')
+    def test_tasks_update_collections(self, patched_bulk):
+        collection = mocks.mock_collection(created=None, changed=None)
+        self.mock.instance.register_mock_object(
+            service='post',
+            action='get_collections',
+            return_object=[collection],
+            return_object_path='collections',
+            ids=[collection.id],
+            # TODO we need to make it easer to match up mock parameters with
+            # request parameters, taking into account default enum values etc.
+            mock_regex_lookup='post.get_collections:.*',
+        )
+        tasks.update_collections([str(collection.id)], str(collection.organization_id))
         self.assertEqual(patched_bulk.call_count, 1)
 
         documents = patched_bulk.call_args_list[0][0][1]
-        called_profile = dict_to_protobuf(
+        called_collection = dict_to_protobuf(
             documents[0]['_source'],
-            profile_containers.ProfileV1,
+            post_containers.CollectionV1,
             strict=False,
         )
-        self.verify_containers(direct_report, called_profile)
+        self.assertEqual(collection.id, called_collection.id)

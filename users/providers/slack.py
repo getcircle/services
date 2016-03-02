@@ -85,14 +85,15 @@ class Provider(base.BaseProvider):
         )
         token = make_admin_token(organization_id=str(organization.id))
         client = service.control.Client('organization', token=token)
-        response = client.call_action('enable_integration', integration={
+        # TODO gracefully handle failures
+        client.call_action('enable_integration', integration={
             'integration_type': integration_pb2.SLACK_SLASH_COMMAND,
             'slack_slash_command': {
                 'token': settings.SLACK_SLASH_COMMANDS_TOKEN,
             },
             'provider_uid': identity.provider_uid,
         })
-        response = client.call_action('enable_integration', integration={
+        client.call_action('enable_integration', integration={
             'integration_type': integration_pb2.SLACK_WEB_API,
             'slack_web_api': {
                 'token': identity.access_token,

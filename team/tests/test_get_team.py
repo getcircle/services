@@ -86,7 +86,7 @@ class Test(MockedTestCase):
             profile_id=self.profile.id,
         )
         response = self.client.call_action('get_team', team_id=str(team.id))
-        self.assertTrue(response.result.is_member)
+        self.assertTrue(response.result.member.id)
         permissions = response.result.team.permissions
         self.assertFalse(permissions.can_edit)
         self.assertFalse(permissions.can_delete)
@@ -101,7 +101,7 @@ class Test(MockedTestCase):
             role=team_containers.TeamMemberV1.COORDINATOR,
         )
         response = self.client.call_action('get_team', team_id=str(team.id))
-        self.assertTrue(response.result.is_member)
+        self.assertTrue(response.result.member.id)
         permissions = response.result.team.permissions
         self.assertTrue(permissions.can_edit)
         self.assertTrue(permissions.can_delete)
@@ -114,7 +114,7 @@ class Test(MockedTestCase):
             organization_id=self.organization.id,
         )
         response = self.client.call_action('get_team', team_id=str(team.id))
-        self.assertFalse(response.result.is_member)
+        self.assertFalse(response.result.member.id)
         permissions = response.result.team.permissions
         self.assertFalse(permissions.can_edit)
         self.assertFalse(permissions.can_delete)
@@ -137,7 +137,7 @@ class Test(MockedTestCase):
             organization_id=self.organization.id,
         )
         response = self.client.call_action('get_team', team_id=str(team.id))
-        self.assertFalse(response.result.is_member)
+        self.assertFalse(response.result.member.id)
         permissions = response.result.team.permissions
         self.assertTrue(permissions.can_edit)
         self.assertTrue(permissions.can_delete)
