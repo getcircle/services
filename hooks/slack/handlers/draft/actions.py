@@ -1,5 +1,6 @@
 from collections import namedtuple
 import re
+import textwrap
 
 import arrow
 from slacker import Slacker
@@ -105,6 +106,10 @@ def post_content_from_messages(slack_api_token, messages):
             text = replace_slack_links_with_post_links(message['text'])
             text = replace_slack_uids_with_user_names(slack_api_token, text)
             content.append(text)
+            if 'attachments' in message:
+                content.extend(post_attachments_from_attachments(message['attachments']))
+            if 'file' in message:
+                content.append(post_attachment_from_file(message['file']))
             author = None
             if 'user' in message:
                 author = message['user']
@@ -144,5 +149,85 @@ def replace_slack_uids_with_user_names(slack_api_token, text):
                 # Just return match with '@' prefixed because it was outside the capture group
                 return '@' + uid
 
-    new_text = re.sub(r'<@(\w+)>', user_name_for_slack_uid_match, text)
+    # Some user references (such as those in messages which contain a file) have the name embedded.
+    new_text = re.sub(r'<@\w+\|(\w+)>', r'@\1', text)
+    new_text = re.sub(r'<@(\w+)>', user_name_for_slack_uid_match, new_text)
     return new_text
+
+
+def post_attachments_from_attachments(attachments):
+    post_attachments = []
+    for attachment in attachments:
+        if 'image_url' in attachment:
+            url = attachment['image_url']
+            details = {
+                'url': url,
+                'name': url.rsplit('/', 1)[-1],
+                'caption': attachment.get('fallback', ''),
+                'width': attachment.get('image_width', 0),
+                'height': attachment.get('image_height', 0),
+                'mime_type': 'image/jpeg',
+            }
+            html = trix_image_attachment(**details)
+            post_attachments.append(html)
+    return post_attachments
+
+
+def post_attachment_from_file(file):
+    html = ''
+    if 'thumb_360' in file:
+        details = {
+            'thumbnail_url': file['thumb_360'],
+            'url': file['permalink'],
+            'name': file.get('name', ''),
+            'width': file.get('thumb_360_w', 0),
+            'height': file.get('thumb_360_h', 0),
+            'caption': file.get('title', ''),
+            'mime_type': file.get('mimetype', ''),
+        }
+        html = trix_image_attachment(**details)
+    return html
+
+
+def trix_image_attachment(url, name, caption, width, height, mime_type, thumbnail_url=None):
+    details = {
+        'thumbnail_url': thumbnail_url if thumbnail_url != None else url,
+        'url': url,
+        'name': name,
+        'width': width,
+        'height': height,
+        'caption': caption,
+        'mime_type': mime_type,
+    }
+    html = """
+        <div>
+            <a
+            data-trix-attachment='{{
+                "contentType":"{mime_type}",
+                "filename":"{name}",
+                "height":{height},
+                "href":"{thumbnail_url}",
+                "url":"{thumbnail_url}",
+                "width":{width}
+            }}'
+            data-trix-attributes='{{
+                "caption":"{caption}"
+            }}'
+            href="{url}"
+            >
+                <figure
+                class="attachment attachment-preview"
+                >
+                    <img
+                    height="{height}"
+                    src="{thumbnail_url}"
+                    width="{width}"
+                    >
+                    <figcaption class="caption">
+                        {caption}
+                    </figcaption>
+                </figure>
+            </a>
+        </div>""".format(**details)
+    html = textwrap.dedent(html).strip()
+    return html

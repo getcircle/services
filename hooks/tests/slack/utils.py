@@ -3,9 +3,9 @@ from slacker import Response
 from services.test import mocks
 
 
-def mock_slack_user_info(patched, email='test@acme.com'):
+def mock_slack_user_info(patched, email='test@acme.com', name=''):
     patched().users.info.return_value = Response(
-        '{"ok": true, "user": {"profile": {"email": "%s"}}}' % (email,)
+        '{"ok": true, "user": {"profile": {"email": "%s"}, "name": "%s"}}' % (email, name,)
     )
     return email
 
