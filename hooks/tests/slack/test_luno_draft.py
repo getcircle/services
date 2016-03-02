@@ -315,3 +315,107 @@ class Test(MockedTestCase):
         expected_html = textwrap.dedent(expected_html).strip()
 
         self.assertEqual(actions.trix_image_attachment(**details), expected_html)
+
+    @patch('hooks.slack.handlers.draft.actions.Slacker')
+    def test_post_content_from_messages(self, patched):
+        referenced_user_name = 'john'
+        mock_slack_user_info(patched, name=referenced_user_name)
+        first_message = {
+            'user': 'a_user',
+            'text': '<@U1A2B3C4> check this out: <http://some.site/page>',
+            'attachments': [
+                {
+                    'image_url': 'http://some.site/image.jpg',
+                    'url': 'http://some.site/page',
+                    'fallback': 'An image.',
+                    'image_width': 800,
+                    'image_height': 600,
+                }
+            ],
+        }
+        second_message = {
+            'user': 'another_user',
+            'text': '<@U9G0D3G|jane> here\'s the file you wanted',
+            'file': {
+                'thumb_360': 'http://some.site/thumb.jpg',
+                'thumb_360_w': 480,
+                'thumb_360_h': 320,
+                'permalink': 'http://some.site/image.jpg',
+                'name': 'Some image',
+                'title': 'Some title',
+                'mimetype': 'image/jpeg',
+            }
+        }
+        messages = [first_message, second_message]
+        expected_html_first_msg_txt = '@john check this out: <a href=http://some.site/page>http://some.site/page</a>'
+        expected_html_first_msg_attachment = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/jpeg",
+                    "filename":"image.jpg",
+                    "height":600,
+                    "href":"http://some.site/image.jpg",
+                    "url":"http://some.site/image.jpg",
+                    "width":800
+                }'
+                data-trix-attributes='{
+                    "caption":"An image."
+                }'
+                href="http://some.site/image.jpg"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="600"
+                        src="http://some.site/image.jpg"
+                        width="800"
+                        >
+                        <figcaption class="caption">
+                            An image.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html_second_msg_txt = '@jane here\'s the file you wanted'
+        expected_html_second_msg_file = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/jpeg",
+                    "filename":"Some image",
+                    "height":320,
+                    "href":"http://some.site/thumb.jpg",
+                    "url":"http://some.site/thumb.jpg",
+                    "width":480
+                }'
+                data-trix-attributes='{
+                    "caption":"Some title"
+                }'
+                href="http://some.site/image.jpg"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="320"
+                        src="http://some.site/thumb.jpg"
+                        width="480"
+                        >
+                        <figcaption class="caption">
+                            Some title
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = ''.join([
+            expected_html_first_msg_txt,
+            textwrap.dedent(expected_html_first_msg_attachment).strip(),
+            '<br>',
+            expected_html_second_msg_txt,
+            textwrap.dedent(expected_html_second_msg_file).strip(),
+            '<br><br>',
+        ])
+
+        self.assertEqual(actions.post_content_from_messages('a_token', messages), expected_html)
