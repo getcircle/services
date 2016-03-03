@@ -18,12 +18,12 @@ from . import (
 )
 
 
-def get_client(region_name=settings.AWS_REGION_NAME):
+def get_client(region_name):
     return boto3.client(
         's3',
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        region_name=region_name,
+        region_name=region_name or settings.AWS_REGION_NAME,
     )
 
 
