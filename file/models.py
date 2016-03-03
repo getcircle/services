@@ -49,7 +49,7 @@ class File(models.UUIDModel, models.TimestampableModel):
             'id': self.id,
             'name': self.name,
         }
-        return = '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
+        return '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
 
     def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
         if token:
