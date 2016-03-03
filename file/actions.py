@@ -18,11 +18,12 @@ from . import (
 )
 
 
-def get_client():
+def get_client(region_name=settings.AWS_REGION_NAME):
     return boto3.client(
         's3',
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=region_name,
     )
 
 
@@ -91,10 +92,11 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
 
         location = response.location
         key = bucket.get_key(self.request.upload_key)
-        return location, key
+        region_name = bucket.get_location()
+        return location, key, region_name
 
     def run(self, *args, **kwargs):
-        source_url, s3_file = self._complete_upload()
+        source_url, s3_file, region_name = self._complete_upload()
         if not source_url:
             return
 
@@ -105,6 +107,7 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             content_type=s3_file.content_type,
             size=s3_file.size,
             key=self.request.upload_key,
+            region_name=region_name or 'us-east-1',
         )
         instance.to_protobuf(self.response.file, token=self.token)
 
@@ -199,7 +202,7 @@ class GetFile(PreRunParseTokenMixin, actions.Action):
 
         instance.to_protobuf(self.response.file, token=self.token)
         with NamedTemporaryFile() as dest:
-            client = get_client()
+            client = get_client(instance.region_name)
             client.download_file(Bucket=instance.bucket, Key=instance.key, Filename=dest.name)
             with open(dest.name, 'r') as proxy:
                 self.response.file.bytes = proxy.read()

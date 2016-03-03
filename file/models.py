@@ -22,6 +22,7 @@ class File(models.UUIDModel, models.TimestampableModel):
     size = models.BigIntegerField(null=True)
     bucket = models.CharField(max_length=64, default=settings.AWS_S3_FILE_BUCKET)
     key = models.CharField(max_length=255)
+    region_name = models.CharField(max_length=255, default=settings.AWS_REGION_NAME)
 
     class Meta:
         protobuf = file_containers.FileV1
