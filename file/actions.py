@@ -18,7 +18,7 @@ from . import (
 )
 
 
-def get_client(region_name):
+def get_client(region_name=settings.AWS_REGION_NAME):
     return boto3.client(
         's3',
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
@@ -92,7 +92,7 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
 
         location = response.location
         key = bucket.get_key(self.request.upload_key)
-        region_name = bucket.get_location()
+        region_name = bucket.get_location() or 'us-east-1'
         return location, key, region_name
 
     def run(self, *args, **kwargs):
@@ -107,7 +107,7 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             content_type=s3_file.content_type,
             size=s3_file.size,
             key=self.request.upload_key,
-            region_name=region_name or 'us-east-1',
+            region_name=region_name,
         )
         instance.to_protobuf(self.response.file, token=self.token)
 
