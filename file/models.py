@@ -1,6 +1,9 @@
+import re
+
 from common.db import models
 from django.conf import settings
 from protobufs.services.file import containers_pb2 as file_containers
+import service.control
 
 
 def _safe_int(value):
@@ -14,7 +17,6 @@ class File(models.UUIDModel, models.TimestampableModel):
 
     by_profile_id = models.UUIDField()
     organization_id = models.UUIDField()
-    source_url = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     content_type = models.CharField(max_length=255)
     size = models.BigIntegerField(null=True)
@@ -24,3 +26,35 @@ class File(models.UUIDModel, models.TimestampableModel):
     class Meta:
         protobuf = file_containers.FileV1
         index_together = ('id', 'organization_id')
+
+    def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
+        if token:
+            scheme = 'https'
+            frontend_url = settings.FRONTEND_URL
+            # If the scheme is already in the front-end URL, take it out.
+            scheme_match = re.match(r'^(\w+):\/\/\S+$', frontend_url)
+            if scheme_match:
+                scheme = scheme_match.group(1)
+                frontend_url = frontend_url[len(scheme):]
+            organization = service.control.get_object(
+                service='organization',
+                action='get_organization',
+                client_kwargs={'token': token},
+                return_object='organization',
+            )
+            details = {
+                'scheme': scheme,
+                'domain': organization.domain,
+                'frontend_url': frontend_url,
+                'id': self.id,
+                'name': self.name,
+            }
+            source_url = '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
+
+        protobuf = self.new_protobuf_container(protobuf)
+        return super(File, self).to_protobuf(
+            protobuf,
+            inflations=inflations,
+            fields=fields,
+            **overrides
+        )

@@ -101,12 +101,12 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
         instance = models.File.objects.create(
             by_profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
-            source_url=source_url,
             name=self.request.file_name,
             content_type=s3_file.content_type,
             size=s3_file.size,
+            key=self.request.upload_key,
         )
-        instance.to_protobuf(self.response.file)
+        instance.to_protobuf(self.response.file, token=self.token)
 
 
 class GetFiles(PreRunParseTokenMixin, actions.Action):
@@ -124,7 +124,7 @@ class GetFiles(PreRunParseTokenMixin, actions.Action):
         self.paginated_response(
             self.response.files,
             files,
-            lambda item, container: item.to_protobuf(container.add()),
+            lambda item, container: item.to_protobuf(container.add(), token=self.token),
         )
 
 
@@ -178,7 +178,7 @@ class Upload(PreRunParseTokenMixin, actions.Action):
             size=len(self.request.file.bytes),
             key=upload_key,
         )
-        instance.to_protobuf(self.response.file)
+        instance.to_protobuf(self.response.file, token=self.token)
 
 
 class GetFile(PreRunParseTokenMixin, actions.Action):
@@ -197,7 +197,7 @@ class GetFile(PreRunParseTokenMixin, actions.Action):
         except models.File.DoesNotExist:
             raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
 
-        instance.to_protobuf(self.response.file)
+        instance.to_protobuf(self.response.file, token=self.token)
         with NamedTemporaryFile() as dest:
             client = get_client()
             client.download_file(Bucket=instance.bucket, Key=instance.key, Filename=dest.name)
