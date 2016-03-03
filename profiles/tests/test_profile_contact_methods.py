@@ -95,3 +95,16 @@ class TestProfileContactMethods(MockedTestCase):
         self.assertFalse(
             models.ContactMethod.objects.filter(id=removed_contact_method.id).exists(),
         )
+
+    def test_delete_all_contact_methods(self):
+        contact_methods = [mocks.mock_contact_method(id=None) for _ in range(3)]
+        profile = factories.ProfileFactory.create_protobuf(
+            contact_methods=contact_methods,
+            organization_id=self.organization.id,
+        )
+        # remove all contact methods
+        profile.ClearField('contact_methods')
+
+        response = self.client.call_action('update_profile', profile=profile)
+        self.assertEqual(len(response.result.profile.contact_methods), 0)
+        self.assertEqual(models.ContactMethod.objects.all().count(), 0)

@@ -1,12 +1,46 @@
 from common import utils
 from common.db import models
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
 from services.fields import DescriptionField
 
 
+class TeamManager(models.Manager):
+
+    def create(self, *args, **kwargs):
+        team = super(TeamManager, self).create(*args, **kwargs)
+        # XXX fix this later
+        from post import models as post_models
+        post_models.Collection.objects.create(
+            owner_type=post_containers.CollectionV1.TEAM,
+            owner_id=team.id,
+            organization_id=team.organization_id,
+            is_default=True,
+        )
+        return team
+
+    def bulk_create(self, *args, **kwargs):
+        teams = super(TeamManager, self).bulk_create(*args, **kwargs)
+        # XXX fix this later
+        from post import models as post_models
+        collections = []
+        for team in teams:
+            collection = post_models.Collection(
+                owner_type=post_containers.CollectionV1.TEAM,
+                owner_id=team.id,
+                organization_id=team.organization_id,
+                is_default=True
+            )
+            collections.append(collection)
+        post_models.Collection.objects.bulk_create(collections)
+        return teams
+
+
 class Team(models.UUIDModel, models.TimestampableModel):
+
+    objects = TeamManager()
 
     organization_id = models.UUIDField(db_index=True)
     name = models.CharField(max_length=255)
@@ -61,6 +95,7 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         protobuf = team_containers.TeamV1
+        unique_together = ('organization_id', 'name')
 
 
 class TeamMember(models.UUIDModel, models.TimestampableModel):
@@ -77,15 +112,30 @@ class TeamMember(models.UUIDModel, models.TimestampableModel):
         default=team_containers.TeamMemberV1.MEMBER,
     )
 
-    def _inflate(self, protobuf, inflations, fields, overrides):
+    def _inflate(self, protobuf, inflations, fields, overrides, token=None):
         team_inflations = inflations and utils.inflations_for_item('team', inflations)
         team_fields = fields and utils.fields_for_item('team', fields)
         if 'team' not in overrides and utils.should_inflate_field('team', inflations):
             self.team.to_protobuf(protobuf.team, inflations=team_inflations, fields=team_fields)
 
-    def to_protobuf(self, protobuf=None, inflations=None, fields=None, **overrides):
+        if (
+            token and
+            'profile' not in overrides and
+            utils.should_inflate_field('profile', inflations)
+        ):
+            profile = service.control.get_object(
+                service='profile',
+                action='get_profile',
+                client_kwargs={'token': token},
+                return_object='profile',
+                profile_id=str(self.profile_id),
+                inflations={'disabled': True},
+            )
+            protobuf.profile.CopyFrom(profile)
+
+    def to_protobuf(self, protobuf=None, inflations=None, fields=None, token=None, **overrides):
         protobuf = self.new_protobuf_container(protobuf)
-        self._inflate(protobuf, inflations, fields, overrides)
+        self._inflate(protobuf, inflations, fields, overrides, token=token)
         return super(TeamMember, self).to_protobuf(
             protobuf,
             inflations=inflations,

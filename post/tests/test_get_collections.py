@@ -1,4 +1,5 @@
 from protobufs.services.post import containers_pb2 as post_containers
+from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 
 from services.test import (
@@ -8,6 +9,8 @@ from services.test import (
 )
 
 from .. import factories
+
+from .helpers import mock_get_teams
 
 
 class Test(MockedTestCase):
@@ -55,6 +58,12 @@ class Test(MockedTestCase):
             # Add 10 items per collection
             factories.CollectionItemFactory.create_batch(size=10, collection=collection)
 
+        mock_get_teams(
+            self.mock.instance,
+            [team],
+            fields={'only': ['id', 'name']},
+            inflations={'disabled': True},
+        )
         response = self.client.call_action(
             'get_collections',
             owner_id=team.id,
@@ -63,6 +72,7 @@ class Test(MockedTestCase):
         response_collections = response.result.collections
         self.assertEqual(len(response_collections), len(collections))
         for collection in response_collections:
+            self.assertTrue(collection.display_name.startswith('[%s]' % (team.name,)))
             self.assertEqual(len(collection.items), 0)
             self.assertEqual(collection.total_items, 10)
 
@@ -221,3 +231,67 @@ class Test(MockedTestCase):
             owner_type=post_containers.CollectionV1.PROFILE,
         )
         self.assertEqual(len(response.result.collections), 15)
+
+    def test_get_collections_for_organization(self):
+        expected = factories.CollectionFactory.create_batch(
+            size=2,
+            organization_id=self.organization.id,
+        )
+        factories.CollectionFactory.create_batch(size=5)
+        response = self.client.call_action('get_collections')
+        self.assertEqual(len(response.result.collections), len(expected))
+        for collection in response.result.collections:
+            self.assertEqual(collection.organization_id, self.organization.id)
+
+    def test_get_collections_by_ids_wrong_organization(self):
+        collections = factories.CollectionFactory.create_batch(size=2)
+        response = self.client.call_action('get_collections', ids=[str(c.id) for c in collections])
+        self.assertEqual(len(response.result.collections), 0)
+
+    def test_get_collections_by_ids(self):
+        expected = factories.CollectionFactory.create_batch(
+            size=2,
+            organization_id=self.organization.id,
+        )
+        factories.CollectionFactory.create_batch(size=2, organization_id=self.organization.id)
+        response = self.client.call_action('get_collections', ids=[str(c.id) for c in expected])
+        self.assertEqual(len(response.result.collections), len(expected))
+
+    def test_get_collections_by_ids_invalid_ids(self):
+        with self.assertFieldError('ids'):
+            self.client.call_action('get_collections', ids=['invalid', 'invalid'])
+
+    def test_get_collections_by_profile_id_invalid_profile_id(self):
+        with self.assertFieldError('profile_id'):
+            self.client.call_action('get_collections', profile_id='invalid')
+
+    def test_get_collections_by_profile_id(self):
+        # create 2 just for the org
+        factories.CollectionFactory.create_batch(size=2, organization_id=self.organization.id)
+        # create 2 specific to the profile
+        factories.CollectionFactory.create_batch(size=2, profile=self.profile)
+        teams = []
+
+        team = mocks.mock_team(organization_id=self.organization.id)
+        factories.CollectionFactory.create_batch(size=2, team=team)
+        teams.append(team)
+
+        team = mocks.mock_team(organization_id=self.organization.id)
+        factories.CollectionFactory.create_batch(size=2, team=team)
+        teams.append(team)
+
+        members = [mocks.mock_team_member(team=t) for t in teams]
+        self.mock.instance.register_mock_object(
+            service='team',
+            action='get_members',
+            return_object=members,
+            return_object_path='members',
+            profile_id=self.profile.id,
+            role=team_containers.TeamMemberV1.COORDINATOR,
+            fields={'only': ['[]members.team_id']},
+            inflations={'disabled': True},
+            has_role=True,
+        )
+
+        response = self.client.call_action('get_collections', profile_id=self.profile.id)
+        self.assertEqual(len(response.result.collections), 6)

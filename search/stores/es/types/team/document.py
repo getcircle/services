@@ -3,7 +3,7 @@ from elasticsearch_dsl import (
     MetaField,
     String,
 )
-from protobufs.services.organization import containers_pb2 as organization_containers
+from protobufs.services.team import containers_pb2 as team_containers
 
 from ...analysis import (
     edge_ngram_tokenizer_v1,
@@ -30,11 +30,6 @@ class TeamV1(BaseDocType):
             field_name='description.value',
             on_prepare_highlight_dict=False,
         ),
-        'name': DocumentToProtobufOptions(
-            field_name='display_name',
-            on_from_protobuf=False,
-            replace=False,
-        ),
     }
 
     name = String(
@@ -58,4 +53,4 @@ class TeamV1(BaseDocType):
         doc_type = 'team'
         all = MetaField(enabled=False)
         dynamic = MetaField('false')
-        protobuf = organization_containers.TeamV1
+        protobuf = team_containers.TeamV1

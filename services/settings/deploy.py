@@ -16,11 +16,6 @@ DEBUG = False
 TEMPLATE_DEBUG = False
 
 database_url = urlparse.urlparse(os.environ['DATABASE_URL'])
-conn_max_age = os.environ.get('DATABASE_CONN_MAX_AGE', '')
-if conn_max_age.isdigit():
-    conn_max_age = int(conn_max_age)
-else:
-    conn_max_age = None
 
 DATABASES = {
     'default': {
@@ -30,7 +25,7 @@ DATABASES = {
         'PASSWORD': database_url.password,
         'HOST': database_url.hostname,
         'PORT': database_url.port,
-        'CONN_MAX_AGE': conn_max_age,
+        'CONN_MAX_AGE': 0,
     }
 }
 

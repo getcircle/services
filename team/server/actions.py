@@ -1,6 +1,8 @@
 from common import utils
+import django.db
 from django.db.models import Count
 from protobuf_to_dict import protobuf_to_dict
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.team import containers_pb2 as team_containers
 from service import (
     actions,
@@ -12,8 +14,10 @@ from services.mixins import PreRunParseTokenMixin
 from ..actions import (
     add_members,
     create_team,
-    get_permissions_for_team,
+    get_permissions_for_teams,
     get_team,
+    get_team_id_to_member_count,
+    get_teams,
     remove_members,
     update_members,
     update_team,
@@ -63,12 +67,16 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
     required_fields = ('team', 'team.name',)
 
     def run(self, *args, **kwargs):
-        team = create_team(
-            container=self.request.team,
-            token=self.token,
-            by_profile_id=self.parsed_token.profile_id,
-            organization_id=self.parsed_token.organization_id,
-        )
+        try:
+            team = create_team(
+                container=self.request.team,
+                token=self.token,
+                by_profile_id=self.parsed_token.profile_id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except django.db.IntegrityError:
+            raise self.ActionFieldError('team.name', 'DUPLICATE')
+
         team.to_protobuf(self.response.team)
         coordinator = team_containers.TeamMemberV1(
             role=team_containers.TeamMemberV1.COORDINATOR,
@@ -79,13 +87,25 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
         members.append(coordinator)
         add_members(members, team.id, organization_id=self.parsed_token.organization_id)
 
-        _, permissions = get_permissions_for_team(
-            team_id=team.id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[team.id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[str(team.id)]
         self.response.team.permissions.CopyFrom(permissions)
+
+        collection = service.control.get_object(
+            service='post',
+            action='get_collection',
+            client_kwargs={'token': self.token},
+            return_object='collection',
+            owner_id=str(team.id),
+            owner_type=post_containers.CollectionV1.TEAM,
+            inflations={'exclude': ['total_items']},
+        )
+        self.response.collection.CopyFrom(collection)
 
 
 class AddMembers(TeamExistsAction):
@@ -125,14 +145,64 @@ class GetTeam(PreRunParseTokenMixin, actions.Action):
         except models.Team.DoesNotExist:
             raise self.ActionFieldError('team_id', 'DOES_NOT_EXIST')
         team.to_protobuf(self.response.team, inflations=self.request.inflations, token=self.token)
-        is_member, permissions = get_permissions_for_team(
-            team_id=team.id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[team.id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
-        self.response.is_member = is_member
+        member, permissions = permissions_dict[str(team.id)]
+        if member:
+            member.to_protobuf(self.response.member, inflations={'disabled': True})
         self.response.team.permissions.CopyFrom(permissions)
+
+
+class GetTeams(PreRunParseTokenMixin, actions.Action):
+
+    type_validators = {
+        'ids': [validators.is_uuid4_list],
+    }
+
+    def run(self, *args, **kwargs):
+        # we don't support get_teams contact_methods yet
+        self.request.inflations.exclude.append('contact_methods')
+
+        teams = get_teams(
+            self.parsed_token.organization_id,
+            ids=self.request.ids,
+        )
+        teams = self.get_paginated_objects(teams)
+        if not teams:
+            return
+
+        team_id_to_member_count_dict = {}
+        if utils.should_inflate_field('total_members', self.request.inflations):
+            team_id_to_member_count_dict = get_team_id_to_member_count(teams)
+
+        team_id_to_permissions_dict = {}
+        if utils.should_inflate_field('permissions', self.request.inflations):
+            team_id_to_permissions_dict = get_permissions_for_teams(
+                team_ids=[str(t.id) for t in teams],
+                profile_id=self.parsed_token.profile_id,
+                organization_id=self.parsed_token.organization_id,
+                token=self.token,
+            )
+
+        for team in teams:
+            container = self.response.teams.add()
+            permissions = team_id_to_permissions_dict.get(str(team.id), (None, None))[1]
+            if permissions:
+                # XXX redundant protobuf_to_dict
+                permissions = protobuf_to_dict(permissions)
+
+            team.to_protobuf(
+                container,
+                inflations=self.request.inflations,
+                fields=self.request.fields,
+                token=self.token,
+                total_members=team_id_to_member_count_dict.get(str(team.id)),
+                permissions=permissions,
+            )
 
 
 class GetMembers(TeamExistsAction):
@@ -160,13 +230,16 @@ class GetMembers(TeamExistsAction):
             organization_id=self.parsed_token.organization_id,
             team_id=self.request.team_id,
             role=self.request.role,
-        )
+        ).order_by('-created')
 
     def _get_members_with_profile_id(self):
-        return models.TeamMember.objects.filter(
+        queryset = models.TeamMember.objects.filter(
             organization_id=self.parsed_token.organization_id,
             profile_id=self.request.profile_id,
         ).order_by('-role')
+        if self.request.has_role:
+            queryset = queryset.filter(role=self.request.role)
+        return queryset
 
     def run(self, *args, **kwargs):
         if self.request.team_id:
@@ -253,12 +326,13 @@ class UpdateMembers(TeamExistsAction):
 
     def run(self, *args, **kwargs):
         super(UpdateMembers, self).run(*args, **kwargs)
-        _, permissions = get_permissions_for_team(
-            team_id=self.request.team_id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[self.request.team_id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[self.request.team_id]
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
@@ -285,20 +359,24 @@ class RemoveMembers(TeamExistsAction):
 
     def run(self, *args, **kwargs):
         super(RemoveMembers, self).run(*args, **kwargs)
-        _, permissions = get_permissions_for_team(
-            team_id=self.request.team_id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[self.request.team_id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[self.request.team_id]
         if not permissions.can_edit:
             raise self.PermissionDenied()
 
-        remove_members(
-            team_id=self.request.team_id,
-            organization_id=self.parsed_token.organization_id,
-            profile_ids=self.request.profile_ids,
-        )
+        try:
+            remove_members(
+                team_id=self.request.team_id,
+                organization_id=self.parsed_token.organization_id,
+                profile_ids=self.request.profile_ids,
+            )
+        except AssertionError:
+            raise self.ActionFieldError('profile_ids', 'CANT_REMOVE_LAST_COORDINATOR')
 
 
 class JoinTeam(TeamExistsAction):
@@ -311,11 +389,12 @@ class JoinTeam(TeamExistsAction):
     def run(self, *args, **kwargs):
         super(JoinTeam, self).run(*args, **kwargs)
         member = team_containers.TeamMemberV1(profile_id=self.parsed_token.profile_id)
-        add_members(
+        member = add_members(
             [member],
             self.request.team_id,
             organization_id=self.parsed_token.organization_id,
-        )
+        )[0]
+        member.to_protobuf(self.response.member, token=self.token)
 
 
 class LeaveTeam(TeamExistsAction):
@@ -370,12 +449,13 @@ class UpdateTeam(PreRunParseTokenMixin, actions.Action):
         except models.Team.DoesNotExist:
             raise self.ActionFieldError('team.id', 'DOES_NOT_EXIST')
 
-        _, permissions = get_permissions_for_team(
-            team_id=self.request.team.id,
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[self.request.team.id],
             profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
             token=self.token,
         )
+        _, permissions = permissions_dict[self.request.team.id]
         if not permissions.can_edit:
             raise self.PermissionDenied()
 

@@ -98,7 +98,7 @@ git+https://git@github.com/DataDog/datadogpy.git#51173b4b702f1b64e921681138020e9
 # NOTE: we don't specify versions because these are installed from the wheel
 # directory. This relies on a build image that uses `build-requirements.txt` to
 # build the wheels.
-django-common==1.6.0
+django-common==1.7.0
 protobuf-soa==0.5.5
 protobuf-to-dict==1.1.0
 python-soa==1.0.2

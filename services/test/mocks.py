@@ -192,6 +192,19 @@ def mock_team(container=None, **overrides):
     return _mock_container(container, mock_dict, **overrides)
 
 
+def mock_team_member(container=None, **overrides):
+    if container is None:
+        container = team_containers.TeamMemberV1()
+
+    if 'team' in overrides and 'team_id' not in overrides:
+        overrides['team_id'] = overrides['team'].id
+
+    mock_dict = {
+        fuzzy.FuzzyUUID: ['id', 'team_id'],
+    }
+    return _mock_container(container, mock_dict, **overrides)
+
+
 def mock_team_contact_method(container=None, **overrides):
     if container is None:
         container = team_containers.ContactMethodV1()

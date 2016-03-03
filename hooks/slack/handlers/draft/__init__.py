@@ -26,11 +26,8 @@ def handle_draft(request, text):
         channel_name=request.data['channel_name'],
     )
     messages.reverse()
-    # XXX should have a `post_content_from_messages` function, we should handle
-    # special formatting for the messages
-    text_values = [m['text'] for m in messages if 'text' in m]
     title = 'Slack Draft - %s' % (text,)
-    content = '\n'.join(text_values)
+    content = actions.post_content_from_messages(request.slack_api_token, messages)
     post = service.control.get_object(
         service='post',
         action='create_post',

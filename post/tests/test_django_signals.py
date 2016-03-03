@@ -31,3 +31,26 @@ class Test(TestCase):
         call_args = patched.call_action.call_args_list[1][1]
         self.assertEqual(call_args['ids'], ids)
         self.assertEqual(call_args['action'], 'delete_entities')
+
+    @patch('service.control')
+    def test_collection_save_signal(self, patched):
+        instance = factories.CollectionFactory.build()
+        instance.save()
+        self.assertEqual(patched.call_action.call_count, 1)
+        call_args = patched.call_action.call_args_list[0][1]
+        self.assertEqual(call_args['action'], 'update_entities')
+        self.assertEqual(call_args['ids'], [str(instance.id)])
+        instance.name = fuzzy.FuzzyText().fuzz()
+        instance.save()
+        self.assertEqual(patched.call_action.call_count, 2)
+
+    @patch('service.control')
+    def test_collection_delete_signal(self, patched):
+        instance = factories.CollectionFactory.create()
+        # id won't be available after we call delete
+        ids = [str(instance.id)]
+        instance.delete()
+        self.assertEqual(patched.call_action.call_count, 2)
+        call_args = patched.call_action.call_args_list[1][1]
+        self.assertEqual(call_args['ids'], ids)
+        self.assertEqual(call_args['action'], 'delete_entities')

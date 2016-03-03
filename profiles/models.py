@@ -3,13 +3,46 @@ from common.db import models
 from common import utils
 from django.contrib.postgres.fields import ArrayField
 import django.db
+from protobufs.services.post import containers_pb2 as post_containers
 from protobufs.services.profile import containers_pb2 as profile_containers
 import service.control
+
+
+class ProfileManager(models.Manager):
+
+    def create(self, *args, **kwargs):
+        profile = super(ProfileManager, self).create(*args, **kwargs)
+        # XXX fix this later
+        from post import models as post_models
+        post_models.Collection.objects.create(
+            owner_type=post_containers.CollectionV1.PROFILE,
+            owner_id=profile.id,
+            organization_id=profile.organization_id,
+            is_default=True,
+        )
+        return profile
+
+    def bulk_create(self, *args, **kwargs):
+        profiles = super(ProfileManager, self).bulk_create(*args, **kwargs)
+        # XXX fix this later
+        from post import models as post_models
+        collections = []
+        for profile in profiles:
+            collection = post_models.Collection(
+                owner_type=post_containers.CollectionV1.PROFILE,
+                owner_id=profile.id,
+                organization_id=profile.organization_id,
+                is_default=True
+            )
+            collections.append(collection)
+        post_models.Collection.objects.bulk_create(collections)
+        return profiles
 
 
 class Profile(models.UUIDModel, models.TimestampableModel):
 
     bulk_manager = BulkUpdateManager()
+    objects = ProfileManager()
 
     protobuf_include_fields = ('full_name',)
     as_dict_value_transforms = {'status': int}
@@ -18,6 +51,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
     user_id = models.UUIDField()
     title = models.CharField(max_length=255, null=True)
     email = models.EmailField()
+    bio = models.TextField(null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     nickname = models.CharField(max_length=64, null=True)
@@ -98,10 +132,7 @@ class Profile(models.UUIDModel, models.TimestampableModel):
         if protobuf.items:
             items = [(item.key, item.value) for item in protobuf.items if item.key and item.value]
 
-        contact_methods = None
-        if protobuf.contact_methods:
-            contact_methods = self._update_contact_methods(protobuf.contact_methods)
-
+        contact_methods = self._update_contact_methods(protobuf.contact_methods)
         return super(Profile, self).update_from_protobuf(
             protobuf,
             items=items,
@@ -118,8 +149,12 @@ class Profile(models.UUIDModel, models.TimestampableModel):
                     to_delete.append(method_id)
 
             if to_delete:
-                self.contact_methods.filter(id__in=to_delete).delete()
+                self.contact_methods.filter(
+                    id__in=to_delete,
+                    organization_id=self.organization_id,
+                ).delete()
 
+            # TODO should be bulk creating and updating these
             for container in methods:
                 if container.id:
                     contact_method = ContactMethod.objects.get(

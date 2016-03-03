@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from slacker import Response
 from django.conf import settings
+import textwrap
 
 from services.test import (
     fuzzy,
@@ -154,3 +155,267 @@ class Test(MockedTestCase):
         self.assertEqual(args[0], channel_id)
         self.assertEqual(kwargs['oldest'], 1447147500)
         self.assertEqual(kwargs['latest'], 1447147800)
+
+    def test_replace_slack_links_with_post_links(self):
+        txt = 'check this out '
+        link = 'ftp://site.web/file.txt'
+        link_text = 'File'
+        slack_link = '<{link}>'.format(link=link)
+        slack_link_with_link_text = '<{link}|{link_text}>'.format(link=link, link_text=link_text)
+        post_link = '<a href={link}>{link}</a>'.format(link=link)
+        post_link_with_link_text = '<a href={link}>{link_text}</a>'.format(link=link, link_text=link_text)
+        txt_with_uid = '<@UA1B2C3> is here'
+
+        self.assertEqual(actions.replace_slack_links_with_post_links(txt + slack_link), txt + post_link)
+        self.assertEqual(actions.replace_slack_links_with_post_links(txt + slack_link_with_link_text), txt + post_link_with_link_text)
+        self.assertEqual(actions.replace_slack_links_with_post_links(txt_with_uid), txt_with_uid)
+
+    @patch('hooks.slack.handlers.draft.actions.Slacker')
+    def test_replace_slack_uids_with_user_names(self, patched):
+        token = 'a_token'
+        name = 'john'
+        uid = 'UA1B2C3'
+        mock_slack_user_info(patched, name=name)
+        txt_with_uid = 'hi <@{uid}>'.format(uid=uid)
+        txt_with_uid_name = 'hi <@{uid}|{name}>'.format(uid=uid, name=name)
+        txt_with_name = 'hi @' + name
+        txt_with_link = 'check this out <ftp://site.web/file.txt>'
+
+        self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_uid), txt_with_name)
+        self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_uid_name), txt_with_name)
+        self.assertEqual(actions.replace_slack_uids_with_user_names(token, txt_with_link), txt_with_link)
+
+    def test_post_attachments_from_attachments(self):
+        attachment = {
+            'image_url': 'http://web.site/image.jpg',
+            'url': 'http://web.site/image.jpg',
+            'fallback': 'An image.',
+            'image_width': 800,
+            'image_height': 600,
+        }
+        expected_html = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/jpeg",
+                    "filename":"image.jpg",
+                    "height":600,
+                    "href":"http://web.site/image.jpg",
+                    "url":"http://web.site/image.jpg",
+                    "width":800
+                }'
+                data-trix-attributes='{
+                    "caption":"An image."
+                }'
+                href="http://web.site/image.jpg"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="600"
+                        src="http://web.site/image.jpg"
+                        width="800"
+                        >
+                        <figcaption class="caption">
+                            An image.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = textwrap.dedent(expected_html).strip()
+
+        post_attachments = actions.post_attachments_from_attachments([attachment])
+        self.assertEqual(len(post_attachments), 1)
+        self.assertEqual(post_attachments[0], expected_html)
+
+    def test_post_attachment_from_file(self):
+        file = {
+            'permalink': 'http://web.site/page',
+            'name': 'The name',
+            'title': 'Some title.',
+            'thumb_360': 'http://web.site/image.png',
+            'thumb_360_w': 800,
+            'thumb_360_h': 600,
+            'mimetype': 'image/png',
+        }
+        expected_html = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/png",
+                    "filename":"The name",
+                    "height":600,
+                    "href":"http://web.site/image.png",
+                    "url":"http://web.site/image.png",
+                    "width":800
+                }'
+                data-trix-attributes='{
+                    "caption":"Some title."
+                }'
+                href="http://web.site/page"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="600"
+                        src="http://web.site/image.png"
+                        width="800"
+                        >
+                        <figcaption class="caption">
+                            Some title.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = textwrap.dedent(expected_html).strip()
+
+        self.assertEqual(actions.post_attachment_from_file(file), expected_html)
+
+    def test_trix_image_attachment(self):
+        details = {
+            'url': 'http://some.url/image.png',
+            'name': 'A name.',
+            'width': 128,
+            'height': 64,
+            'caption': 'A caption.',
+            'mime_type': 'image/png',
+        }
+        expected_html = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/png",
+                    "filename":"A name.",
+                    "height":64,
+                    "href":"http://some.url/image.png",
+                    "url":"http://some.url/image.png",
+                    "width":128
+                }'
+                data-trix-attributes='{
+                    "caption":"A caption."
+                }'
+                href="http://some.url/image.png"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="64"
+                        src="http://some.url/image.png"
+                        width="128"
+                        >
+                        <figcaption class="caption">
+                            A caption.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = textwrap.dedent(expected_html).strip()
+
+        self.assertEqual(actions.trix_image_attachment(**details), expected_html)
+
+    @patch('hooks.slack.handlers.draft.actions.Slacker')
+    def test_post_content_from_messages(self, patched):
+        referenced_user_name = 'john'
+        mock_slack_user_info(patched, name=referenced_user_name)
+        first_message = {
+            'user': 'a_user',
+            'text': '<@U1A2B3C4> check this out: <http://some.site/page>',
+            'attachments': [
+                {
+                    'image_url': 'http://some.site/image.jpg',
+                    'url': 'http://some.site/page',
+                    'fallback': 'An image.',
+                    'image_width': 800,
+                    'image_height': 600,
+                }
+            ],
+        }
+        second_message = {
+            'user': 'another_user',
+            'text': '<@U9G0D3G|jane> here\'s the file you wanted',
+            'file': {
+                'thumb_360': 'http://some.site/thumb.jpg',
+                'thumb_360_w': 480,
+                'thumb_360_h': 320,
+                'permalink': 'http://some.site/image.jpg',
+                'name': 'Some image',
+                'title': 'Some title',
+                'mimetype': 'image/jpeg',
+            }
+        }
+        messages = [first_message, second_message]
+        expected_html_first_msg_txt = '@john check this out: <a href=http://some.site/page>http://some.site/page</a>'
+        expected_html_first_msg_attachment = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/jpeg",
+                    "filename":"image.jpg",
+                    "height":600,
+                    "href":"http://some.site/image.jpg",
+                    "url":"http://some.site/image.jpg",
+                    "width":800
+                }'
+                data-trix-attributes='{
+                    "caption":"An image."
+                }'
+                href="http://some.site/image.jpg"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="600"
+                        src="http://some.site/image.jpg"
+                        width="800"
+                        >
+                        <figcaption class="caption">
+                            An image.
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html_second_msg_txt = '@jane here\'s the file you wanted'
+        expected_html_second_msg_file = """
+            <div>
+                <a
+                data-trix-attachment='{
+                    "contentType":"image/jpeg",
+                    "filename":"Some image",
+                    "height":320,
+                    "href":"http://some.site/thumb.jpg",
+                    "url":"http://some.site/thumb.jpg",
+                    "width":480
+                }'
+                data-trix-attributes='{
+                    "caption":"Some title"
+                }'
+                href="http://some.site/image.jpg"
+                >
+                    <figure
+                    class="attachment attachment-preview"
+                    >
+                        <img
+                        height="320"
+                        src="http://some.site/thumb.jpg"
+                        width="480"
+                        >
+                        <figcaption class="caption">
+                            Some title
+                        </figcaption>
+                    </figure>
+                </a>
+            </div>"""
+        expected_html = ''.join([
+            expected_html_first_msg_txt,
+            textwrap.dedent(expected_html_first_msg_attachment).strip(),
+            '<br>',
+            expected_html_second_msg_txt,
+            textwrap.dedent(expected_html_second_msg_file).strip(),
+            '<br><br>',
+        ])
+
+        self.assertEqual(actions.post_content_from_messages('a_token', messages), expected_html)

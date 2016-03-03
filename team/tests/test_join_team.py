@@ -45,9 +45,10 @@ class Test(MockedTestCase):
 
     def test_join_team(self):
         team = factories.TeamFactory.create_protobuf(organization_id=self.organization.id)
-        self.client.call_action('join_team', team_id=team.id)
+        response = self.client.call_action('join_team', team_id=team.id)
         membership = models.TeamMember.objects.get(team_id=team.id, profile_id=self.profile.id)
         self.assertEqual(membership.role, team_containers.TeamMemberV1.MEMBER)
+        self.assertEqual(response.result.member.role, team_containers.TeamMemberV1.MEMBER)
 
     def test_join_team_duplicate_noop(self):
         team = factories.TeamFactory.create(organization_id=self.organization.id)

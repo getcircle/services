@@ -13,7 +13,7 @@ from .. import (
     models,
 )
 from .helpers import (
-    mock_get_team,
+    mock_get_teams,
     mock_get_profile,
 )
 
@@ -128,7 +128,7 @@ class Test(MockedTestCase):
 
     def test_reorder_collection_owned_by_team_not_member(self):
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team)
+        mock_get_teams(self.mock.instance, [team])
         mock_get_profile(self.mock.instance, self.profile)
         collection = factories.CollectionFactory.create_protobuf(team=team)
         with self.assertRaisesCallActionError() as expected:
@@ -142,7 +142,7 @@ class Test(MockedTestCase):
 
     def test_reorder_collection_owned_by_team_member(self):
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team, role=team_containers.TeamMemberV1.MEMBER)
+        mock_get_teams(self.mock.instance, [team], role=team_containers.TeamMemberV1.MEMBER)
         mock_get_profile(self.mock.instance, self.profile)
         collection = factories.CollectionFactory.create_protobuf(team=team)
         with self.assertRaisesCallActionError() as expected:
@@ -156,7 +156,7 @@ class Test(MockedTestCase):
 
     def test_reorder_collection_owned_by_team_coordinator(self):
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team, role=team_containers.TeamMemberV1.COORDINATOR)
+        mock_get_teams(self.mock.instance, [team], role=team_containers.TeamMemberV1.COORDINATOR)
         mock_get_profile(self.mock.instance, self.profile)
         collection = factories.CollectionFactory.create(team=team)
         self._verify_can_reorder_items(collection)
@@ -164,7 +164,7 @@ class Test(MockedTestCase):
     def test_reorder_collection_owned_by_team_admin(self):
         self.profile.is_admin = True
         team = mocks.mock_team(organization_id=self.organization.id)
-        mock_get_team(self.mock.instance, team, admin=True)
+        mock_get_teams(self.mock.instance, [team], admin=True)
         mock_get_profile(self.mock.instance, self.profile)
         collection = factories.CollectionFactory.create(team=team)
         self._verify_can_reorder_items(collection)

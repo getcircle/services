@@ -12,7 +12,7 @@ from .. import (
     models,
 )
 
-from .helpers import mock_get_team
+from .helpers import mock_get_teams
 
 
 class Test(MockedTestCase):
@@ -44,7 +44,7 @@ class Test(MockedTestCase):
             self.client.call_action('delete_collection', collection_id=collection.id)
 
     def test_delete_collection_owned_by_team_not_member(self):
-        mock_get_team(self.mock.instance, self.team)
+        mock_get_teams(self.mock.instance, [self.team])
         collection = factories.CollectionFactory.create_protobuf(team=self.team)
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action('delete_collection', collection_id=collection.id)
@@ -52,7 +52,7 @@ class Test(MockedTestCase):
         self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
 
     def test_delete_collection_owned_by_team_member(self):
-        mock_get_team(self.mock.instance, self.team, role=team_containers.TeamMemberV1.MEMBER)
+        mock_get_teams(self.mock.instance, [self.team], role=team_containers.TeamMemberV1.MEMBER)
         collection = factories.CollectionFactory.create_protobuf(team=self.team)
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action('delete_collection', collection_id=collection.id)
@@ -60,7 +60,11 @@ class Test(MockedTestCase):
         self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
 
     def test_delete_collection_owned_by_team_coordinator(self):
-        mock_get_team(self.mock.instance, self.team, role=team_containers.TeamMemberV1.COORDINATOR)
+        mock_get_teams(
+            self.mock.instance,
+            [self.team],
+            role=team_containers.TeamMemberV1.COORDINATOR,
+        )
         collection = factories.CollectionFactory.create_protobuf(team=self.team)
         self.client.call_action('delete_collection', collection_id=collection.id)
         self.assertFalse(models.Collection.objects.filter(pk=collection.id).exists())
