@@ -42,14 +42,16 @@ class File(models.UUIDModel, models.TimestampableModel):
             client_kwargs={'token': token},
             return_object='organization',
         )
+        domain = organization.domain
         details = {
             'scheme': scheme,
-            'domain': organization.domain,
+            'domain': domain,
+            'dot': '.' if domain else '',
             'frontend_url': frontend_url,
             'id': self.id,
             'name': self.name,
         }
-        return '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
+        return '{scheme}://{domain}{dot}{frontend_url}/file/{id}/{name}'.format(**details)
 
     def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
         if token:
