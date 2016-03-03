@@ -35,7 +35,7 @@ class File(models.UUIDModel, models.TimestampableModel):
             scheme_match = re.match(r'^(\w+):\/\/\S+$', frontend_url)
             if scheme_match:
                 scheme = scheme_match.group(1)
-                frontend_url = frontend_url[len(scheme):]
+                frontend_url = frontend_url[len(scheme + '://'):]
             organization = service.control.get_object(
                 service='organization',
                 action='get_organization',
@@ -49,7 +49,7 @@ class File(models.UUIDModel, models.TimestampableModel):
                 'id': self.id,
                 'name': self.name,
             }
-            source_url = '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
+            overrides['source_url'] = '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
 
         protobuf = self.new_protobuf_container(protobuf)
         return super(File, self).to_protobuf(
