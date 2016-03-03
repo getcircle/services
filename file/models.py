@@ -28,30 +28,32 @@ class File(models.UUIDModel, models.TimestampableModel):
         protobuf = file_containers.FileV1
         index_together = ('id', 'organization_id')
 
+    def _get_source_url(self, token):
+        scheme = 'https'
+        frontend_url = settings.FRONTEND_URL
+        # If the scheme is already in the front-end URL, take it out.
+        scheme_match = re.match(r'^(\w+):\/\/\S+$', frontend_url)
+        if scheme_match:
+            scheme = scheme_match.group(1)
+            frontend_url = frontend_url[len(scheme + '://'):]
+        organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            client_kwargs={'token': token},
+            return_object='organization',
+        )
+        details = {
+            'scheme': scheme,
+            'domain': organization.domain,
+            'frontend_url': frontend_url,
+            'id': self.id,
+            'name': self.name,
+        }
+        return = '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
+
     def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
         if token:
-            scheme = 'https'
-            frontend_url = settings.FRONTEND_URL
-            # If the scheme is already in the front-end URL, take it out.
-            scheme_match = re.match(r'^(\w+):\/\/\S+$', frontend_url)
-            if scheme_match:
-                scheme = scheme_match.group(1)
-                frontend_url = frontend_url[len(scheme + '://'):]
-            organization = service.control.get_object(
-                service='organization',
-                action='get_organization',
-                client_kwargs={'token': token},
-                return_object='organization',
-            )
-            details = {
-                'scheme': scheme,
-                'domain': organization.domain,
-                'frontend_url': frontend_url,
-                'id': self.id,
-                'name': self.name,
-            }
-            overrides['source_url'] = '{scheme}://{domain}.{frontend_url}/file/{id}/{name}'.format(**details)
-
+            overrides['source_url'] = self._get_source_url(token)
         protobuf = self.new_protobuf_container(protobuf)
         return super(File, self).to_protobuf(
             protobuf,
