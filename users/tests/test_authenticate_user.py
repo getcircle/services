@@ -149,12 +149,12 @@ class Test(MockedTestCase):
 
     @patch.object(google_provider.OAuth2Credentials, '_refresh')
     @patch('users.providers.google.verify_id_token')
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_authenticate_user_google_user_exists(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mocked_get_user_info,
             mocked_verify_id_token,
             *args,
             **kwargs
@@ -171,7 +171,7 @@ class Test(MockedTestCase):
             organization_domain=self.organization.domain,
         )
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = {'displayName': 'Michael Hahn'}
+        mocked_get_user_info.return_value = {'name': 'Michael Hahn'}
         mocked_verify_id_token.return_value = self.id_token
         self._mock_get_organization()
         user = factories.UserFactory.create(organization_id=self.organization.id)
@@ -199,19 +199,19 @@ class Test(MockedTestCase):
 
     @patch.object(google_provider.OAuth2Credentials, '_refresh')
     @patch('users.providers.google.verify_id_token')
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_authenticate_user_google_new_user(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mocked_get_user_info,
             mocked_verify_id_token,
             *args,
             **kwargs
         ):
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = {
-            'displayName': 'Michael Hahn',
+        mocked_get_user_info.return_value = {
+            'name': 'Michael Hahn',
             'domain': '%s.com' % (self.organization.domain,),
         }
         mocked_verify_id_token.return_value = self.id_token

@@ -22,6 +22,7 @@ import service.control
 from services.token import make_admin_token
 
 from . import base
+from .base import MissingRequiredProfileFieldError
 from .. import models
 from ..authentication import utils
 
@@ -55,19 +56,33 @@ def get_sso_for_domain(domain):
     return sso
 
 
-def _fetch_provider_profile(access_token):
-    response = requests.get(
-        settings.GOOGLE_PROFILE_URL,
-        headers={'Authorization': 'Bearer %s' % (access_token,)},
-    )
-    if not response.ok:
-        raise base.ExchangeError(response)
+def get_user_info(credentials):
+    """Fetch the user info for the given credentials from google.
 
-    try:
-        payload = response.json()
-    except ValueError:
-        raise base.ExchangeError(response)
-    return payload
+    Args:
+        credentials (oauth2client credentails): oauth2 credentials
+
+    Returns:
+        dictionary of user info
+
+    """
+    info = {}
+    http = credentials.authorize(httplib2.Http())
+    response, content = http.request(settings.GOOGLE_USER_INFO)
+    if response.status != 200:
+        logger.error(
+            'Error fetching google user info',
+            extra={
+                'data': {
+                    'status': response.status,
+                    'response': response,
+                },
+            },
+        )
+        return info
+
+    content = content.decode('utf-8')
+    return json.loads(content)
 
 
 class Provider(base.BaseProvider):
@@ -121,9 +136,6 @@ class Provider(base.BaseProvider):
             settings.GOOGLE_USER_AGENT,
         )
 
-    def _fetch_provider_profile(self, access_token):
-        self.provider_profile = _fetch_provider_profile(access_token)
-
     def _get_credentials_from_code(
             self,
             code,
@@ -150,6 +162,12 @@ class Provider(base.BaseProvider):
         identity.expires_at = arrow.get(credentials.token_expiry).timestamp
         identity.access_token = credentials.access_token
         identity.refresh_token = credentials.refresh_token
+
+        # TODO we should use JSONField or something on the identity so we don't
+        # rely on this being attached to the object
+        self.user_info = get_user_info(credentials)
+        identity.full_name = self.extract_required_profile_field(self.user_info, 'name')
+        identity.data = json.dumps(self.user_info)
 
     def _update_identity_access_token(self, identity, access_token, token_expiry):
         identity.expires_at = arrow.get(token_expiry).timestamp
@@ -181,35 +199,13 @@ class Provider(base.BaseProvider):
         if redirect_uri and utils.valid_redirect_uri(redirect_uri):
             response.redirect_uri = redirect_uri
 
-        token_info = credentials.get_access_token()
-
-        try:
-            self._fetch_provider_profile(token_info.access_token)
-        except base.ExchangeError as e:
-            if e.response.status_code == 401:
-                credentials.refresh(httplib2.Http())
-                self._update_identity_access_token(
-                    identity,
-                    credentials.access_token,
-                    credentials.token_expiry,
-                )
-                self._fetch_provider_profile(credentials.access_token)
-
-        provider_domain = self.extract_required_profile_field(self.provider_profile, 'domain')
-        if provider_domain not in sso.google.domains:
+        domain = credentials.id_token['hd']
+        if domain not in sso.google.domains:
             logger.error(
-                'unverified domain attempt: %s [%s]',
-                self.provider_profile['domain'],
-                list(sso.google.domains),
+                'Unverified domain attempt',
+                extra={'data': {'domain': domain, 'domains': list(sso.google.domains)}},
             )
             raise DomainNotVerified
-
-        identity.full_name = self.extract_required_profile_field(
-            self.provider_profile,
-            'displayName',
-            alias='full_name',
-        )
-        identity.data = json.dumps(self.provider_profile)
 
         # include details to authenticate via google
         response.google_credentials.code = authorization_code
@@ -244,45 +240,25 @@ class Provider(base.BaseProvider):
             raise AuthenticationFailed
         return user
 
-    def _get_name_from_provider(self):
-        first_name = None
-        last_name = None
-        if self.provider_profile:
-            try:
-                first_name = self.provider_profile['name']['givenName']
-                last_name = self.provider_profile['name']['familyName']
-            except KeyError:
-                pass
-
-            if not first_name or not last_name:
-                try:
-                    first_name, last_name = self.provider_profile['displayName'].split(' ', 1)
-                except ValueError:
-                    pass
-
-        return first_name, last_name
-
-    def _get_image_url_from_provider(self):
-        image_url = None
-        image = self.provider_profile.get('image')
-        if image:
-            if not image.get('isDefault', True) and 'url' in image:
-                # image urls may contain query parameters we don't want to include
-                image_url = image['url'].split('?')[0]
-        return image_url
-
     def finalize_authorization(self, user, identity, request, response):
         token = make_admin_token(organization_id=user.organization_id, user_id=user.id)
-        first_name, last_name = self._get_name_from_provider()
-        image_url = self._get_image_url_from_provider()
+        first_name = self.user_info.get('given_name')
+        last_name = self.user_info.get('family_name')
+        name = self.user_info.get('name')
+        if (not first_name or not last_name) and ' ' in name:
+            first_name, last_name = name.split(' ', 1)
+
+        if not any([first_name, last_name, name]):
+            raise MissingRequiredProfileFieldError('name')
+
         parameters = {
             'email': user.primary_email,
             'authentication_identifier': user.primary_email,
             'first_name': first_name,
             'last_name': last_name,
         }
-        if image_url:
-            parameters['image_url'] = image_url
+        if 'picture' in self.user_info:
+            parameters['image_url'] = self.user_info['picture']
 
         try:
             service.control.call_action(

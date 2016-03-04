@@ -224,13 +224,9 @@ GOOGLE_ACCESS_TOKEN_URL = 'https://www.googleapis.com/oauth2/v3/token'
 GOOGLE_REVOKE_TOKEN_URL = 'https://accounts.google.com/o/oauth2/revoke'
 GOOGLE_CLIENT_ID = '1090169577912-57r89ml43udqthb050v57kim3vddlrvu.apps.googleusercontent.com'
 GOOGLE_CLIENT_SECRET = 'nSWzmajmO9vjDuyebn65Y0l9'
-GOOGLE_SCOPE = (
-    'https://www.googleapis.com/auth/plus.login '
-    'https://www.googleapis.com/auth/plus.profile.emails.read '
-    'https://www.google.com/m8/feeds '
-)
+GOOGLE_SCOPE = 'profile email'
 GOOGLE_REDIRECT_URI = 'http://api.local.lunohq.com:8000/user/auth/oauth2/google/'
-GOOGLE_PROFILE_URL = 'https://www.googleapis.com/plus/v1/people/me'
+GOOGLE_USER_INFO = 'https://www.googleapis.com/oauth2/v2/userinfo'
 
 # Google Maps API
 GOOGLE_USER_AGENT = 'lunohq-v1.0'

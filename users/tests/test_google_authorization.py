@@ -38,6 +38,7 @@ class Test(MockedTestCase):
     def setUp(self):
         super(Test, self).setUp()
         self.client = service.control.Client('user')
+        self.organization = mocks.mock_organization()
         self.id_token = {
             'at_hash': 'MfuEK9IFxPzEZpYwqNklfQ',
             'aud': '1077014421904-1a697ks3qvtt6975qfqhmed8529en8s2.apps.googleusercontent.com',
@@ -48,8 +49,8 @@ class Test(MockedTestCase):
             'iat': 1423609229,
             'iss': 'accounts.google.com',
             'sub': '100900090880587164138',
+            'hd': '%s.com' % (self.organization.domain,),
         }
-        self.organization = mocks.mock_organization()
         token = make_admin_token(organization_id=self.organization.id)
         self.authenticated_client = service.control.Client('user', token=token)
         self.mock.instance.dont_mock_service('user')
@@ -72,14 +73,10 @@ class Test(MockedTestCase):
     def _get_state(self):
         return get_state_token(google_provider.Provider.type, {'domain': self.organization.domain})
 
-    def _mock_provider_profile(self, **overrides):
+    def _mock_user_info(self, **overrides):
         defaults = {
-            'displayName': 'Michael Hahn',
-            'domain': '%s.com' % (self.organization.domain,),
-            'image': {
-                'url': 'https://something.com',
-                'isDefault': False,
-            },
+            'name': 'Michael Hahn',
+            'picture': 'https://smoething.com',
         }
         defaults.update(overrides)
 
@@ -112,16 +109,16 @@ class Test(MockedTestCase):
         payload = providers.parse_state_token(user_containers.IdentityV1.GOOGLE, state)
         self.assertTrue(payload['csrftoken'])
 
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mock_user_info,
         ):
 
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile()
+        mock_user_info.return_value = self._mock_user_info()
         response = self.client.call_action(
             'complete_authorization',
             provider=user_containers.IdentityV1.GOOGLE,
@@ -136,15 +133,15 @@ class Test(MockedTestCase):
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
 
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_no_user(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mock_user_info,
         ):
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile()
+        mock_user_info.return_value = self._mock_user_info()
         response = self.client.call_action(
             'complete_authorization',
             provider=user_containers.IdentityV1.GOOGLE,
@@ -167,41 +164,17 @@ class Test(MockedTestCase):
         mock_create_profile = self.mock.instance.mocked_calls[1]
         self.assertIn('image_url', mock_create_profile['params']['profile'])
 
-    @patch('users.providers.google._fetch_provider_profile')
-    @patch('users.providers.google.credentials_from_code')
-    def test_complete_authorization_default_image_url(
-            self,
-            mocked_credentials_from_code,
-            mocked_fetch_profile,
-        ):
-        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile(
-            image={'isDefault': True, 'url': 'https://something'},
-        )
-        self.client.call_action(
-            'complete_authorization',
-            provider=user_containers.IdentityV1.GOOGLE,
-            oauth2_details={
-                'code': 'some-code',
-                'state': self._get_state(),
-            },
-            client_type=token_pb2.WEB,
-        )
-        # verify we don't pull in the default image
-        mock_create_profile = self.mock.instance.mocked_calls[1]
-        self.assertNotIn('image_url', mock_create_profile['params']['profile'])
-
     @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_user_exists(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mock_user_info,
             mocked_get_access_token,
         ):
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile()
+        mock_user_info.return_value = self._mock_user_info()
         user = factories.UserFactory.create()
         identity = factories.IdentityFactory.create(
             user=user,
@@ -226,15 +199,15 @@ class Test(MockedTestCase):
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
 
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_flow_exchange_error(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mock_user_info,
         ):
         mocked_credentials_from_code.side_effect = FlowExchangeError
-        mocked_fetch_profile.return_value = self._mock_provider_profile()
+        mock_user_info.return_value = self._mock_user_info()
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'complete_authorization',
@@ -248,15 +221,15 @@ class Test(MockedTestCase):
 
         self.assertIn('PROVIDER_API_ERROR', expected.exception.response.errors)
 
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_incomplete_profile(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mock_user_info,
         ):
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile(displayName=None)
+        mock_user_info.return_value = self._mock_user_info(name=None)
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'complete_authorization',
@@ -270,37 +243,16 @@ class Test(MockedTestCase):
 
         self.assertIn('PROVIDER_PROFILE_FIELD_MISSING', expected.exception.response.errors)
 
-    @patch('users.providers.google._fetch_provider_profile')
-    @patch('users.providers.google.credentials_from_code')
-    def test_complete_authorization_incomplete_profile_no_domain(
-            self,
-            mocked_credentials_from_code,
-            mocked_fetch_profile,
-        ):
-        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile(domain=None)
-        with self.assertRaisesCallActionError() as expected:
-            self.client.call_action(
-                'complete_authorization',
-                provider=user_containers.IdentityV1.GOOGLE,
-                oauth2_details={
-                    'code': 'some-code',
-                    'state': self._get_state(),
-                },
-                client_type=token_pb2.WEB,
-            )
-
-        self.assertIn('PROVIDER_PROFILE_FIELD_MISSING', expected.exception.response.errors)
-
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_unverified_domain(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mock_user_info,
         ):
+        self.id_token['hd'] = 'unverified'
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile(domain='unverified')
+        mock_user_info.return_value = self._mock_user_info()
         with self.assertRaisesCallActionError() as expected:
             self.client.call_action(
                 'complete_authorization',
@@ -314,62 +266,17 @@ class Test(MockedTestCase):
 
         self.assertIn('INVALID_DOMAIN', expected.exception.response.errors)
 
-    @patch.object(providers.Google, '_get_credentials_from_code')
-    @patch.object(google_provider.OAuth2Credentials, 'refresh')
     @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
-    @patch('users.providers.google._fetch_provider_profile')
-    def test_complete_authorization_token_revoked(
-            self,
-            mocked_fetch_profile,
-            mocked_get_access_token,
-            mocked_refresh,
-            mocked_get_credentials_from_code,
-        ):
-        mock_response = MagicMock()
-        type(mock_response).status_code = 401
-        mocked_fetch_profile.side_effect = [
-            providers.ExchangeError(mock_response),
-            self._mock_provider_profile(),
-        ]
-        mocked_refresh.side_effect = AccessTokenRefreshError
-        mocked_get_credentials_from_code.return_value = MockCredentials(self.id_token)
-        user = factories.UserFactory.create(organization_id=self.organization.id)
-        identity = factories.IdentityFactory.create(
-            user=user,
-            provider_uid=self.id_token['sub'],
-            provider=user_containers.IdentityV1.GOOGLE,
-            organization_id=self.organization.id,
-        )
-        mocked_get_access_token.return_value = AccessTokenInfo(
-            access_token=identity.access_token,
-            expires_in=4333,
-        )
-        response = self.client.call_action(
-            'complete_authorization',
-            provider=user_containers.IdentityV1.GOOGLE,
-            oauth2_details={
-                'code': 'some-code',
-                'state': self._get_state(),
-            },
-            client_type=token_pb2.WEB,
-        )
-        self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
-        self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
-        self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
-        self.assertEqual(response.result.identity.user_id, response.result.user.id)
-        self.assertEqual(mocked_get_credentials_from_code.call_count, 1)
-
-    @patch.object(google_provider.OAuth2Credentials, 'get_access_token')
-    @patch('users.providers.google._fetch_provider_profile')
+    @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')
     def test_complete_authorization_user_exists_no_identity(
             self,
             mocked_credentials_from_code,
-            mocked_fetch_profile,
+            mock_user_info,
             mocked_get_access_token,
         ):
         mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
-        mocked_fetch_profile.return_value = self._mock_provider_profile()
+        mock_user_info.return_value = self._mock_user_info()
         factories.UserFactory.create(primary_email='mwhahn@gmail.com')
         mocked_get_access_token.return_value = AccessTokenInfo(
             access_token=fuzzy.FuzzyUUID().fuzz(),
