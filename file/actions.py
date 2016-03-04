@@ -9,6 +9,7 @@ from service import (
     actions,
     validators,
 )
+import service.control
 
 from services.mixins import PreRunParseTokenMixin
 
@@ -123,10 +124,16 @@ class GetFiles(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             id__in=self.request.ids,
         )
+        organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            client_kwargs={'token': self.token},
+            return_object='organization',
+        )
         self.paginated_response(
             self.response.files,
             files,
-            lambda item, container: item.to_protobuf(container.add(), token=self.token),
+            lambda item, container: item.to_protobuf(container.add(), organization=organization),
         )
 
 

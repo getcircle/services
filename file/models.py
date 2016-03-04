@@ -28,7 +28,7 @@ class File(models.UUIDModel, models.TimestampableModel):
         protobuf = file_containers.FileV1
         index_together = ('id', 'organization_id')
 
-    def _get_source_url(self, token):
+    def _get_source_url(self, organization):
         scheme = 'https'
         frontend_url = settings.FRONTEND_URL
         # If the scheme is already in the front-end URL, take it out.
@@ -36,12 +36,6 @@ class File(models.UUIDModel, models.TimestampableModel):
         if scheme_match:
             scheme = scheme_match.group(1)
             frontend_url = frontend_url[len(scheme + '://'):]
-        organization = service.control.get_object(
-            service='organization',
-            action='get_organization',
-            client_kwargs={'token': token},
-            return_object='organization',
-        )
         domain = organization.domain
         details = {
             'scheme': scheme,
@@ -54,8 +48,18 @@ class File(models.UUIDModel, models.TimestampableModel):
         return '{scheme}://{domain}{dot}{frontend_url}/file/{id}/{name}'.format(**details)
 
     def to_protobuf(self, protobuf=None, inflations=None, token=None, fields=None, **overrides):
-        if token:
-            overrides['source_url'] = self._get_source_url(token)
+        organization = None
+        if 'organization' in overrides:
+            organization = overrides['organization']
+        elif token:
+            organization = service.control.get_object(
+                service='organization',
+                action='get_organization',
+                client_kwargs={'token': token},
+                return_object='organization',
+            )
+        if organization:
+            overrides['source_url'] = self._get_source_url(organization)
         protobuf = self.new_protobuf_container(protobuf)
         return super(File, self).to_protobuf(
             protobuf,
