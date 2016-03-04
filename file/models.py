@@ -17,6 +17,7 @@ class File(models.UUIDModel, models.TimestampableModel):
 
     by_profile_id = models.UUIDField()
     organization_id = models.UUIDField()
+    source_url = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     content_type = models.CharField(max_length=255)
     size = models.BigIntegerField(null=True)

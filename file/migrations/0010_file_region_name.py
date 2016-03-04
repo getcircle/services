@@ -11,8 +11,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
+        migrations.AddField(
             model_name='file',
-            name='source_url',
+            name='region_name',
+            field=models.CharField(default=b'us-west-2', max_length=255),
         ),
     ]
