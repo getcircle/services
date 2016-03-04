@@ -90,14 +90,13 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             self.note_field_error('upload_id', 'UNKNOWN')
             return None, None
 
-        location = response.location
         key = bucket.get_key(self.request.upload_key)
         region_name = bucket.get_location() or 'us-east-1'
-        return location, key, region_name
+        return key, region_name
 
     def run(self, *args, **kwargs):
-        source_url, s3_file, region_name = self._complete_upload()
-        if not source_url:
+        s3_file, region_name = self._complete_upload()
+        if not s3_file:
             return
 
         instance = models.File.objects.create(

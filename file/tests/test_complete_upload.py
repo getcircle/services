@@ -59,7 +59,7 @@ class TestCompleteUpload(MockedTestCase):
 
     @patch.object(actions.CompleteUpload, '_complete_upload')
     def test_complete_upload(self, patched):
-        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), MockFile('text/plain'), 'us-east-1'
+        patched.return_value = MockFile('text/plain'), 'us-east-1'
         response = self.client.call_action(
             'complete_upload',
             upload_id=fuzzy.FuzzyUUID().fuzz(),
@@ -77,7 +77,7 @@ class TestCompleteUpload(MockedTestCase):
 
     @patch.object(actions.CompleteUpload, '_complete_upload')
     def test_complete_upload_content_type_not_required(self, patched):
-        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), MockFile('text/plain'), 'us-east-1'
+        patched.return_value = MockFile('text/plain'), 'us-east-1'
         response = self.client.call_action(
             'complete_upload',
             upload_id=fuzzy.FuzzyUUID().fuzz(),
