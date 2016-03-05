@@ -1,5 +1,6 @@
 from mock import patch
 import service.control
+from django.conf import settings
 
 from services.test import (
     mocks,
@@ -50,8 +51,7 @@ class Test(MockedTestCase):
             file={'name': 'some_file.keynote', 'bytes': b'some bytes'},
         )
         self.assertEqual(response.result.file.name, 'some_file.keynote')
-        self.assertTrue(response.result.file.source_url.startswith('https://somebucket'))
-        self.assertTrue(response.result.file.source_url.endswith('.com'))
+        self.assertTrue(response.result.file.source_url.startswith(settings.FRONTEND_URL))
 
         instance = File.objects.get(pk=response.result.file.id)
         self.assertEqual(instance.name, response.result.file.name)

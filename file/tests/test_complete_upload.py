@@ -26,11 +26,11 @@ class TestCompleteUpload(MockedTestCase):
         super(TestCompleteUpload, self).setUp()
         self.organization = mocks.mock_organization()
         self.profile = mocks.mock_profile()
-        token = mocks.mock_token(
+        self.token = mocks.mock_token(
             organization_id=self.organization.id,
             profile_id=self.profile.id,
         )
-        self.client = service.control.Client('file', token=token)
+        self.client = service.control.Client('file', token=self.token)
         self.mock.instance.dont_mock_service('file')
 
     def test_complete_upload_upload_id_required(self):
@@ -59,7 +59,7 @@ class TestCompleteUpload(MockedTestCase):
 
     @patch.object(actions.CompleteUpload, '_complete_upload')
     def test_complete_upload(self, patched):
-        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), MockFile('text/plain')
+        patched.return_value = MockFile('text/plain'), 'us-east-1'
         response = self.client.call_action(
             'complete_upload',
             upload_id=fuzzy.FuzzyUUID().fuzz(),
@@ -73,11 +73,11 @@ class TestCompleteUpload(MockedTestCase):
         self.assertEqual(upload.name, 'some file.txt')
         self.assertEqual(upload.content_type, 'text/plain')
         file_model = models.File.objects.get(pk=upload.id)
-        self.verify_containers(upload, file_model.to_protobuf())
+        self.verify_containers(upload, file_model.to_protobuf(token=self.token))
 
     @patch.object(actions.CompleteUpload, '_complete_upload')
     def test_complete_upload_content_type_not_required(self, patched):
-        patched.return_value = fuzzy.FuzzyText(prefix='https://').fuzz(), MockFile('text/plain')
+        patched.return_value = MockFile('text/plain'), 'us-east-1'
         response = self.client.call_action(
             'complete_upload',
             upload_id=fuzzy.FuzzyUUID().fuzz(),
@@ -89,4 +89,4 @@ class TestCompleteUpload(MockedTestCase):
         self.assertEqual(upload.organization_id, self.organization.id)
         self.assertEqual(upload.name, 'some file.txt')
         file_model = models.File.objects.get(pk=upload.id)
-        self.verify_containers(upload, file_model.to_protobuf())
+        self.verify_containers(upload, file_model.to_protobuf(token=self.token))

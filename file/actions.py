@@ -1,3 +1,4 @@
+from tempfile import NamedTemporaryFile
 import uuid
 
 import boto3
@@ -8,6 +9,7 @@ from service import (
     actions,
     validators,
 )
+import service.control
 
 from services.mixins import PreRunParseTokenMixin
 
@@ -15,6 +17,15 @@ from . import (
     models,
     utils,
 )
+
+
+def get_client(region_name=None):
+    return boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=region_name or settings.AWS_REGION_NAME,
+    )
 
 
 def get_upload_key(file_name):
@@ -80,24 +91,25 @@ class CompleteUpload(PreRunParseTokenMixin, actions.Action):
             self.note_field_error('upload_id', 'UNKNOWN')
             return None, None
 
-        location = response.location
         key = bucket.get_key(self.request.upload_key)
-        return location, key
+        region_name = bucket.get_location() or 'us-east-1'
+        return key, region_name
 
     def run(self, *args, **kwargs):
-        source_url, s3_file = self._complete_upload()
-        if not source_url:
+        s3_file, region_name = self._complete_upload()
+        if not s3_file:
             return
 
         instance = models.File.objects.create(
             by_profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
-            source_url=source_url,
             name=self.request.file_name,
             content_type=s3_file.content_type,
             size=s3_file.size,
+            key=self.request.upload_key,
+            region_name=region_name,
         )
-        instance.to_protobuf(self.response.file)
+        instance.to_protobuf(self.response.file, token=self.token)
 
 
 class GetFiles(PreRunParseTokenMixin, actions.Action):
@@ -112,10 +124,16 @@ class GetFiles(PreRunParseTokenMixin, actions.Action):
             organization_id=self.parsed_token.organization_id,
             id__in=self.request.ids,
         )
+        organization = service.control.get_object(
+            service='organization',
+            action='get_organization',
+            client_kwargs={'token': self.token},
+            return_object='organization',
+        )
         self.paginated_response(
             self.response.files,
             files,
-            lambda item, container: item.to_protobuf(container.add()),
+            lambda item, container: item.to_protobuf(container.add(), organization=organization),
         )
 
 
@@ -142,12 +160,9 @@ class Upload(PreRunParseTokenMixin, actions.Action):
     required_fields = ('file', 'file.name', 'file.bytes')
 
     def run(self, *args, **kwargs):
-        client = boto3.client(
-            's3',
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        )
-        upload_key = get_upload_key(self.request.file.name)
+        client = get_client()
+        upload_key = uuid.uuid4().hex
+        get_upload_key(self.request.file.name)
         response = client.put_object(
             Bucket=settings.AWS_S3_FILE_BUCKET,
             Body=self.request.file.bytes,
@@ -164,18 +179,36 @@ class Upload(PreRunParseTokenMixin, actions.Action):
         except KeyError:
             raise self.ActionError('UPLOAD_ERROR')
 
-        # boto doesn't have a better way for us to get the plain URL to the resource
-        source_url = client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': settings.AWS_S3_FILE_BUCKET, 'Key': upload_key},
-        ).split('?')[0]
-
         instance = models.File.objects.create(
             by_profile_id=self.parsed_token.profile_id,
             organization_id=self.parsed_token.organization_id,
-            source_url=source_url,
             name=self.request.file.name,
             content_type=self.request.file.content_type,
             size=len(self.request.file.bytes),
+            key=upload_key,
         )
-        instance.to_protobuf(self.response.file)
+        instance.to_protobuf(self.response.file, token=self.token)
+
+
+class GetFile(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('id',)
+    type_validators = {
+        'id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            instance = models.File.objects.get(
+                pk=self.request.id,
+                organization_id=self.parsed_token.organization_id,
+            )
+        except models.File.DoesNotExist:
+            raise self.ActionFieldError('id', 'DOES_NOT_EXIST')
+
+        instance.to_protobuf(self.response.file, token=self.token)
+        with NamedTemporaryFile() as dest:
+            client = get_client(instance.region_name)
+            client.download_file(Bucket=instance.bucket, Key=instance.key, Filename=dest.name)
+            with open(dest.name, 'r') as proxy:
+                self.response.file.bytes = proxy.read()
