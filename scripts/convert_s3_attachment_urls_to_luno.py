@@ -39,9 +39,25 @@ def translate_post(post):
                 organization = Organization.objects.get(
                     pk=post.organization_id,
                 )
-                file = File.objects.get(
-                    pk=data['fileId']
-                )
+                try:
+                    file = File.objects.get(
+                        pk=data['fileId']
+                    )
+                except File.DoesNotExist:
+                    logger.warning(
+                        '[post-id-%s] [file-%s] file not found',
+                        post.id,
+                        data['fileId'],
+                    )
+                    continue
+                except KeyError:
+                    logger.warning(
+                        '[post-id-%s] fileId not found: %s',
+                        post.id,
+                        data,
+                    )
+                    continue
+
                 last_attachment_url = url
                 last_attachment_new_url = file._get_source_url(organization)
                 data['href'] = last_attachment_new_url
