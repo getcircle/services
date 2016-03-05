@@ -9,9 +9,9 @@ class Server(service.control.Server):
     actions = {
         'delete': actions.Delete,
         'complete_upload': actions.CompleteUpload,
+        # TODO remove unused
         'get_files': actions.GetFiles,
         'start_upload': actions.StartUpload,
         'upload': actions.Upload,
-        # TODO remove unused
         'get_file': actions.GetFile,
     }
