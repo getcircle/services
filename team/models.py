@@ -95,7 +95,6 @@ class Team(models.UUIDModel, models.TimestampableModel):
 
     class Meta:
         protobuf = team_containers.TeamV1
-        unique_together = ('organization_id', 'name')
 
 
 class TeamMember(models.UUIDModel, models.TimestampableModel):
