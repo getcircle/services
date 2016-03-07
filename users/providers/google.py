@@ -98,7 +98,14 @@ class Provider(base.BaseProvider):
     }
 
     @classmethod
-    def get_authorization_url(cls, organization, sso=None, redirect_uri=None, **kwargs):
+    def get_authorization_url(
+            cls,
+            organization,
+            sso=None,
+            redirect_uri=None,
+            next_path=None,
+            **kwargs
+        ):
         if not sso:
             sso = get_sso_for_domain(organization.domain)
 
@@ -107,6 +114,9 @@ class Provider(base.BaseProvider):
         }
         if redirect_uri:
             payload['redirect_uri'] = redirect_uri
+
+        if next_path:
+            payload['next_path'] = next_path
 
         scope = settings.GOOGLE_SCOPE.strip()
         parameters = {
@@ -188,6 +198,7 @@ class Provider(base.BaseProvider):
         redirect_uri = state.get('redirect_uri')
         domain = state['domain']
         sso = get_sso_for_domain(domain)
+        next_path = state.get('next_path')
 
         authorization_code = request.oauth2_details.code
         credentials = self._get_credentials_from_code(
@@ -198,6 +209,9 @@ class Provider(base.BaseProvider):
 
         if redirect_uri and utils.valid_redirect_uri(redirect_uri):
             response.redirect_uri = redirect_uri
+
+        if next_path and utils.valid_next_path(next_path):
+            response.next_path = next_path
 
         domain = credentials.id_token['hd']
         if domain not in sso.google.domains:

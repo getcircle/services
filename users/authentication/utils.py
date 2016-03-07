@@ -140,3 +140,7 @@ def valid_redirect_uri(value):
         if re.match(regex, value):
             return True
     return False
+
+
+def valid_next_path(value):
+    return value and value.strip() and len(value) > 1 and value[0] == '/'

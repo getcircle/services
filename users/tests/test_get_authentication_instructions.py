@@ -253,3 +253,56 @@ class Test(MockedTestCase):
 
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
+
+    def test_get_authentication_instructions_invalid(self):
+        with self.assertFieldError('next_path'):
+            self.client.call_action(
+                'get_authentication_instructions',
+                organization_domain=self.organization.domain,
+                next_path='invalid',
+            )
+
+        with self.assertFieldError('next_path'):
+            self.client.call_action(
+                'get_authentication_instructions',
+                organization_domain=self.organization.domain,
+                next_path='https://www.google.com',
+            )
+
+        with self.assertFieldError('next_path'):
+            self.client.call_action(
+                'get_authentication_instructions',
+                organization_domain=self.organization.domain,
+                next_path='www.google.com',
+            )
+
+    def test_get_authentication_instructions_existing_user_google_sso_next_path(self):
+        self._mock_get_organization()
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_sso',
+            return_object_path='sso',
+            return_object=mocks.mock_sso(
+                saml=None,
+                google=sso_pb2.GoogleDetailsV1(domains=['example.com']),
+                provider=sso_pb2.GOOGLE,
+            ),
+            organization_domain=self.organization.domain,
+        )
+        user = factories.UserFactory.create(
+            primary_email='example@example.com',
+            organization_id=self.organization.id,
+        )
+        response = self.client.call_action(
+            'get_authentication_instructions',
+            email=user.primary_email,
+            organization_domain=self.organization.domain,
+            next_path='/profile/1234',
+        )
+        self.assertTrue(response.result.authorization_url)
+        self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.GOOGLE)
+        parsed_url = urlparse.urlparse(response.result.authorization_url)
+        query = dict(urlparse.parse_qsl(parsed_url.query))
+        parsed_state = parse_state_token(user_containers.IdentityV1.GOOGLE, query['state'])
+        self.assertEqual('/profile/1234', parsed_state['next_path'])
+        self.assertEqual(parsed_state['domain'], self.organization.domain)

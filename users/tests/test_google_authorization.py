@@ -70,8 +70,10 @@ class Test(MockedTestCase):
             organization_domain=self.organization.domain,
         )
 
-    def _get_state(self):
-        return get_state_token(google_provider.Provider.type, {'domain': self.organization.domain})
+    def _get_state(self, **kwargs):
+        parameters = {'domain': self.organization.domain}
+        parameters.update(kwargs)
+        return get_state_token(google_provider.Provider.type, parameters)
 
     def _mock_user_info(self, **overrides):
         defaults = {
@@ -124,14 +126,36 @@ class Test(MockedTestCase):
             provider=user_containers.IdentityV1.GOOGLE,
             oauth2_details={
                 'code': 'some-code',
-                'state': self._get_state(),
+                'state': self._get_state(next_path='/profile/1234'),
             },
             client_type=token_pb2.WEB,
         )
+        self.assertEqual(response.result.next_path, '/profile/1234')
         self.assertEqual(response.result.identity.provider, user_containers.IdentityV1.GOOGLE)
         self.assertEqual(response.result.identity.full_name, 'Michael Hahn')
         self.assertEqual(response.result.identity.email, 'mwhahn@gmail.com')
         self.assertEqual(response.result.identity.user_id, response.result.user.id)
+
+    @patch('users.providers.google.get_user_info')
+    @patch('users.providers.google.credentials_from_code')
+    def test_complete_authorization_invalid_next_path(
+            self,
+            mocked_credentials_from_code,
+            mock_user_info,
+        ):
+
+        mocked_credentials_from_code.return_value = MockCredentials(self.id_token)
+        mock_user_info.return_value = self._mock_user_info()
+        response = self.client.call_action(
+            'complete_authorization',
+            provider=user_containers.IdentityV1.GOOGLE,
+            oauth2_details={
+                'code': 'some-code',
+                'state': self._get_state(next_path='www.google.com'),
+            },
+            client_type=token_pb2.WEB,
+        )
+        self.assertFalse(response.result.next_path)
 
     @patch('users.providers.google.get_user_info')
     @patch('users.providers.google.credentials_from_code')

@@ -31,6 +31,7 @@ from . import (
 )
 from .authentication.utils import (
     get_token,
+    valid_next_path,
     valid_redirect_uri,
 )
 
@@ -258,6 +259,7 @@ def get_authorization_instructions(
         sso=None,
         redirect_uri=None,
         login_hint=None,
+        next_path=None,
     ):
     """Return authorization instructions for the given provider.
 
@@ -273,6 +275,8 @@ def get_authorization_instructions(
             provider to redirect to.
         login_hint (Optional[str]): the login_hint we want the identity
             provider to use
+        next_path (Optional[str]): the next_path we want to return to the
+            client after successful login.
 
     Returns:
         tuple: tuple of authorization_url (str), provider_name (str)
@@ -294,6 +298,7 @@ def get_authorization_instructions(
             sso=sso,
             login_hint=login_hint,
             redirect_uri=redirect_uri,
+            next_path=next_path,
         )
         provider_name = 'Google'
     elif provider == user_containers.IdentityV1.OKTA:
@@ -301,6 +306,7 @@ def get_authorization_instructions(
             organization=organization,
             sso=sso,
             redirect_uri=redirect_uri,
+            next_path=next_path,
         )
         provider_name = 'Okta'
     elif provider == user_containers.IdentityV1.SLACK:
@@ -572,6 +578,7 @@ class GetAuthenticationInstructions(actions.Action):
     type_validators = {
         'email': [validate_email],
         'redirect_uri': [valid_redirect_uri],
+        'next_path': [valid_next_path],
     }
 
     def _get_authorization_instructions(self, provider, organization, sso, **kwargs):
@@ -581,6 +588,7 @@ class GetAuthenticationInstructions(actions.Action):
             organization=organization,
             redirect_uri=self.request.redirect_uri,
             sso=sso,
+            next_path=self.request.next_path,
         )
 
     def _populate_instructions(self, provider, organization, sso):

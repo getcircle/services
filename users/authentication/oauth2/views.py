@@ -31,9 +31,13 @@ class OAuth2Handler(APIView):
             'identity': response.result.identity,
             'google_credentials': response.result.google_credentials,
         }
+        parameters = {
+            'next_path': response.result.next_path,
+        }
         return authorization_redirect(
             name='auth-success',
             redirect_uri=response.result.redirect_uri,
+            query_params=parameters,
             protobuf_query_params=protobuf_parameters,
         )
 
