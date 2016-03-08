@@ -149,6 +149,7 @@ class Collection(models.UUIDModel, models.TimestampableModel):
 
     as_dict_value_transforms = {
         'owner_type': int,
+        'position': int,
     }
 
     organization_id = models.UUIDField(editable=False)
@@ -162,10 +163,14 @@ class Collection(models.UUIDModel, models.TimestampableModel):
     # owner_type and owner_id
     is_default = models.NullBooleanField(editable=False, null=True)
     by_profile_id = models.UUIDField(null=True, editable=False)
+    position = models.PositiveSmallIntegerField()
 
     class Meta:
         index_together = ('id', 'organization_id')
-        unique_together = ('organization_id', 'owner_id', 'owner_type', 'is_default')
+        unique_together = (
+            ('organization_id', 'owner_id', 'owner_type', 'is_default'),
+            ('organization_id', 'owner_id', 'owner_type', 'position'),
+        )
         protobuf = post_containers.CollectionV1
 
 
