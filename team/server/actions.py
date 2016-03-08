@@ -85,7 +85,7 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
 
         members = list(self.request.members)
         members.append(coordinator)
-        add_members(members, team.id, organization_id=self.parsed_token.organization_id)
+        members = add_members(members, team.id, organization_id=self.parsed_token.organization_id)
 
         permissions_dict = get_permissions_for_teams(
             team_ids=[team.id],
@@ -106,6 +106,10 @@ class CreateTeam(PreRunParseTokenMixin, actions.Action):
             inflations={'exclude': ['total_items']},
         )
         self.response.collection.CopyFrom(collection)
+
+        for member in members:
+            container = self.response.members.add()
+            member.to_protobuf(container)
 
 
 class AddMembers(TeamExistsAction):
