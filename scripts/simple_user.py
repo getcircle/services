@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 def run(domain, first_name, last_name, email):
     Bootstrap.bootstrap()
     organization = Organization.objects.get(domain=domain)
-    user = User.objects.create(primary_email=email)
+    user = User.objects.create(
+        primary_email=email,
+        organization_id=organization.id,
+    )
     user.set_password('rhlabs')
     Profile.objects.create(
         first_name=first_name,
