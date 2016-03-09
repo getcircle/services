@@ -2,6 +2,7 @@ import logging
 
 from bulk_update.helper import bulk_update
 from common import utils
+from django.db import transaction
 from django.db.models import (
     Count,
     F,
@@ -438,6 +439,43 @@ def add_to_collections(item, collections, organization_id, by_profile_id, token)
     return items
 
 
+# XXX review this, it assumes we're not removing an item from many #
+# collections at once
+@transaction.atomic
+def _atomic_remove(item, collections, organization_id):
+    items = models.CollectionItem.objects.filter(
+        organization_id=organization_id,
+        source_id=item.source_id,
+        source=item.source,
+        collection_id__in=[c.id for c in collections],
+    )
+    try:
+        assert len(items) <= len(collections)
+    except AssertionError:
+        logger.error(
+            'Attempting to remove more items than originally specified: %d vs. %d',
+            len(items),
+            len(collections),
+        )
+        raise
+    else:
+        collection_dict = {}
+        for item in items:
+            collection_dict[item.collection_id] = list(models.CollectionItem.objects.filter(
+                organization_id=organization_id,
+                collection_id=item.collection_id,
+                position__gt=item.position,
+            ).values_list('pk', flat=True))
+
+        items.delete()
+        for collection_id, item_ids in collection_dict.iteritems():
+            models.CollectionItem.objects.filter(
+                organization_id=organization_id,
+                collection_id=collection_id,
+                pk__in=item_ids,
+            ).update(position=F('position') - 1)
+
+
 def remove_from_collections(
         item,
         collections,
@@ -464,32 +502,7 @@ def remove_from_collections(
         token=token,
     )
     if collections:
-        items = models.CollectionItem.objects.filter(
-            organization_id=organization_id,
-            source_id=item.source_id,
-            source=item.source,
-            collection_id__in=[c.id for c in collections],
-        )
-        positions = [{'collection_id': i.collection_id, 'position': i.position} for i in items]
-        try:
-            assert len(items) <= len(collections)
-        except AssertionError:
-            logger.error(
-                'Attempting to remove more items than originally specified: %d vs. %d',
-                len(items),
-                len(collections),
-            )
-            raise
-        else:
-            items.delete()
-            # XXX review this, it assumes we're not removing an item from many
-            # collections at once
-            for position in positions:
-                models.CollectionItem.objects.filter(
-                    organization_id=organization_id,
-                    collection_id=position['collection_id'],
-                    position__gt=position['position'],
-                ).update(position=F('position') - 1)
+        _atomic_remove(item, collections, organization_id)
 
 
 def update_collection(container, organization_id, by_profile_id, token):
