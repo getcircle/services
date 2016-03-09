@@ -1,4 +1,4 @@
-from protobufs.services.post.actions.reorder_collection_pb2 import PositionDiffV1
+from protobufs.services.post.containers_pb2 import PositionDiffV1
 from protobufs.services.team import containers_pb2 as team_containers
 import service.control
 

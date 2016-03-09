@@ -353,7 +353,7 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
         collection_id (str): id of the collection
         organization_id (str): id of the organization
         by_profile_id (str): id of the profile requesting the reorder
-        position_diffs (List[services.post.actions.reorder_collection.PositionDiffV1]):
+        position_diffs (List[services.post.containers_pb2.PositionDiffV1]):
             posiiton diff of items that have been reordered in the collection
         token (str): service token
 
