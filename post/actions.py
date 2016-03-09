@@ -745,13 +745,6 @@ def get_collection_id_to_items_dict(
     ):
     """Get up to `number_of_items` items for the collections.
 
-    When listing collections we can display a "preview" of whats in the
-    collection, which means partially inflating the items within the
-    collection.
-
-    This will select up to `number_of_items` for the collection in the most
-    optimal way possible based on fields and inflations.
-
     Args:
         collection_ids (List[str]): list of collection ids
         number_of_items (int): top number of items to return for each
@@ -764,25 +757,11 @@ def get_collection_id_to_items_dict(
         dictionary of <collection_id>: <services.post.containers.CollectionItemV1>
 
     """
-    queries = []
-    parameters = {'organization_id': organization_id}
-    # XXX come up with a way to cache this
-    for index, collection_id in enumerate(collection_ids):
-        collection_key = 'collection_id_%s' % (index,)
-        parameters[collection_key] = collection_id
-        query = (
-            '(SELECT * FROM %s '
-            'WHERE organization_id = %%(organization_id)s '
-            'AND collection_id = %%(%s)s '
-            'ORDER BY position LIMIT %d)'
-        ) % (models.CollectionItem._meta.db_table, collection_key, int(number_of_items))
-        queries.append(query)
-
-    if not queries:
-        return {}
-
-    query = ' union all '.join(queries)
-    items = list(models.CollectionItem.objects.raw(query, parameters))
+    items = models.CollectionItem.objects.filter(
+        organization_id=organization_id,
+        position__lt=number_of_items,
+        collection_id__in=collection_ids,
+    )
     containers = inflate_items_source(
         items=items,
         organization_id=organization_id,
