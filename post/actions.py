@@ -4,6 +4,7 @@ from bulk_update.helper import bulk_update
 from common import utils
 from django.db.models import (
     Count,
+    F,
     Max,
     Q,
 )
@@ -469,6 +470,7 @@ def remove_from_collections(
             source=item.source,
             collection_id__in=[c.id for c in collections],
         )
+        positions = [{'collection_id': i.collection_id, 'position': i.position} for i in items]
         try:
             assert len(items) <= len(collections)
         except AssertionError:
@@ -480,6 +482,14 @@ def remove_from_collections(
             raise
         else:
             items.delete()
+            # XXX review this, it assumes we're not removing an item from many
+            # collections at once
+            for position in positions:
+                models.CollectionItem.objects.filter(
+                    organization_id=organization_id,
+                    collection_id=position['collection_id'],
+                    position__gt=position['position'],
+                ).update(position=F('position') - 1)
 
 
 def update_collection(container, organization_id, by_profile_id, token):
