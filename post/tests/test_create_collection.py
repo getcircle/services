@@ -128,7 +128,6 @@ class Test(MockedTestCase):
             collection=mocks.mock_collection(
                 id=None,
                 owner_type=post_containers.CollectionV1.PROFILE,
-                owner_id=fuzzy.uuid(),
             ),
         )
         first_collection = response.result.collection
@@ -139,25 +138,23 @@ class Test(MockedTestCase):
             collection=mocks.mock_collection(
                 id=None,
                 owner_type=post_containers.CollectionV1.PROFILE,
-                owner_id=fuzzy.uuid(),
             ),
         )
         second_collection = response.result.collection
-        self.assertEqual(0, second_collection.position)
+        self.assertEqual(1, second_collection.position)
         first_collection = models.Collection.objects.get(pk=first_collection.id)
-        self.assertEqual(1, first_collection.position)
+        self.assertEqual(0, first_collection.position)
 
         response = self.client.call_action(
             'create_collection',
             collection=mocks.mock_collection(
                 id=None,
                 owner_type=post_containers.CollectionV1.PROFILE,
-                owner_id=fuzzy.uuid(),
             ),
         )
         third_collection = response.result.collection
-        self.assertEqual(0, third_collection.position)
+        self.assertEqual(2, third_collection.position)
         second_collection = models.Collection.objects.get(pk=second_collection.id)
         self.assertEqual(1, second_collection.position)
         first_collection = models.Collection.objects.get(pk=first_collection.id)
-        self.assertEqual(2, first_collection.position)
+        self.assertEqual(0, first_collection.position)

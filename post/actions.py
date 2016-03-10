@@ -260,17 +260,18 @@ def create_collection(container, organization_id, by_profile_id, token):
     elif container.owner_type == post_containers.CollectionV1.PROFILE:
         container.owner_id = by_profile_id
 
-    models.Collection.objects.filter(
+    bottom_position = models.Collection.objects.filter(
         organization_id=organization_id,
         owner_id=container.owner_id,
         owner_type=container.owner_type,
-    ).update(position=F('position') + 1)
+    ).aggregate(Max('position'))['position__max']
+    next_position = bottom_position + 1 if bottom_position is not None else 0
 
     return models.Collection.objects.from_protobuf(
         container,
         organization_id=organization_id,
         by_profile_id=profile_id,
-        position=0,
+        position=next_position,
     )
 
 
