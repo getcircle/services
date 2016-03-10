@@ -344,7 +344,18 @@ def delete_collection(collection_id, organization_id, by_profile_id, token):
         token=token,
     )
 
+    position = collection.position
+    owner_id = collection.owner_id
+    owner_type = collection.owner_type
+
     collection.delete()
+
+    models.Collection.objects.filter(
+        organization_id=organization_id,
+        owner_id=owner_id,
+        owner_type=owner_type,
+        position__gt=position,
+    ).update(position=F('position') - 1)
 
 
 def reorder_collection(collection_id, organization_id, by_profile_id, position_diffs, token):
