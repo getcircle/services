@@ -435,9 +435,9 @@ def reorder_collections(organization_id, by_profile_id, position_diffs, token):
         )
 
         # normalize the positions relative to the slice we fetched from the db
-        diff.current_position = diff.current_position - min_position
         diff.new_position = diff.new_position - min_position
-        collection = collections.pop(diff.current_position)
+        current_position = [idx for idx, collection in enumerate(collections) if str(collection.id) == diff.item_id][0]
+        collection = collections.pop(current_position)
         collections.insert(diff.new_position, collection)
 
     for index, collection in enumerate(collections):
