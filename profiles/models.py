@@ -19,7 +19,6 @@ class ProfileManager(models.Manager):
             owner_id=profile.id,
             organization_id=profile.organization_id,
             is_default=True,
-            position=0,
         )
         return profile
 
@@ -34,7 +33,6 @@ class ProfileManager(models.Manager):
                 owner_id=profile.id,
                 organization_id=profile.organization_id,
                 is_default=True,
-                position=0,
             )
             collections.append(collection)
         post_models.Collection.objects.bulk_create(collections)

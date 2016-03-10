@@ -163,7 +163,7 @@ class Collection(models.UUIDModel, models.TimestampableModel):
     # owner_type and owner_id
     is_default = models.NullBooleanField(editable=False, null=True)
     by_profile_id = models.UUIDField(null=True, editable=False)
-    position = models.PositiveSmallIntegerField()
+    position = models.PositiveSmallIntegerField(null=True)
 
     class Meta:
         index_together = ('id', 'organization_id')
