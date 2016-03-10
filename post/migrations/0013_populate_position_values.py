@@ -12,7 +12,7 @@ def gen_position(apps, schema_editor):
             organization_id=owner_info[0],
             owner_id=owner_info[1],
             owner_type=owner_info[2],
-        ).order_by('created')
+        ).order_by('-created')
         for idx, collection in enumerate(owner_collections):
             collection.position = idx
             collection.save()
