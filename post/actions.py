@@ -2,8 +2,10 @@ import logging
 
 from bulk_update.helper import bulk_update
 from common import utils
+from django.db import transaction
 from django.db.models import (
     Count,
+    F,
     Max,
     Q,
 )
@@ -382,9 +384,9 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
 
     for diff in position_diffs:
         # noramlize the positions relative to the slice we fetched from the db
-        diff.current_position = diff.current_position - min_position
         diff.new_position = diff.new_position - min_position
-        item = items.pop(diff.current_position)
+        current_position = [i for i, item in enumerate(items) if str(item.id) == diff.item_id][0]
+        item = items.pop(current_position)
         items.insert(diff.new_position, item)
 
     for index, item in enumerate(items):
@@ -498,6 +500,43 @@ def add_to_collections(item, collections, organization_id, by_profile_id, token)
     return items
 
 
+# XXX review this, it assumes we're not removing an item from many #
+# collections at once
+@transaction.atomic
+def _atomic_remove(item, collections, organization_id):
+    items = models.CollectionItem.objects.filter(
+        organization_id=organization_id,
+        source_id=item.source_id,
+        source=item.source,
+        collection_id__in=[c.id for c in collections],
+    )
+    try:
+        assert len(items) <= len(collections)
+    except AssertionError:
+        logger.error(
+            'Attempting to remove more items than originally specified: %d vs. %d',
+            len(items),
+            len(collections),
+        )
+        raise
+    else:
+        collection_dict = {}
+        for item in items:
+            collection_dict[item.collection_id] = list(models.CollectionItem.objects.filter(
+                organization_id=organization_id,
+                collection_id=item.collection_id,
+                position__gt=item.position,
+            ).values_list('pk', flat=True))
+
+        items.delete()
+        for collection_id, item_ids in collection_dict.iteritems():
+            models.CollectionItem.objects.filter(
+                organization_id=organization_id,
+                collection_id=collection_id,
+                pk__in=item_ids,
+            ).update(position=F('position') - 1)
+
+
 def remove_from_collections(
         item,
         collections,
@@ -524,23 +563,7 @@ def remove_from_collections(
         token=token,
     )
     if collections:
-        items = models.CollectionItem.objects.filter(
-            organization_id=organization_id,
-            source_id=item.source_id,
-            source=item.source,
-            collection_id__in=[c.id for c in collections],
-        )
-        try:
-            assert len(items) <= len(collections)
-        except AssertionError:
-            logger.error(
-                'Attempting to remove more items than originally specified: %d vs. %d',
-                len(items),
-                len(collections),
-            )
-            raise
-        else:
-            items.delete()
+        _atomic_remove(item, collections, organization_id)
 
 
 def update_collection(container, organization_id, by_profile_id, token):
@@ -806,13 +829,6 @@ def get_collection_id_to_items_dict(
     ):
     """Get up to `number_of_items` items for the collections.
 
-    When listing collections we can display a "preview" of whats in the
-    collection, which means partially inflating the items within the
-    collection.
-
-    This will select up to `number_of_items` for the collection in the most
-    optimal way possible based on fields and inflations.
-
     Args:
         collection_ids (List[str]): list of collection ids
         number_of_items (int): top number of items to return for each
@@ -825,25 +841,11 @@ def get_collection_id_to_items_dict(
         dictionary of <collection_id>: <services.post.containers.CollectionItemV1>
 
     """
-    queries = []
-    parameters = {'organization_id': organization_id}
-    # XXX come up with a way to cache this
-    for index, collection_id in enumerate(collection_ids):
-        collection_key = 'collection_id_%s' % (index,)
-        parameters[collection_key] = collection_id
-        query = (
-            '(SELECT * FROM %s '
-            'WHERE organization_id = %%(organization_id)s '
-            'AND collection_id = %%(%s)s '
-            'ORDER BY position LIMIT %d)'
-        ) % (models.CollectionItem._meta.db_table, collection_key, int(number_of_items))
-        queries.append(query)
-
-    if not queries:
-        return {}
-
-    query = ' union all '.join(queries)
-    items = list(models.CollectionItem.objects.raw(query, parameters))
+    items = models.CollectionItem.objects.filter(
+        organization_id=organization_id,
+        position__lt=number_of_items,
+        collection_id__in=collection_ids,
+    )
     containers = inflate_items_source(
         items=items,
         organization_id=organization_id,

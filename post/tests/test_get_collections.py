@@ -84,11 +84,12 @@ class Test(MockedTestCase):
                 size=10,
                 organization_id=self.organization.id,
             )
-            for post in posts:
+            for index, post in enumerate(posts):
                 factories.CollectionItemFactory.create(
                     collection=collection,
                     source=post_containers.CollectionItemV1.LUNO,
                     source_id=str(post.id),
+                    position=index,
                 )
 
         response = self.client.call_action(
@@ -115,11 +116,12 @@ class Test(MockedTestCase):
                 size=10,
                 organization_id=self.organization.id,
             )
-            for post in posts:
+            for index, post in enumerate(posts):
                 factories.CollectionItemFactory.create(
                     collection=collection,
                     source=post_containers.CollectionItemV1.LUNO,
                     source_id=str(post.id),
+                    position=index,
                 )
 
         response = self.client.call_action(

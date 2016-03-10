@@ -72,6 +72,10 @@ class Test(MockedTestCase):
         team = response.result.team
         self.verify_containers(container, team, ignore_fields=('description'))
 
+        # verify we returned members in the response
+        # + 1 for coordinator
+        self.assertEqual(len(response.result.members), len(members) + 1)
+
         # verify the user who created the team was added as a coordinator
         coordinator = models.TeamMember.objects.get(team_id=team.id, profile_id=self.profile.id)
         self.assertEqual(coordinator.role, team_containers.TeamMemberV1.COORDINATOR)

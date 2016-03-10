@@ -130,3 +130,22 @@ class Test(MockedTestCase):
         mock_get_team(self.mock.instance, team, admin=True)
         collection = factories.CollectionFactory.create(team=team)
         self._verify_can_remove_from_collections([collection])
+
+    def test_remove_from_collections_reorder_items(self):
+        collection = factories.CollectionFactory.create(profile=self.profile)
+        items = factories.CollectionItemFactory.create_protobufs(size=5, collection=collection)
+        self.client.call_action(
+            'remove_from_collections',
+            item=items[2],
+            collections=[collection.to_protobuf()],
+        )
+        self.assertEqual(
+            models.CollectionItem.objects.filter(collection_id=collection.id).count(),
+            len(items) - 1,
+        )
+        verify_items = models.CollectionItem.objects.filter(collection_id=collection.id).order_by(
+            'position'
+        )
+        self.assertEqual(len(verify_items), len(items) - 1)
+        for index, item in enumerate(verify_items):
+            self.assertEqual(index, item.position)
