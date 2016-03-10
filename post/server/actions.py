@@ -26,6 +26,7 @@ from ..actions import (
     inflate_items_source,
     remove_from_collections,
     reorder_collection,
+    reorder_collections,
     update_collection,
 )
 from ..mixins import PostPermissionsMixin
@@ -296,6 +297,22 @@ class ReorderCollection(PreRunParseTokenMixin, actions.Action):
         try:
             reorder_collection(
                 collection_id=self.request.collection_id,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+                position_diffs=self.request.diffs,
+                token=self.token,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+
+class ReorderCollections(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('diffs',)
+
+    def run(self, *args, **kwargs):
+        try:
+            reorder_collections(
                 organization_id=self.parsed_token.organization_id,
                 by_profile_id=self.parsed_token.profile_id,
                 position_diffs=self.request.diffs,

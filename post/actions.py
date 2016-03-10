@@ -393,6 +393,59 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
     bulk_update(items, update_fields=['position', 'changed'])
 
 
+def reorder_collections(organization_id, by_profile_id, position_diffs, token):
+    """Reorder collections.
+
+    Args:
+        organization_id (str): id of the organization
+        by_profile_id (str): id of the profile requesting the reorder
+        position_diffs (List[services.post.containers_pb2.PositionDiffV1]):
+            posiiton diff of collections that have been reordered
+        token (str): service token
+
+    Raises:
+        post.models.Collection.DoesNotExist if the collection does not exist or
+            the collection has a different owner than the others
+        Action.PermissionDenied if the user doesn't have permission to edit
+            the collection
+
+    """
+    min_position = min([position for diff in position_diffs
+                        for position in (diff.current_position, diff.new_position)])
+
+    first_collection = models.Collection.objects.get(pk=position_diffs[0].item_id)
+    collections = list(models.Collection.objects.filter(
+        organization_id=organization_id,
+        owner_id=first_collection.owner_id,
+        owner_type=first_collection.owner_type,
+        position__gte=min_position,
+    ).order_by('position'))
+    collection_ids = [str(collection.id) for collection in collections]
+
+    for diff in position_diffs:
+        if diff.item_id not in collection_ids:
+            raise models.Collection.DoesNotExist
+
+        check_collection_permission(
+            permission='can_edit',
+            collection_id=diff.item_id,
+            organization_id=organization_id,
+            by_profile_id=by_profile_id,
+            token=token,
+        )
+
+        # normalize the positions relative to the slice we fetched from the db
+        diff.current_position = diff.current_position - min_position
+        diff.new_position = diff.new_position - min_position
+        collection = collections.pop(diff.current_position)
+        collections.insert(diff.new_position, collection)
+
+    for index, collection in enumerate(collections):
+        collection.position = index + min_position
+
+    bulk_update(collections, update_fields=['position', 'changed'])
+
+
 def add_to_collections(item, collections, organization_id, by_profile_id, token):
     """Add an item to a collection.
 
