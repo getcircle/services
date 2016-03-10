@@ -440,7 +440,10 @@ def reorder_collections(organization_id, by_profile_id, position_diffs, token):
         if not getattr(permissions, 'can_edit'):
             raise Action.PermissionDenied()
 
-    reorder_collection_objects(collections, position_diffs, min_position)
+    try:
+        reorder_collection_objects(collections, position_diffs, min_position)
+    except IndexError:
+        raise models.Collection.DoesNotExist
 
     for index, collection in enumerate(collections):
         collection.position = index + min_position
