@@ -435,17 +435,19 @@ def reorder_collections(organization_id, by_profile_id, position_diffs, token):
     ).order_by('position'))
     collection_ids = [str(collection.id) for collection in collections]
 
+    collections_to_permissions = get_permissions_for_collections(
+        collections=collections,
+        by_profile_id=by_profile_id,
+        token=token,
+    )
+    for collection_id in collection_ids:
+        permissions = collections_to_permissions[collection_id]
+        if not getattr(permissions, 'can_edit'):
+            raise Action.PermissionDenied()
+
     for diff in position_diffs:
         if diff.item_id not in collection_ids:
             raise models.Collection.DoesNotExist
-
-        check_collection_permission(
-            permission='can_edit',
-            collection_id=diff.item_id,
-            organization_id=organization_id,
-            by_profile_id=by_profile_id,
-            token=token,
-        )
 
         # normalize the positions relative to the slice we fetched from the db
         diff.new_position = diff.new_position - min_position
