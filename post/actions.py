@@ -393,12 +393,7 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
         position__gte=min_position,
     ).order_by('position'))
 
-    for diff in position_diffs:
-        # noramlize the positions relative to the slice we fetched from the db
-        diff.new_position = diff.new_position - min_position
-        current_position = [i for i, item in enumerate(items) if str(item.id) == diff.item_id][0]
-        item = items.pop(current_position)
-        items.insert(diff.new_position, item)
+    reorder_collection_objects(items, position_diffs, min_position)
 
     for index, item in enumerate(items):
         item.position = index + min_position
@@ -445,20 +440,21 @@ def reorder_collections(organization_id, by_profile_id, position_diffs, token):
         if not getattr(permissions, 'can_edit'):
             raise Action.PermissionDenied()
 
-    for diff in position_diffs:
-        if diff.item_id not in collection_ids:
-            raise models.Collection.DoesNotExist
-
-        # normalize the positions relative to the slice we fetched from the db
-        diff.new_position = diff.new_position - min_position
-        current_position = [idx for idx, collection in enumerate(collections) if str(collection.id) == diff.item_id][0]
-        collection = collections.pop(current_position)
-        collections.insert(diff.new_position, collection)
+    reorder_collection_objects(collections, position_diffs, min_position)
 
     for index, collection in enumerate(collections):
         collection.position = index + min_position
 
     bulk_update(collections, update_fields=['position', 'changed'])
+
+
+def reorder_collection_objects(objects, position_diffs, min_position):
+    for diff in position_diffs:
+        # normalize the positions relative to the slice we fetched from the db
+        diff.new_position = diff.new_position - min_position
+        current_position = [idx for idx, obj in enumerate(objects) if str(obj.id) == diff.item_id][0]
+        obj = objects.pop(current_position)
+        objects.insert(diff.new_position, obj)
 
 
 def add_to_collections(item, collections, organization_id, by_profile_id, token):
