@@ -1,3 +1,4 @@
+import mock
 import urlparse
 
 import service.control
@@ -254,27 +255,49 @@ class Test(MockedTestCase):
         self.assertFalse(response.result.authorization_url)
         self.assertEqual(response.result.backend, authenticate_user_pb2.RequestV1.INTERNAL)
 
-    def test_get_authentication_instructions_invalid(self):
-        with self.assertFieldError('next_path'):
-            self.client.call_action(
-                'get_authentication_instructions',
-                organization_domain=self.organization.domain,
-                next_path='invalid',
-            )
+    @mock.patch('users.actions.get_authorization_instructions')
+    def test_get_authentication_instructions_next_path(self, mocked):
+        self._mock_get_organization()
+        self.mock.instance.register_mock_object(
+            service='organization',
+            action='get_sso',
+            return_object_path='sso',
+            return_object=mocks.mock_sso(
+                saml=None,
+                google=sso_pb2.GoogleDetailsV1(domains=['example.com']),
+                provider=sso_pb2.GOOGLE,
+            ),
+            organization_domain=self.organization.domain,
+        )
+        mocked.return_value = ('http://google.com', 'Google')
 
-        with self.assertFieldError('next_path'):
-            self.client.call_action(
-                'get_authentication_instructions',
-                organization_domain=self.organization.domain,
-                next_path='https://www.google.com',
-            )
+        self.client.call_action(
+            'get_authentication_instructions',
+            organization_domain=self.organization.domain,
+            next_path='invalid',
+        )
+        self.assertFalse(mocked.call_args[1]['next_path'])
 
-        with self.assertFieldError('next_path'):
-            self.client.call_action(
-                'get_authentication_instructions',
-                organization_domain=self.organization.domain,
-                next_path='www.google.com',
-            )
+        self.client.call_action(
+            'get_authentication_instructions',
+            organization_domain=self.organization.domain,
+            next_path='https://www.google.com',
+        )
+        self.assertFalse(mocked.call_args[1]['next_path'])
+
+        self.client.call_action(
+            'get_authentication_instructions',
+            organization_domain=self.organization.domain,
+            next_path='www.google.com',
+        )
+        self.assertFalse(mocked.call_args[1]['next_path'])
+
+        self.client.call_action(
+            'get_authentication_instructions',
+            organization_domain=self.organization.domain,
+            next_path='/valid/nextpath',
+        )
+        self.assertEqual(mocked.call_args[1]['next_path'], '/valid/nextpath')
 
     def test_get_authentication_instructions_existing_user_google_sso_next_path(self):
         self._mock_get_organization()

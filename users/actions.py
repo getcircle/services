@@ -578,8 +578,13 @@ class GetAuthenticationInstructions(actions.Action):
     type_validators = {
         'email': [validate_email],
         'redirect_uri': [valid_redirect_uri],
-        'next_path': [valid_next_path],
     }
+
+    def validate(self, *args, **kwargs):
+        super(GetAuthenticationInstructions, self).validate(*args, **kwargs)
+        if not self.is_error():
+            if self.request.next_path and not valid_next_path(self.request.next_path):
+                self.request.ClearField('next_path')
 
     def _get_authorization_instructions(self, provider, organization, sso, **kwargs):
         return get_authorization_instructions(
