@@ -8,6 +8,10 @@ from services.test import (
     MockedTestCase,
 )
 
+from .. import (
+    models,
+)
+
 from .helpers import (
     mock_get_team,
     mock_get_teams,
@@ -117,3 +121,43 @@ class Test(MockedTestCase):
             self.client.call_action('create_collection', collection=collection)
 
         self.assertIn('PERMISSION_DENIED', expected.exception.response.errors)
+
+    def test_create_collection_reorder_collections(self):
+        response = self.client.call_action(
+            'create_collection',
+            collection=mocks.mock_collection(
+                id=None,
+                owner_type=post_containers.CollectionV1.PROFILE,
+                owner_id=fuzzy.uuid(),
+            ),
+        )
+        first_collection = response.result.collection
+        self.assertEqual(0, first_collection.position)
+
+        response = self.client.call_action(
+            'create_collection',
+            collection=mocks.mock_collection(
+                id=None,
+                owner_type=post_containers.CollectionV1.PROFILE,
+                owner_id=fuzzy.uuid(),
+            ),
+        )
+        second_collection = response.result.collection
+        self.assertEqual(0, second_collection.position)
+        first_collection = models.Collection.objects.get(pk=first_collection.id)
+        self.assertEqual(1, first_collection.position)
+
+        response = self.client.call_action(
+            'create_collection',
+            collection=mocks.mock_collection(
+                id=None,
+                owner_type=post_containers.CollectionV1.PROFILE,
+                owner_id=fuzzy.uuid(),
+            ),
+        )
+        third_collection = response.result.collection
+        self.assertEqual(0, third_collection.position)
+        second_collection = models.Collection.objects.get(pk=second_collection.id)
+        self.assertEqual(1, second_collection.position)
+        first_collection = models.Collection.objects.get(pk=first_collection.id)
+        self.assertEqual(2, first_collection.position)
