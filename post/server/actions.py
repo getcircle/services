@@ -242,6 +242,11 @@ class DeletePost(PostPermissionsMixin, actions.Action):
             raise self.PermissionDenied()
 
         trix.delete_post(post.content, self.token)
+        models.CollectionItem.objects.filter(
+            organization_id=self.parsed_token.organization_id,
+            source=post_containers.CollectionItemV1.LUNO,
+            source_id=str(post.id),
+        ).delete()
         post.delete()
 
 

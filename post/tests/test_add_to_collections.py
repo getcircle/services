@@ -139,3 +139,16 @@ class Test(MockedTestCase):
         )
         item = response.result.items[0]
         self.assertEqual(item.position, 10)
+
+    def test_add_to_collections_deleting_post_removes_from_collection(self):
+        factories.CollectionItemFactory.create_batch(size=3, organization_id=self.organization.id)
+        collections = factories.CollectionFactory.create_protobufs(size=3, profile=self.profile)
+        post = factories.PostFactory.create(profile=self.profile)
+        self.client.call_action(
+            'add_to_collections',
+            collections=collections,
+            item={'source_id': str(post.id)},
+        )
+        self.assertTrue(models.CollectionItem.objects.filter(source_id=str(post.id)).count())
+        self.client.call_action('delete_post', id=str(post.id))
+        self.assertFalse(models.CollectionItem.objects.filter(source_id=str(post.id)).count())
