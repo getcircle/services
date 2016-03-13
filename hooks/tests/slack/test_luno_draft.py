@@ -158,8 +158,8 @@ class Test(MockedTestCase):
 
     def test_replace_slack_links_with_post_links(self):
         txt = 'check this out '
-        link = 'ftp://site.web/file.txt'
-        link_text = 'File'
+        link = 'ftp://site.web/screen_shot_2016-03-11_at_3.25.51_pm.png'
+        link_text = 'Screen Shot 2016-03-11 at 3.25.51 PM.png'
         slack_link = '<{link}>'.format(link=link)
         slack_link_with_link_text = '<{link}|{link_text}>'.format(link=link, link_text=link_text)
         post_link = '<a href={link}>{link}</a>'.format(link=link)
