@@ -909,7 +909,7 @@ def get_collection_id_to_items_dict(
         organization_id=organization_id,
         position__lt=number_of_items,
         collection_id__in=collection_ids,
-    )
+    ).order_by('position')
     containers = inflate_items_source(
         items=items,
         organization_id=organization_id,
