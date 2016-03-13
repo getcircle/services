@@ -421,7 +421,10 @@ def reorder_collections(organization_id, by_profile_id, position_diffs, token):
     min_position = min([position for diff in position_diffs
                         for position in (diff.current_position, diff.new_position)])
 
-    first_collection = models.Collection.objects.get(pk=position_diffs[0].item_id)
+    first_collection = models.Collection.objects.get(
+        pk=position_diffs[0].item_id,
+        organization_id=organization_id,
+    )
     collections = list(models.Collection.objects.filter(
         organization_id=organization_id,
         owner_id=first_collection.owner_id,
