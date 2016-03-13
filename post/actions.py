@@ -260,10 +260,18 @@ def create_collection(container, organization_id, by_profile_id, token):
     elif container.owner_type == post_containers.CollectionV1.PROFILE:
         container.owner_id = by_profile_id
 
+    bottom_position = models.Collection.objects.filter(
+        organization_id=organization_id,
+        owner_id=container.owner_id,
+        owner_type=container.owner_type,
+    ).aggregate(Max('position'))['position__max']
+    next_position = bottom_position + 1 if bottom_position is not None else 0
+
     return models.Collection.objects.from_protobuf(
         container,
         organization_id=organization_id,
         by_profile_id=profile_id,
+        position=next_position,
     )
 
 
@@ -337,7 +345,18 @@ def delete_collection(collection_id, organization_id, by_profile_id, token):
         token=token,
     )
 
+    position = collection.position
+    owner_id = collection.owner_id
+    owner_type = collection.owner_type
+
     collection.delete()
+
+    models.Collection.objects.filter(
+        organization_id=organization_id,
+        owner_id=owner_id,
+        owner_type=owner_type,
+        position__gt=position,
+    ).update(position=F('position') - 1)
 
 
 def reorder_collection(collection_id, organization_id, by_profile_id, position_diffs, token):
@@ -347,7 +366,7 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
         collection_id (str): id of the collection
         organization_id (str): id of the organization
         by_profile_id (str): id of the profile requesting the reorder
-        position_diffs (List[services.post.actions.reorder_collection.PositionDiffV1]):
+        position_diffs (List[services.post.containers_pb2.PositionDiffV1]):
             posiiton diff of items that have been reordered in the collection
         token (str): service token
 
@@ -374,17 +393,74 @@ def reorder_collection(collection_id, organization_id, by_profile_id, position_d
         position__gte=min_position,
     ).order_by('position'))
 
-    for diff in position_diffs:
-        # noramlize the positions relative to the slice we fetched from the db
-        diff.new_position = diff.new_position - min_position
-        current_position = [i for i, item in enumerate(items) if str(item.id) == diff.item_id][0]
-        item = items.pop(current_position)
-        items.insert(diff.new_position, item)
+    reorder_collection_objects(items, position_diffs, min_position)
 
     for index, item in enumerate(items):
         item.position = index + min_position
 
     bulk_update(items, update_fields=['position', 'changed'])
+
+
+def reorder_collections(organization_id, by_profile_id, position_diffs, token):
+    """Reorder collections.
+
+    Args:
+        organization_id (str): id of the organization
+        by_profile_id (str): id of the profile requesting the reorder
+        position_diffs (List[services.post.containers_pb2.PositionDiffV1]):
+            posiiton diff of collections that have been reordered
+        token (str): service token
+
+    Raises:
+        post.models.Collection.DoesNotExist if the collection does not exist or
+            the collection has a different owner than the others
+        Action.PermissionDenied if the user doesn't have permission to edit
+            the collection
+
+    """
+    min_position = min([position for diff in position_diffs
+                        for position in (diff.current_position, diff.new_position)])
+
+    first_collection = models.Collection.objects.get(
+        pk=position_diffs[0].item_id,
+        organization_id=organization_id,
+    )
+    collections = list(models.Collection.objects.filter(
+        organization_id=organization_id,
+        owner_id=first_collection.owner_id,
+        owner_type=first_collection.owner_type,
+        position__gte=min_position,
+    ).order_by('position'))
+    collection_ids = [str(collection.id) for collection in collections]
+
+    collections_to_permissions = get_permissions_for_collections(
+        collections=collections,
+        by_profile_id=by_profile_id,
+        token=token,
+    )
+    for collection_id in collection_ids:
+        permissions = collections_to_permissions[collection_id]
+        if not getattr(permissions, 'can_edit'):
+            raise Action.PermissionDenied()
+
+    try:
+        reorder_collection_objects(collections, position_diffs, min_position)
+    except IndexError:
+        raise models.Collection.DoesNotExist
+
+    for index, collection in enumerate(collections):
+        collection.position = index + min_position
+
+    bulk_update(collections, update_fields=['position', 'changed'])
+
+
+def reorder_collection_objects(objects, position_diffs, min_position):
+    for diff in position_diffs:
+        # normalize the positions relative to the slice we fetched from the db
+        diff.new_position = diff.new_position - min_position
+        current_position = [idx for idx, obj in enumerate(objects) if str(obj.id) == diff.item_id][0]
+        obj = objects.pop(current_position)
+        objects.insert(diff.new_position, obj)
 
 
 def add_to_collections(item, collections, organization_id, by_profile_id, token):

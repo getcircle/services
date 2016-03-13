@@ -50,6 +50,7 @@ class CollectionFactory(factory.Factory):
     owner_type = factory.FuzzyChoice(post_containers.CollectionV1.OwnerTypeV1.values())
     name = factory.FuzzyText()
     by_profile_id = factory.FuzzyUUID()
+    position = factory.Sequence(lambda n: n)
 
     @classmethod
     def _adjust_kwargs(cls, **kwargs):

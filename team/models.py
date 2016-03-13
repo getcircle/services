@@ -31,7 +31,7 @@ class TeamManager(models.Manager):
                 owner_type=post_containers.CollectionV1.TEAM,
                 owner_id=team.id,
                 organization_id=team.organization_id,
-                is_default=True
+                is_default=True,
             )
             collections.append(collection)
         post_models.Collection.objects.bulk_create(collections)

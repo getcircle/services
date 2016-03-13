@@ -32,7 +32,7 @@ class ProfileManager(models.Manager):
                 owner_type=post_containers.CollectionV1.PROFILE,
                 owner_id=profile.id,
                 organization_id=profile.organization_id,
-                is_default=True
+                is_default=True,
             )
             collections.append(collection)
         post_models.Collection.objects.bulk_create(collections)
