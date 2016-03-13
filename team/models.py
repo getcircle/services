@@ -18,7 +18,6 @@ class TeamManager(models.Manager):
             owner_id=team.id,
             organization_id=team.organization_id,
             is_default=True,
-            position=0,
         )
         return team
 
@@ -33,7 +32,6 @@ class TeamManager(models.Manager):
                 owner_id=team.id,
                 organization_id=team.organization_id,
                 is_default=True,
-                position=0,
             )
             collections.append(collection)
         post_models.Collection.objects.bulk_create(collections)
