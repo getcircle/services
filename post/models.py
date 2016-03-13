@@ -149,7 +149,7 @@ class Collection(models.UUIDModel, models.TimestampableModel):
 
     as_dict_value_transforms = {
         'owner_type': int,
-        'position': int,
+        'position': lambda x: x if x is None else int(x),
     }
 
     organization_id = models.UUIDField(editable=False)
