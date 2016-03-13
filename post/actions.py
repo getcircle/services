@@ -713,7 +713,7 @@ def get_collections(
             owner_id=owner_id,
             owner_type=owner_type,
             **parameters
-        )
+        ).order_by('position')
         # is_default is a NullBooleanField, we only store a value if
         # `is_default` is True
         if is_default:
