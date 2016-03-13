@@ -24,6 +24,7 @@ from ..actions import (
     get_permissions_for_collections,
     get_total_items_for_collections,
     inflate_items_source,
+    remove_from_collection,
     remove_from_collections,
     reorder_collection,
     reorder_collections,
@@ -355,6 +356,19 @@ class RemoveFromCollections(PreRunParseTokenMixin, actions.Action):
         remove_from_collections(
             item=self.request.item,
             collections=self.request.collections,
+            organization_id=self.parsed_token.organization_id,
+            by_profile_id=self.parsed_token.profile_id,
+            token=self.token,
+        )
+
+
+class RemoveFromCollection(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('items',)
+
+    def run(self, *args, **kwargs):
+        remove_from_collection(
+            items=self.request.items,
             organization_id=self.parsed_token.organization_id,
             by_profile_id=self.parsed_token.profile_id,
             token=self.token,

@@ -552,6 +552,55 @@ def _atomic_remove(item, collections, organization_id):
             ).update(position=F('position') - 1)
 
 
+def remove_from_collection(
+        items,
+        organization_id,
+        by_profile_id,
+        token,
+    ):
+    """Remove items from a collection.
+
+    Args:
+        items (List[services.post.containers.CollectionItemV1]): list of items to remove
+        organization_id (str): id of the organization
+        by_profile_id (str): id of the profile requesting the change
+        token (str): service token
+
+    """
+    collections = get_collections_with_permissions(
+        permission='can_add',
+        collection_ids=[i.collection_id for i in items],
+        organization_id=organization_id,
+        by_profile_id=by_profile_id,
+        token=token,
+    ) or []
+    collection_id_to_items = {}
+    for item in items:
+        collection_id_to_items.setdefault(str(item.collection_id), []).append(item)
+
+    for collection in collections:
+        items = collection_id_to_items.get(str(collection.id))
+        if not items:
+            continue
+
+        items = models.CollectionItem.objects.filter(
+            pk__in=[item.id for item in items],
+            organization_id=organization_id,
+            collection_id=collection.id,
+        )
+        with transaction.atomic():
+            items.delete()
+            items = models.CollectionItem.objects.filter(
+                organization_id=organization_id,
+                collection_id=collection.id,
+            ).order_by('position')
+            for index, item in enumerate(items):
+                item.position = index
+
+            if items:
+                bulk_update(items, update_fields=['position', 'changed'])
+
+
 def remove_from_collections(
         item,
         collections,
