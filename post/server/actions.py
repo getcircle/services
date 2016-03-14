@@ -265,6 +265,7 @@ class CreateCollection(PreRunParseTokenMixin, actions.Action):
         )
         collection_id_to_display_name = get_display_names_for_collections(
             [collection],
+            by_profile_id=self.parsed_token.profile_id,
             token=self.token,
         )
         collection.to_protobuf(
@@ -431,6 +432,7 @@ class GetCollections(PreRunParseTokenMixin, actions.Action):
         if common_utils.should_inflate_field('display_name', self.request.inflations):
             collection_id_to_display_name = get_display_names_for_collections(
                 collections=collections,
+                by_profile_id=self.parsed_token.profile_id,
                 token=self.token,
             )
 
@@ -510,6 +512,7 @@ class GetCollection(PreRunParseTokenMixin, actions.Action):
         if common_utils.should_inflate_field('display_name', self.request.inflations):
             collection_id_to_display_name = get_display_names_for_collections(
                 collections=[collection],
+                by_profile_id=self.parsed_token.profile_id,
                 token=self.token,
             )
 

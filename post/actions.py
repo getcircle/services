@@ -942,13 +942,14 @@ def get_or_create_default_collection(owner_type, owner_id, organization_id):
     )
 
 
-def get_display_names_for_collections(collections, token):
+def get_display_names_for_collections(collections, by_profile_id, token):
     """Get display names for the collections.
 
     Collections that are owned by teams are displayed as "[<Team Name>] <Collection Name>".
 
     Args:
         collections (List[services.post.containers.CollectionV1]): list of collections
+        by_profile_id (str): id of the current user
         token (str): service token
 
     Returns:
@@ -972,6 +973,23 @@ def get_display_names_for_collections(collections, token):
         )
         team_id_to_name = dict((t.id, t.name) for t in teams)
 
+    profile_ids = set([str(c.owner_id) for c in collections
+                    if c.owner_type == post_containers.CollectionV1.PROFILE])
+
+    profile_id_to_name = {}
+    if profile_ids:
+        profiles = service.control.get_object(
+            service='profile',
+            action='get_profiles',
+            control={'paginator': {'page_size': len(profile_ids)}},
+            client_kwargs={'token': token},
+            return_object='profiles',
+            inflations={'disabled': True},
+            fields={'only': ['id', 'full_name']},
+            ids=list(profile_ids),
+        )
+        profile_id_to_name = dict((p.id, p.full_name) for p in profiles)
+
     collection_id_to_name = {}
     for collection in collections:
         name = collection.name
@@ -982,6 +1000,13 @@ def get_display_names_for_collections(collections, token):
             team_name = team_id_to_name.get(str(collection.owner_id))
             if team_name:
                 name = '[%s] %s' % (team_name, name)
+        elif (
+            collection.owner_type == post_containers.CollectionV1.PROFILE and
+            str(collection.owner_id) != by_profile_id
+        ):
+            profile_name = profile_id_to_name.get(str(collection.owner_id))
+            if profile_name:
+                name = '[%s] %s' % (profile_name, name)
 
         collection_id_to_name[str(collection.id)] = name
     return collection_id_to_name
