@@ -10,6 +10,8 @@ from service import (
     validators,
 )
 import service.control
+import re
+import urllib
 
 from services.mixins import PreRunParseTokenMixin
 
@@ -29,7 +31,9 @@ def get_client(region_name=None):
 
 
 def get_upload_key(file_name):
-    return '%s/%s' % (uuid.uuid4().hex, file_name)
+    clean_file_name = re.sub('\s', '_', file_name.encode('ascii', 'ignore'))
+    key = '%s/%s' % (uuid.uuid4().hex, clean_file_name)
+    return key
 
 
 class StartUpload(actions.Action):

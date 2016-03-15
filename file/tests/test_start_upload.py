@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from mock import patch
 import service.control
 
@@ -54,4 +56,20 @@ class TestStartUpload(MockedTestCase):
         instructions = response.result.upload_instructions
         self.assertTrue(instructions.upload_id)
         self.assertTrue(instructions.upload_url)
+        self.assertTrue(instructions.upload_key)
+
+    @patch('file.actions.utils.S3Manager')
+    def test_start_upload_unicode_characters_file_name(self, patched):
+        file_name = 'test_ 某物.png'
+        bucket = patched().get_bucket()
+        type(bucket.initiate_multipart_upload()).id = fuzzy.FuzzyUUID().fuzz()
+        bucket.get_location.return_value = 'us-west-2'
+
+        response = self.client.call_action('start_upload', file_name=file_name)
+        instructions = response.result.upload_instructions
+        self.assertTrue(instructions.upload_key)
+
+        file_name = 'Inbox_–_mwhahn_gmail_com.png'
+        response = self.client.call_action('start_upload', file_name=file_name)
+        instructions = response.result.upload_instructions
         self.assertTrue(instructions.upload_key)

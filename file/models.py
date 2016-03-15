@@ -44,7 +44,7 @@ class File(models.UUIDModel, models.TimestampableModel):
             'dot': '.' if domain else '',
             'frontend_url': frontend_url,
             'id': self.id,
-            'name': self.name,
+            'name': self.name.encode('utf-8'),
         }
         return '{scheme}://{domain}{dot}{frontend_url}/file/{id}/{name}'.format(**details)
 
