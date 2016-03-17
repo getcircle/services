@@ -299,3 +299,15 @@ def get_team_id_to_member_count(teams):
         team_id__in=[t.id for t in teams],
     ).values('team_id').annotate(total_members=Count('id'))
     return dict((str(count['team_id']), count['total_members']) for count in counts)
+
+
+def delete_team(team_id, organization_id):
+    """Delete a team.
+
+    Args:
+        team_id (uuid): id for the team
+        organization_id (uuid): id for the organization
+
+    """
+    team = get_team(team_id, organization_id)
+    team.delete()

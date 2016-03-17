@@ -21,6 +21,7 @@ from ..actions import (
     remove_members,
     update_members,
     update_team,
+    delete_team,
 )
 from .. import models
 
@@ -472,3 +473,34 @@ class UpdateTeam(PreRunParseTokenMixin, actions.Action):
         )
         team.to_protobuf(self.response.team)
         self.response.team.permissions.CopyFrom(permissions)
+
+
+class DeleteTeam(TeamExistsAction):
+
+    required_fields = ('team_id',)
+    type_validators = {
+        'team_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        super(DeleteTeam, self).run(*args, **kwargs)
+        permissions_dict = get_permissions_for_teams(
+            team_ids=[self.request.team_id],
+            profile_id=self.parsed_token.profile_id,
+            organization_id=self.parsed_token.organization_id,
+            token=self.token,
+        )
+        _, permissions = permissions_dict[self.request.team_id]
+        if not permissions.can_delete:
+            raise self.PermissionDenied()
+
+        service.control.call_action(
+            service='post',
+            action='delete_collections',
+            client_kwargs={'token': self.token},
+            owner_type=post_containers.CollectionV1.TEAM,
+            owner_id=self.request.team_id,
+        )
+
+        # TeamMember & ContactMethod objects associated with the team are deleted with it
+        delete_team(self.request.team_id, self.parsed_token.organization_id)
