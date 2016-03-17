@@ -16,6 +16,7 @@ from ..actions import (
     collection_exists,
     create_collection,
     delete_collection,
+    delete_collections,
     get_collection,
     get_collection_items,
     get_collections,
@@ -285,6 +286,26 @@ class DeleteCollection(PreRunParseTokenMixin, actions.Action):
         try:
             delete_collection(
                 collection_id=self.request.collection_id,
+                organization_id=self.parsed_token.organization_id,
+                by_profile_id=self.parsed_token.profile_id,
+                token=self.token,
+            )
+        except models.Collection.DoesNotExist:
+            raise self.ActionFieldError('collection_id', 'DOES_NOT_EXIST')
+
+
+class DeleteCollections(PreRunParseTokenMixin, actions.Action):
+
+    required_fields = ('owner_type', 'owner_id')
+    type_validators = {
+        'owner_id': [validators.is_uuid4],
+    }
+
+    def run(self, *args, **kwargs):
+        try:
+            delete_collections(
+                owner_type=self.request.owner_type,
+                owner_id=self.request.owner_id,
                 organization_id=self.parsed_token.organization_id,
                 by_profile_id=self.parsed_token.profile_id,
                 token=self.token,

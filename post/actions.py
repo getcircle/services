@@ -359,6 +359,42 @@ def delete_collection(collection_id, organization_id, by_profile_id, token):
     ).update(position=F('position') - 1)
 
 
+def delete_collections(owner_type, owner_id, organization_id, by_profile_id, token):
+    """Delete all collections for the owner.
+
+    Args:
+        owner_type (services.post.containers.CollectionV1.OwnerTypeV1): type of owner
+        owner_id (str): owner id
+        organization_id (str): organization id
+        by_profile_id (str): profile making the request
+        token (str): service token
+
+    Raises:
+        post.models.Collection.DoesNotExist if the collections do not exist
+        Action.PermissionDenied if the user doesn't have permission to delete
+            the collections
+
+    """
+    collections = models.Collection.objects.filter(
+        organization_id=organization_id,
+        owner_id=owner_id,
+        owner_type=owner_type,
+    )
+    if len(collections) == 0:
+        raise models.Collection.DoesNotExist
+
+    permissions_dict = get_permissions_for_collections(
+        collections=collections,
+        by_profile_id=by_profile_id,
+        token=token,
+    )
+    if not all([getattr(permissions, 'can_delete') for collection_id, permissions in permissions_dict.items()]):
+        raise Action.PermissionDenied()
+
+    for collection in collections:
+        collection.delete()
+
+
 def reorder_collection(collection_id, organization_id, by_profile_id, position_diffs, token):
     """Reorder items within a collection.
 

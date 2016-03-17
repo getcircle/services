@@ -14,6 +14,7 @@ class Server(service.control.Server):
         'delete_post': actions.DeletePost,
         'create_collection': actions.CreateCollection,
         'delete_collection': actions.DeleteCollection,
+        'delete_collections': actions.DeleteCollections,
         'reorder_collection': actions.ReorderCollection,
         'reorder_collections': actions.ReorderCollections,
         'add_to_collections': actions.AddToCollections,
