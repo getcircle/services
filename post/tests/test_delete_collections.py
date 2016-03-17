@@ -71,4 +71,4 @@ class Test(MockedTestCase):
             owner_type=post_containers.CollectionV1.TEAM,
             owner_id=self.team.id
         ))
-        self.assertTrue(len(collections) == 0)
+        self.assertEqual(len(collections), 0)
