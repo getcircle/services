@@ -1,0 +1,4 @@
+#!/bin/bash
+
+docker-compose run dev psql postgres://postgres:postgres@postgres -c 'CREATE DATABASE services'
+docker-compose run dev python manage.py migrate

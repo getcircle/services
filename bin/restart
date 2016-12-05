@@ -1,0 +1,2 @@
+#!/bin/bash
+docker-compose build celery services && docker-compose up -d

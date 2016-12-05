@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# ensure we've started the default machine
+docker-machine start dev || true && \
+    eval "$(docker-machine env dev)" && \
+    # build our base images
+    docker build -t lunohq/services-base docker/base && \
+    docker build -t lunohq/services-build docker/build && \
+    docker run -v `pwd`/wheelhouse:/wheelhouse -v `pwd`:/application lunohq/services-build && \
+    docker build -t lunohq/services . && \
+    docker build -t lunohq/services-dev docker/dev && \
+    docker build -t lunohq/es-dev docker/elasticsearch/dev && \
+    docker build -t lunohq/es-test docker/elasticsearch/test && \
+    docker build -t lunohq/postgres docker/postgres

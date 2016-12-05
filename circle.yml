@@ -1,0 +1,34 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  cache_directories:
+    - wheelhouse/
+  override:
+    # ensure cache directories exist
+    - mkdir -p wheelhouse
+
+    # setup build images
+    - docker build -t lunohq/services-base docker/base
+    - docker build -t lunohq/services-build docker/build
+    - docker run -v `pwd`/wheelhouse:/wheelhouse -v `pwd`:/application lunohq/services-build
+
+    # setup run and manage images
+    - docker build -t lunohq/services .
+
+test:
+  pre:
+    - docker run -d --name=es elasticsearch:2.0 elasticsearch -Des.network.host=0.0.0.0
+    - docker run -d --name=postgres postgres:9.4
+    - docker run -d --name=redis redis:2.8
+  override:
+    - docker run -e DJANGO_SETTINGS_MODULE=services.settings.test -e DATABASE_URL=postgres://postgres:postgres@postgres/services -e REDIS_URL=redis://redis:6376/1 -e SEARCH_SERVICE_ELASTICSEARCH_URL=elasticsearch://es:9200 --link postgres:postgres --link redis:redis --link es:es lunohq/services sh -c 'pip install -r docker/dev/test-requirements.txt && python manage.py test --noinput --failfast'
+
+deployment:
+  hub:
+    branch: master
+    commands:
+      - docker tag lunohq/services lunohq/services:$CIRCLE_SHA1
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push lunohq/services

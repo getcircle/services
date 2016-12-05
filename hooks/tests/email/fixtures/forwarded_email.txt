@@ -1,0 +1,164 @@
+Return-Path: <ravi@lunohq.com>
+Received: from mail-ob0-f172.google.com (mail-ob0-f172.google.com [209.85.214.172])
+ by inbound-smtp.us-west-2.amazonaws.com with SMTP id 949kv3r992rsc43fdqhr1b5s9mmc4pv1i94tlp01
+ for create@team.dev.lunohq.com;
+ Sun, 10 Jan 2016 06:51:00 +0000 (UTC)
+Received: by mail-ob0-f172.google.com with SMTP id bx1so357876672obb.0
+        for <create@team.dev.lunohq.com>; Sat, 09 Jan 2016 22:51:00 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=lunohq-com.20150623.gappssmtp.com; s=20150623;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :content-type;
+        bh=goqnAx9rNiXOyi10fTg7v9Jlv+u2DYTzjRpaCJclMV8=;
+        b=TTUdGCKdN1NfuXvKTg/GksqB2FZMNjryrqL+kspWHXb56lPQsNRdj42VqQsF9TmZAA
+         xU+K1weG2UjwGTE9cRbqdQ7l5SjeLH+f1tb788/3mnOkamNAobR8UhjhIITaUJXM3Zht
+         bd5INMVlwuEz4ZS58WYOuDDteIbT71dPPUpo1D4npKmfCiizToRMlFR8FmVSnrKjf+/X
+         lDTO/qpiNBuSNZFfj09KxNIbFCh/hhAJs5fnjkDPov0vg41A0SzEm5PDQVU6aQNHKNrZ
+         1GK2I7GUc3gKlcHaJcc3JBqn/tMau5Wd5ucc8DaC7yXyoRhMzd+xqb5ItZ5UFNViC3EW
+         0ujQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20130820;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:content-type;
+        bh=goqnAx9rNiXOyi10fTg7v9Jlv+u2DYTzjRpaCJclMV8=;
+        b=mTg5Lh+7CPwYNYal8WDbf+M3x+daogFP/Bqt8cBjadQ85y9pArcIrKrkUf83HPMu7j
+         wJZV4vQffoH4Vu8LIwcJ8+RHI5ZWyU16BIS7bj4wgQr68OQo2CO6O2XpS4WJ8Mk5zRQf
+         pxz12t/J/NtBmgmRM8L5FpGYnDcdJszk9+JuPp1sypoD5L8BopB5pnlPK6QVwUtHncEq
+         WOkMGcfFGFtqwCxEReofck5koljedG3ZXbtKk27ek2gbIhpsb8YI6HNhi/8WWaKnIeL0
+         zlSzzpghHlWLp4qMvJ7eteL6589opyb49/NBnzHz6OVcJg7NcWyONWLoilTVpzfdq4Eu
+         mPjw==
+X-Gm-Message-State: ALoCoQmsEh0LdbSOApmgsuu6Y45Tq5dgXI6+C+Kq33ajGin0a7tQ8GZfeYfTvVyABuQr+/ndjbbVQfiXA0d2bHFkVYw4Pn7R20Go3YPd1sOk/zmrDAmX8fI=
+X-Received: by 10.60.54.168 with SMTP id k8mr91630961oep.51.1452408659778;
+ Sat, 09 Jan 2016 22:50:59 -0800 (PST)
+MIME-Version: 1.0
+References: <CAEDbLphjqGd0YHyi563UUm1rCJ9EnVh5kUWbiWtaaLaucBYj5g@mail.gmail.com>
+ <CAP=eVRZWz78K-cgvJSr8-eOcyLLgCJtAcbAk2N3V_KFCLcMcNg@mail.gmail.com> <CAEDbLpgnmPuDz9vpjT0+nqSDJvq=aoQmMyjMELhCX9JG742grA@mail.gmail.com>
+In-Reply-To: <CAEDbLpgnmPuDz9vpjT0+nqSDJvq=aoQmMyjMELhCX9JG742grA@mail.gmail.com>
+From: Ravi Rani <ravi@lunohq.com>
+Date: Sun, 10 Jan 2016 06:50:50 +0000
+Message-ID: <CA+EczP7CH0U-=iOWwqZzcZtcvgK=SwQJg6LyqYRSov3x=RM2+w@mail.gmail.com>
+Subject: Fwd: thanks for the shout out :)
+To: create@team.dev.lunohq.com
+Content-Type: multipart/alternative; boundary=089e011606003c3f290528f53ea3
+
+--089e011606003c3f290528f53ea3
+Content-Type: text/plain; charset=UTF-8
+
+---------- Forwarded message ---------
+From: Michael Hahn <michael@lunohq.com>
+Date: Fri, Jan 8, 2016 at 1:22 PM
+Subject: Fwd: thanks for the shout out :)
+To: founders@lunohq.com <founders@lunohq.com>
+
+
+this is similar to the pain points i had with finding info in EB
+engineering, seems like it has gotten worse too.
+
+---------- Forwarded message ---------
+From: John Berryman <johnb@eventbrite.com>
+Date: Fri, Jan 8, 2016 at 1:17 PM
+Subject: Re: thanks for the shout out :)
+To: Michael Hahn <michael@lunohq.com>
+
+
+Hey! That's exciting. Ok - as an insider to EB we have a hell of a time
+with documentation of anything. There are plenty of document, but they are
+not easily findable.
+
+   - We use https://readthedocs.org/ for docs. But the search doesn't seem
+   to handle anything besides string matching. So you have to have a perfect
+   phrase match or oh well.
+   - Also we don't have just one readthedocs site, but 3(ish) and search
+   doesn't cross over between them. You have to know where the information is
+   in order to find the information.
+   - Additionally we have readme's in all our repos that usually aren't
+   searchable (I think some of these are hooked up to readthedocs, but mostly
+   not).
+   - We also have scads of older docs in Atlassian Confluence.
+   - Plenty of stuff in Google Docs.
+   - Plenty of stuff in Slack conversations and Slack "Posts"
+
+If I was building you product (and I'm not... but it's fun to conjecture
+since I don't have anything on the line) one thing I would try is just to
+build an index and search UI that unites all these things. Then you don't
+have to worry about storing or pretty formatting anything from these
+sources. And you don't have to worry about authoring tools. And it's easier
+on-boarding for your users.
+
+The harder part of the problem is something that is more all-encompassing.
+My very own notes are almost useless to me a few months from now. How do
+you figure out how to highlight well-written and useful information, throw
+away un-useful information, and (the really hard part) glean help from the
+information that's moderately useful.
+
+Pretty fun stuff! Tell me when I should invest!
+-John
+
+On Thu, Jan 7, 2016 at 3:11 PM, Michael Hahn <michael@lunohq.com> wrote:
+
+> Renaud is in SF this week and I'm going to be meeting up with him, one of
+> the goals is to get EB set up so the engineering team can start using our
+> product. I'll keep you posted!
+>
+> I'm curious, what are some of the use cases you've come across where
+> you've wanted it?
+>
+
+--089e011606003c3f290528f53ea3
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><br><br><div class=3D"gmail_quote"><div dir=3D"ltr">------=
+---- Forwarded message ---------<br>From: Michael Hahn &lt;<a href=3D"mailt=
+o:michael@lunohq.com">michael@lunohq.com</a>&gt;<br>Date: Fri, Jan 8, 2016 =
+at 1:22 PM<br>Subject: Fwd: thanks for the shout out :)<br>To: <a href=3D"m=
+ailto:founders@lunohq.com">founders@lunohq.com</a> &lt;<a href=3D"mailto:fo=
+unders@lunohq.com">founders@lunohq.com</a>&gt;<br></div><br><br><div dir=3D=
+"ltr">this is similar to the pain points i had with finding info in EB engi=
+neering, seems like it has gotten worse too.=C2=A0<br><br><div class=3D"gma=
+il_quote"><div dir=3D"ltr">---------- Forwarded message ---------<br>From: =
+John Berryman &lt;<a href=3D"mailto:johnb@eventbrite.com" target=3D"_blank"=
+>johnb@eventbrite.com</a>&gt;<br>Date: Fri, Jan 8, 2016 at 1:17 PM<br>Subje=
+ct: Re: thanks for the shout out :)<br>To: Michael Hahn &lt;<a href=3D"mail=
+to:michael@lunohq.com" target=3D"_blank">michael@lunohq.com</a>&gt;<br></di=
+v><br><br><div dir=3D"ltr">Hey! That&#39;s exciting. Ok - as an insider to =
+EB we have a hell of a time with documentation of anything. There are plent=
+y of document, but they are not easily findable.=C2=A0<div><ul><li>We use=
+=C2=A0<a href=3D"https://readthedocs.org/" target=3D"_blank">https://readth=
+edocs.org/</a> for docs. But the search doesn&#39;t seem to handle anything=
+ besides string matching. So you have to have a perfect phrase match or oh =
+well.</li><li>Also we don&#39;t have just one readthedocs site, but 3(ish) =
+and search doesn&#39;t cross over between them. You have to know where the =
+information is in order to find the information.</li><li>Additionally we ha=
+ve readme&#39;s in all our repos that usually aren&#39;t searchable (I thin=
+k some of these are hooked up to readthedocs, but mostly not).<br></li><li>=
+We also have scads of older docs in Atlassian Confluence.</li><li>Plenty of=
+ stuff in Google Docs.</li><li>Plenty of stuff in Slack conversations and S=
+lack &quot;Posts&quot;</li></ul><div>If I was building you product (and I&#=
+39;m not... but it&#39;s fun to conjecture since I don&#39;t have anything =
+on the line) one thing I would try is just to build an index and search UI =
+that unites all these things. Then you don&#39;t have to worry about storin=
+g or pretty formatting anything from these sources. And you don&#39;t have =
+to worry about authoring tools. And it&#39;s easier on-boarding for your us=
+ers.</div></div><div><br></div><div>The harder part of the problem is somet=
+hing that is more all-encompassing. My very own notes are almost useless to=
+ me a few months from now. How do you figure out how to highlight well-writ=
+ten and useful information, throw away un-useful information, and (the real=
+ly hard part) glean help from the information that&#39;s moderately useful.=
+</div><div><br></div><div>Pretty fun stuff! Tell me when I should invest!</=
+div><div class=3D"gmail_extra"></div></div><div dir=3D"ltr"><div class=3D"g=
+mail_extra"><div><div><div dir=3D"ltr">-John</div></div></div></div></div><=
+div dir=3D"ltr"><div class=3D"gmail_extra">
+<br><div class=3D"gmail_quote">On Thu, Jan 7, 2016 at 3:11 PM, Michael Hahn=
+ <span dir=3D"ltr">&lt;<a href=3D"mailto:michael@lunohq.com" target=3D"_bla=
+nk">michael@lunohq.com</a>&gt;</span> wrote:<br><blockquote class=3D"gmail_=
+quote" style=3D"margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1=
+ex"><div dir=3D"ltr"><div>Renaud is in SF this week and I&#39;m going to be=
+ meeting up with him, one of the goals is to get EB set up so the engineeri=
+ng team can start using our product. I&#39;ll keep you posted!<br></div><di=
+v><br></div><div>I&#39;m curious, what are some of the use cases you&#39;ve=
+ come across where you&#39;ve wanted it?</div></div>
+</blockquote></div><br></div></div></div></div>
+</div></div>
+
+--089e011606003c3f290528f53ea3--
