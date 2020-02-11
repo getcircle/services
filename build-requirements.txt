@@ -40,7 +40,7 @@ funcy==1.4
 redis==2.10.3
 google-api-python-client==1.5.0
 uritemplate==0.6
-Django==1.8.4
+Django==1.11.28
 django-cors-headers==1.1.0
 pyDNS==2.3.6
 django-bulk-update==1.1.3
