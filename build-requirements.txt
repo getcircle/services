@@ -71,7 +71,7 @@ msgpack-python==0.4.6
 elasticsearch-dsl==0.0.9
 elasticsearch>=2.0.0,<3.0.0
 urllib3==1.12
-PyYAML==3.11
+PyYAML==5.4
 protobuf==3.0.0a3
 slacker==0.7.9
 tldextract==1.7.2
