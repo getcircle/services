@@ -70,7 +70,7 @@ kombu==3.0.28
 msgpack-python==0.4.6
 elasticsearch-dsl==0.0.9
 elasticsearch>=2.0.0,<3.0.0
-urllib3==1.12
+urllib3==1.26.5
 PyYAML==3.11
 protobuf==3.0.0a3
 slacker==0.7.9
