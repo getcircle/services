@@ -86,7 +86,7 @@ idna==2.0
 ipaddress==1.0.15
 regex==2015.11.22
 bleach==1.4.2
-html5lib==0.999
+html5lib==0.99999999
 lxml==3.5.0
 django-bitfield==1.8.0
 django-cacheops==2.4.3
